@@ -43,7 +43,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
+export function PriceChart({ tokenId }: { tokenId: string; slug: string }) {
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<PricePoint[]>([]);
 

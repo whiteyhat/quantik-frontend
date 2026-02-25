@@ -144,36 +144,9 @@ function Sidebar() {
 
 // ─── Top Wallet Bar ───────────────────────────────────────────────────────────
 
-function TopWalletBar() {
-  const [wallet, setWallet] = useState<WalletBalance | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    api.getBalance().then(setWallet).catch(() => {});
-    const iv = setInterval(() => {
-      api.getBalance().then(setWallet).catch(() => {});
-    }, 30_000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const copyAddress = useCallback(() => {
-    const addr = wallet?.address ?? "";
-    if (!addr) return;
-    navigator.clipboard.writeText(addr).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }, [wallet?.address]);
-
-  const truncAddr = (addr: string) =>
-    addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
-
-  const pnl = wallet?.pnl ?? 0;
-  const pnlPct = wallet?.pnlPct ?? 0;
-  const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
-  const pnlSign = pnl >= 0 ? "+" : "";
-
-  // L007: Dot separators with 16px spacing, monospace values, labels above
-  const Separator = () => (
+// L007: Dot separators with 16px spacing, monospace values, labels above
+function Separator() {
+  return (
     <span
       style={{
         margin: "0 16px",
@@ -185,16 +158,18 @@ function TopWalletBar() {
       ·
     </span>
   );
+}
 
-  const MetricItem = ({
-    label,
-    value,
-    valueColor = "rgba(255,255,255,0.92)",
-  }: {
-    label: string;
-    value: string;
-    valueColor?: string;
-  }) => (
+function MetricItem({
+  label,
+  value,
+  valueColor = "rgba(255,255,255,0.92)",
+}: {
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  return (
     <div
       style={{
         display: "flex",
@@ -228,6 +203,35 @@ function TopWalletBar() {
       </span>
     </div>
   );
+}
+
+function TopWalletBar() {
+  const [wallet, setWallet] = useState<WalletBalance | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    api.getBalance().then(setWallet).catch(() => {});
+    const iv = setInterval(() => {
+      api.getBalance().then(setWallet).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const copyAddress = useCallback(() => {
+    const addr = wallet?.address ?? "";
+    if (!addr) return;
+    navigator.clipboard.writeText(addr).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [wallet?.address]);
+
+  const truncAddr = (addr: string) =>
+    addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
+
+  const pnl = wallet?.pnl ?? 0;
+  const pnlPct = wallet?.pnlPct ?? 0;
+  const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
+  const pnlSign = pnl >= 0 ? "+" : "";
 
   return (
     <div

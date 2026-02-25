@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { api, fmtUSDC, type Market } from "@/lib/api";
+import { api, fmtUSDC } from "@/lib/api";
 
 function LiqGradeChip({ grade }: { grade: string }) {
   const colors: Record<string, string> = {

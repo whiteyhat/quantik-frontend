@@ -518,7 +518,7 @@ export default function LiquidationReportPage({
   const { id } = use(params);
   const [report, setReport] = useState<LiquidationReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>();
+  const [error] = useState<string | undefined>();
 
   useEffect(() => {
     if (!id) return;

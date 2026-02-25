@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, fmtUSDC, fmtPrice, fmtPct, type WalletBalance, type Position } from "@/lib/api";
+import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
 
@@ -550,7 +550,10 @@ function SystemStatusPanel() {
       });
   }, []);
 
-  const now = Date.now();
+  // Pre-compute stable mock run times — must not call Math.random() during render
+  const [agentMockTimes] = useState(() =>
+    AGENTS.map(() => Math.floor(Math.random() * 300_000))
+  );
 
   return (
     <div style={panelStyle}>
@@ -597,9 +600,9 @@ function SystemStatusPanel() {
 
       {/* Agent rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {AGENTS.map((agent) => {
+        {AGENTS.map((agent, idx) => {
           // Mocked: all agents show as idle with simulated run times
-          const mockMsAgo = Math.floor(Math.random() * 300_000);
+          const mockMsAgo = agentMockTimes[idx];
           const lastRunMin = Math.floor(mockMsAgo / 60_000);
           const lastRunLabel = lastRunMin < 1 ? "just now" : `${lastRunMin}m ago`;
 

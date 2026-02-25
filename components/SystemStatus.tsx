@@ -11,7 +11,13 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
   const [latency, setLatency] = useState<number | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
-  const [lastSync, setLastSync] = useState<number>(Date.now());
+  const [lastSync, setLastSync] = useState<number>(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const iv = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(iv);
+  }, []);
 
   useEffect(() => {
     // Ping backend for latency
@@ -36,7 +42,7 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
       ? "var(--ios-green)"
       : "var(--ios-orange)";
 
-  const syncAgo = Math.floor((Date.now() - lastSync) / 60000);
+  const syncAgo = Math.floor((now - lastSync) / 60000);
 
   return (
     <div

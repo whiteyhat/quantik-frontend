@@ -21,6 +21,7 @@ function SlideToConfirm({
   disabled?: boolean;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [trackWidth, setTrackWidth] = useState(280);
   const [dragging, setDragging] = useState(false);
   const [thumbX, setThumbX] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
@@ -29,9 +30,20 @@ function SlideToConfirm({
 
   const THUMB_SIZE = 48;
 
-  const getTrackWidth = () => trackRef.current?.clientWidth ?? 280;
+  useEffect(() => {
+    if (trackRef.current) {
+      setTrackWidth(trackRef.current.clientWidth);
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setTrackWidth(entry.contentRect.width);
+        }
+      });
+      observer.observe(trackRef.current);
+      return () => observer.disconnect();
+    }
+  }, []);
 
-  const getMaxX = () => getTrackWidth() - THUMB_SIZE - 4; // 4px padding
+  const maxX = trackWidth - THUMB_SIZE - 4;
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -46,18 +58,17 @@ function SlideToConfirm({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!dragging) return;
-      const newX = Math.max(0, Math.min(e.clientX - startXRef.current, getMaxX()));
+      const newX = Math.max(0, Math.min(e.clientX - startXRef.current, maxX));
       currentXRef.current = newX;
       setThumbX(newX);
     },
-    [dragging]
+    [dragging, maxX]
   );
 
   const handlePointerUp = useCallback(() => {
     if (!dragging) return;
     setDragging(false);
 
-    const maxX = getMaxX();
     if (currentXRef.current >= maxX * 0.85) {
       // Confirmed — snap to end
       setThumbX(maxX);
@@ -68,9 +79,9 @@ function SlideToConfirm({
       currentXRef.current = 0;
       setThumbX(0);
     }
-  }, [dragging, onConfirmed]);
+  }, [dragging, maxX, onConfirmed]);
 
-  const progress = getMaxX() > 0 ? thumbX / getMaxX() : 0;
+  const progress = maxX > 0 ? thumbX / maxX : 0;
 
   return (
     <div

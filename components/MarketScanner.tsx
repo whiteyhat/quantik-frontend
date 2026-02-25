@@ -30,7 +30,6 @@ function LiqGradeChip({ grade }: { grade: string }) {
 
 function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: number; no: number } }) {
   const yes = livePrice?.yes ?? market.yesPrice ?? 0;
-  const no = livePrice?.no ?? market.noPrice ?? 0;
   const yesPct = Math.round(yes * 100);
   const noPct = 100 - yesPct;
   const [hovered, setHovered] = useState(false);

@@ -181,8 +181,7 @@ export const api = {
 
 export function streamPrices(
   tokens: string[],
-  onPrice: (data: Record<string, { yes: number; no: number }>) => void,
-  onError?: (err: Error) => void
+  onPrice: (data: Record<string, { yes: number; no: number }>) => void
 ): () => void {
   const url = `${BASE_URL}/api/stream/prices?tokens=${tokens.join(",")}`;
   let es: EventSource | null = null;
@@ -284,12 +283,6 @@ export function fmtPrice(p: number | null | undefined): string {
 export function fmtUSDC(n: number | null | undefined): string {
   if (n == null || isNaN(n)) return "$0.00";
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function fmtPct(n: number | null | undefined, sign = true): string {
-  if (n == null || isNaN(n)) return "0.0%";
-  const s = (n * 100).toFixed(1);
-  return sign && n > 0 ? `+${s}%` : `${s}%`;
 }
 
 export function gradeColor(grade: string): string {
