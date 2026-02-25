@@ -4,6 +4,31 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { api, streamPrices, fmtUSDC, type Market } from "@/lib/api";
 
+// ─── Category filter pills ────────────────────────────────────────────────────
+
+const SCANNER_CATEGORIES = [
+  "All",
+  "Crypto",
+  "Politics",
+  "Sports",
+  "Pop Culture",
+  "Science",
+  "World Events",
+  "Business",
+] as const;
+
+type ScannerCategory = (typeof SCANNER_CATEGORIES)[number];
+
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  Crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "sol", "defi", "token"],
+  Politics: ["election", "president", "congress", "senate", "vote", "democrat", "republican", "trump", "biden", "political"],
+  Sports: ["nfl", "nba", "mlb", "nhl", "super bowl", "championship", "team", "game", "sport", "cup", "league"],
+  "Pop Culture": ["oscars", "grammy", "celebrity", "movie", "show", "album", "award", "film"],
+  Science: ["nasa", "space", "science", "climate", "research", "discovery", "ai", "model"],
+  "World Events": ["war", "conflict", "ceasefire", "united nations", "global", "international", "country"],
+  Business: ["earnings", "ipo", "merger", "acquisition", "revenue", "market cap", "stock"],
+};
+
 function LiqGradeChip({ grade }: { grade: string }) {
   const colors: Record<string, string> = {
     A: "var(--ios-green)",
@@ -142,9 +167,14 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
   );
 }
 
-export function MarketScanner() {
+interface MarketScannerProps {
+  showFilterPills?: boolean;
+}
+
+export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<ScannerCategory>("All");
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -164,6 +194,15 @@ export function MarketScanner() {
     return () => unsub();
   }, [markets]);
 
+  const filtered =
+    activeCategory === "All"
+      ? markets
+      : markets.filter((m) => {
+          const keywords = CATEGORY_KEYWORDS[activeCategory] ?? [];
+          const q = m.question.toLowerCase();
+          return keywords.some((kw) => q.includes(kw));
+        });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Search input */}
@@ -181,6 +220,38 @@ export function MarketScanner() {
         }}
       />
 
+      {/* Category filter pills */}
+      {showFilterPills && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {SCANNER_CATEGORIES.map((cat) => {
+            const isActive = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  padding: "5px 13px",
+                  borderRadius: 100,
+                  border: isActive
+                    ? "1px solid rgba(10,132,255,0.55)"
+                    : "1px solid rgba(255,255,255,0.10)",
+                  background: isActive ? "rgba(10,132,255,0.16)" : "rgba(255,255,255,0.04)",
+                  color: isActive ? "#0a84ff" : "rgba(255,255,255,0.40)",
+                  fontSize: 12,
+                  fontWeight: isActive ? 600 : 400,
+                  cursor: "pointer",
+                  transition: "all 160ms ease",
+                  fontFamily: "inherit",
+                  outline: "none",
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Market grid */}
       <div
         style={{
@@ -189,15 +260,15 @@ export function MarketScanner() {
           gap: 16,
         }}
       >
-        {markets.map((m) => (
+        {filtered.map((m) => (
           <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
         ))}
       </div>
 
-      {markets.length === 0 && (
+      {filtered.length === 0 && (
         <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
           <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
-            No markets found
+            {activeCategory !== "All" ? `No markets in "${activeCategory}"` : "No markets found"}
           </span>
         </div>
       )}

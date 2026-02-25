@@ -2,6 +2,7 @@
 
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { GlobalPanicButton } from "@/components/GlobalPanicButton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -14,10 +15,10 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: "🏠" },
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Portfolio", href: "/portfolio", icon: "💼" },
-  { label: "Trade History", href: "/trades", icon: "📈" },
+  { label: "Trade History", href: "/trade-history", icon: "📈" },
+  { label: "Market Analysis", href: "/market-analysis", icon: "🔮" },
   { label: "Risk Config", href: "/settings/risk", icon: "🛡️" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
-  { label: "🚨 Panic Mode", href: "/emergency/panic", icon: "🚨" },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -369,6 +370,9 @@ export default function RootLayout({
 
           {/* Toast notifications */}
           <ToastNotification />
+
+          {/* Global panic mode floating action button */}
+          <GlobalPanicButton />
 
           {/* Main content — offset by sidebar width */}
           <div

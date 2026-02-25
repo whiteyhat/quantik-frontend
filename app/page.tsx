@@ -523,14 +523,24 @@ function RiskLimitsCard() {
 
 // ─── System Status Panel ──────────────────────────────────────────────────────
 
-const AGENTS = [
-  { name: "Aura", role: "Sentiment", color: "#0a84ff", emoji: "🧠" },
-  { name: "Flux", role: "Liquidity", color: "#0a84ff", emoji: "💧" },
-  { name: "Oracle", role: "Forecasting", color: "#0a84ff", emoji: "🔮" },
-  { name: "Edge", role: "Calibration", color: "#ff9f0a", emoji: "⚡" },
-  { name: "Sigma", role: "Synthesis", color: "#0a84ff", emoji: "🎯" },
-  { name: "Clause", role: "Resolution", color: "#30d158", emoji: "📜" },
-  { name: "Lucifer", role: "Devil's Advocate", color: "#bf5af2", emoji: "👿" },
+interface AgentDef {
+  name: string;
+  role: string;
+  color: string;
+  emoji: string;
+  mockLatency: number;
+  mockConfidence: number;
+  mockLastAction: string;
+}
+
+const AGENTS: AgentDef[] = [
+  { name: "Aura", role: "Sentiment", color: "#0a84ff", emoji: "🧠", mockLatency: 184, mockConfidence: 0.87, mockLastAction: "Scored DOGE/BTC market +0.34" },
+  { name: "Flux", role: "Liquidity", color: "#0a84ff", emoji: "💧", mockLatency: 312, mockConfidence: 0.81, mockLastAction: "Graded ETH election market A" },
+  { name: "Oracle", role: "Forecasting", color: "#0a84ff", emoji: "🔮", mockLatency: 447, mockConfidence: 0.93, mockLastAction: "Estimated 68% YES on Trump tariffs" },
+  { name: "Edge", role: "Calibration", color: "#ff9f0a", emoji: "⚡", mockLatency: 128, mockConfidence: 0.76, mockLastAction: "Net EV +4.2% — BET_YES flagged" },
+  { name: "Sigma", role: "Synthesis", color: "#0a84ff", emoji: "🎯", mockLatency: 391, mockConfidence: 0.88, mockLastAction: "BET_YES $94 · 88% confidence" },
+  { name: "Clause", role: "Resolution", color: "#30d158", emoji: "📜", mockLatency: 209, mockConfidence: 0.72, mockLastAction: "Resolution risk LOW, 0 issues" },
+  { name: "Lucifer", role: "Devil's Advocate", color: "#bf5af2", emoji: "👿", mockLatency: 256, mockConfidence: 0.79, mockLastAction: "1 bias flag, DA score 0.31" },
 ];
 
 function SystemStatusPanel() {
@@ -599,75 +609,134 @@ function SystemStatusPanel() {
       </div>
 
       {/* Agent rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {AGENTS.map((agent, idx) => {
-          // Mocked: all agents show as idle with simulated run times
           const mockMsAgo = agentMockTimes[idx];
           const lastRunMin = Math.floor(mockMsAgo / 60_000);
           const lastRunLabel = lastRunMin < 1 ? "just now" : `${lastRunMin}m ago`;
+          const confPct = Math.round(agent.mockConfidence * 100);
+          const confColor =
+            agent.mockConfidence >= 0.85
+              ? "#30d158"
+              : agent.mockConfidence >= 0.75
+              ? "#ff9f0a"
+              : "#ff453a";
 
           return (
             <div
               key={agent.name}
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "7px 0",
+                flexDirection: "column",
+                gap: 4,
+                padding: "8px 0",
                 borderBottom: "1px solid rgba(255,255,255,0.04)",
               }}
             >
-              {/* Status dot */}
-              <span
-                style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: "#30d158",
-                  boxShadow: "0 0 6px rgba(48,209,88,0.5)",
-                  flexShrink: 0,
-                }}
-              />
+              {/* Top row: dot + name + role + latency */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: "#30d158",
+                    boxShadow: "0 0 5px rgba(48,209,88,0.5)",
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: BODY_SIZE,
+                    fontWeight: 600,
+                    color: agent.color,
+                    fontFamily: "monospace",
+                    flexShrink: 0,
+                    width: 58,
+                  }}
+                >
+                  {agent.emoji} {agent.name}
+                </span>
+                <span
+                  style={{
+                    fontSize: META_SIZE,
+                    color: "rgba(255,255,255,0.30)",
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {agent.role}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: LABEL_SIZE,
+                    color: "rgba(255,255,255,0.25)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {lastRunLabel}
+                </span>
+              </div>
 
-              {/* Name */}
-              <span
+              {/* Bottom row: latency + confidence + last action */}
+              <div
                 style={{
-                  fontSize: BODY_SIZE,
-                  fontWeight: 600,
-                  color: agent.color,
-                  fontFamily: "monospace",
-                  flexShrink: 0,
-                  width: 58,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingLeft: 15,
                 }}
               >
-                {agent.emoji} {agent.name}
-              </span>
+                {/* Latency */}
+                <span
+                  style={{
+                    fontSize: LABEL_SIZE,
+                    fontFamily: "monospace",
+                    color: "rgba(255,255,255,0.35)",
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {agent.mockLatency}ms
+                </span>
 
-              {/* Role */}
-              <span
-                style={{
-                  fontSize: META_SIZE,
-                  color: "rgba(255,255,255,0.35)",
-                  flex: 1,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {agent.role}
-              </span>
+                {/* Confidence */}
+                <span
+                  style={{
+                    fontSize: LABEL_SIZE,
+                    fontFamily: "monospace",
+                    fontWeight: 600,
+                    color: confColor,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: `color-mix(in srgb, ${confColor} 10%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${confColor} 20%, transparent)`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {confPct}%
+                </span>
 
-              {/* Last run */}
-              <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: LABEL_SIZE,
-                  color: "rgba(255,255,255,0.25)",
-                  flexShrink: 0,
-                }}
-              >
-                {lastRunLabel}
-              </span>
+                {/* Last action */}
+                <span
+                  style={{
+                    fontSize: LABEL_SIZE,
+                    color: "rgba(255,255,255,0.22)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    flex: 1,
+                  }}
+                >
+                  {agent.mockLastAction}
+                </span>
+              </div>
             </div>
           );
         })}
@@ -720,7 +789,7 @@ function MarketScannerPanel() {
         <SectionHeader title="Market Scanner" subtitle="Live CLOB markets · Layer 0" />
       </div>
       <div style={{ padding: "0 16px 16px" }}>
-        <MarketScanner />
+        <MarketScanner showFilterPills />
       </div>
     </div>
   );
