@@ -23,7 +23,13 @@ export interface PricePoint {
 
 export interface WalletBalance {
   address: string;
+  // Legacy field — kept for backward compatibility
   usdc: number;
+  // On-chain balances (new backend fields)
+  onChainUsdc?: number;
+  onChainUsdcFormatted?: string;
+  pol?: number;
+  polFormatted?: string;
   pnl: number;
   pnlPct: number;
   winRate: number;

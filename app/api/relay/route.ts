@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
 const RELAY_SYSTEM_PROMPT = `You are Relay 🤝, the human-facing intelligence interface for Quantik — a multi-agent Polymarket prediction market trading system.
 
 You help the user understand their portfolio, active markets, agent decisions, and risk configuration. You communicate with the intelligence of all 7 specialist agents:
@@ -22,28 +20,20 @@ Current system context:
 - 7 agents run as a pipeline when a market is selected in Market Analysis`;
 
 export async function POST(req: NextRequest) {
+  // Startup check — fail fast with a clear error if key is missing
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 503 });
+  }
+
   const { message, history = [] } = await req.json();
 
   if (!message?.trim()) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: RELAY_SYSTEM_PROMPT,
-  });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-  const chat = model.startChat({
-    history: history.map((m: { role: string; content: string }) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }],
-    })),
-  });
-
-  const result = await chat.sendMessage(message);
-  const reply = result.response.text();
-
-  // Detect routing
+  // Detect routing before sending
   const lower = message.toLowerCase();
   let routedTo: string | undefined;
   if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("usdc"))
@@ -57,10 +47,46 @@ export async function POST(req: NextRequest) {
   else if (lower.includes("liquidity") || lower.includes("order book") || lower.includes("spread"))
     routedTo = "flux";
 
-  return NextResponse.json({
-    reply,
-    agent: "relay",
-    routedTo,
-    timestamp: Date.now(),
-  });
+  const chatHistory = history.map((m: { role: string; content: string }) => ({
+    role: m.role === "user" ? "user" : "model",
+    parts: [{ text: m.content }],
+  }));
+
+  // Try gemini-2.0-flash first, fall back to gemini-1.5-flash if model not found
+  const modelNames = ["gemini-2.0-flash", "gemini-1.5-flash"];
+
+  for (const modelName of modelNames) {
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: RELAY_SYSTEM_PROMPT,
+    });
+
+    const chat = model.startChat({ history: chatHistory });
+
+    try {
+      const result = await chat.sendMessage(message);
+      const reply = result.response.text();
+      return NextResponse.json({ reply, agent: "relay", routedTo, timestamp: Date.now() });
+    } catch (err) {
+      console.error(`[Relay] Gemini error with model ${modelName}:`, err);
+
+      // If this is a model-not-found error, try the next model
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const isModelNotFound =
+        errMsg.toLowerCase().includes("not found") ||
+        errMsg.toLowerCase().includes("model") ||
+        errMsg.toLowerCase().includes("404");
+
+      if (isModelNotFound && modelName !== modelNames[modelNames.length - 1]) {
+        console.warn(`[Relay] Model ${modelName} unavailable, falling back…`);
+        continue;
+      }
+
+      // All models exhausted or non-model error — return specific error
+      return NextResponse.json({ error: errMsg }, { status: 500 });
+    }
+  }
+
+  // Should not reach here, but satisfy TypeScript
+  return NextResponse.json({ error: "All models exhausted" }, { status: 500 });
 }

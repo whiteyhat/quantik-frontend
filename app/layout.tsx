@@ -23,9 +23,18 @@ const NAV_ITEMS = [
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
+// localStorage key for relay first-open tracking
+const RELAY_LS_KEY = "relay_hasBeenOpened";
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-function Sidebar() {
+interface SidebarProps {
+  relayOpen: boolean;
+  relayPulsing: boolean;
+  onToggleRelay: () => void;
+}
+
+function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -124,11 +133,14 @@ function Sidebar() {
         })}
       </nav>
 
-      {/* Version footer */}
+      {/* Footer — version text + Relay trigger button (rightmost) */}
       <div
         style={{
-          padding: "12px 20px 16px",
+          padding: "12px 16px 16px",
           borderTop: "1px solid rgba(255,255,255,0.04)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
         <span
@@ -140,6 +152,55 @@ function Sidebar() {
         >
           v0.1.0 · Quantik
         </span>
+
+        {/* Relay trigger — rightmost in footer */}
+        <div style={{ position: "relative" }}>
+          {/* Pulse ring */}
+          {relayPulsing && (
+            <span
+              className="relay-pulse-ring"
+              style={{
+                position: "absolute",
+                inset: -6,
+                borderRadius: "50%",
+                border: "2px solid rgba(10,132,255,0.7)",
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            />
+          )}
+          <button
+            onClick={onToggleRelay}
+            aria-label={relayOpen ? "Close Relay chat" : "Open Relay chat"}
+            title="Chat with Quantik Intelligence"
+            style={{
+              position: "relative",
+              zIndex: 1,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: relayOpen
+                ? "rgba(10,132,255,0.25)"
+                : relayPulsing
+                ? "rgba(10,132,255,0.18)"
+                : "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: `1px solid ${relayOpen ? "rgba(10,132,255,0.45)" : "rgba(255,255,255,0.12)"}`,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 15,
+              color: "rgba(255,255,255,0.85)",
+              outline: "none",
+              transition: "all 200ms ease",
+              boxShadow: relayPulsing ? "0 0 14px rgba(10,132,255,0.40)" : undefined,
+            }}
+          >
+            {relayOpen ? "✕" : "🤝"}
+          </button>
+        </div>
       </div>
     </aside>
   );
@@ -237,6 +298,18 @@ function TopWalletBar() {
   const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = pnl >= 0 ? "+" : "";
 
+  // Use onChainUsdc if available (new backend), fall back to legacy usdc field
+  const usdcValue = wallet ? (wallet.onChainUsdc ?? wallet.usdc ?? 0) : null;
+  const usdcDisplay = usdcValue !== null ? fmtUSDC(usdcValue) : "···";
+
+  // POL balance — use formatted string if available, otherwise format the raw number
+  const polDisplay = wallet
+    ? (wallet.polFormatted ?? (wallet.pol != null ? wallet.pol.toFixed(2) : "0.00"))
+    : "···";
+
+  // Total value = on-chain USDC (primary balance)
+  const totalDisplay = usdcValue !== null ? fmtUSDC(usdcValue) : "···";
+
   return (
     <div
       style={{
@@ -325,11 +398,13 @@ function TopWalletBar() {
 
       <Separator />
 
-      <MetricItem label="USDC" value={wallet ? fmtUSDC(wallet.usdc) : "···"} />
+      {/* USDC — reads onChainUsdc (new) or falls back to legacy usdc */}
+      <MetricItem label="USDC" value={usdcDisplay} />
 
       <Separator />
 
-      <MetricItem label="POL" value="0.00" />
+      {/* POL balance */}
+      <MetricItem label="POL" value={polDisplay} />
 
       <Separator />
 
@@ -345,10 +420,7 @@ function TopWalletBar() {
 
       <Separator />
 
-      <MetricItem
-        label="TOTAL VALUE"
-        value={wallet ? fmtUSDC(wallet.usdc) : "···"}
-      />
+      <MetricItem label="TOTAL VALUE" value={totalDisplay} />
 
       {/* Agent status dot — pushed to right */}
       <div
@@ -392,6 +464,23 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [relayOpen, setRelayOpen] = useState(false);
+  // Initialize pulsing directly from localStorage (lazy initializer avoids effect + setState)
+  const [relayPulsing, setRelayPulsing] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(RELAY_LS_KEY) !== "true";
+  });
+
+  const handleToggleRelay = useCallback(() => {
+    setRelayOpen((prev) => !prev);
+  }, []);
+
+  // Called by RelayChatSidebar on first open to stop pulsing
+  const handleRelayFirstOpen = useCallback(() => {
+    localStorage.setItem(RELAY_LS_KEY, "true");
+    setRelayPulsing(false);
+  }, []);
+
   return (
     <html lang="en">
       <head>
@@ -406,11 +495,19 @@ export default function RootLayout({
           {/* Animated gradient background */}
           <div className="crystal-bg" />
 
-          {/* Left sidebar */}
-          <Sidebar />
+          {/* Left sidebar — relay button lives in its footer */}
+          <Sidebar
+            relayOpen={relayOpen}
+            relayPulsing={relayPulsing}
+            onToggleRelay={handleToggleRelay}
+          />
 
-          {/* Relay chat sidebar — left edge drawer */}
-          <RelayChatSidebar />
+          {/* Relay chat drawer — controlled by layout state */}
+          <RelayChatSidebar
+            open={relayOpen}
+            onToggle={handleToggleRelay}
+            onFirstOpen={handleRelayFirstOpen}
+          />
 
           {/* Toast notifications */}
           <ToastNotification />
