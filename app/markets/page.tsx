@@ -18,44 +18,11 @@ const panelStyle: React.CSSProperties = {
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
-const HEADLINE_SIZE = 14;
 
 const CATEGORIES = ["All", "Crypto", "Politics", "Sports", "Pop Culture", "Science", "World Events", "Business"] as const;
 type Category = (typeof CATEGORIES)[number];
 
-// ─── Category badge ───────────────────────────────────────────────────────────
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Crypto: "#ff9f0a",
-  Politics: "#bf5af2",
-  Sports: "#30d158",
-  "Pop Culture": "#ff453a",
-  Science: "#0a84ff",
-  "World Events": "#64d2ff",
-  Business: "#ffd60a",
-};
-
-function CategoryBadge({ category }: { category: string }) {
-  const color = CATEGORY_COLORS[category] ?? "#6e6e73";
-  return (
-    <span
-      style={{
-        fontSize: LABEL_SIZE,
-        fontWeight: 600,
-        padding: "2px 8px",
-        borderRadius: 6,
-        background: `color-mix(in srgb, ${color} 15%, transparent)`,
-        color,
-        border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
-        fontFamily: "monospace",
-        letterSpacing: "0.04em",
-        flexShrink: 0,
-      }}
-    >
-      {category}
-    </span>
-  );
-}
 
 // ─── Market card ──────────────────────────────────────────────────────────────
 
@@ -218,7 +185,6 @@ export default function MarketsPage() {
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     api.getMarkets(search || undefined)
       .then(setMarkets)
       .catch(() => {})

@@ -1,14 +1,15 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* ─── Design Tokens (CSS Custom Properties) ────────────────────────────────── */
 :root {
   --bg-void: #050508;
   --glass-surface: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shine: rgba(255, 255, 255, 0.08);
 
   --text-primary: rgba(255, 255, 255, 0.92);
-  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-secondary: rgba(255, 255, 255, 0.60);
   --text-tertiary: rgba(255, 255, 255, 0.30);
 
   --ios-blue: #007AFF;
@@ -40,16 +41,16 @@
 @theme inline {
   --color-bg-void: #050508;
   --color-glass-surface: rgba(255, 255, 255, 0.06);
-  --color-glass-border: rgba(255, 255, 255, 0.10);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
   --color-ios-blue: #007AFF;
   --color-ios-green: #30D158;
   --color-ios-red: #FF453A;
   --color-ios-orange: #FF9F0A;
   --color-ios-purple: #BF5AF2;
   --color-text-primary: rgba(255, 255, 255, 0.92);
-  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-text-secondary: rgba(255, 255, 255, 0.60);
   --color-text-tertiary: rgba(255, 255, 255, 0.30);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
 
   --animate-float-orb-1: float-orb-1 20s ease-in-out infinite alternate;
@@ -107,7 +108,7 @@ html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -157,30 +158,30 @@ body {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .glass-card-elevated {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .glass-card-interactive {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -189,12 +190,13 @@ body {
 }
 
 .glass-card-interactive:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
   transform: translateY(-2px);
   box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    0 0 20px rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .glass-card-interactive:active {
@@ -407,3 +409,24 @@ body {
 .json-number { color: var(--ios-orange); }
 .json-boolean { color: var(--ios-purple); }
 .json-null { color: var(--text-tertiary); }
+
+/* ─── Relay Pulse Ring ─────────────────────────────────────────────────────── */
+@keyframes relayPulseRing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes relayPulseDot {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.relay-pulse-ring {
+  animation: relayPulseRing 1.5s ease-out infinite;
+}
+
+/* ─── Agent dot pulse ──────────────────────────────────────────────────────── */
+@keyframes relayPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

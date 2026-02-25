@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib/api";
 
+// ─── Safe number formatter (guards against undefined/null from API) ───────────
+const fmt1 = (n: unknown) => ((n as number) ?? 0).toFixed(1);
+
 // ─── Style constants ──────────────────────────────────────────────────────────
 
 const panelStyle: React.CSSProperties = {
@@ -23,16 +26,6 @@ const HEADLINE_SIZE = 14;
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface PortfolioSummary {
-  usdc: number;
-  openPositions: number;
-  totalValue: number;
-  pnl: number;
-  pnlPct: number;
-  winRate: number;
-  totalTrades: number;
-}
 
 interface RiskSummary {
   drawdown: number;
@@ -128,6 +121,39 @@ function MetricTile({
   );
 }
 
+// ─── Skeleton tile ────────────────────────────────────────────────────────────
+
+function SkeletonTile() {
+  return (
+    <div
+      style={{
+        ...panelStyle,
+        padding: "16px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          width: 80,
+          height: 10,
+          borderRadius: 5,
+          background: "rgba(255,255,255,0.07)",
+        }}
+      />
+      <div
+        style={{
+          width: 120,
+          height: 22,
+          borderRadius: 6,
+          background: "rgba(255,255,255,0.05)",
+        }}
+      />
+    </div>
+  );
+}
+
 // ─── Positions Table ──────────────────────────────────────────────────────────
 
 function PositionsTable({ positions }: { positions: Position[] }) {
@@ -175,8 +201,9 @@ function PositionsTable({ positions }: { positions: Position[] }) {
           {positions.map((p) => {
             const isYes = p.direction === "YES";
             const dirColor = isYes ? "#30d158" : "#ff453a";
-            const pnl = p.pnl ?? 0;
-            const pnlPct = p.pnlPct ?? 0;
+            // Guard all numeric fields with ?? 0 before any arithmetic/toFixed
+            const pnl = (p.pnl ?? 0) as number;
+            const pnlPct = (p.pnlPct ?? 0) as number;
             const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
             const pnlSign = pnl >= 0 ? "+" : "";
 
@@ -219,17 +246,17 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                   <span
                     style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)", fontFamily: "monospace" }}
                   >
-                    {fmtUSDC(p.size)}
+                    {fmtUSDC(p.size ?? 0)}
                   </span>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
                   <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.50)", fontFamily: "monospace" }}>
-                    {fmtPrice(p.entryPrice)}
+                    {fmtPrice(p.entryPrice ?? 0)}
                   </span>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
                   <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)", fontFamily: "monospace" }}>
-                    {fmtPrice(p.currentPrice)}
+                    {fmtPrice(p.currentPrice ?? 0)}
                   </span>
                 </td>
                 <td style={{ padding: "10px 12px" }}>
@@ -253,7 +280,7 @@ function PositionsTable({ positions }: { positions: Position[] }) {
                       fontFamily: "monospace",
                     }}
                   >
-                    {pnlSign}{pnlPct.toFixed(1)}%
+                    {pnlSign}{fmt1(pnlPct)}%
                   </span>
                 </td>
               </tr>
@@ -270,7 +297,12 @@ function PositionsTable({ positions }: { positions: Position[] }) {
 function RiskPanel({ risk }: { risk: RiskSummary | null }) {
   if (!risk) return null;
 
-  const drawdownPct = (risk.drawdown / risk.drawdownLimit) * 100;
+  // Guard all risk fields with ?? 0 to prevent toFixed on undefined
+  const drawdown = (risk.drawdown ?? 0) as number;
+  const drawdownLimit = ((risk.drawdownLimit ?? 1) as number) || 1; // avoid division by zero
+  const kellyUtilization = (risk.kellyUtilization ?? 0) as number;
+
+  const drawdownPct = (drawdown / drawdownLimit) * 100;
   const drawdownColor =
     drawdownPct < 50 ? "#30d158" : drawdownPct < 80 ? "#ff9f0a" : "#ff453a";
   const statusColor =
@@ -300,7 +332,7 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
             border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)`,
           }}
         >
-          {risk.status}
+          {risk.status ?? "NORMAL"}
         </span>
       </div>
 
@@ -315,7 +347,7 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
             Drawdown
           </span>
           <span style={{ fontFamily: "monospace", fontSize: META_SIZE, color: drawdownColor }}>
-            {risk.drawdown.toFixed(1)}% / {risk.drawdownLimit}%
+            {fmt1(drawdown)}% / {fmt1(drawdownLimit)}%
           </span>
         </div>
         <div
@@ -324,7 +356,7 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
           <div
             style={{
               height: "100%",
-              width: `${drawdownPct}%`,
+              width: `${Math.min(drawdownPct, 100)}%`,
               borderRadius: 3,
               background: drawdownColor,
               transition: "width 600ms ease",
@@ -344,7 +376,7 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
             Kelly Utilization
           </span>
           <span style={{ fontFamily: "monospace", fontSize: META_SIZE, color: "rgba(255,255,255,0.65)" }}>
-            {risk.kellyUtilization}% / 100%
+            {fmt1(kellyUtilization)}% / 100%
           </span>
         </div>
         <div
@@ -353,7 +385,7 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
           <div
             style={{
               height: "100%",
-              width: `${risk.kellyUtilization}%`,
+              width: `${Math.min(kellyUtilization, 100)}%`,
               borderRadius: 3,
               background: "#0a84ff",
               transition: "width 600ms ease",
@@ -401,8 +433,14 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      api.getBalance().then(setWallet),
-      api.getPositions().then(setPositions),
+      api.getBalance().then(setWallet).catch(() => {}),
+      api.getPositions()
+        .then((data) => {
+          // Guard: API must return an array
+          const safe = Array.isArray(data) ? data : (data as Record<string, unknown>)?.positions ?? [];
+          setPositions(safe as Position[]);
+        })
+        .catch(() => {}),
       fetch(`${BASE_URL}/api/portfolio/risk`)
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => d && setRisk(d))
@@ -411,13 +449,19 @@ export default function PortfolioPage() {
 
     const iv = setInterval(() => {
       api.getBalance().then(setWallet).catch(() => {});
-      api.getPositions().then(setPositions).catch(() => {});
+      api.getPositions()
+        .then((data) => {
+          const safe = Array.isArray(data) ? data : [];
+          setPositions(safe as Position[]);
+        })
+        .catch(() => {});
     }, 15_000);
 
     return () => clearInterval(iv);
   }, []);
 
-  const totalPnl = positions.reduce((acc, p) => acc + (p.pnl ?? 0), 0);
+  // Guard all arithmetic against null/undefined positions
+  const totalPnl = positions.reduce((acc, p) => acc + ((p.pnl ?? 0) as number), 0);
   const pnlColor = totalPnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = totalPnl >= 0 ? "+" : "";
 
@@ -443,16 +487,20 @@ export default function PortfolioPage() {
       </div>
 
       {loading ? (
-        <div
-          style={{
-            ...panelStyle,
-            padding: 40,
-            textAlign: "center",
-            fontSize: BODY_SIZE,
-            color: "rgba(255,255,255,0.25)",
-          }}
-        >
-          Loading portfolio…
+        /* Skeleton loading state — never crashes on null data */
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {[1, 2, 3, 4].map((i) => <SkeletonTile key={i} />)}
+          </div>
+          <div style={{ ...panelStyle, padding: 40, textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
+            Loading portfolio…
+          </div>
         </div>
       ) : (
         <>
@@ -466,7 +514,7 @@ export default function PortfolioPage() {
           >
             <MetricTile
               label="USDC Balance"
-              value={wallet ? fmtUSDC(wallet.usdc) : "···"}
+              value={wallet ? fmtUSDC(wallet.usdc ?? 0) : "···"}
             />
             <MetricTile
               label="Open Positions"
@@ -479,8 +527,8 @@ export default function PortfolioPage() {
             />
             <MetricTile
               label="Win Rate"
-              value={wallet ? `${Math.round((wallet.winRate ?? 0) * 100)}%` : "···"}
-              sub={wallet ? `${wallet.totalTrades} trades` : undefined}
+              value={wallet ? `${Math.round(((wallet.winRate ?? 0) as number) * 100)}%` : "···"}
+              sub={wallet ? `${wallet.totalTrades ?? 0} trades` : undefined}
             />
           </div>
 

@@ -20,7 +20,7 @@ import {
 // ─── Style constants ──────────────────────────────────────────────────────────
 
 const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
+  background: "rgba(255,255,255,0.06)",
   backdropFilter: "blur(24px) saturate(180%)",
   WebkitBackdropFilter: "blur(24px) saturate(180%)",
   border: "1px solid rgba(255,255,255,0.09)",
@@ -53,52 +53,111 @@ interface AgentState {
   error?: string;
   startedAt?: number;
   finishedAt?: number;
+  streamText?: string; // live streaming text
 }
+
+// ─── Safe number guard ────────────────────────────────────────────────────────
+
+const safeFixed = (n: unknown, digits = 2) =>
+  ((n as number) ?? 0).toFixed(digits);
 
 // ─── Agent summary lines ──────────────────────────────────────────────────────
 
 function agentSummary(key: string, data: unknown): string | null {
   if (!data) return null;
-  switch (key) {
-    case "aura": {
-      const d = data as AuraResult;
-      return `Score: ${d.sentiment_score > 0 ? "+" : ""}${d.sentiment_score.toFixed(2)}  Echo: ${d.echo_chamber ? "⚠ YES" : "✓ NO"}`;
+  try {
+    switch (key) {
+      case "aura": {
+        const d = data as AuraResult;
+        const score = (d.sentiment_score ?? 0) as number;
+        return `Score: ${score > 0 ? "+" : ""}${safeFixed(score)}  Echo: ${d.echo_chamber ? "⚠ YES" : "✓ NO"}`;
+      }
+      case "flux": {
+        const d = data as FluxResult;
+        return `Grade: ${d.liquidity_grade ?? "—"}  Spread: ${safeFixed(d.spread, 1)}¢  Whales: ${d.whale_signals ?? 0}`;
+      }
+      case "oracle": {
+        const d = data as OracleResult;
+        return `Estimate: ${Math.round(((d.prob_estimate ?? 0) as number) * 100)}%  Market: ${Math.round(((d.market_implied ?? 0) as number) * 100)}%  Confidence: ${safeFixed((d.confidence ?? 0) as number * 100, 0)}%`;
+      }
+      case "edge": {
+        const d = data as EdgeResult;
+        const ev = (d.net_ev ?? 0) as number;
+        return `Grade: ${d.ev_grade ?? "—"}  EV: ${ev > 0 ? "+" : ""}${safeFixed(ev, 1)}%  Kelly: ${safeFixed(d.kelly, 1)}%`;
+      }
+      case "clause": {
+        const d = data as ClauseResult;
+        return `Resolution Risk: ${d.resolution_risk ?? "—"}  Issues: ${Array.isArray(d.technicality_risks) ? d.technicality_risks.length : 0}`;
+      }
+      case "lucifer": {
+        const d = data as LuciferResult;
+        return `DA Score: ${safeFixed(d.devils_advocate_score)}  Biases: ${Array.isArray(d.bias_flags) ? d.bias_flags.length : 0}`;
+      }
+      case "sigma": {
+        const d = data as SigmaResult;
+        return `${(d.decision ?? "PASS").replace("_", " ")}  Confidence: ${d.confidence ?? 0}%  Size: $${safeFixed(d.size_usd, 0)}`;
+      }
+      default:
+        return null;
     }
-    case "flux": {
-      const d = data as FluxResult;
-      return `Grade: ${d.liquidity_grade}  Spread: ${d.spread.toFixed(1)}¢  Whales: ${d.whale_signals}`;
-    }
-    case "oracle": {
-      const d = data as OracleResult;
-      return `Estimate: ${Math.round(d.prob_estimate * 100)}%  Market: ${Math.round(d.market_implied * 100)}%  Confidence: ${(d.confidence * 100).toFixed(0)}%`;
-    }
-    case "edge": {
-      const d = data as EdgeResult;
-      return `Grade: ${d.ev_grade}  EV: ${d.net_ev > 0 ? "+" : ""}${d.net_ev.toFixed(1)}%  Kelly: ${d.kelly.toFixed(1)}%`;
-    }
-    case "clause": {
-      const d = data as ClauseResult;
-      return `Resolution Risk: ${d.resolution_risk}  Issues: ${d.technicality_risks.length}`;
-    }
-    case "lucifer": {
-      const d = data as LuciferResult;
-      return `DA Score: ${d.devils_advocate_score.toFixed(2)}  Biases: ${d.bias_flags.length}`;
-    }
-    case "sigma": {
-      const d = data as SigmaResult;
-      return `${d.decision.replace("_", " ")}  Confidence: ${d.confidence}%  Size: $${d.size_usd.toFixed(0)}`;
-    }
-    default:
-      return null;
+  } catch {
+    return null;
   }
+}
+
+// ─── Confidence badge ─────────────────────────────────────────────────────────
+
+function ConfidenceBadge({ agentKey, data }: { agentKey: string; data: unknown }) {
+  if (!data) return null;
+  let confidence: number | null = null;
+
+  try {
+    switch (agentKey) {
+      case "oracle":
+        confidence = Math.round(((data as OracleResult).confidence ?? 0) * 100);
+        break;
+      case "sigma":
+        confidence = (data as SigmaResult).confidence ?? null;
+        break;
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+
+  if (confidence === null) return null;
+
+  const color =
+    confidence >= 70 ? "#30d158" : confidence >= 40 ? "#ff9f0a" : "#ff453a";
+
+  return (
+    <span
+      style={{
+        fontSize: LABEL_SIZE,
+        fontWeight: 700,
+        padding: "2px 7px",
+        borderRadius: 5,
+        background: `color-mix(in srgb, ${color} 15%, transparent)`,
+        color,
+        border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
+        fontFamily: "monospace",
+        flexShrink: 0,
+      }}
+    >
+      {confidence}%
+    </span>
+  );
 }
 
 // ─── Agent Step Row ───────────────────────────────────────────────────────────
 
 function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: AgentState }) {
-  const { status, data, error, startedAt, finishedAt } = state;
+  const { status, data, error, startedAt, finishedAt, streamText } = state;
   const elapsed =
-    finishedAt && startedAt ? `${((finishedAt - startedAt) / 1000).toFixed(1)}s` : null;
+    finishedAt && startedAt
+      ? `${(((finishedAt - startedAt) / 1000) as number).toFixed(1)}s`
+      : null;
 
   const dotColor =
     status === "done"
@@ -110,13 +169,12 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
       : "rgba(255,255,255,0.15)";
 
   const dotPulse = status === "running";
+  const summary = status === "done" ? agentSummary(agentCfg.key, data) : null;
 
-  const summary = agentSummary(agentCfg.key, data);
-
-  // For Lucifer, show counter-thesis if available
-  const luciferData = agentCfg.key === "lucifer" ? (data as LuciferResult | undefined) : undefined;
-  // For Sigma, show thesis
-  const sigmaData = agentCfg.key === "sigma" ? (data as SigmaResult | undefined) : undefined;
+  const luciferData =
+    agentCfg.key === "lucifer" && status === "done" ? (data as LuciferResult | undefined) : undefined;
+  const sigmaData =
+    agentCfg.key === "sigma" && status === "done" ? (data as SigmaResult | undefined) : undefined;
 
   return (
     <div
@@ -128,7 +186,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Dot */}
+        {/* Status dot */}
         <span
           style={{
             width: 8,
@@ -137,7 +195,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
             background: dotColor,
             flexShrink: 0,
             boxShadow: dotPulse ? `0 0 8px ${dotColor}` : undefined,
-            animation: dotPulse ? "pulse 1.2s ease-in-out infinite" : undefined,
+            animation: dotPulse ? "relayPulse 1.2s ease-in-out infinite" : undefined,
           }}
         />
 
@@ -166,11 +224,16 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
           }}
         >
           {status === "running"
-            ? `${agentCfg.role} — running…`
+            ? streamText ?? `${agentCfg.role} — running…`
             : status === "error"
             ? `Error: ${error ?? "unknown"}`
             : summary ?? agentCfg.role}
         </span>
+
+        {/* Confidence badge (shown when done) */}
+        {status === "done" && (
+          <ConfidenceBadge agentKey={agentCfg.key} data={data} />
+        )}
 
         {/* Elapsed */}
         {elapsed && (
@@ -202,7 +265,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
           {status === "done"
             ? "DONE"
             : status === "running"
-            ? "RUNNING"
+            ? "RUN"
             : status === "error"
             ? "ERR"
             : "IDLE"}
@@ -253,11 +316,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
 
 // ─── Pipeline progress bar ────────────────────────────────────────────────────
 
-function PipelineProgress({
-  agents,
-}: {
-  agents: Record<string, AgentState>;
-}) {
+function PipelineProgress({ agents }: { agents: Record<string, AgentState> }) {
   const total = AGENTS.length;
   const done = AGENTS.filter((a) => agents[a.key]?.status === "done").length;
   const running = AGENTS.filter((a) => agents[a.key]?.status === "running").length;
@@ -265,21 +324,11 @@ function PipelineProgress({
 
   return (
     <div style={{ marginBottom: 16, padding: "0 16px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 6,
-        }}
-      >
-        <span
-          style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}
-        >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}>
           PIPELINE PROGRESS
         </span>
-        <span
-          style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}
-        >
+        <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}>
           {done} / {total} agents
         </span>
       </div>
@@ -307,13 +356,7 @@ function PipelineProgress({
 
 // ─── Sigma Decision Card ──────────────────────────────────────────────────────
 
-function SigmaDecisionCard({
-  sigma,
-  market,
-}: {
-  sigma: SigmaResult;
-  market: Market;
-}) {
+function SigmaDecisionCard({ sigma }: { sigma: SigmaResult }) {
   const isBet = sigma.decision !== "PASS";
   const isYes = sigma.decision === "BET_YES";
   const accentColor = !isBet ? "rgba(255,255,255,0.35)" : isYes ? "#30d158" : "#ff453a";
@@ -333,14 +376,7 @@ function SigmaDecisionCard({
         border: `1px solid ${isBet ? (isYes ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)") : "rgba(255,255,255,0.08)"}`,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 8,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <span
           style={{
             fontSize: 11,
@@ -366,22 +402,15 @@ function SigmaDecisionCard({
         </span>
       </div>
 
-      <div
-        style={{
-          fontSize: BODY_SIZE,
-          color: "rgba(255,255,255,0.55)",
-          lineHeight: 1.5,
-          marginBottom: 10,
-        }}
-      >
+      <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.55)", lineHeight: 1.5, marginBottom: 10 }}>
         {sigma.thesis}
       </div>
 
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
         {[
-          { label: "Confidence", value: `${sigma.confidence}%` },
-          { label: "Position Size", value: fmtUSDC(sigma.size_usd) },
-          { label: "Entry Target", value: `${Math.round(sigma.entry_price * 100)}¢` },
+          { label: "Confidence", value: `${sigma.confidence ?? 0}%` },
+          { label: "Position Size", value: fmtUSDC(sigma.size_usd ?? 0) },
+          { label: "Entry Target", value: `${Math.round(((sigma.entry_price ?? 0) as number) * 100)}¢` },
         ].map((m) => (
           <div key={m.label}>
             <span
@@ -413,9 +442,41 @@ function SigmaDecisionCard({
   );
 }
 
-// ─── Market list item ─────────────────────────────────────────────────────────
+// ─── Liquidity grade badge ────────────────────────────────────────────────────
 
-function MarketListItem({
+function LiquidityBadge({ grade }: { grade: string }) {
+  const color =
+    grade === "A"
+      ? "#30d158"
+      : grade === "B"
+      ? "#0a84ff"
+      : grade === "C"
+      ? "#ff9f0a"
+      : "#ff453a";
+
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 700,
+        padding: "1px 6px",
+        borderRadius: 4,
+        background: `color-mix(in srgb, ${color} 15%, transparent)`,
+        color,
+        border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
+        fontFamily: "monospace",
+        letterSpacing: "0.06em",
+        flexShrink: 0,
+      }}
+    >
+      {grade}
+    </span>
+  );
+}
+
+// ─── Market card (left panel) ─────────────────────────────────────────────────
+
+function MarketCard({
   market,
   isSelected,
   isRunning,
@@ -426,7 +487,8 @@ function MarketListItem({
   isRunning: boolean;
   onClick: () => void;
 }) {
-  const yesPct = Math.round((market.yesPrice ?? 0) * 100);
+  const yesPct = Math.round(((market.yesPrice ?? 0) as number) * 100);
+  const noPct = Math.round(((market.noPrice ?? 0) as number) * 100);
 
   return (
     <button
@@ -434,10 +496,8 @@ function MarketListItem({
       style={{
         width: "100%",
         textAlign: "left",
-        padding: "12px 16px",
-        background: isSelected
-          ? "rgba(10,132,255,0.12)"
-          : "transparent",
+        padding: "14px 16px",
+        background: isSelected ? "rgba(10,132,255,0.10)" : "transparent",
         border: "none",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         borderLeft: isSelected ? "3px solid #0a84ff" : "3px solid transparent",
@@ -445,60 +505,78 @@ function MarketListItem({
         transition: "background 150ms",
       }}
     >
+      {/* Market title */}
       <div
         style={{
           fontSize: BODY_SIZE,
           fontWeight: isSelected ? 600 : 400,
-          color: isSelected ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.65)",
+          color: isSelected ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.70)",
           display: "-webkit-box",
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
           overflow: "hidden",
           lineHeight: 1.4,
-          marginBottom: 6,
+          marginBottom: 8,
         }}
       >
         {market.question}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+
+      {/* Price row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
         <span
           style={{
             fontSize: LABEL_SIZE,
             color: "#30d158",
             fontFamily: "monospace",
-            fontWeight: 600,
+            fontWeight: 700,
           }}
         >
-          {yesPct}¢
+          YES {yesPct}¢
         </span>
         <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.20)" }}>·</span>
         <span
           style={{
             fontSize: LABEL_SIZE,
-            color: "rgba(255,255,255,0.30)",
+            color: "#ff453a",
+            fontFamily: "monospace",
+            fontWeight: 700,
+          }}
+        >
+          NO {noPct}¢
+        </span>
+        <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.20)" }}>·</span>
+        <span
+          style={{
+            fontSize: LABEL_SIZE,
+            color: "rgba(255,255,255,0.35)",
             fontFamily: "monospace",
           }}
         >
-          {fmtUSDC(market.volume)}
+          Vol: {fmtUSDC(market.volume ?? 0)}
         </span>
+      </div>
+
+      {/* Bottom row: category badge + running indicator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <LiquidityBadge grade={market.liquidityGrade ?? "C"} />
         {isRunning && isSelected && (
-          <>
-            <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.20)" }}>·</span>
-            <span style={{ fontSize: LABEL_SIZE, color: "#ff9f0a", fontFamily: "monospace" }}>
-              ⏳ analyzing…
-            </span>
-          </>
+          <span style={{ fontSize: LABEL_SIZE, color: "#ff9f0a", fontFamily: "monospace" }}>
+            ⏳ analyzing…
+          </span>
         )}
       </div>
     </button>
   );
 }
 
-// ─── Market Analysis Page ─────────────────────────────────────────────────────
+// ─── Default agent states ─────────────────────────────────────────────────────
 
 function defaultAgentStates(): Record<string, AgentState> {
   return Object.fromEntries(AGENTS.map((a) => [a.key, { status: "idle" as const }]));
 }
+
+// ─── Market Analysis Page ─────────────────────────────────────────────────────
 
 export default function MarketAnalysisPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -520,78 +598,92 @@ export default function MarketAnalysisPage() {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [log]);
 
-  const selectMarket = useCallback(
-    (market: Market) => {
-      // Cancel any running pipeline
-      cancelRef.current?.();
-      cancelRef.current = null;
+  const selectMarket = useCallback((market: Market) => {
+    // Cancel any running pipeline
+    cancelRef.current?.();
+    cancelRef.current = null;
 
-      setSelectedMarket(market);
-      setAgentStates(defaultAgentStates());
-      setPipelineResult(null);
-      setPipelineError(null);
-      setLog([]);
-      setPipelineRunning(true);
+    // Guard: ensure slug is defined before running pipeline
+    if (!market.slug) {
+      console.error("[Quantik] Market missing slug, cannot run pipeline:", market);
+      setPipelineError("Market slug is missing — cannot run analysis");
+      return;
+    }
 
-      const startTs = Date.now();
-      const agentStartTimes: Record<string, number> = {};
+    setSelectedMarket(market);
+    setAgentStates(defaultAgentStates());
+    setPipelineResult(null);
+    setPipelineError(null);
+    setLog([]);
+    setPipelineRunning(true);
 
-      const cancel = runPipeline(
-        market.slug,
-        (event: PipelineEvent) => {
-          const key = event.agent;
-          const now = Date.now();
+    // Verify what body is being sent (temporary debug log as requested)
+    const pipelineBody = { slug: market.slug };
+    console.log("[Quantik] Pipeline request body:", pipelineBody);
 
-          if (event.status === "running") {
-            agentStartTimes[key] = now;
-            setAgentStates((prev) => ({
-              ...prev,
-              [key]: { status: "running", startedAt: now },
-            }));
-            setLog((prev) => [...prev, `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} started`]);
-          } else if (event.status === "done") {
-            const started = agentStartTimes[key] ?? now;
-            setAgentStates((prev) => ({
-              ...prev,
-              [key]: {
-                status: "done",
-                data: event.data,
-                startedAt: started,
-                finishedAt: now,
-              },
-            }));
-            const summary = event.data
-              ? `  → ${JSON.stringify(event.data).slice(0, 80)}…`
-              : "";
-            setLog((prev) => [
-              ...prev,
-              `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} done${summary}`,
-            ]);
-          } else if (event.status === "error") {
-            setAgentStates((prev) => ({
-              ...prev,
-              [key]: { status: "error", error: event.error ?? "unknown error" },
-            }));
-            setLog((prev) => [...prev, `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} ERROR: ${event.error}`]);
-          }
-        },
-        (result: PipelineResult) => {
-          setPipelineResult(result);
-          setPipelineRunning(false);
-          const elapsed = ((Date.now() - startTs) / 1000).toFixed(1);
-          setLog((prev) => [...prev, `[${elapsed}s] Pipeline complete ✓`]);
-        },
-        (err: Error) => {
-          setPipelineError(err.message);
-          setPipelineRunning(false);
-          setLog((prev) => [...prev, `Pipeline error: ${err.message}`]);
+    const startTs = Date.now();
+    const agentStartTimes: Record<string, number> = {};
+
+    const cancel = runPipeline(
+      market.slug,
+      (event: PipelineEvent) => {
+        const key = event.agent;
+        const now = Date.now();
+
+        if (event.status === "running") {
+          agentStartTimes[key] = now;
+          setAgentStates((prev) => ({
+            ...prev,
+            [key]: { status: "running", startedAt: now },
+          }));
+          setLog((prev) => [
+            ...prev,
+            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} started`,
+          ]);
+        } else if (event.status === "done") {
+          const started = agentStartTimes[key] ?? now;
+          setAgentStates((prev) => ({
+            ...prev,
+            [key]: {
+              status: "done",
+              data: event.data,
+              startedAt: started,
+              finishedAt: now,
+            },
+          }));
+          const summary = event.data
+            ? `  → ${JSON.stringify(event.data).slice(0, 80)}…`
+            : "";
+          setLog((prev) => [
+            ...prev,
+            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} done${summary}`,
+          ]);
+        } else if (event.status === "error") {
+          setAgentStates((prev) => ({
+            ...prev,
+            [key]: { status: "error", error: event.error ?? "unknown error" },
+          }));
+          setLog((prev) => [
+            ...prev,
+            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} ERROR: ${event.error}`,
+          ]);
         }
-      );
+      },
+      (result: PipelineResult) => {
+        setPipelineResult(result);
+        setPipelineRunning(false);
+        const elapsed = ((Date.now() - startTs) / 1000).toFixed(1);
+        setLog((prev) => [...prev, `[${elapsed}s] Pipeline complete ✓`]);
+      },
+      (err: Error) => {
+        setPipelineError(err.message);
+        setPipelineRunning(false);
+        setLog((prev) => [...prev, `Pipeline error: ${err.message}`]);
+      }
+    );
 
-      cancelRef.current = cancel;
-    },
-    []
-  );
+    cancelRef.current = cancel;
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -602,37 +694,53 @@ export default function MarketAnalysisPage() {
   const totalDone = AGENTS.filter((a) => agentStates[a.key]?.status === "done").length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, height: "calc(100vh - 92px)" }}>
+    // suppressHydrationWarning prevents React error #418 caused by server/client
+    // HTML mismatches from dynamic market data and agent state rendering
+    <div suppressHydrationWarning style={{ display: "flex", flexDirection: "column", gap: 0, height: "calc(100vh - 92px)" }}>
       {/* Header */}
-      <div style={{ marginBottom: 16, flexShrink: 0 }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 20,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-            letterSpacing: "0.04em",
-          }}
-        >
-          Market Analysis
-        </h1>
-        <p style={{ margin: "4px 0 0", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.30)" }}>
-          Select a market to run the 7-agent analysis pipeline
-        </p>
+      <div style={{ marginBottom: 16, flexShrink: 0, display: "flex", alignItems: "flex-end", gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.04em",
+            }}
+          >
+            Market Analysis
+          </h1>
+          <p style={{ margin: "4px 0 0", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.30)" }}>
+            {selectedMarket ? (
+              <>
+                <strong style={{ color: "rgba(255,255,255,0.60)" }}>{selectedMarket.question}</strong>
+                {" "}
+                {pipelineRunning ? (
+                  <span style={{ color: "#ff9f0a" }}>— Running analysis…</span>
+                ) : pipelineResult ? (
+                  <span style={{ color: "#30d158" }}>— Analysis complete ✓</span>
+                ) : null}
+              </>
+            ) : (
+              "Select a market to run the 7-agent analysis pipeline"
+            )}
+          </p>
+        </div>
       </div>
 
-      {/* Two-panel layout */}
+      {/* Two-panel layout: 40% left / 60% right */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "320px 1fr",
+          gridTemplateColumns: "40% 60%",
           gap: 16,
           flex: 1,
           minHeight: 0,
         }}
       >
-        {/* ── LEFT: Market list ──────────────────────────────────────────── */}
+        {/* ── LEFT: Market list (40%) ──────────────────────────────────────── */}
         <div
           style={{
             ...panelStyle,
@@ -664,7 +772,7 @@ export default function MarketAnalysisPage() {
             />
           </div>
 
-          {/* Market list */}
+          {/* Scrollable market list */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {markets.length === 0 ? (
               <div
@@ -679,7 +787,7 @@ export default function MarketAnalysisPage() {
               </div>
             ) : (
               markets.map((m) => (
-                <MarketListItem
+                <MarketCard
                   key={m.slug}
                   market={m}
                   isSelected={selectedMarket?.slug === m.slug}
@@ -690,7 +798,7 @@ export default function MarketAnalysisPage() {
             )}
           </div>
 
-          {/* Footer hint */}
+          {/* Footer count */}
           <div
             style={{
               padding: "10px 14px",
@@ -705,7 +813,7 @@ export default function MarketAnalysisPage() {
           </div>
         </div>
 
-        {/* ── RIGHT: Pipeline output ─────────────────────────────────────── */}
+        {/* ── RIGHT: Pipeline output (60%) ─────────────────────────────────── */}
         <div
           style={{
             ...panelStyle,
@@ -765,41 +873,22 @@ export default function MarketAnalysisPage() {
                   {selectedMarket.question}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: LABEL_SIZE,
-                      fontFamily: "monospace",
-                      color: "#30d158",
-                      fontWeight: 600,
-                    }}
-                  >
-                    YES {Math.round((selectedMarket.yesPrice ?? 0) * 100)}¢
+                  <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "#30d158", fontWeight: 600 }}>
+                    YES {Math.round(((selectedMarket.yesPrice ?? 0) as number) * 100)}¢
                   </span>
                   <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.20)" }}>·</span>
-                  <span
-                    style={{
-                      fontSize: LABEL_SIZE,
-                      fontFamily: "monospace",
-                      color: "#ff453a",
-                      fontWeight: 600,
-                    }}
-                  >
-                    NO {Math.round((selectedMarket.noPrice ?? 0) * 100)}¢
+                  <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "#ff453a", fontWeight: 600 }}>
+                    NO {Math.round(((selectedMarket.noPrice ?? 0) as number) * 100)}¢
                   </span>
                   <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.20)" }}>·</span>
-                  <span
-                    style={{
-                      fontSize: LABEL_SIZE,
-                      fontFamily: "monospace",
-                      color: "rgba(255,255,255,0.30)",
-                    }}
-                  >
-                    Vol: {fmtUSDC(selectedMarket.volume)}
+                  <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "rgba(255,255,255,0.30)" }}>
+                    Vol: {fmtUSDC(selectedMarket.volume ?? 0)}
                   </span>
+                  <LiquidityBadge grade={selectedMarket.liquidityGrade ?? "C"} />
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                     {pipelineRunning ? (
                       <span style={{ fontSize: LABEL_SIZE, color: "#ff9f0a", fontFamily: "monospace" }}>
-                        ⏳ {AGENTS.filter((a) => agentStates[a.key]?.status === "done").length} / 7 done
+                        ⏳ {totalDone} / 7 done
                       </span>
                     ) : pipelineResult ? (
                       <span style={{ fontSize: LABEL_SIZE, color: "#30d158", fontFamily: "monospace" }}>
@@ -821,7 +910,7 @@ export default function MarketAnalysisPage() {
                 </div>
               )}
 
-              {/* Agent rows */}
+              {/* Agent timeline rows */}
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {AGENTS.map((agentCfg) => (
                   <AgentRow
@@ -832,7 +921,7 @@ export default function MarketAnalysisPage() {
                 ))}
 
                 {/* Sigma Decision Card */}
-                {sigmaResult && <SigmaDecisionCard sigma={sigmaResult} market={selectedMarket} />}
+                {sigmaResult && <SigmaDecisionCard sigma={sigmaResult} />}
 
                 {/* Error */}
                 {pipelineError && (
@@ -864,6 +953,17 @@ export default function MarketAnalysisPage() {
                   padding: "8px 14px",
                 }}
               >
+                {log.length === 0 && !pipelineRunning && (
+                  <div
+                    style={{
+                      fontSize: LABEL_SIZE,
+                      color: "rgba(255,255,255,0.15)",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    Waiting for pipeline events…
+                  </div>
+                )}
                 {log.map((line, i) => (
                   <div
                     key={i}

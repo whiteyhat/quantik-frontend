@@ -2,6 +2,7 @@
 
 import { type SigmaResult, type EdgeResult, fmtUSDC } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { usePaperMode } from "@/context/PaperModeContext";
 
 interface SigmaDecisionProps {
   sigma: SigmaResult;
@@ -17,6 +18,7 @@ interface SigmaDecisionProps {
 
 export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
+  const { paperMode } = usePaperMode();
 
   const glowClass =
     sigma.decision === "BET_YES"
@@ -128,7 +130,11 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
               padding: "10px 24px",
               borderRadius: 12,
               border: "none",
-              background: canExecute ? "var(--ios-blue)" : "rgba(255,255,255,0.08)",
+              background: canExecute
+                ? paperMode
+                  ? "#FF9F0A"
+                  : "var(--ios-blue)"
+                : "rgba(255,255,255,0.08)",
               color: canExecute ? "#fff" : "var(--text-tertiary)",
               fontSize: "var(--text-subhead)",
               fontWeight: 600,
@@ -138,7 +144,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
               whiteSpace: "nowrap",
             }}
           >
-            Execute Trade →
+            {paperMode ? "Simulate Trade →" : "Execute Trade →"}
           </button>
         </div>
       </div>

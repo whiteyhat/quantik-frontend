@@ -3,6 +3,8 @@
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { GlobalPanicButton } from "@/components/GlobalPanicButton";
+import { RelayChatSidebar } from "@/components/RelayChatSidebar";
+import { usePaperMode } from "@/context/PaperModeContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -209,6 +211,7 @@ function MetricItem({
 function TopWalletBar() {
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [copied, setCopied] = useState(false);
+  const { paperMode } = usePaperMode();
 
   useEffect(() => {
     api.getBalance().then(setWallet).catch(() => {});
@@ -251,6 +254,44 @@ function TopWalletBar() {
         flexShrink: 0,
       }}
     >
+      {/* Paper mode badge */}
+      {paperMode && (
+        <div
+          style={{
+            marginRight: 12,
+            padding: "3px 10px",
+            borderRadius: 100,
+            background: "rgba(255,159,10,0.15)",
+            border: "1px solid rgba(255,159,10,0.35)",
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "#FF9F0A",
+              display: "inline-block",
+              boxShadow: "0 0 6px rgba(255,159,10,0.6)",
+            }}
+          />
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#FF9F0A",
+              letterSpacing: "0.08em",
+              fontFamily: "monospace",
+            }}
+          >
+            PAPER MODE
+          </span>
+        </div>
+      )}
+
       {/* Wallet address — copy on click */}
       <button
         onClick={copyAddress}
@@ -367,6 +408,9 @@ export default function RootLayout({
 
           {/* Left sidebar */}
           <Sidebar />
+
+          {/* Relay chat sidebar — left edge drawer */}
+          <RelayChatSidebar />
 
           {/* Toast notifications */}
           <ToastNotification />

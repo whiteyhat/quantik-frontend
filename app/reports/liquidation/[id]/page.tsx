@@ -13,11 +13,11 @@ const METRIC_SIZE = 24;
 
 // ─── Glassmorphism panel — L001 ───────────────────────────────────────────────
 const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
+  background: "rgba(255,255,255,0.06)",
   backdropFilter: "blur(24px) saturate(180%)",
   WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.09)",
-  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 12,
   padding: 24,
 };
 

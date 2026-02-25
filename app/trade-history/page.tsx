@@ -18,7 +18,6 @@ const panelStyle: React.CSSProperties = {
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
-const HEADLINE_SIZE = 14;
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -98,18 +97,28 @@ export default function TradeHistoryPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    setLoading(true);
     fetch(`${BASE_URL}/api/portfolio/attribution`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<Trade[]>;
+        return r.json();
       })
-      .then(setTrades)
+      .then((data: unknown) => {
+        // Guard: API may return an object or null instead of an array
+        const safeData = Array.isArray(data)
+          ? data
+          : (data as Record<string, unknown>)?.trades ??
+            (data as Record<string, unknown>)?.items ??
+            [];
+        setTrades(safeData as Trade[]);
+      })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = trades.filter((t) => {
+  // Guard: ensure trades is always an array before any array operations
+  const safeTrades = Array.isArray(trades) ? trades : [];
+
+  const filtered = safeTrades.filter((t) => {
     const matchOutcome = filter === "All" || t.outcome === filter;
     const matchSearch = !search || t.market.toLowerCase().includes(search.toLowerCase());
     return matchOutcome && matchSearch;
@@ -287,13 +296,18 @@ export default function TradeHistoryPage() {
         ) : filtered.length === 0 ? (
           <div
             style={{
-              padding: "32px 0",
+              padding: "48px 0",
               textAlign: "center",
               fontSize: BODY_SIZE,
               color: "rgba(255,255,255,0.25)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            No trades found
+            <span style={{ fontSize: 32 }}>📭</span>
+            <span>{safeTrades.length === 0 ? "No trade history yet" : "No trades match this filter"}</span>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api, fmtUSDC } from "@/lib/api";
+import { usePaperMode } from "@/context/PaperModeContext";
 
 export function TradeConfirmationModal() {
   const open = useQuantikStore((s) => s.tradeModalOpen);
@@ -10,6 +11,10 @@ export function TradeConfirmationModal() {
   const close = useQuantikStore((s) => s.closeTradeModal);
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const { paperMode } = usePaperMode();
+
+  // Trade execution button color: amber in paper mode, blue in live mode
+  const confirmBtnBg = paperMode ? "#FF9F0A" : "var(--ios-blue)";
 
   if (!open || !pending) return null;
 
@@ -192,7 +197,7 @@ export function TradeConfirmationModal() {
               padding: "10px 24px",
               borderRadius: 12,
               border: "none",
-              background: "var(--ios-blue)",
+              background: confirmBtnBg,
               color: "#fff",
               fontSize: "var(--text-subhead)",
               fontWeight: 600,
@@ -201,7 +206,13 @@ export function TradeConfirmationModal() {
               transition: "all 200ms ease",
             }}
           >
-            {loading ? "Confirming..." : "Confirm →"}
+            {loading
+              ? paperMode
+                ? "Simulating..."
+                : "Confirming..."
+              : paperMode
+              ? "Simulate Trade →"
+              : "Confirm →"}
           </button>
         </div>
 
