@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = 'https://quantik-eight.vercel.app';
+const BASE = 'https://quantik-backend-production.up.railway.app';
 
 test('GET /api/health → 200', async ({ request }) => {
   const res = await request.get(`${BASE}/api/health`);

@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
     parts: [{ text: m.content }],
   }));
 
-  // Try gemini-2.0-flash first, fall back to gemini-1.5-flash if model not found
-  const modelNames = ["gemini-2.0-flash", "gemini-1.5-flash"];
+  // gemini-2.5-flash is the current stable model; gemini-flash-latest as alias fallback
+  const modelNames = ["gemini-2.5-flash", "gemini-flash-latest"];
 
   for (const modelName of modelNames) {
     const model = genAI.getGenerativeModel({
