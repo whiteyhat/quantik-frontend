@@ -15,7 +15,9 @@ const NAV_ITEMS = [
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Portfolio", href: "/portfolio", icon: "💼" },
   { label: "Trade History", href: "/trades", icon: "📈" },
+  { label: "Risk Config", href: "/settings/risk", icon: "🛡️" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
+  { label: "🚨 Panic Mode", href: "/emergency/panic", icon: "🚨" },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
