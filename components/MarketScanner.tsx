@@ -1,194 +1,207 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { api, fmtUSDC, gradeColor, streamPrices, type Market } from "@/lib/api";
-import { useQuantikStore } from "@/store/useQuantikStore";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import { api, streamPrices, fmtUSDC, type Market } from "@/lib/api";
 
-export function MarketScanner() {
-  const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const updatePrices = useQuantikStore((s) => s.updatePrices);
-  const livePrices = useQuantikStore((s) => s.livePrices);
-  const stopRef = useRef<(() => void) | null>(null);
+function LiqGradeChip({ grade }: { grade: string }) {
+  const colors: Record<string, string> = {
+    A: "var(--ios-green)",
+    B: "var(--ios-blue)",
+    C: "var(--ios-orange)",
+    D: "var(--ios-red)",
+  };
+  const c = colors[grade] || "var(--text-tertiary)";
+  return (
+    <span
+      style={{
+        fontSize: "var(--text-caption)",
+        fontWeight: 600,
+        padding: "2px 8px",
+        borderRadius: 6,
+        background: `color-mix(in srgb, ${c} 15%, transparent)`,
+        color: c,
+      }}
+    >
+      Liq: {grade}
+    </span>
+  );
+}
 
-  // Debounce search
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const { data: markets, isLoading, isError } = useQuery({
-    queryKey: ["markets", debouncedSearch],
-    queryFn: () => api.getMarkets(debouncedSearch || undefined),
-    refetchInterval: 30000,
-  });
-
-  // SSE price stream
-  useEffect(() => {
-    if (!markets?.length) return;
-
-    const tokens = markets.map((m) => m.tokenId).filter(Boolean);
-    if (!tokens.length) return;
-
-    // Clean up previous stream
-    stopRef.current?.();
-
-    stopRef.current = streamPrices(
-      tokens,
-      (prices) => updatePrices(prices),
-    );
-
-    return () => {
-      stopRef.current?.();
-    };
-  }, [markets, updatePrices]);
-
-  function getDisplayPrice(market: Market): { yes: number; no: number } {
-    const live = livePrices[market.tokenId];
-    if (live) return live;
-    return { yes: market.yesPrice, no: market.noPrice };
-  }
+function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: number; no: number } }) {
+  const yes = livePrice?.yes ?? market.yesPrice ?? 0;
+  const no = livePrice?.no ?? market.noPrice ?? 0;
+  const yesPct = Math.round(yes * 100);
+  const noPct = 100 - yesPct;
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <div className="q-card mb-4">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#1e1e2e' }}>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#4488ff' }}>
-            Market Scanner
-          </span>
-          {markets && (
-            <span className="text-xs q-mono" style={{ color: '#606080' }}>
-              {markets.length} markets
-            </span>
-          )}
-        </div>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search markets..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="text-xs px-3 py-1.5 rounded outline-none w-56"
+    <Link
+      href={`/market/${market.slug}`}
+      style={{ textDecoration: "none", color: "inherit" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div
+        className="glass-card-interactive"
+        style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16, height: "100%" }}
+      >
+        {/* Question */}
+        <h3
+          className="text-headline"
+          style={{
+            color: "var(--text-primary)",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            margin: 0,
+            minHeight: "2.8em",
+          }}
+        >
+          {market.question}
+        </h3>
+
+        {/* YES / NO opposing bars */}
+        <div style={{ display: "flex", gap: 2, borderRadius: 6, overflow: "hidden", height: 28 }}>
+          <div
             style={{
-              background: '#0a0a0f',
-              border: '1px solid #1e1e2e',
-              color: '#e0e0e0',
+              width: `${yesPct}%`,
+              background: "var(--ios-green-glow)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 40,
+              transition: "width 300ms ease",
             }}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
-              style={{ color: '#606080' }}
+          >
+            <span
+              className="font-mono-data"
+              style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-green)" }}
             >
-              ×
-            </button>
-          )}
+              YES {yesPct}¢
+            </span>
+          </div>
+          <div
+            style={{
+              width: `${noPct}%`,
+              background: "var(--ios-red-glow)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 40,
+              transition: "width 300ms ease",
+            }}
+          >
+            <span
+              className="font-mono-data"
+              style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-red)" }}
+            >
+              {noPct}¢ NO
+            </span>
+          </div>
         </div>
+
+        {/* Meta row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span
+            className="font-mono-data"
+            style={{
+              fontSize: "var(--text-caption)",
+              color: "var(--text-secondary)",
+              padding: "2px 8px",
+              borderRadius: 6,
+              background: "rgba(255,255,255,0.04)",
+            }}
+          >
+            Vol: {fmtUSDC(market.volume)}
+          </span>
+          <LiqGradeChip grade={market.liquidityGrade} />
+        </div>
+
+        {/* Hover CTA */}
+        <div
+          style={{
+            overflow: "hidden",
+            maxHeight: hovered ? 32 : 0,
+            opacity: hovered ? 1 : 0,
+            transition: "all 280ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "var(--text-subhead)",
+              fontWeight: 600,
+              color: "var(--ios-blue)",
+            }}
+          >
+            Analyze →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export function MarketScanner() {
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [search, setSearch] = useState("");
+  const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    api.getMarkets(search || undefined).then(setMarkets).catch(() => {});
+  }, [search]);
+
+  useEffect(() => {
+    if (markets.length === 0) return;
+    cleanupRef.current?.();
+    const tokens = markets.map((m) => m.tokenId).filter(Boolean);
+    if (tokens.length === 0) return;
+    const unsub = streamPrices(tokens, (prices) => {
+      setLivePrices((prev) => ({ ...prev, ...prices }));
+    });
+    cleanupRef.current = unsub;
+    return () => unsub();
+  }, [markets]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Search input */}
+      <input
+        className="glass-input"
+        type="text"
+        placeholder="Search markets..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          padding: "12px 24px",
+          fontSize: "var(--text-body)",
+          width: "100%",
+          maxWidth: 480,
+        }}
+      />
+
+      {/* Market grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 16,
+        }}
+      >
+        {markets.map((m) => (
+          <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr style={{ background: '#0f0f1a' }}>
-              <th className="text-left px-4 py-2 font-medium" style={{ color: '#606080' }}>Question</th>
-              <th className="text-right px-3 py-2 font-medium" style={{ color: '#606080' }}>YES</th>
-              <th className="text-right px-3 py-2 font-medium" style={{ color: '#606080' }}>NO</th>
-              <th className="text-right px-3 py-2 font-medium" style={{ color: '#606080' }}>Volume</th>
-              <th className="text-center px-3 py-2 font-medium" style={{ color: '#606080' }}>Liq</th>
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} className="border-t" style={{ borderColor: '#1e1e2e' }}>
-                  {Array.from({ length: 6 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-3 rounded animate-pulse" style={{ background: '#1e1e2e', width: j === 0 ? '80%' : '60%' }} />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-            {isError && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center" style={{ color: '#606080' }}>
-                  Backend offline — cannot fetch markets
-                </td>
-              </tr>
-            )}
-            {!isLoading && !isError && markets?.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center" style={{ color: '#606080' }}>
-                  No markets found
-                </td>
-              </tr>
-            )}
-            {markets?.map((market) => {
-              const prices = getDisplayPrice(market);
-              return (
-                <tr
-                  key={market.slug}
-                  className="q-table-row border-t cursor-pointer"
-                  style={{ borderColor: '#1e1e2e' }}
-                  onClick={() => router.push(`/market/${market.slug}`)}
-                >
-                  <td className="px-4 py-2.5 max-w-xs">
-                    <span className="line-clamp-2 leading-relaxed" style={{ color: '#e0e0e0' }}>
-                      {market.question}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right">
-                    <span className="q-mono font-medium" style={{ color: '#00ff88' }}>
-                      {Math.round(prices.yes * 100)}¢
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right">
-                    <span className="q-mono font-medium" style={{ color: '#ff4444' }}>
-                      {Math.round(prices.no * 100)}¢
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right">
-                    <span className="q-mono" style={{ color: '#e0e0e0' }}>
-                      {fmtUSDC(market.volume)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <span
-                      className="q-mono font-bold text-sm"
-                      style={{ color: gradeColor(market.liquidityGrade) }}
-                    >
-                      {market.liquidityGrade}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/market/${market.slug}`);
-                      }}
-                      className="text-xs px-2 py-1 rounded transition-colors"
-                      style={{
-                        background: 'rgba(68, 136, 255, 0.1)',
-                        color: '#4488ff',
-                        border: '1px solid rgba(68, 136, 255, 0.3)',
-                      }}
-                    >
-                      Analyze
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {markets.length === 0 && (
+        <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
+          <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
+            No markets found
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,141 +1,409 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-
-  /* Quantik custom colors */
-  --color-q-bg: #0a0a0f;
-  --color-q-surface: #0f0f1a;
-  --color-q-card: #14141f;
-  --color-q-border: #1e1e2e;
-  --color-q-green: #00ff88;
-  --color-q-red: #ff4444;
-  --color-q-amber: #ffaa00;
-  --color-q-blue: #4488ff;
-  --color-q-text: #e0e0e0;
-  --color-q-muted: #606080;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-}
-
+/* ─── Design Tokens (CSS Custom Properties) ────────────────────────────────── */
 :root {
-  --radius: 0.375rem;
-  --background: #0a0a0f;
-  --foreground: #e0e0e0;
-  --card: #14141f;
-  --card-foreground: #e0e0e0;
-  --popover: #14141f;
-  --popover-foreground: #e0e0e0;
-  --primary: #00ff88;
-  --primary-foreground: #0a0a0f;
-  --secondary: #0f0f1a;
-  --secondary-foreground: #e0e0e0;
-  --muted: #0f0f1a;
-  --muted-foreground: #606080;
-  --accent: #1e1e2e;
-  --accent-foreground: #e0e0e0;
-  --destructive: #ff4444;
-  --border: #1e1e2e;
-  --input: #1e1e2e;
-  --ring: #4488ff;
+  --bg-void: #050508;
+  --glass-surface: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-shine: rgba(255, 255, 255, 0.08);
+
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.30);
+
+  --ios-blue: #007AFF;
+  --ios-blue-glow: rgba(0, 122, 255, 0.25);
+  --ios-green: #30D158;
+  --ios-green-glow: rgba(48, 209, 88, 0.20);
+  --ios-red: #FF453A;
+  --ios-red-glow: rgba(255, 69, 58, 0.20);
+  --ios-orange: #FF9F0A;
+  --ios-orange-glow: rgba(255, 159, 10, 0.20);
+  --ios-purple: #BF5AF2;
+  --ios-purple-glow: rgba(191, 90, 242, 0.20);
+
+  /* Typography scale */
+  --text-title-lg: 28px;
+  --text-title: 22px;
+  --text-headline: 17px;
+  --text-body: 15px;
+  --text-subhead: 13px;
+  --text-caption: 11px;
+
+  /* Animation tokens */
+  --spring-snappy: cubic-bezier(0.34, 1.56, 0.64, 1) 280ms;
+  --spring-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94) 350ms;
+  --ease-out-fast: cubic-bezier(0.16, 1, 0.3, 1) 200ms;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+/* ─── Tailwind v4 Theme ────────────────────────────────────────────────────── */
+@theme inline {
+  --color-bg-void: #050508;
+  --color-glass-surface: rgba(255, 255, 255, 0.06);
+  --color-glass-border: rgba(255, 255, 255, 0.10);
+  --color-ios-blue: #007AFF;
+  --color-ios-green: #30D158;
+  --color-ios-red: #FF453A;
+  --color-ios-orange: #FF9F0A;
+  --color-ios-purple: #BF5AF2;
+  --color-text-primary: rgba(255, 255, 255, 0.92);
+  --color-text-secondary: rgba(255, 255, 255, 0.55);
+  --color-text-tertiary: rgba(255, 255, 255, 0.30);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+
+  --animate-float-orb-1: float-orb-1 20s ease-in-out infinite alternate;
+  --animate-float-orb-2: float-orb-2 25s ease-in-out infinite alternate;
+  --animate-pulse-ring: pulse-ring 1.2s ease-out infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-count-up: count-up 600ms ease-out;
+  --animate-toast-in: toast-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-toast-out: toast-out 300ms ease-in;
+  --animate-shake: shake 400ms ease-in-out;
+
+  @keyframes float-orb-1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(40px, -30px) scale(1.1); }
   }
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  @keyframes float-orb-2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-50px, 40px) scale(1.15); }
   }
-  .font-mono, .tabular-nums {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes count-up {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toast-in {
+    0% { transform: translateY(-100%) translateX(-50%); opacity: 0; }
+    100% { transform: translateY(0) translateX(-50%); opacity: 1; }
+  }
+  @keyframes toast-out {
+    0% { transform: translateY(0) translateX(-50%); opacity: 1; }
+    100% { transform: translateY(-100%) translateX(-50%); opacity: 0; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
   }
 }
 
-/* Quantik Terminal Styles */
-.q-card {
-  background: #14141f;
-  border: 1px solid #1e1e2e;
-  border-radius: 0.375rem;
+/* ─── Base Styles ──────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
 }
 
-.q-surface {
-  background: #0f0f1a;
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.q-text-green { color: #00ff88; }
-.q-text-red { color: #ff4444; }
-.q-text-amber { color: #ffaa00; }
-.q-text-blue { color: #4488ff; }
-.q-text-muted { color: #606080; }
-
-.q-mono {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-  font-size: 0.8125rem;
+body {
+  background: var(--bg-void);
 }
 
-/* Agent card status animations */
-@keyframes agent-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* ─── Animated Gradient Background ─────────────────────────────────────────── */
+.crystal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(ellipse at 20% 50%, #1a0a2e 0%, #0a0a14 50%, #00111f 100%);
+  overflow: hidden;
 }
 
-@keyframes devil-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(255, 68, 68, 0); }
+.crystal-bg::before,
+.crystal-bg::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
 }
 
-.agent-running {
-  animation: agent-pulse 1s ease-in-out infinite;
+.crystal-bg::before {
+  width: 600px;
+  height: 600px;
+  top: -100px;
+  left: -100px;
+  background: rgba(120, 40, 200, 0.15);
+  animation: float-orb-1 20s ease-in-out infinite alternate;
 }
 
-.devil-pulse {
-  animation: devil-pulse 1.5s ease-in-out infinite;
+.crystal-bg::after {
+  width: 800px;
+  height: 800px;
+  bottom: -200px;
+  right: -200px;
+  background: rgba(0, 122, 255, 0.10);
+  animation: float-orb-2 25s ease-in-out infinite alternate;
 }
 
-/* Scrollbar styling */
+/* ─── Glass Card System ────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-elevated {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glass-card-interactive {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.glass-card-interactive:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.glass-card-interactive:active {
+  transform: scale(0.97);
+  transition-duration: 100ms;
+}
+
+/* ─── Glass Input ──────────────────────────────────────────────────────────── */
+.glass-input {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 100px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+
+.glass-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.glass-input:focus {
+  border-color: var(--ios-blue);
+  box-shadow: 0 0 0 3px var(--ios-blue-glow);
+}
+
+/* ─── Agent Status Indicators ──────────────────────────────────────────────── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.status-dot-idle {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+.status-dot-running {
+  background: var(--ios-blue);
+}
+
+.status-dot-running::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ios-blue);
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+.status-dot-done {
+  background: var(--ios-green);
+}
+
+.status-dot-error {
+  background: var(--ios-red);
+  animation: shake 400ms ease-in-out;
+}
+
+/* ─── Shimmer Effect (for running pipeline connector) ──────────────────────── */
+.shimmer-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--ios-blue-glow) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ─── Typography Helpers ───────────────────────────────────────────────────── */
+.text-title-lg {
+  font-size: var(--text-title-lg);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.text-title {
+  font-size: var(--text-title);
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+
+.text-headline {
+  font-size: var(--text-headline);
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1.4;
+}
+
+.text-body {
+  font-size: var(--text-body);
+  font-weight: 400;
+  letter-spacing: -0.1px;
+  line-height: 1.5;
+}
+
+.text-subhead {
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.text-caption {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+}
+
+.font-mono-data {
+  font-family: "SF Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e1e2e;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #606080;
+  background: rgba(255, 255, 255, 0.20);
 }
 
-/* Table row hover */
-.q-table-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+/* ─── iOS Segmented Control ────────────────────────────────────────────────── */
+.segmented-control {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Grade colors */
-.grade-a { color: #00ff88; }
-.grade-b { color: #4488ff; }
-.grade-c { color: #ffaa00; }
-.grade-d { color: #ff4444; }
-.grade-pass { color: #606080; }
+.segmented-control button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.segmented-control button.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Decision Glow Borders ────────────────────────────────────────────────── */
+.glow-green {
+  border-color: var(--ios-green) !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 30px var(--ios-green-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glow-red {
+  border-color: var(--ios-red) !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 30px var(--ios-red-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.glow-orange {
+  border-color: var(--ios-orange) !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 20px var(--ios-orange-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  opacity: 0.85;
+}
+
+/* ─── Confidence Bar (iOS-style) ───────────────────────────────────────────── */
+.confidence-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 600ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ─── JSON Syntax Coloring ─────────────────────────────────────────────────── */
+.json-key { color: var(--ios-blue); }
+.json-string { color: var(--ios-green); }
+.json-number { color: var(--ios-orange); }
+.json-boolean { color: var(--ios-purple); }
+.json-null { color: var(--text-tertiary); }

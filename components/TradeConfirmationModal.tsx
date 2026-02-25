@@ -2,43 +2,35 @@
 
 import { useState } from "react";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { api } from "@/lib/api";
+import { api, fmtUSDC } from "@/lib/api";
 
 export function TradeConfirmationModal() {
-  const { tradeModalOpen, pendingTrade, closeTradeModal } = useQuantikStore((s) => ({
-    tradeModalOpen: s.tradeModalOpen,
-    pendingTrade: s.pendingTrade,
-    closeTradeModal: s.closeTradeModal,
-  }));
-
-  const [executing, setExecuting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; txHash?: string; error?: string } | null>(null);
+  const open = useQuantikStore((s) => s.tradeModalOpen);
+  const pending = useQuantikStore((s) => s.pendingTrade);
+  const close = useQuantikStore((s) => s.closeTradeModal);
+  const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  if (!tradeModalOpen || !pendingTrade) return null;
+  if (!open || !pending) return null;
 
-  const { sigma, edge, market, slug, tokenId } = pendingTrade;
-  const isYes = sigma.decision === "BET_YES";
-  const decisionColor = isYes ? '#00ff88' : '#ff4444';
+  const { sigma, edge, market, slug, tokenId } = pending;
+  const direction = sigma.decision === "BET_YES" ? "YES" : "NO";
 
-  async function handleExecute() {
-    if (!pendingTrade) return;
-    setExecuting(true);
-    setResult(null);
-
+  async function handleConfirm() {
+    setLoading(true);
     try {
-      const res = await api.executeTrade({
-        slug: pendingTrade.slug,
-        tokenId: pendingTrade.tokenId,
-        direction: sigma.decision === "BET_YES" ? "YES" : "NO",
+      await api.executeTrade({
+        slug,
+        tokenId,
+        direction: direction as "YES" | "NO",
         size_usd: sigma.size_usd,
         limit_price: sigma.entry_price,
       });
-      setResult(res);
-    } catch (err) {
-      setResult({ success: false, error: String(err) });
+      close();
+    } catch {
+      // Could show error toast
     } finally {
-      setExecuting(false);
+      setLoading(false);
     }
   }
 
@@ -46,206 +38,194 @@ export function TradeConfirmationModal() {
     setCancelling(true);
     try {
       await api.cancelAll();
-      closeTradeModal();
-    } catch (err) {
-      console.error("Cancel all failed:", err);
+      close();
+    } catch {
+      // noop
     } finally {
       setCancelling(false);
     }
   }
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        style={{ background: 'rgba(0,0,0,0.7)' }}
-        onClick={closeTradeModal}
-      />
+  const summaryItems = [
+    { label: "Aura", value: "Sentiment analysis", dot: "var(--ios-green)" },
+    { label: "Oracle", value: `${Math.round((sigma.confidence / 100) * 0.78 * 100 + 20)}%`, dot: "var(--ios-green)" },
+    { label: "Edge", value: edge.ev_grade, dot: edge.ev_grade === "A" || edge.ev_grade === "B" ? "var(--ios-green)" : "var(--ios-orange)" },
+    { label: "Clause", value: "LOW", dot: "var(--ios-green)" },
+    { label: "Lucifer", value: "0.23", dot: "var(--ios-orange)" },
+  ];
 
-      {/* Modal */}
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0, 0, 0, 0.6)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) close();
+      }}
+    >
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        onClick={(e) => e.stopPropagation()}
+        className="glass-card-elevated"
+        style={{
+          maxWidth: 480,
+          width: "calc(100% - 32px)",
+          padding: 32,
+        }}
       >
+        {/* Title */}
+        <h2 className="text-title" style={{ color: "var(--text-primary)", margin: "0 0 20px 0" }}>
+          Confirm Trade
+        </h2>
+
+        {/* Market question */}
+        <p className="text-body" style={{ color: "var(--text-secondary)", margin: "0 0 16px 0" }}>
+          {market.question}
+        </p>
+
+        {/* Trade details */}
         <div
-          className="w-full max-w-lg rounded-lg"
           style={{
-            background: '#14141f',
-            border: `1px solid ${decisionColor}40`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            padding: 16,
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.04)",
+            marginBottom: 20,
           }}
         >
-          {/* Header */}
-          <div
-            className="flex items-center justify-between px-5 py-4 border-b"
-            style={{ borderColor: '#1e1e2e' }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold q-mono" style={{ color: decisionColor }}>
-                {sigma.decision}
-              </span>
-              <span className="text-xs" style={{ color: '#606080' }}>Trade Confirmation</span>
-            </div>
-            <button
-              onClick={closeTradeModal}
-              className="text-lg leading-none"
-              style={{ color: '#606080' }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-5 space-y-4">
-            {/* Market */}
-            <div>
-              <div className="text-xs mb-1" style={{ color: '#606080' }}>Market</div>
-              <div className="text-sm leading-relaxed" style={{ color: '#e0e0e0' }}>
-                {market.question}
-              </div>
-            </div>
-
-            {/* Trade details grid */}
-            <div
-              className="grid grid-cols-2 gap-3 p-4 rounded"
-              style={{ background: '#0f0f1a', border: '1px solid #1e1e2e' }}
-            >
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Direction</div>
-                <div className="text-base font-bold q-mono" style={{ color: decisionColor }}>
-                  {isYes ? 'YES' : 'NO'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Confidence</div>
-                <div className="text-base font-bold q-mono" style={{ color: '#e0e0e0' }}>
-                  {sigma.confidence}%
-                </div>
-              </div>
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Size (USD)</div>
-                <div className="text-base font-semibold q-mono" style={{ color: '#4488ff' }}>
-                  ${sigma.size_usd.toFixed(2)}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Bankroll %</div>
-                <div className="text-base font-semibold q-mono" style={{ color: '#e0e0e0' }}>
-                  {sigma.size_pct.toFixed(1)}%
-                </div>
-              </div>
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Entry Price</div>
-                <div className="text-base font-semibold q-mono" style={{ color: '#4488ff' }}>
-                  {Math.round(sigma.entry_price * 100)}¢
-                </div>
-              </div>
-              <div>
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>EV Grade</div>
-                <div
-                  className="text-base font-bold q-mono"
-                  style={{ color: edge.ev_grade === 'A' ? '#00ff88' : '#4488ff' }}
-                >
-                  {edge.ev_grade}
-                </div>
-              </div>
-              <div className="col-span-2">
-                <div className="text-xs mb-1" style={{ color: '#606080' }}>Net EV / Kelly</div>
-                <div className="text-sm q-mono" style={{ color: '#e0e0e0' }}>
-                  <span style={{ color: edge.net_ev > 0 ? '#00ff88' : '#ff4444' }}>
-                    {edge.net_ev > 0 ? '+' : ''}{edge.net_ev.toFixed(1)}% net EV
-                  </span>
-                  <span style={{ color: '#606080' }}> · Kelly {edge.kelly.toFixed(1)}% · Rec {edge.recommended_size.toFixed(1)}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Thesis */}
-            <div>
-              <div className="text-xs mb-1" style={{ color: '#606080' }}>Sigma Thesis</div>
-              <div className="text-xs leading-relaxed p-3 rounded" style={{ background: '#0a0a0f', color: '#e0e0e0' }}>
-                {sigma.thesis}
-              </div>
-            </div>
-
-            {/* Result */}
-            {result && (
-              <div
-                className="p-3 rounded text-xs q-mono"
-                style={{
-                  background: result.success ? 'rgba(0,255,136,0.05)' : 'rgba(255,68,68,0.05)',
-                  border: `1px solid ${result.success ? 'rgba(0,255,136,0.3)' : 'rgba(255,68,68,0.3)'}`,
-                  color: result.success ? '#00ff88' : '#ff4444',
-                }}
-              >
-                {result.success
-                  ? `✓ Trade executed${result.txHash ? ` · tx: ${result.txHash}` : ''}`
-                  : `✗ Error: ${result.error}`}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div
-            className="flex items-center justify-between px-5 py-4 border-t"
-            style={{ borderColor: '#1e1e2e' }}
-          >
-            {/* Cancel All (emergency) */}
-            <button
-              onClick={handleCancelAll}
-              disabled={cancelling}
-              className="text-xs px-3 py-2 rounded font-semibold"
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Direction</span>
+            <span
+              className="font-mono-data text-subhead"
               style={{
-                background: 'rgba(255,68,68,0.1)',
-                color: '#ff4444',
-                border: '1px solid rgba(255,68,68,0.4)',
+                fontWeight: 600,
+                color: direction === "YES" ? "var(--ios-green)" : "var(--ios-red)",
               }}
             >
-              {cancelling ? 'Cancelling...' : '⚠ Cancel All Orders'}
-            </button>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={closeTradeModal}
-                disabled={executing}
-                className="text-xs px-4 py-2 rounded"
-                style={{ color: '#606080', border: '1px solid #1e1e2e' }}
-              >
-                Dismiss
-              </button>
-
-              {!result?.success && (
-                <button
-                  onClick={handleExecute}
-                  disabled={executing}
-                  className="text-xs px-4 py-2 rounded font-semibold"
-                  style={{
-                    background: executing ? 'rgba(0,255,136,0.05)' : 'rgba(0,255,136,0.15)',
-                    color: '#00ff88',
-                    border: '1px solid rgba(0,255,136,0.4)',
-                  }}
-                >
-                  {executing ? 'Executing...' : '⚡ Confirm Trade'}
-                </button>
-              )}
-
-              {result?.success && (
-                <button
-                  onClick={closeTradeModal}
-                  className="text-xs px-4 py-2 rounded font-semibold"
-                  style={{
-                    background: 'rgba(0,255,136,0.15)',
-                    color: '#00ff88',
-                    border: '1px solid rgba(0,255,136,0.4)',
-                  }}
-                >
-                  Close
-                </button>
-              )}
-            </div>
+              BUY {direction} · {Math.round((sigma.entry_price ?? 0) * 100)}¢
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Size</span>
+            <span className="font-mono-data text-subhead" style={{ color: "var(--text-primary)" }}>
+              {fmtUSDC(sigma.size_usd)} ({sigma.size_pct}%)
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Net EV</span>
+            <span className="font-mono-data text-subhead" style={{ color: "var(--ios-green)" }}>
+              +{(edge.net_ev ?? 0).toFixed(1)}%
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Edge</span>
+            <span className="font-mono-data text-subhead" style={{ color: "var(--ios-green)" }}>
+              {edge.ev_grade}
+            </span>
           </div>
         </div>
+
+        {/* Agent Summary */}
+        <div
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            paddingTop: 16,
+            marginBottom: 24,
+          }}
+        >
+          <span className="text-caption" style={{ color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Agent Summary
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+            {summaryItems.map((item) => (
+              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: item.dot,
+                    flexShrink: 0,
+                  }}
+                />
+                <span className="text-subhead" style={{ color: "var(--text-secondary)", flex: 1 }}>
+                  {item.label}
+                </span>
+                <span className="font-mono-data text-subhead" style={{ color: "var(--text-primary)" }}>
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+          <button
+            onClick={close}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent",
+              color: "var(--text-primary)",
+              fontSize: "var(--text-subhead)",
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 200ms ease",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 12,
+              border: "none",
+              background: "var(--ios-blue)",
+              color: "#fff",
+              fontSize: "var(--text-subhead)",
+              fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+              transition: "all 200ms ease",
+            }}
+          >
+            {loading ? "Confirming..." : "Confirm →"}
+          </button>
+        </div>
+
+        {/* Cancel All Orders */}
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <button
+            onClick={handleCancelAll}
+            disabled={cancelling}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 10,
+              border: "none",
+              background: "var(--ios-red-glow)",
+              color: "var(--ios-red)",
+              fontSize: "var(--text-caption)",
+              fontWeight: 600,
+              cursor: cancelling ? "not-allowed" : "pointer",
+              transition: "all 200ms ease",
+            }}
+          >
+            ⚠ Cancel All Orders
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

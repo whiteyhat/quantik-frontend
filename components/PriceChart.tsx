@@ -1,156 +1,136 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api, type PricePoint } from "@/lib/api";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
+  CartesianGrid,
 } from "recharts";
-import { api } from "@/lib/api";
 
-interface PriceChartProps {
-  tokenId: string;
-  slug: string;
-}
+const INTERVALS = ["1h", "1d", "1w", "all"] as const;
+const INTERVAL_LABELS: Record<string, string> = {
+  "1h": "1H",
+  "1d": "1D",
+  "1w": "1W",
+  "all": "All",
+};
 
-const INTERVALS = [
-  { label: "1D", value: "1h" },
-  { label: "1W", value: "1d" },
-  { label: "1M", value: "1d" },
-  { label: "All", value: "1d" },
-];
-
-interface TooltipPayload {
-  value?: number;
-  name?: string;
-}
-
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: TooltipPayload[];
-  label?: string;
-}) {
+function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: number }) {
   if (!active || !payload?.length) return null;
-
   return (
     <div
-      className="text-xs q-mono p-2 rounded"
-      style={{ background: '#14141f', border: '1px solid #1e1e2e', color: '#e0e0e0' }}
+      className="glass-card-elevated"
+      style={{
+        padding: "8px 14px",
+        borderRadius: 12,
+        fontSize: "var(--text-subhead)",
+      }}
     >
-      <div style={{ color: '#606080' }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.name === "yes" ? '#00ff88' : '#ff4444' }}>
-          {p.name === "yes" ? "YES" : "NO"}: {Math.round((p.value ?? 0) * 100)}¢
+      <div className="font-mono-data" style={{ color: "var(--ios-green)", fontWeight: 600 }}>
+        YES: {Math.round(payload[0].value * 100)}¢
+      </div>
+      {label && (
+        <div className="text-caption" style={{ color: "var(--text-tertiary)", marginTop: 2 }}>
+          {new Date(label).toLocaleString()}
         </div>
-      ))}
+      )}
     </div>
   );
 }
 
-export function PriceChart({ tokenId, slug }: PriceChartProps) {
-  const [interval, setInterval] = useState("1d");
+export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
+  const [interval, setInterval] = useState<string>("1d");
+  const [data, setData] = useState<PricePoint[]>([]);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["price-history", tokenId, interval],
-    queryFn: () => api.getPriceHistory(tokenId, interval),
-    refetchInterval: 60000,
-  });
-
-  const chartData = data?.map((p) => ({
-    ...p,
-    time: new Date(p.timestamp).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-  }));
+  useEffect(() => {
+    api.getPriceHistory(tokenId, interval).then(setData).catch(() => {});
+  }, [tokenId, interval]);
 
   return (
-    <div className="q-card mb-4">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#1e1e2e' }}>
-        <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#4488ff' }}>
-          YES Price History
-        </span>
-        <div className="flex gap-1">
-          {INTERVALS.map((i) => (
+    <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
+      {/* Header with segmented control */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: 0 }}>
+          Price History
+        </h2>
+
+        <div className="segmented-control">
+          {INTERVALS.map((iv) => (
             <button
-              key={i.label}
-              onClick={() => setInterval(i.value)}
-              className="text-xs px-2 py-0.5 rounded transition-colors"
-              style={{
-                background: interval === i.value ? 'rgba(68, 136, 255, 0.2)' : 'transparent',
-                color: interval === i.value ? '#4488ff' : '#606080',
-                border: interval === i.value ? '1px solid rgba(68, 136, 255, 0.4)' : '1px solid transparent',
-              }}
+              key={iv}
+              className={interval === iv ? "active" : ""}
+              onClick={() => setInterval(iv)}
             >
-              {i.label}
+              {INTERVAL_LABELS[iv]}
             </button>
           ))}
         </div>
       </div>
 
       {/* Chart */}
-      <div className="p-4" style={{ height: 240 }}>
-        {isLoading && (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-xs agent-running" style={{ color: '#606080' }}>Loading chart...</div>
-          </div>
-        )}
-
-        {isError && (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-xs" style={{ color: '#606080' }}>Price data unavailable</span>
-          </div>
-        )}
-
-        {!isLoading && !isError && chartData && chartData.length > 0 && (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2e" />
-              <XAxis
-                dataKey="time"
-                tick={{ fill: '#606080', fontSize: 10, fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tickFormatter={(v) => `${Math.round(v * 100)}¢`}
-                tick={{ fill: '#606080', fontSize: 10, fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                domain={[0, 1]}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine y={0.5} stroke="#1e1e2e" strokeDasharray="4 4" />
-              <Line
-                type="monotone"
-                dataKey="yes"
-                stroke="#00ff88"
-                strokeWidth={1.5}
-                dot={false}
-                activeDot={{ r: 3, fill: '#00ff88' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-
-        {!isLoading && !isError && (!chartData || chartData.length === 0) && (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-xs" style={{ color: '#606080' }}>No price history available</span>
-          </div>
-        )}
+      <div style={{ height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--ios-green)" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="var(--ios-green)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(ts) => {
+                if (!ts) return "";
+                const d = new Date(ts);
+                if (isNaN(d.getTime())) return "";
+                return interval === "1h"
+                  ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  : d.toLocaleDateString([], { month: "short", day: "numeric" });
+              }}
+              stroke="rgba(255,255,255,0.15)"
+              tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              domain={[0, 1]}
+              tickFormatter={(v) => `${Math.round(v * 100)}¢`}
+              stroke="rgba(255,255,255,0.15)"
+              tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              width={45}
+            />
+            <Tooltip content={<GlassTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="yes"
+              stroke="var(--ios-green)"
+              strokeWidth={2}
+              fill="url(#greenGradient)"
+              dot={false}
+              activeDot={{
+                r: 4,
+                fill: "var(--ios-green)",
+                stroke: "rgba(48,209,88,0.3)",
+                strokeWidth: 6,
+              }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
+
+      {data.length === 0 && (
+        <div style={{ textAlign: "center", padding: 40, color: "var(--text-tertiary)" }} className="text-body">
+          No price data available
+        </div>
+      )}
     </div>
   );
 }

@@ -276,15 +276,18 @@ export function runPipeline(
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
-export function fmtPrice(p: number): string {
+export function fmtPrice(p: number | null | undefined): string {
+  if (p == null || isNaN(p)) return "0¢";
   return `${Math.round(p * 100)}¢`;
 }
 
-export function fmtUSDC(n: number): string {
+export function fmtUSDC(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return "$0.00";
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function fmtPct(n: number, sign = true): string {
+export function fmtPct(n: number | null | undefined, sign = true): string {
+  if (n == null || isNaN(n)) return "0.0%";
   const s = (n * 100).toFixed(1);
   return sign && n > 0 ? `+${s}%` : `${s}%`;
 }
