@@ -154,7 +154,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         </span>
 
         {/* Relay trigger — rightmost in footer */}
-        <div style={{ position: "relative" }}>
+        <div className="relative group" style={{ position: "relative" }}>
           {/* Pulse ring */}
           {relayPulsing && (
             <span
@@ -172,7 +172,6 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           <button
             onClick={onToggleRelay}
             aria-label={relayOpen ? "Close Relay chat" : "Open Relay chat"}
-            title="Chat with Quantik Intelligence"
             style={{
               position: "relative",
               zIndex: 1,
@@ -200,6 +199,10 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           >
             {relayOpen ? "✕" : "🤝"}
           </button>
+          {/* Styled tooltip replacing native title attribute */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+            CHAT WITH QUANTIK INTELLIGENCE
+          </div>
         </div>
       </div>
     </aside>
@@ -465,11 +468,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [relayOpen, setRelayOpen] = useState(false);
-  // Initialize pulsing directly from localStorage (lazy initializer avoids effect + setState)
-  const [relayPulsing, setRelayPulsing] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(RELAY_LS_KEY) !== "true";
-  });
+  // Always start pulsing; after hydration check localStorage to suppress if already opened
+  const [relayPulsing, setRelayPulsing] = useState(true);
+  useEffect(() => {
+    if (localStorage.getItem(RELAY_LS_KEY) === "true") {
+      setRelayPulsing(false);
+    }
+  }, []);
 
   const handleToggleRelay = useCallback(() => {
     setRelayOpen((prev) => !prev);

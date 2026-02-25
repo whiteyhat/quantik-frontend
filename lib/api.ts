@@ -164,7 +164,7 @@ export const api = {
 
   // Wallet
   getBalance: () =>
-    apiFetch<WalletBalance>("/api/wallet/balance"),
+    apiFetch<WalletBalance>("/api/portfolio/summary"),
 
   getPositions: () =>
     apiFetch<Position[]>("/api/wallet/positions"),
