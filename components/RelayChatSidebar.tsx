@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
 const RELAY_INTRO =
   "Hi, I'm Relay 🤝 — your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config. I'm here to help.";
 
@@ -82,17 +80,19 @@ export function RelayChatSidebar() {
     setSending(true);
 
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/chat`, {
+      const history = messages.map((m) => ({
+        role: m.role,
+        content: m.text,
+      }));
+
+      const res = await fetch("/api/relay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       });
 
       let replyText: string;
-      if (res.status === 404) {
-        replyText =
-          "Relay agent coming soon — I'll be ready to help you navigate trades, explain signals, and answer market questions. Stay tuned! 🤝";
-      } else if (!res.ok) {
+      if (!res.ok) {
         replyText = "Something went wrong. Please try again.";
       } else {
         const data = (await res.json()) as { reply?: string; message?: string };
@@ -109,13 +109,13 @@ export function RelayChatSidebar() {
         {
           id: nextId(),
           role: "agent",
-          text: "Relay agent coming soon — I'll be ready to help you navigate trades and market questions. 🤝",
+          text: "Unable to reach Relay. Check your connection and try again. 🤝",
         },
       ]);
     } finally {
       setSending(false);
     }
-  }, [input, sending]);
+  }, [input, sending, messages]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
