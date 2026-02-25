@@ -1,128 +1,193 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type Trade } from "@/lib/api";
+import Link from "next/link";
 
-function decisionBadge(direction: "YES" | "NO", outcome: string) {
-  if (outcome === "PENDING" || outcome === "OPEN") {
-    return { label: "PASS", color: "var(--ios-orange)", bg: "var(--ios-orange-glow)" };
-  }
-  if (direction === "YES") {
-    return { label: "BET_YES", color: "var(--ios-green)", bg: "var(--ios-green-glow)" };
-  }
-  return { label: "BET_NO", color: "var(--ios-red)", bg: "var(--ios-red-glow)" };
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface PipelineRun {
+  id: string;
+  slug: string;
+  market: string;
+  decision: "BET_YES" | "BET_NO" | "PASS";
+  confidence: number;
+  timestamp: number;
 }
 
-function evGradeFromPnl(pnlPct?: number): { grade: string; color: string } {
-  if (pnlPct === undefined) return { grade: "-", color: "var(--text-tertiary)" };
-  if (pnlPct > 10) return { grade: "A", color: "var(--ios-green)" };
-  if (pnlPct > 5) return { grade: "B", color: "var(--ios-blue)" };
-  if (pnlPct > 0) return { grade: "C", color: "var(--ios-orange)" };
-  return { grade: "D", color: "var(--ios-red)" };
-}
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function timeAgo(ts: number): string {
+  if (!ts) return "—";
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86_400)}d ago`;
 }
 
+interface DecisionStyle {
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+}
+
+function decisionStyle(decision: PipelineRun["decision"]): DecisionStyle {
+  switch (decision) {
+    case "BET_YES":
+      return {
+        label: "BUY YES",
+        color: "#30d158",
+        bg: "rgba(48,209,88,0.15)",
+        border: "rgba(48,209,88,0.25)",
+      };
+    case "BET_NO":
+      return {
+        label: "BUY NO",
+        color: "#ff453a",
+        bg: "rgba(255,69,58,0.15)",
+        border: "rgba(255,69,58,0.25)",
+      };
+    default:
+      return {
+        label: "PASS",
+        color: "#ff9f0a",
+        bg: "rgba(255,159,10,0.15)",
+        border: "rgba(255,159,10,0.25)",
+      };
+  }
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+
 export function RecentSignals() {
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const [runs, setRuns] = useState<PipelineRun[]>([]);
 
   useEffect(() => {
-    api.getBalance(); // trigger a fetch cycle
-    // Using the store's recent trades approach - fetch from API if available
-    // For now, using a mock based on the Trade type
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/api/wallet/positions`)
-      .then(() => {})
-      .catch(() => {});
+    const base =
+      typeof window !== "undefined"
+        ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001")
+        : "http://localhost:3001";
+
+    fetch(`${base}/api/pipeline/history`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setRuns((data as PipelineRun[]).slice(0, 10));
+        }
+      })
+      .catch(() => {
+        // API not available — show empty state, no crash
+      });
+
+    const iv = setInterval(() => {
+      fetch(`${base}/api/pipeline/history`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((data: unknown) => {
+          if (Array.isArray(data)) {
+            setRuns((data as PipelineRun[]).slice(0, 10));
+          }
+        })
+        .catch(() => {});
+    }, 30_000);
+
+    return () => clearInterval(iv);
   }, []);
 
   return (
-    <div className="glass-card" style={{ padding: 24 }}>
-      <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: "0 0 16px 0" }}>
-        Recent Signals
-      </h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {trades.length === 0 && (
-          <span className="text-body" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: 16 }}>
-            No recent pipeline runs
-          </span>
-        )}
-        {trades.slice(0, 5).map((t) => {
-          const badge = decisionBadge(t.direction, t.outcome);
-          const ev = evGradeFromPnl(t.pnl);
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {runs.length === 0 ? (
+        <div
+          style={{
+            padding: "20px 0",
+            textAlign: "center",
+            fontSize: 13,
+            color: "rgba(255,255,255,0.25)",
+          }}
+        >
+          No recent pipeline runs
+        </div>
+      ) : (
+        runs.map((run) => {
+          const ds = decisionStyle(run.decision);
           return (
-            <div
-              key={t.id}
-              className="glass-card"
-              style={{
-                padding: "10px 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                borderRadius: 12,
-              }}
+            <Link
+              key={run.id}
+              href={`/market/${run.slug ?? ""}`}
+              style={{ textDecoration: "none", color: "inherit" }}
             >
-              {/* Decision badge */}
-              <span
+              <div
                 style={{
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  padding: "2px 8px",
-                  borderRadius: 6,
-                  background: badge.bg,
-                  color: badge.color,
-                  flexShrink: 0,
-                  whiteSpace: "nowrap",
+                  padding: "9px 12px",
+                  borderRadius: 9,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  transition: "background 150ms ease",
                 }}
               >
-                {badge.label}
-              </span>
+                {/* Decision badge */}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 7px",
+                    borderRadius: 5,
+                    background: ds.bg,
+                    color: ds.color,
+                    border: `1px solid ${ds.border}`,
+                    fontFamily: "monospace",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {ds.label}
+                </span>
 
-              {/* Market question */}
-              <span
-                className="text-subhead"
-                style={{
-                  color: "var(--text-secondary)",
-                  flex: 1,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  minWidth: 0,
-                }}
-              >
-                {t.market}
-              </span>
+                {/* Market slug */}
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "rgba(255,255,255,0.55)",
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {run.market ?? run.slug ?? "—"}
+                </span>
 
-              {/* EV grade chip */}
-              <span
-                className="font-mono-data"
-                style={{
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  color: ev.color,
-                  flexShrink: 0,
-                }}
-              >
-                {ev.grade}
-              </span>
+                {/* Confidence */}
+                <span
+                  style={{
+                    fontFamily: '"SF Mono", monospace',
+                    fontSize: 12,
+                    color: "rgba(255,255,255,0.45)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {((run.confidence ?? 0) * 100).toFixed(0)}%
+                </span>
 
-              {/* Time ago */}
-              <span
-                className="text-caption"
-                style={{ color: "var(--text-tertiary)", flexShrink: 0 }}
-              >
-                {timeAgo(t.timestamp)}
-              </span>
-            </div>
+                {/* Timestamp */}
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.20)",
+                    flexShrink: 0,
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {timeAgo(run.timestamp ?? 0)}
+                </span>
+              </div>
+            </Link>
           );
-        })}
-      </div>
+        })
+      )}
     </div>
   );
 }

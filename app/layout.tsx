@@ -4,174 +4,391 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { api, fmtUSDC } from "@/lib/api";
-import { SystemStatus } from "@/components/SystemStatus";
+import { useEffect, useState, useCallback } from "react";
+import { api, fmtUSDC, type WalletBalance } from "@/lib/api";
 import { ToastNotification } from "@/components/ToastNotification";
 
-function Navbar() {
+// ─── Nav items ────────────────────────────────────────────────────────────────
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/", icon: "🏠" },
+  { label: "Markets", href: "/markets", icon: "📊" },
+  { label: "Portfolio", href: "/portfolio", icon: "💼" },
+  { label: "Trade History", href: "/trades", icon: "📈" },
+  { label: "Settings", href: "/settings", icon: "⚙️" },
+];
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+function Sidebar() {
   const pathname = usePathname();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [showSystemStatus, setShowSystemStatus] = useState(false);
-
-  useEffect(() => {
-    api.getBalance()
-      .then((w) => setBalance(w.usdc))
-      .catch(() => {});
-  }, []);
-
-  const navLinks = [
-    { label: "Dashboard", href: "/" },
-    { label: "Markets", href: "/#markets" },
-  ];
 
   return (
-    <nav
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-8 px-6"
+    <aside
       style={{
-        height: 52,
-        borderRadius: 100,
-        background: "rgba(10, 10, 20, 0.7)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        border: "1px solid rgba(255, 255, 255, 0.10)",
-        maxWidth: 720,
-        width: "calc(100% - 32px)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 220,
+        zIndex: 40,
+        display: "flex",
+        flexDirection: "column",
+        // L006: Sidebar glassmorphism — must float above bg with frosted glass
+        background: "rgba(255,255,255,0.03)",
+        backdropFilter: "blur(40px)",
+        WebkitBackdropFilter: "blur(40px)",
+        borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       {/* Wordmark */}
-      <Link href="/" className="flex items-center gap-2 shrink-0" style={{ textDecoration: "none" }}>
-        <span
-          className="font-mono-data"
+      <div style={{ padding: "24px 20px 16px" }}>
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <span
+            style={{
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              fontSize: 15,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              letterSpacing: "0.08em",
+            }}
+          >
+            ◆ QUANTIK
+          </span>
+        </Link>
+        <div
           style={{
-            fontSize: "var(--text-headline)",
-            fontWeight: 700,
-            color: "var(--text-primary)",
+            marginTop: 4,
+            fontSize: 11,
+            color: "rgba(255,255,255,0.25)",
+            fontFamily: "monospace",
             letterSpacing: "0.05em",
           }}
         >
-          ◆ QUANTIK
-        </span>
-      </Link>
+          MISSION CONTROL
+        </div>
+      </div>
 
-      {/* Center nav links */}
-      <div className="flex items-center gap-1">
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href || (link.href === "/" && pathname === "/");
+      {/* Divider */}
+      <div
+        style={{
+          height: 1,
+          margin: "0 16px 12px",
+          background: "rgba(255,255,255,0.05)",
+        }}
+      />
+
+      {/* Nav links */}
+      <nav style={{ flex: 1, padding: "0 10px" }}>
+        {NAV_ITEMS.map((item) => {
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
+
           return (
             <Link
-              key={link.href}
-              href={link.href}
+              key={item.href}
+              href={item.href}
               style={{
-                fontSize: "var(--text-subhead)",
-                fontWeight: 500,
-                color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-                padding: "6px 14px",
-                borderRadius: 8,
-                background: isActive ? "rgba(255, 255, 255, 0.10)" : "transparent",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "9px 12px",
+                marginBottom: 3,
+                borderRadius: 10,
                 textDecoration: "none",
-                transition: "all 200ms ease",
+                color: isActive
+                  ? "rgba(255,255,255,0.92)"
+                  : "rgba(255,255,255,0.45)",
+                background: isActive
+                  ? "rgba(255,255,255,0.07)"
+                  : "transparent",
+                borderLeft: isActive
+                  ? "2px solid #0a84ff"
+                  : "2px solid transparent",
+                fontSize: 14,
+                fontWeight: isActive ? 600 : 400,
+                transition: "all 180ms ease",
               }}
             >
-              {link.label}
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}
-      </div>
+      </nav>
 
-      {/* Right side: system status + wallet */}
-      <div className="flex items-center gap-3 shrink-0">
-        <button
-          onClick={() => setShowSystemStatus(!showSystemStatus)}
+      {/* Version footer */}
+      <div
+        style={{
+          padding: "12px 20px 16px",
+          borderTop: "1px solid rgba(255,255,255,0.04)",
+        }}
+      >
+        <span
           style={{
-            background: "transparent",
-            border: "none",
-            color: "var(--text-tertiary)",
-            cursor: "pointer",
-            fontSize: "var(--text-body)",
-            padding: 4,
-            lineHeight: 1,
-          }}
-          aria-label="System status"
-        >
-          ⚙
-        </button>
-
-        <div
-          className="flex items-center gap-2"
-          style={{
-            padding: "4px 12px",
-            borderRadius: 100,
-            background: "rgba(255, 255, 255, 0.06)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            fontSize: 11,
+            color: "rgba(255,255,255,0.20)",
+            fontFamily: "monospace",
           }}
         >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "var(--ios-green)",
-              display: "inline-block",
-            }}
-          />
-          <span
-            className="font-mono-data"
-            style={{
-              fontSize: "var(--text-subhead)",
-              fontWeight: 500,
-              color: "var(--text-primary)",
-            }}
-          >
-            {balance !== null ? fmtUSDC(balance) : "···"}
-          </span>
-        </div>
+          v0.1.0 · Quantik
+        </span>
       </div>
-
-      {showSystemStatus && (
-        <div style={{ position: "absolute", top: 60, right: 0 }}>
-          <SystemStatus onClose={() => setShowSystemStatus(false)} />
-        </div>
-      )}
-    </nav>
+    </aside>
   );
 }
 
+// ─── Top Wallet Bar ───────────────────────────────────────────────────────────
+
+function TopWalletBar() {
+  const [wallet, setWallet] = useState<WalletBalance | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    api.getBalance().then(setWallet).catch(() => {});
+    const iv = setInterval(() => {
+      api.getBalance().then(setWallet).catch(() => {});
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const copyAddress = useCallback(() => {
+    const addr = wallet?.address ?? "";
+    if (!addr) return;
+    navigator.clipboard.writeText(addr).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [wallet?.address]);
+
+  const truncAddr = (addr: string) =>
+    addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
+
+  const pnl = wallet?.pnl ?? 0;
+  const pnlPct = wallet?.pnlPct ?? 0;
+  const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
+  const pnlSign = pnl >= 0 ? "+" : "";
+
+  // L007: Dot separators with 16px spacing, monospace values, labels above
+  const Separator = () => (
+    <span
+      style={{
+        margin: "0 16px",
+        color: "rgba(255,255,255,0.15)",
+        fontSize: 16,
+        userSelect: "none",
+      }}
+    >
+      ·
+    </span>
+  );
+
+  const MetricItem = ({
+    label,
+    value,
+    valueColor = "rgba(255,255,255,0.92)",
+  }: {
+    label: string;
+    value: string;
+    valueColor?: string;
+  }) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 1,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.30)",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          lineHeight: 1,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+          fontSize: 13,
+          fontWeight: 600,
+          color: valueColor,
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
+        height: 52,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 20px",
+        background: "rgba(5,5,8,0.88)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        flexShrink: 0,
+      }}
+    >
+      {/* Wallet address — copy on click */}
+      <button
+        onClick={copyAddress}
+        title="Click to copy"
+        style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 6,
+          cursor: "pointer",
+          padding: "4px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontSize: 12,
+            color: "rgba(255,255,255,0.60)",
+          }}
+        >
+          {wallet?.address ? truncAddr(wallet.address) : "0x7EE9…4b53"}
+        </span>
+        {copied ? (
+          <span style={{ fontSize: 11, color: "#30d158" }}>✓</span>
+        ) : (
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>⎘</span>
+        )}
+      </button>
+
+      <Separator />
+
+      <MetricItem label="USDC" value={wallet ? fmtUSDC(wallet.usdc) : "···"} />
+
+      <Separator />
+
+      <MetricItem label="POL" value="0.00" />
+
+      <Separator />
+
+      <MetricItem
+        label="DAILY P&L"
+        value={
+          wallet
+            ? `${pnlSign}${fmtUSDC(pnl)} (${pnlSign}${(pnlPct).toFixed(1)}%)`
+            : "···"
+        }
+        valueColor={pnlColor}
+      />
+
+      <Separator />
+
+      <MetricItem
+        label="TOTAL VALUE"
+        value={wallet ? fmtUSDC(wallet.usdc) : "···"}
+      />
+
+      {/* Agent status dot — pushed to right */}
+      <div
+        style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            position: "relative",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: "#30d158",
+            display: "inline-block",
+            boxShadow: "0 0 8px rgba(48,209,88,0.6)",
+          }}
+        />
+        <span
+          style={{
+            fontSize: 11,
+            color: "rgba(255,255,255,0.35)",
+            fontFamily: "monospace",
+            letterSpacing: "0.05em",
+          }}
+        >
+          ALL SYSTEMS OK
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
+
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <head>
-        <title>Quantik | Trading Terminal</title>
-        <meta name="description" content="AI-powered prediction market trading terminal" />
+        <title>Quantik | Mission Control</title>
+        <meta
+          name="description"
+          content="AI-powered prediction market trading terminal"
+        />
       </head>
       <body className="antialiased" style={{ minHeight: "100vh" }}>
         <Providers>
           {/* Animated gradient background */}
           <div className="crystal-bg" />
 
-          {/* Floating navbar */}
-          <Navbar />
+          {/* Left sidebar */}
+          <Sidebar />
 
           {/* Toast notifications */}
           <ToastNotification />
 
-          {/* Main content */}
-          <main
+          {/* Main content — offset by sidebar width */}
+          <div
             style={{
+              marginLeft: 220,
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
               position: "relative",
               zIndex: 1,
-              maxWidth: 1200,
-              margin: "0 auto",
-              padding: "80px 16px 64px",
             }}
           >
-            {children}
-          </main>
+            {/* Persistent top wallet bar */}
+            <TopWalletBar />
+
+            {/* Page content */}
+            <main
+              style={{
+                flex: 1,
+                padding: "20px 20px 40px",
+                overflowX: "hidden",
+              }}
+            >
+              {children}
+            </main>
+          </div>
         </Providers>
       </body>
     </html>
