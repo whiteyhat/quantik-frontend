@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 60;
+
 const RELAY_SYSTEM_PROMPT = `You are Relay 🤝, the human-facing intelligence interface for Quantik — a multi-agent Polymarket prediction market trading system.
 
 You help the user understand their portfolio, active markets, agent decisions, and risk configuration. You communicate with the intelligence of all 7 specialist agents:
@@ -47,10 +49,16 @@ export async function POST(req: NextRequest) {
   else if (lower.includes("liquidity") || lower.includes("order book") || lower.includes("spread"))
     routedTo = "flux";
 
-  const chatHistory = history.map((m: { role: string; content: string }) => ({
+  let chatHistory = history.map((m: { role: string; content: string }) => ({
     role: m.role === "user" ? "user" : "model",
     parts: [{ text: m.content }],
   }));
+
+  // Gemini requires the first history item to be "user"
+  if (chatHistory.length > 0 && chatHistory[0].role !== "user") {
+    chatHistory.unshift({ role: "user", parts: [{ text: "Hello" }] });
+  }
+
 
   // gemini-3.0-flash preferred; fallback chain for availability
   const modelNames = ["gemini-3.0-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"];

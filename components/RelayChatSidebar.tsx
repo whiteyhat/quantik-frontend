@@ -74,7 +74,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       let replyText: string;
       if (!res.ok) {
         const errData = (await res.json().catch(() => ({}))) as { error?: string };
-        replyText = errData.error ?? "Something went wrong. Please try again.";
+        replyText = errData.error || "The intelligence network is currently unreachable. Please try again.";
       } else {
         const data = (await res.json()) as { reply?: string; message?: string };
         replyText = data.reply ?? data.message ?? "Got it.";
