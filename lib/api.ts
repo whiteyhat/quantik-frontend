@@ -178,6 +178,18 @@ export const api = {
     }
   },
 
+  getTrendingMarkets: async (): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
+    try {
+      const res = await apiFetch<{ markets: Market[]; total: number; hasMore: boolean }>(
+        `/api/markets/trending`
+      );
+      if (res && Array.isArray(res.markets)) return res;
+      return { markets: [], total: 0, hasMore: false };
+    } catch {
+      return { markets: [], total: 0, hasMore: false };
+    }
+  },
+
   getMarket: (slug: string) =>
     apiFetch<Market>(`/api/markets/${slug}`),
 

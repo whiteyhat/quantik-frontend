@@ -8,6 +8,7 @@ import { useInView } from "react-intersection-observer";
 // ─── Category filter pills ────────────────────────────────────────────────────
 
 const SCANNER_CATEGORIES = [
+  "Trending \u{1F525}",
   "All",
   "Crypto",
   "Politics",
@@ -151,7 +152,7 @@ interface MarketScannerProps {
 export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketScannerProps) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<ScannerCategory>("All");
+  const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending \u{1F525}");
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -160,33 +161,52 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketSc
   const [loading, setLoading] = useState(false);
   const { ref, inView } = useInView();
 
+  const isTrending = activeCategory === "Trending \u{1F525}";
+
   const loadMarkets = useCallback(async (reset: boolean) => {
     if (loading) return;
     setLoading(true);
     try {
-      const currentOffset = reset ? 0 : offset;
-      const res = await api.getMarkets(
-        search || undefined,
-        activeCategory === "All" ? undefined : activeCategory,
-        20,
-        currentOffset
-      );
-      setMarkets((prev) => {
-        // Prevent duplicate append if API returns same data during react strict mode or fast scrolls
-        if (!reset) {
-          const newMarkets = res.markets.filter(m => !prev.some(p => p.tokenId === m.tokenId));
-          return [...prev, ...newMarkets];
+      if (isTrending) {
+        // Trending: single fetch, no pagination
+        const res = await api.getTrendingMarkets();
+        if (res.markets.length === 0) {
+          // Fallback: auto-switch to All
+          setActiveCategory("All");
+          return;
         }
-        return res.markets;
-      });
-      setHasMore(res.hasMore);
-      setOffset(currentOffset + 20);
+        setMarkets(res.markets);
+        setHasMore(false);
+        setOffset(res.markets.length);
+      } else {
+        const currentOffset = reset ? 0 : offset;
+        const res = await api.getMarkets(
+          search || undefined,
+          activeCategory === "All" ? undefined : activeCategory,
+          20,
+          currentOffset
+        );
+        setMarkets((prev) => {
+          if (!reset) {
+            const newMarkets = res.markets.filter(m => !prev.some(p => p.tokenId === m.tokenId));
+            return [...prev, ...newMarkets];
+          }
+          return res.markets;
+        });
+        setHasMore(res.hasMore);
+        setOffset(currentOffset + 20);
+      }
     } catch {
+      if (isTrending) {
+        // Graceful fallback on trending failure
+        setActiveCategory("All");
+        return;
+      }
       setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [search, activeCategory, loading, offset]);
+  }, [search, activeCategory, loading, offset, isTrending]);
 
   // Initial load and filter change
   useEffect(() => {
@@ -237,6 +257,13 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketSc
           maxWidth: 480,
         }}
       />
+
+      {/* Trending micro-label */}
+      {isTrending && (
+        <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.03em" }}>
+          {"\u{1F4E1}"} Live · Polymarket
+        </div>
+      )}
 
       {/* Category filter pills */}
       {showFilterPills && (
@@ -290,7 +317,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketSc
       {!loading && filtered.length === 0 && (
         <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
           <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
-            {activeCategory !== "All" ? `No markets in "${activeCategory}"` : "No markets found"}
+            {activeCategory !== "All" && !isTrending ? `No markets in "${activeCategory}"` : "No markets found"}
           </span>
         </div>
       )}
