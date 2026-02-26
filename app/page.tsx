@@ -133,9 +133,9 @@ function PortfolioCard() {
   const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = pnl >= 0 ? "+" : "";
 
-  // Kelly utilization mocked — 34% used of 100% allowed
-  const kellyPct = 34;
-  const circuitArmed = true;
+  // Kelly utilization from API — fall back to 0 until loaded
+  const kellyPct = Math.round((wallet?.kellyUtilization ?? 0) * 100);
+  const circuitArmed = (wallet?.circuitBreakerStatus ?? "ARMED") !== "TRIGGERED";
 
   return (
     <div style={panelStyle}>
@@ -793,7 +793,7 @@ function MarketScannerPanel() {
         <SectionHeader title="Market Scanner" subtitle="Live CLOB markets · Layer 0" />
       </div>
       <div style={{ padding: "0 16px 16px" }}>
-        <MarketScanner showFilterPills />
+        <MarketScanner showFilterPills maxCols={2} />
       </div>
     </div>
   );

@@ -294,13 +294,15 @@ function PositionsTable({ positions }: { positions: Position[] }) {
 
 // ─── Risk panel ───────────────────────────────────────────────────────────────
 
-function RiskPanel({ risk }: { risk: RiskSummary | null }) {
+function RiskPanel({ risk, wallet }: { risk: RiskSummary | null; wallet: WalletBalance | null }) {
   if (!risk) return null;
 
   // Guard all risk fields with ?? 0 to prevent toFixed on undefined
   const drawdown = (risk.drawdown ?? 0) as number;
   const drawdownLimit = ((risk.drawdownLimit ?? 1) as number) || 1; // avoid division by zero
   const kellyUtilization = (risk.kellyUtilization ?? 0) as number;
+  // Derive circuit breaker from portfolio summary (wallet) — more accurate than risk endpoint
+  const circuitArmed = (wallet?.circuitBreakerStatus ?? "ARMED") !== "TRIGGERED";
 
   const drawdownPct = (drawdown / drawdownLimit) * 100;
   const drawdownColor =
@@ -402,8 +404,8 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
           justifyContent: "space-between",
           padding: "8px 12px",
           borderRadius: 8,
-          background: risk.circuitArmed ? "rgba(48,209,88,0.07)" : "rgba(255,69,58,0.10)",
-          border: `1px solid ${risk.circuitArmed ? "rgba(48,209,88,0.20)" : "rgba(255,69,58,0.30)"}`,
+          background: circuitArmed ? "rgba(48,209,88,0.07)" : "rgba(255,69,58,0.10)",
+          border: `1px solid ${circuitArmed ? "rgba(48,209,88,0.20)" : "rgba(255,69,58,0.30)"}`,
         }}
       >
         <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Circuit Breaker</span>
@@ -412,11 +414,11 @@ function RiskPanel({ risk }: { risk: RiskSummary | null }) {
             fontSize: META_SIZE,
             fontWeight: 700,
             fontFamily: "monospace",
-            color: risk.circuitArmed ? "#30d158" : "#ff453a",
+            color: circuitArmed ? "#30d158" : "#ff453a",
             letterSpacing: "0.08em",
           }}
         >
-          {risk.circuitArmed ? "ARMED" : "TRIGGERED"}
+          {circuitArmed ? "ARMED" : "TRIGGERED"}
         </span>
       </div>
     </div>
@@ -532,7 +534,7 @@ export default function PortfolioPage() {
             </div>
 
             {/* Risk panel */}
-            {risk && <RiskPanel risk={risk} />}
+            {risk && <RiskPanel risk={risk} wallet={wallet} />}
           </div>
         </>
       )}

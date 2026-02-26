@@ -34,6 +34,11 @@ export interface WalletBalance {
   pnlPct: number;
   winRate: number;
   totalTrades: number;
+  // Risk fields from portfolio summary
+  circuitBreakerStatus?: "ARMED" | "WARNING" | "TRIGGERED";
+  kellyUtilization?: number;
+  drawdown?: number;
+  drawdownLimit?: number;
 }
 
 export interface Position {

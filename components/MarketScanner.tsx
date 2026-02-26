@@ -144,9 +144,11 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
 
 interface MarketScannerProps {
   showFilterPills?: boolean;
+  /** Max columns in the market grid. Defaults to 3 (auto-responsive). Pass 1 or 2 for narrow contexts. */
+  maxCols?: 1 | 2 | 3;
 }
 
-export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
+export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketScannerProps) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("All");
@@ -269,7 +271,7 @@ export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
       )}
 
       {/* Market grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`}>
         {filtered.map((m) => (
           <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
         ))}
