@@ -86,4 +86,20 @@ describe('Mobile Responsiveness', () => {
     });
   });
 
+
+  it('portfolio page loads without horizontal overflow', () => {
+    cy.viewport('iphone-x');
+    cy.visit('/portfolio');
+    
+    // Page loads without crashing
+    cy.get('h1').contains('Portfolio').should('be.visible');
+
+    // The main content area does not exceed 100vw
+    cy.document().then((doc) => {
+      const bodyWidth = doc.body.scrollWidth;
+      const windowWidth = doc.documentElement.clientWidth;
+      expect(bodyWidth).to.be.at.most(windowWidth);
+    });
+  });
+
 });

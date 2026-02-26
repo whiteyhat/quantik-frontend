@@ -173,7 +173,7 @@ function PositionsTable({ positions }: { positions: Position[] }) {
   }
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="w-full overflow-x-auto overflow-y-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -466,7 +466,7 @@ export default function PortfolioPage() {
   const pnlSign = totalPnl >= 0 ? "+" : "";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="flex flex-col gap-5 p-4 md:p-8 w-full max-w-full overflow-hidden">
       {/* Header */}
       <div>
         <h1
@@ -489,13 +489,7 @@ export default function PortfolioPage() {
       {loading ? (
         /* Skeleton loading state — never crashes on null data */
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 12,
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => <SkeletonTile key={i} />)}
           </div>
           <div style={{ ...panelStyle, padding: 40, textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
@@ -505,13 +499,7 @@ export default function PortfolioPage() {
       ) : (
         <>
           {/* Metrics row */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-              gap: 12,
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <MetricTile
               label="USDC Balance"
               value={wallet ? fmtUSDC(wallet.usdc ?? 0) : "···"}
@@ -533,16 +521,9 @@ export default function PortfolioPage() {
           </div>
 
           {/* Positions + Risk row */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: risk ? "1fr 320px" : "1fr",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
+          <div className={`grid grid-cols-1 ${risk ? "lg:grid-cols-[1fr_320px]" : ""} gap-4 items-start w-full`}>
             {/* Positions table */}
-            <div style={panelStyle}>
+            <div style={panelStyle} className="w-full max-w-full overflow-hidden">
               <SectionHeader
                 title="Open Positions"
                 subtitle={`${positions.length} active trade${positions.length !== 1 ? "s" : ""}`}
