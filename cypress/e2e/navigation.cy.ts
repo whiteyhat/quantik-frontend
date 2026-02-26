@@ -15,7 +15,6 @@ describe('Navigation', () => {
       { name: 'Portfolio', url: '/portfolio' },
       { name: 'Trade History', url: '/trade-history' },
       { name: 'Market Analysis', url: '/market-analysis' },
-      { name: 'Risk Config', url: '/settings' },
       { name: 'Settings', url: '/settings' },
     ]
 

@@ -20,7 +20,6 @@ const NAV_ITEMS = [
   { label: "Portfolio", href: "/portfolio", icon: "💼" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
   { label: "Market Analysis", href: "/market-analysis", icon: "🔮" },
-  { label: "Risk Config", href: "/settings/risk", icon: "🛡️" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 

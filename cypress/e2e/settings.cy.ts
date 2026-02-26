@@ -1,4 +1,4 @@
-describe('Risk Config', () => {
+describe('Settings / Risk Config', () => {
   beforeEach(() => {
     cy.intercept('GET', '**/api/v1/risk-config*', { fixture: 'risk-config.json' }).as('getRiskConfig')
     cy.intercept('PUT', '**/api/v1/risk-config*').as('saveRiskConfig')
@@ -28,7 +28,7 @@ describe('Risk Config', () => {
     
     // Intercept with fake response
     cy.intercept('PUT', '**/api/v1/risk-config*', { statusCode: 200, body: {} }).as('saveRiskConfigMock')
-    cy.contains('SAVE').click({ force: true })
+    cy.contains('💾 SAVE').click({ force: true })
     cy.wait('@saveRiskConfigMock')
     
     cy.contains('UNSAVED').should('not.exist')
