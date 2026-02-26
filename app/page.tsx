@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib/api";
+import {
+  api,
+  fmtUSDC,
+  fmtPrice,
+  type WalletBalance,
+  type Position,
+  type OrchestratorCandidate,
+  type OrchestratorStatus,
+} from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
 
@@ -778,6 +786,207 @@ function SystemStatusPanel() {
   );
 }
 
+// ─── Orchestrator Panel ──────────────────────────────────────────────────────
+
+function OrchestratorPanel() {
+  const [candidates, setCandidates] = useState<OrchestratorCandidate[]>([]);
+  const [status, setStatus] = useState<OrchestratorStatus | null>(null);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+    function fetchData() {
+      api.getOrchestratorStatus().then(setStatus).catch(() => {});
+      api.getOrchestratorCandidates().then((r) => setCandidates(r.candidates)).catch(() => {});
+    }
+    fetchData();
+    const iv = setInterval(fetchData, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const handleScan = async () => {
+    setScanning(true);
+    try {
+      await api.triggerOrchestratorScan();
+      const [s, c] = await Promise.all([
+        api.getOrchestratorStatus(),
+        api.getOrchestratorCandidates(),
+      ]);
+      if (s) setStatus(s);
+      setCandidates(c.candidates);
+    } catch { /* ignore */ }
+    setScanning(false);
+  };
+
+  const nextScanIn = status
+    ? Math.max(0, Math.round((status.nextScanAt - Date.now()) / 60000))
+    : 0;
+
+  const scoreBadgeColor = (score: number) => {
+    if (score > 75) return { bg: "rgba(48,209,88,0.15)", border: "rgba(48,209,88,0.25)", text: "#30d158" };
+    if (score >= 50) return { bg: "rgba(255,159,10,0.15)", border: "rgba(255,159,10,0.25)", text: "#ff9f0a" };
+    return { bg: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.12)", text: "rgba(255,255,255,0.50)" };
+  };
+
+  const triggerColor: Record<string, { bg: string; border: string; text: string }> = {
+    volume_spike: { bg: "rgba(0,122,255,0.15)", border: "rgba(0,122,255,0.25)", text: "#007aff" },
+    sharp_price_move: { bg: "rgba(255,69,58,0.15)", border: "rgba(255,69,58,0.25)", text: "#ff453a" },
+    new_high_liquidity: { bg: "rgba(191,90,242,0.15)", border: "rgba(191,90,242,0.25)", text: "#bf5af2" },
+  };
+
+  return (
+    <div style={{ ...panelStyle, padding: 0, overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <SectionHeader title="Orchestrator" subtitle="Tier 0 scanner · Layer 1" />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {status && status.lastScanAt > 0 && (
+            <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", whiteSpace: "nowrap" }}>
+              Next in {nextScanIn}m
+            </span>
+          )}
+          <button
+            onClick={handleScan}
+            disabled={scanning}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: scanning ? "rgba(255,255,255,0.04)" : "rgba(0,122,255,0.15)",
+              color: scanning ? "rgba(255,255,255,0.30)" : "#007aff",
+              border: `1px solid ${scanning ? "rgba(255,255,255,0.06)" : "rgba(0,122,255,0.25)"}`,
+              fontSize: LABEL_SIZE,
+              fontWeight: 600,
+              cursor: scanning ? "not-allowed" : "pointer",
+              transition: "all 200ms ease",
+            }}
+          >
+            {scanning ? "Scanning…" : "Scan now"}
+          </button>
+        </div>
+      </div>
+
+      {/* Status bar */}
+      {status && status.lastScanAt > 0 && (
+        <div
+          style={{
+            padding: "6px 20px 8px",
+            display: "flex",
+            gap: 16,
+            fontSize: LABEL_SIZE,
+            color: "rgba(255,255,255,0.40)",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <span>{status.marketsScanned.toLocaleString()} markets scanned</span>
+          <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
+          <span>{status.candidatesFound} candidates</span>
+          <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
+          <span>
+            {status.status === "scanning" ? (
+              <span style={{ color: "#ff9f0a" }}>Scanning</span>
+            ) : (
+              "Idle"
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* Candidates list */}
+      <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+        {candidates.length === 0 && (
+          <div style={{ padding: "20px 0", textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
+            {status && status.lastScanAt === 0 ? "First scan pending…" : "No candidates found"}
+          </div>
+        )}
+        {candidates.slice(0, 8).map((c) => {
+          const badge = scoreBadgeColor(c.opportunityScore);
+          return (
+            <Link
+              key={c.slug}
+              href={`/market/${c.slug}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                textDecoration: "none",
+                transition: "all 200ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+              }}
+            >
+              {/* Score badge */}
+              <span
+                style={{
+                  flexShrink: 0,
+                  padding: "2px 7px",
+                  borderRadius: 5,
+                  background: badge.bg,
+                  border: `1px solid ${badge.border}`,
+                  color: badge.text,
+                  fontSize: LABEL_SIZE,
+                  fontWeight: 700,
+                  fontFamily: "'SF Mono', 'JetBrains Mono', monospace",
+                  minWidth: 36,
+                  textAlign: "center",
+                }}
+              >
+                {c.opportunityScore.toFixed(0)}
+              </span>
+
+              {/* Question */}
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: BODY_SIZE,
+                  color: "rgba(255,255,255,0.80)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c.question}
+              </span>
+
+              {/* Trigger tags */}
+              {c.triggers.map((t) => {
+                const tc = triggerColor[t] ?? { bg: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.12)", text: "rgba(255,255,255,0.50)" };
+                const label = t.replace(/_/g, " ");
+                return (
+                  <span
+                    key={t}
+                    style={{
+                      flexShrink: 0,
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                      background: tc.bg,
+                      border: `1px solid ${tc.border}`,
+                      color: tc.text,
+                      fontSize: LABEL_SIZE - 1 > 10 ? LABEL_SIZE - 1 : 11,
+                      fontWeight: 500,
+                      textTransform: "capitalize",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Market Scanner Wrapper ───────────────────────────────────────────────────
 
 function MarketScannerPanel() {
@@ -825,7 +1034,8 @@ export default function DashboardPage() {
       </div>
 
       {/* ── CENTER COLUMN ────────────────────────────────────────────── */}
-      <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <OrchestratorPanel />
         <MarketScannerPanel />
       </div>
 

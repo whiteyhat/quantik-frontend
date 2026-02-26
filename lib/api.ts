@@ -130,6 +130,38 @@ export interface SigmaResult {
   entry_price: number;
 }
 
+// ── Orchestrator types ────────────────────────────────────────────────────────
+
+export interface OrchestratorCandidate {
+  slug: string;
+  tokenId: string;
+  question: string;
+  opportunityScore: number;
+  components: {
+    volume: number;
+    priceMove: number;
+    liquidity: number;
+    recency: number;
+  };
+  triggers: string[];
+  scoredAt: number;
+}
+
+export interface OrchestratorStatus {
+  lastScanAt: number;
+  nextScanAt: number;
+  marketsScanned: number;
+  candidatesFound: number;
+  scanIntervalMs: number;
+  status: "idle" | "scanning";
+}
+
+export interface OrchestratorCandidatesResponse {
+  candidates: OrchestratorCandidate[];
+  total: number;
+  scanCycle: number;
+}
+
 export interface TradeRequest {
   slug: string;
   tokenId: string;
@@ -238,6 +270,27 @@ export const api = {
 
   cancelAll: () =>
     apiFetch<{ cancelled: number }>("/api/trade/cancel-all", { method: "POST" }),
+
+  // Orchestrator
+  getOrchestratorStatus: async (): Promise<OrchestratorStatus | null> => {
+    try {
+      return await apiFetch<OrchestratorStatus>("/api/orchestrator/status");
+    } catch {
+      return null;
+    }
+  },
+
+  getOrchestratorCandidates: async (): Promise<OrchestratorCandidatesResponse> => {
+    try {
+      return await apiFetch<OrchestratorCandidatesResponse>("/api/orchestrator/candidates");
+    } catch {
+      return { candidates: [], total: 0, scanCycle: 0 };
+    }
+  },
+
+  triggerOrchestratorScan: async (): Promise<{ triggered: boolean; marketsScanned: number; candidatesFound: number }> => {
+    return apiFetch("/api/orchestrator/scan", { method: "POST" });
+  },
 };
 
 // ─── SSE Helpers ──────────────────────────────────────────────────────────────
