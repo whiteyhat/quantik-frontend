@@ -5,7 +5,9 @@ import { useState, type ReactNode } from "react";
 export interface AgentStepProps {
   emoji: string;
   name: string;
+  role?: string;
   status: "idle" | "running" | "done" | "error";
+  agentColor?: string;
   latencyMs?: number;
   summary?: string;
   children?: ReactNode;
@@ -28,14 +30,27 @@ function syntaxHighlight(json: string): string {
   );
 }
 
-export function AgentStep({ emoji, name, status, latencyMs, summary, children }: AgentStepProps) {
+export function AgentStep({ emoji, name, role, status, agentColor, latencyMs, summary, children }: AgentStepProps) {
   const [expanded, setExpanded] = useState(false);
 
   const statusDotClass = `status-dot status-dot-${status}`;
+  const isRunning = status === "running";
 
   return (
-    <div style={{ position: "relative" }}>
-      {/* Main row — always visible */}
+    <div
+      className="glass-card"
+      style={{
+        padding: 0,
+        marginBottom: 8,
+        borderLeft: isRunning ? `2px solid ${agentColor ?? "var(--ios-blue)"}` : "2px solid transparent",
+        boxShadow: isRunning
+          ? `inset 3px 0 12px -4px ${agentColor ?? "var(--ios-blue)"}40, 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)`
+          : undefined,
+        transition: "border-color 300ms ease, box-shadow 300ms ease",
+        minHeight: 64,
+      }}
+    >
+      {/* Main row */}
       <button
         onClick={() => setExpanded(!expanded)}
         style={{
@@ -47,10 +62,11 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          borderRadius: 12,
+          borderRadius: 16,
           transition: "background 200ms ease",
           textAlign: "left",
           color: "inherit",
+          minHeight: 64,
         }}
         onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
         onMouseOut={(e) => (e.currentTarget.style.background = "transparent")}
@@ -58,17 +74,41 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
         {/* Status dot */}
         <div className={statusDotClass} />
 
-        {/* Emoji + Name */}
-        <span style={{ fontSize: "var(--text-body)" }}>{emoji}</span>
-        <span
-          className="text-headline"
-          style={{
-            color: status === "idle" ? "var(--text-tertiary)" : "var(--text-primary)",
-            flex: 1,
-          }}
-        >
-          {name}
-        </span>
+        {/* Emoji + Name + Role */}
+        <span style={{ fontSize: 15 }}>{emoji}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span
+            className="text-headline"
+            style={{
+              color: status === "idle" ? "var(--text-tertiary)" : "var(--text-primary)",
+              display: "block",
+            }}
+          >
+            {name}
+          </span>
+          {role && (
+            <span style={{ fontSize: 11, color: "var(--text-tertiary)", display: "block", marginTop: 1 }}>
+              {role}
+            </span>
+          )}
+        </div>
+
+        {/* Summary (one-line when done and not expanded) */}
+        {summary && status === "done" && !expanded && (
+          <span
+            className="text-caption"
+            style={{
+              color: "var(--text-secondary)",
+              maxWidth: 180,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flexShrink: 1,
+            }}
+          >
+            {summary}
+          </span>
+        )}
 
         {/* Status label */}
         <span
@@ -84,9 +124,10 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
                 : "var(--text-tertiary)",
             textTransform: "uppercase",
             letterSpacing: "0.05em",
+            flexShrink: 0,
           }}
         >
-          {status === "running" ? "RUNNING..." : status.toUpperCase()}
+          {status === "running" ? "RUNNING..." : status === "done" ? "\u2713 DONE" : status === "error" ? "\u2717 ERROR" : "IDLE"}
         </span>
 
         {/* Latency badge */}
@@ -94,11 +135,12 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
           <span
             className="font-mono-data"
             style={{
-              fontSize: "var(--text-caption)",
+              fontSize: 11,
               color: "var(--text-tertiary)",
               padding: "2px 6px",
               borderRadius: 4,
               background: "rgba(255,255,255,0.04)",
+              flexShrink: 0,
             }}
           >
             {(latencyMs / 1000).toFixed(1)}s
@@ -112,20 +154,12 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
             fontSize: 12,
             transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
             transition: "transform 200ms ease",
+            flexShrink: 0,
           }}
         >
-          ▸
+          &#x25B8;
         </span>
       </button>
-
-      {/* Summary line (visible when done, collapsed) */}
-      {summary && !expanded && status === "done" && (
-        <div style={{ padding: "0 16px 8px 36px" }}>
-          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>
-            {summary}
-          </span>
-        </div>
-      )}
 
       {/* Expanded content */}
       <div
@@ -135,7 +169,7 @@ export function AgentStep({ emoji, name, status, latencyMs, summary, children }:
           transition: "max-height 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }}
       >
-        <div className="glass-card-elevated" style={{ margin: "4px 8px 8px", padding: 16, borderRadius: 14 }}>
+        <div className="glass-card-elevated" style={{ margin: "0 8px 8px", padding: 16, borderRadius: 14 }}>
           {children ? (
             children
           ) : (
@@ -157,7 +191,7 @@ export function AgentDataView({ data }: { data: unknown }) {
     <pre
       className="font-mono-data"
       style={{
-        fontSize: "var(--text-caption)",
+        fontSize: 11,
         lineHeight: 1.6,
         margin: 0,
         whiteSpace: "pre-wrap",
