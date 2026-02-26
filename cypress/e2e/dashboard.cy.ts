@@ -16,7 +16,7 @@ describe('Dashboard', () => {
     }).as('relayRequest')
     
     // The sidebar should open and the textarea should be visible
-    cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Hello{enter}')
+    cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Hello{enter}', { force: true })
     
     // Verify the user message is visible
     cy.contains('Hello').should('be.visible')

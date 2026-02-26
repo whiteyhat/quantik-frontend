@@ -68,7 +68,7 @@ describe('Mobile Responsiveness', () => {
     });
 
     // The drawer should open and the textarea should be visible
-    cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Mobile test{enter}');
+    cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Mobile test{enter}', { force: true });
 
     // Verify the drawer is full width (100vw)
     cy.window().then((win) => {

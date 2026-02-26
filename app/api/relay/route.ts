@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
 
-  const modelName = "gemini-2.0-flash-lite-preview-02-05";
+  const modelName = "gemini-2.5-flash";
 
   const model = genAI.getGenerativeModel({
     model: modelName,

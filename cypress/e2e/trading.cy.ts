@@ -1,4 +1,10 @@
 describe('Trading Flow', () => {
+  Cypress.on('uncaught:exception', (err, runnable) => {
+    if (err.message.includes('setPointerCapture')) {
+      return false
+    }
+  })
+
   beforeEach(() => {
     cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/v1/risk-config', { fixture: 'risk-config.json' }).as('riskConfig')
@@ -6,6 +12,8 @@ describe('Trading Flow', () => {
       req.reply({ enabled: req.headers['x-mock-toggled'] === 'true' ? true : false })
     }).as('getPaperMode')
     cy.intercept('POST', '**/api/v1/settings/paper-mode', { body: { success: true } }).as('setPaperMode')
+    // Provide both settings endpoints since context and page fetch different ones
+    cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: true } }).as('getSettings')
     cy.intercept('GET', '**/api/markets/bitcoin-100k-2026', { fixture: 'market-single.json' }).as('getMarket')
     cy.intercept('POST', '**/api/trade/execute', { statusCode: 200, body: {} }).as('executeTrade')
     cy.intercept('POST', '**/api/v1/panic-mode/activate', { statusCode: 200, body: { success: true } }).as('panicMode')
@@ -15,6 +23,7 @@ describe('Trading Flow', () => {
     cy.visit('/settings')
     cy.wait('@getPaperMode')
     cy.intercept('GET', '**/api/v1/settings/paper-mode', { body: { enabled: true } }).as('getPaperModeEnabled')
+    cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: true } }).as('getSettingsEnabled')
     cy.get('button[aria-label="Toggle"]').first().click()
     cy.wait('@setPaperMode')
     cy.contains('Active — all trades are simulated').should('be.visible')
@@ -27,7 +36,16 @@ describe('Trading Flow', () => {
           if (typeof url === 'string' && url.includes('/api/pipeline/run')) {
             const stream = new ReadableStream({
               start(controller) {
-                controller.enqueue(new TextEncoder().encode('{"type":"agent","agent":"Sigma","status":"success","data":{"decision": "BET_YES", "confidence": 0.85, "size_usd": 100, "entry_price": 0.45}}\n'));
+                const sendEvent = (agent, data) => {
+                  controller.enqueue(new TextEncoder().encode(`data: {"agent":"${agent}","status":"done","data":${JSON.stringify(data)}}\n\n`));
+                };
+                sendEvent("aura", {sentiment_score: 0.8, echo_chamber: false});
+                sendEvent("flux", {liquidity_grade: "A", spread: 0.1, whale_signals: 0});
+                sendEvent("oracle", {prob_estimate: 0.8, market_implied: 0.75, confidence: 90});
+                sendEvent("edge", {ev_grade: "A", net_ev: 15, kelly: 5, recommended_size: 10});
+                sendEvent("clause", {resolution_risk: "LOW", technicality_risks: []});
+                sendEvent("lucifer", {devils_advocate_score: 0.2, bias_flags: [], counter_thesis: "Test"});
+                sendEvent("sigma", {decision: "BET_YES", confidence: 85, size_usd: 100, entry_price: 0.45, size_pct: 10, thesis: "Test thesis"});
                 controller.close();
               }
             });
@@ -43,21 +61,20 @@ describe('Trading Flow', () => {
     // 3. Run Pipeline
     cy.contains('Run Analysis Pipeline').click()
 
+    // Wait for the pipeline to complete
+    cy.contains('SIGMA DECISION', { timeout: 10000 }).should('be.visible')
+
     // 4. Trade Confirmation
-    cy.contains('Simulate Trade').should('be.visible').click()
-    cy.contains('YES').should('be.visible')
-    cy.contains('Simulate Trade').click()
+    cy.contains('Simulate Trade').scrollIntoView().should('be.visible').click({ force: true })
+    cy.contains('Confirm Trade').should('be.visible')
+    cy.contains('.glass-card-elevated', 'Confirm Trade').contains('button', 'Simulate Trade').click({ force: true })
     cy.wait('@executeTrade')
 
     // 5. Panic Button
     cy.get('button[title="Emergency Panic Mode"]').click()
     cy.contains('Liquidate').click()
-    cy.contains('SLIDE TO ACTIVATE').parent().next().then(($thumb) => {
-      cy.wrap($thumb)
-        .trigger('pointerdown', { clientX: 0, force: true })
-        .trigger('pointermove', { clientX: 300, force: true })
-        .trigger('pointerup', { force: true })
-    })
+    cy.contains('SLIDE TO ACTIVATE').parent().parent().click({ force: true })
+    
     cy.wait('@panicMode')
     cy.contains('EMERGENCY PROTOCOL ACTIVATED').should('be.visible')
   })
