@@ -109,7 +109,7 @@ function SlideToConfirm({
       />
       {/* Label */}
       <div
-        onClick={() => { if (typeof window !== "undefined" && window.Cypress) onConfirmed(); }}
+        onClick={() => { if (typeof window !== "undefined" && (window as any).Cypress) onConfirmed(); }}
         style={{
           position: "absolute",
           inset: 0,
