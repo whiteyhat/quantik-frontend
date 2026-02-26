@@ -16,8 +16,10 @@ describe('Risk Config', () => {
     
     // Modify the first slider
     cy.get('input[type="range"]').first().then($el => {
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-      nativeInputValueSetter.call($el[0], 0.10);
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call($el[0], 0.10);
+      }
       $el[0].dispatchEvent(new Event('input', { bubbles: true }));
       $el[0].dispatchEvent(new Event('change', { bubbles: true }));
     });
