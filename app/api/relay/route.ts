@@ -60,41 +60,22 @@ export async function POST(req: NextRequest) {
   }
 
 
-  // gemini-3.0-flash preferred; fallback chain for availability
-  const modelNames = ["gemini-3.0-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"];
+  const modelName = "gemini-2.0-flash-lite-preview-02-05";
 
-  for (const modelName of modelNames) {
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: RELAY_SYSTEM_PROMPT,
-    });
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction: RELAY_SYSTEM_PROMPT,
+  });
 
-    const chat = model.startChat({ history: chatHistory });
+  const chat = model.startChat({ history: chatHistory });
 
-    try {
-      const result = await chat.sendMessage(message);
-      const reply = result.response.text();
-      return NextResponse.json({ reply, agent: "relay", routedTo, timestamp: Date.now() });
-    } catch (err) {
-      console.error(`[Relay] Gemini error with model ${modelName}:`, err);
-
-      // If this is a model-not-found error, try the next model
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const isModelNotFound =
-        errMsg.toLowerCase().includes("not found") ||
-        errMsg.toLowerCase().includes("model") ||
-        errMsg.toLowerCase().includes("404");
-
-      if (isModelNotFound && modelName !== modelNames[modelNames.length - 1]) {
-        console.warn(`[Relay] Model ${modelName} unavailable, falling back…`);
-        continue;
-      }
-
-      // All models exhausted or non-model error — return specific error
-      return NextResponse.json({ error: errMsg }, { status: 500 });
-    }
+  try {
+    const result = await chat.sendMessage(message);
+    const reply = result.response.text();
+    return NextResponse.json({ reply, agent: "relay", routedTo, timestamp: Date.now() });
+  } catch (err) {
+    console.error(`[Relay] Gemini error with model ${modelName}:`, err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
-
-  // Should not reach here, but satisfy TypeScript
-  return NextResponse.json({ error: "All models exhausted" }, { status: 500 });
 }

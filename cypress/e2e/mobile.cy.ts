@@ -70,6 +70,13 @@ describe('Mobile Responsiveness', () => {
     // The drawer should open and the textarea should be visible
     cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Mobile test{enter}');
 
+    // Verify the drawer is full width (100vw)
+    cy.window().then((win) => {
+      cy.get('.md\\:w-\\[320px\\]').should(($drawer) => {
+        expect($drawer[0].getBoundingClientRect().width).to.equal(win.innerWidth);
+      });
+    });
+
     // Verify the user message is visible
     cy.contains('Mobile test').should('be.visible');
 

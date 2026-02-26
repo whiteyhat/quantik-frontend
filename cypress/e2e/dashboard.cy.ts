@@ -10,7 +10,10 @@ describe('Dashboard', () => {
     cy.get('button[aria-label="Open Relay chat"]').should('be.visible').click()
     
     // Intercept the POST BEFORE sending the message
-    cy.intercept('POST', '/api/relay').as('relayRequest')
+    cy.intercept('POST', '/api/relay', {
+      statusCode: 200,
+      body: { reply: '**Bold** and *italic*' }
+    }).as('relayRequest')
     
     // The sidebar should open and the textarea should be visible
     cy.get('textarea[placeholder="Message Relay…"]').should('be.visible').type('Hello{enter}')
@@ -18,19 +21,10 @@ describe('Dashboard', () => {
     // Verify the user message is visible
     cy.contains('Hello').should('be.visible')
     
-    cy.wait('@relayRequest', { timeout: 15000 }).then((interception) => {
-      expect(interception.response?.statusCode).to.be.oneOf([200, 500, 503]);
-      
-      // If the API returns 200, we expect a reply message
-      if (interception.response?.statusCode === 200) {
-        const replyText = interception.response?.body?.reply || interception.response?.body?.message;
-        if (replyText) {
-          cy.contains(replyText, { timeout: 15000 }).should('be.visible');
-        }
-      } else {
-        // Fallback message should be displayed
-        cy.contains('The intelligence network is currently unreachable. Please try again.', { timeout: 15000 }).should('be.visible');
-      }
+    cy.wait('@relayRequest', { timeout: 15000 }).then(() => {
+      // Assert markdown rendering
+      cy.get('strong').contains('Bold').should('be.visible');
+      cy.get('em').contains('italic').should('be.visible');
     });
   })
 })

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
 
 const RELAY_INTRO =
   "Hi, I'm Relay 🤝 — your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config. I'm here to help.";
@@ -108,12 +109,12 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   return (
     /* ── Relay drawer ────────────────────────────────────────────────── */
     <div
+      className="md:w-[320px] w-screen"
       style={{
         position: "fixed",
         top: 0,
         left: 0,
-        bottom: 0,
-        width: 320,
+        height: "100dvh",
         zIndex: 60,
         transform: open ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 300ms ease",
@@ -248,7 +249,11 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                 wordBreak: "break-word",
               }}
             >
-              {msg.text}
+              {msg.role === "agent" ? (
+                <ReactMarkdown>{msg.text}</ReactMarkdown>
+              ) : (
+                msg.text
+              )}
             </div>
           </div>
         ))}
@@ -283,7 +288,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                 letterSpacing: 3,
               }}
             >
-              ···
+              <span className="animate-pulse">···</span>
             </div>
           </div>
         )}
