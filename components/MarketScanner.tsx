@@ -143,13 +143,25 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
   );
 }
 
+function SkeletonCard() {
+  return (
+    <div className="glass-card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16, height: 180 }}>
+      <div style={{ height: 20, width: "80%", borderRadius: 8, background: "rgba(255,255,255,0.06)", animation: "shimmer 2s linear infinite", backgroundSize: "200% 100%", backgroundImage: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%)" }} />
+      <div style={{ height: 28, borderRadius: 6, background: "rgba(255,255,255,0.04)" }} />
+      <div style={{ height: 14, width: "50%", borderRadius: 6, background: "rgba(255,255,255,0.03)" }} />
+    </div>
+  );
+}
+
 interface MarketScannerProps {
   showFilterPills?: boolean;
   /** Max columns in the market grid. Defaults to 3 (auto-responsive). Pass 1 or 2 for narrow contexts. */
   maxCols?: 1 | 2 | 3;
+  /** When true, wraps the grid in a scrollable container with max-height for embedded contexts. */
+  compact?: boolean;
 }
 
-export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketScannerProps) {
+export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = false }: MarketScannerProps) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending \u{1F525}");
@@ -159,7 +171,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketSc
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({ threshold: 0.1, rootMargin: "200px" });
 
   const isTrending = activeCategory === "Trending \u{1F525}";
 
@@ -297,30 +309,43 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3 }: MarketSc
         </div>
       )}
 
-      {/* Market grid */}
-      <div className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`}>
-        {filtered.map((m) => (
-          <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
-        ))}
-      </div>
-      
-      {loading && (
-        <div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading markets...
+      {/* Market grid — scrollable when compact */}
+      <div style={compact ? { overflowY: "auto", maxHeight: 700 } : undefined}>
+        <div className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`}>
+          {filtered.map((m) => (
+            <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
+          ))}
         </div>
-      )}
-      
-      {hasMore && !loading && (
-        <div ref={ref} style={{ height: 20 }} />
-      )}
 
-      {!loading && filtered.length === 0 && (
-        <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
-          <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
-            {activeCategory !== "All" && !isTrending ? `No markets in "${activeCategory}"` : "No markets found"}
-          </span>
-        </div>
-      )}
+        {/* Loading shimmer skeletons */}
+        {loading && markets.length > 0 && (
+          <div data-testid="scanner-loading" className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`} style={{ marginTop: 16 }}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        )}
+
+        {/* Initial loading state */}
+        {loading && markets.length === 0 && (
+          <div data-testid="scanner-loading" style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>
+            Loading markets...
+          </div>
+        )}
+
+        {/* Infinite scroll sentinel */}
+        {hasMore && !loading && (
+          <div ref={ref} data-testid="load-more-sentinel" style={{ height: 20 }} />
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
+            <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
+              {activeCategory !== "All" && !isTrending ? `No markets in "${activeCategory}"` : "No markets found"}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

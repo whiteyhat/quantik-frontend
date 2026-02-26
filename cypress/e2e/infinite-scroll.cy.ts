@@ -1,64 +1,69 @@
 describe('Infinite Scroll in MarketScanner', () => {
+  const page1 = Array.from({ length: 20 }, (_, i) => ({
+    slug: `market-${i}`,
+    tokenId: `token-${i}`,
+    question: `Market Question ${i}`,
+    yesPrice: 0.5,
+    noPrice: 0.5,
+    volume: 1000,
+    liquidity: 500,
+    liquidityGrade: "A",
+  }));
+
+  const page2 = Array.from({ length: 20 }, (_, i) => ({
+    slug: `market-${i + 20}`,
+    tokenId: `token-${i + 20}`,
+    question: `Market Question ${i + 20}`,
+    yesPrice: 0.5,
+    noPrice: 0.5,
+    volume: 1000,
+    liquidity: 500,
+    liquidityGrade: "A",
+  }));
+
   beforeEach(() => {
-    // Generate 40 items total
-    const page1 = Array.from({ length: 20 }, (_, i) => ({
-      slug: `market-${i}`,
-      tokenId: `token-${i}`,
-      question: `Market Question ${i}`,
-      yesPrice: 0.5,
-      noPrice: 0.5,
-      volume: 1000,
-      liquidity: 500,
-      liquidityGrade: "A",
-    }));
+    // Stub trending to return empty so scanner falls back to "All"
+    cy.intercept('GET', '**/api/markets/trending*', {
+      body: { markets: [], total: 0, hasMore: false }
+    }).as('getTrending');
 
-    const page2 = Array.from({ length: 20 }, (_, i) => ({
-      slug: `market-${i + 20}`,
-      tokenId: `token-${i + 20}`,
-      question: `Market Question ${i + 20}`,
-      yesPrice: 0.5,
-      noPrice: 0.5,
-      volume: 1000,
-      liquidity: 500,
-      liquidityGrade: "A",
-    }));
-
-    // Setup intercept for first load
     cy.intercept('GET', '**/api/markets?limit=20&offset=0', {
-      body: {
-        markets: page1,
-        total: 40,
-        hasMore: true
-      }
+      body: { markets: page1, total: 40, hasMore: true }
     }).as('getFirstPage');
 
-    // Setup intercept for second load
     cy.intercept('GET', '**/api/markets?limit=20&offset=20', {
-      body: {
-        markets: page2,
-        total: 40,
-        hasMore: false
-      }
+      body: { markets: page2, total: 40, hasMore: false }
     }).as('getSecondPage');
 
     cy.intercept('GET', '**/api/stream/prices*', { body: {} }).as('streamPrices');
     cy.intercept('GET', '**/api/portfolio/summary*', { body: {} }).as('summary');
   });
 
-  it('loads more markets when scrolling to the bottom', () => {
+  it('loads initial 20 markets on dashboard', () => {
     cy.visit('/');
-
     cy.wait('@getFirstPage');
+    cy.get('[data-testid="load-more-sentinel"]').should('exist');
+    cy.get('a[href^="/market/"]').should('have.length.gte', 20);
+  });
 
-    // Check that first 20 items are loaded
-    cy.get('a[href^="/market/"]').should('have.length', 20);
-
-    // Scroll to the bottom of the grid
-    cy.scrollTo('bottom');
-
+  it('triggers load-more when sentinel scrolled into view', () => {
+    cy.visit('/');
+    cy.wait('@getFirstPage');
+    cy.get('[data-testid="load-more-sentinel"]').scrollIntoView();
     cy.wait('@getSecondPage');
+    cy.get('a[href^="/market/"]').should('have.length.gte', 40);
+  });
 
-    // Grid should now contain 40 items
-    cy.get('a[href^="/market/"]').should('have.length', 40);
+  it('shows loading state while fetching more', () => {
+    cy.intercept('GET', '**/api/markets?limit=20&offset=0', (req) => {
+      req.reply({
+        delay: 200,
+        body: { markets: page1, total: 40, hasMore: true }
+      });
+    }).as('slowFirstPage');
+    cy.visit('/');
+    cy.get('[data-testid="scanner-loading"]').should('exist');
+    cy.wait('@slowFirstPage');
+    cy.get('[data-testid="scanner-loading"]').should('not.exist');
   });
 });

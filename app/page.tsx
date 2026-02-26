@@ -793,7 +793,7 @@ function MarketScannerPanel() {
         <SectionHeader title="Market Scanner" subtitle="Live CLOB markets · Layer 0" />
       </div>
       <div style={{ padding: "0 16px 16px" }}>
-        <MarketScanner showFilterPills maxCols={2} />
+        <MarketScanner showFilterPills maxCols={2} compact />
       </div>
     </div>
   );
