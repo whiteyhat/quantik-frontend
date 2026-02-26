@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { api, streamPrices, fmtUSDC, type Market } from "@/lib/api";
+import { useInView } from "react-intersection-observer";
 
 // ─── Category filter pills ────────────────────────────────────────────────────
 
@@ -18,16 +19,6 @@ const SCANNER_CATEGORIES = [
 ] as const;
 
 type ScannerCategory = (typeof SCANNER_CATEGORIES)[number];
-
-const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  Crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "sol", "defi", "token"],
-  Politics: ["election", "president", "congress", "senate", "vote", "democrat", "republican", "trump", "biden", "political"],
-  Sports: ["nfl", "nba", "mlb", "nhl", "super bowl", "championship", "team", "game", "sport", "cup", "league"],
-  "Pop Culture": ["oscars", "grammy", "celebrity", "movie", "show", "album", "award", "film"],
-  Science: ["nasa", "space", "science", "climate", "research", "discovery", "ai", "model"],
-  "World Events": ["war", "conflict", "ceasefire", "united nations", "global", "international", "country"],
-  Business: ["earnings", "ipo", "merger", "acquisition", "revenue", "market cap", "stock"],
-};
 
 function LiqGradeChip({ grade }: { grade: string }) {
   const colors: Record<string, string> = {
@@ -70,7 +61,6 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
         className="glass-card-interactive"
         style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16, height: "100%" }}
       >
-        {/* Question */}
         <h3
           className="text-headline"
           style={{
@@ -86,7 +76,6 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
           {market.question}
         </h3>
 
-        {/* YES / NO opposing bars */}
         <div style={{ display: "flex", gap: 2, borderRadius: 6, overflow: "hidden", height: 28 }}>
           <div
             style={{
@@ -99,10 +88,7 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
               transition: "width 300ms ease",
             }}
           >
-            <span
-              className="font-mono-data"
-              style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-green)" }}
-            >
+            <span className="font-mono-data" style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-green)" }}>
               YES {yesPct}¢
             </span>
           </div>
@@ -117,16 +103,12 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
               transition: "width 300ms ease",
             }}
           >
-            <span
-              className="font-mono-data"
-              style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-red)" }}
-            >
+            <span className="font-mono-data" style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: "var(--ios-red)" }}>
               {noPct}¢ NO
             </span>
           </div>
         </div>
 
-        {/* Meta row */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span
             className="font-mono-data"
@@ -143,7 +125,6 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
           <LiqGradeChip grade={market.liquidityGrade} />
         </div>
 
-        {/* Hover CTA */}
         <div
           style={{
             overflow: "hidden",
@@ -152,13 +133,7 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
             transition: "all 280ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          <span
-            style={{
-              fontSize: "var(--text-subhead)",
-              fontWeight: 600,
-              color: "var(--ios-blue)",
-            }}
-          >
+          <span style={{ fontSize: "var(--text-subhead)", fontWeight: 600, color: "var(--ios-blue)" }}>
             Analyze →
           </span>
         </div>
@@ -178,10 +153,58 @@ export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
-    api.getMarkets(search || undefined).then(setMarkets).catch(() => {});
-  }, [search]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const { ref, inView } = useInView();
 
+  const loadMarkets = useCallback(async (reset: boolean) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const currentOffset = reset ? 0 : offset;
+      const res = await api.getMarkets(
+        search || undefined,
+        activeCategory === "All" ? undefined : activeCategory,
+        20,
+        currentOffset
+      );
+      setMarkets((prev) => {
+        // Prevent duplicate append if API returns same data during react strict mode or fast scrolls
+        if (!reset) {
+          const newMarkets = res.markets.filter(m => !prev.some(p => p.tokenId === m.tokenId));
+          return [...prev, ...newMarkets];
+        }
+        return res.markets;
+      });
+      setHasMore(res.hasMore);
+      setOffset(currentOffset + 20);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, activeCategory, loading, offset]);
+
+  // Initial load and filter change
+  useEffect(() => {
+    setOffset(0);
+    setHasMore(true);
+    setMarkets([]);
+    const timeout = setTimeout(() => {
+      loadMarkets(true);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, activeCategory]); // Only trigger when filters change
+
+  // Infinite scroll
+  useEffect(() => {
+    if (inView && hasMore && !loading) {
+      loadMarkets(false);
+    }
+  }, [inView, hasMore, loading, loadMarkets]);
+
+  // SSE prices
   useEffect(() => {
     if (markets.length === 0) return;
     cleanupRef.current?.();
@@ -194,14 +217,7 @@ export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
     return () => unsub();
   }, [markets]);
 
-  const filtered =
-    activeCategory === "All"
-      ? markets
-      : markets.filter((m) => {
-          const keywords = CATEGORY_KEYWORDS[activeCategory] ?? [];
-          const q = m.question.toLowerCase();
-          return keywords.some((kw) => q.includes(kw));
-        });
+  const filtered = markets;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -253,15 +269,23 @@ export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
       )}
 
       {/* Market grid */}
-      <div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {filtered.map((m) => (
           <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
         ))}
       </div>
+      
+      {loading && (
+        <div style={{ padding: 20, textAlign: "center", color: "var(--text-secondary)" }}>
+          Loading markets...
+        </div>
+      )}
+      
+      {hasMore && !loading && (
+        <div ref={ref} style={{ height: 20 }} />
+      )}
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
           <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
             {activeCategory !== "All" ? `No markets in "${activeCategory}"` : "No markets found"}

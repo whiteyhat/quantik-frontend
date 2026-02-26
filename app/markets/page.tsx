@@ -186,7 +186,7 @@ export default function MarketsPage() {
 
   useEffect(() => {
     api.getMarkets(search || undefined)
-      .then(setMarkets)
+      .then(res => setMarkets(res.markets))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [search]);

@@ -591,7 +591,7 @@ export default function MarketAnalysisPage() {
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.getMarkets(search || undefined).then(setMarkets).catch(() => {});
+    api.getMarkets(search || undefined).then(res => setMarkets(res.markets)).catch(() => {});
   }, [search]);
 
   useEffect(() => {

@@ -153,16 +153,23 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // Markets
-  getMarkets: async (search?: string): Promise<Market[]> => {
+  getMarkets: async (search?: string, category?: string, limit?: number, offset?: number): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
     try {
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      if (category) params.append("category", category);
+      if (limit !== undefined) params.append("limit", limit.toString());
+      if (offset !== undefined) params.append("offset", offset.toString());
+      
+      const query = params.toString();
       const res = await apiFetch<Market[] | { markets: Market[]; total: number; hasMore: boolean }>(
-        `/api/markets${search ? `?search=${encodeURIComponent(search)}` : ""}`
+        `/api/markets${query ? `?${query}` : ""}`
       );
-      if (Array.isArray(res)) return res;
-      if (res && Array.isArray((res as { markets: Market[] }).markets)) return (res as { markets: Market[] }).markets;
-      return [];
+      if (Array.isArray(res)) return { markets: res, total: res.length, hasMore: false };
+      if (res && Array.isArray((res as any).markets)) return res as { markets: Market[]; total: number; hasMore: boolean };
+      return { markets: [], total: 0, hasMore: false };
     } catch {
-      return [];
+      return { markets: [], total: 0, hasMore: false };
     }
   },
 
