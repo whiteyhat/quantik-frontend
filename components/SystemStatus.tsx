@@ -22,17 +22,17 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
   useEffect(() => {
     // Ping backend for latency
     const start = Date.now();
-    api.getBalance()
-      .then((w) => {
+    api.getBalance().then((w) => {
+      if (w !== null) {
         setLatency(Date.now() - start);
         setBalance(w.usdc);
         setApiOk(true);
         setLastSync(Date.now());
-      })
-      .catch(() => {
+      } else {
         setLatency(null);
         setApiOk(false);
-      });
+      }
+    });
   }, []);
 
   const latencyColor =

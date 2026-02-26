@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
     parts: [{ text: m.content }],
   }));
 
-  // gemini-2.5-flash is the current stable model; gemini-flash-latest as alias fallback
-  const modelNames = ["gemini-2.5-flash", "gemini-flash-latest"];
+  // gemini-3.0-flash preferred; fallback chain for availability
+  const modelNames = ["gemini-3.0-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"];
 
   for (const modelName of modelNames) {
     const model = genAI.getGenerativeModel({

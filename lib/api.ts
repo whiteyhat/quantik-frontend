@@ -153,24 +153,53 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // Markets
-  getMarkets: (search?: string) =>
-    apiFetch<Market[]>(`/api/markets${search ? `?search=${encodeURIComponent(search)}` : ""}`),
+  getMarkets: async (search?: string): Promise<Market[]> => {
+    try {
+      const res = await apiFetch<Market[]>(`/api/markets${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
 
   getMarket: (slug: string) =>
     apiFetch<Market>(`/api/markets/${slug}`),
 
-  getPriceHistory: (tokenId: string, interval = "1d") =>
-    apiFetch<PricePoint[]>(`/api/markets/${tokenId}/price-history?interval=${interval}`),
+  getPriceHistory: async (tokenId: string, interval = "1d"): Promise<PricePoint[]> => {
+    try {
+      const res = await apiFetch<PricePoint[]>(`/api/markets/${tokenId}/price-history?interval=${interval}`);
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
 
   // Wallet
-  getBalance: () =>
-    apiFetch<WalletBalance>("/api/portfolio/summary"),
+  getBalance: async (): Promise<WalletBalance | null> => {
+    try {
+      return await apiFetch<WalletBalance>("/api/portfolio/summary");
+    } catch {
+      return null;
+    }
+  },
 
-  getPositions: () =>
-    apiFetch<Position[]>("/api/wallet/positions"),
+  getPositions: async (): Promise<Position[]> => {
+    try {
+      const res = await apiFetch<Position[]>("/api/wallet/positions");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
 
-  getOrders: () =>
-    apiFetch<Order[]>("/api/wallet/orders"),
+  getOrders: async (): Promise<Order[]> => {
+    try {
+      const res = await apiFetch<Order[]>("/api/wallet/orders");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
 
   // Trade
   executeTrade: (req: TradeRequest) =>

@@ -549,21 +549,25 @@ function SystemStatusPanel() {
 
   useEffect(() => {
     const start = Date.now();
-    api.getBalance()
-      .then(() => {
+    api.getBalance().then((result) => {
+      if (result !== null) {
         setLatency(Date.now() - start);
         setApiOk(true);
-      })
-      .catch(() => {
+      } else {
         setLatency(null);
         setApiOk(false);
-      });
+      }
+    });
   }, []);
 
-  // Pre-compute stable mock run times — must not call Math.random() during render
-  const [agentMockTimes] = useState(() =>
-    AGENTS.map(() => Math.floor(Math.random() * 300_000))
+  // Pre-compute stable mock run times — initialized to 0 on SSR, randomized after hydration
+  const [agentMockTimes, setAgentMockTimes] = useState<number[]>(() =>
+    AGENTS.map(() => 0)
   );
+
+  useEffect(() => {
+    setAgentMockTimes(AGENTS.map(() => Math.floor(Math.random() * 300_000)));
+  }, []);
 
   return (
     <div style={panelStyle}>
