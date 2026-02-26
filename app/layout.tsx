@@ -505,7 +505,11 @@ export default function RootLayout({
           {/* Global panic mode floating action button */}
           <GlobalPanicButton />
 
-          <BottomTabBar />
+          <BottomTabBar
+            relayOpen={relayOpen}
+            relayPulsing={relayPulsing}
+            onToggleRelay={handleToggleRelay}
+          />
 
           {/* Main content — offset by sidebar width */}
           <div

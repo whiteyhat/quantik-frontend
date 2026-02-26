@@ -10,7 +10,13 @@ const NAV_ITEMS = [
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
-export function BottomTabBar() {
+interface BottomTabBarProps {
+  relayOpen?: boolean;
+  relayPulsing?: boolean;
+  onToggleRelay?: () => void;
+}
+
+export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomTabBarProps) {
   const pathname = usePathname();
 
   return (
@@ -43,6 +49,42 @@ export function BottomTabBar() {
           </Link>
         );
       })}
+
+      <button
+        onClick={onToggleRelay}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: 64,
+          minHeight: 44,
+          color: relayOpen ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
+          textDecoration: "none",
+          position: "relative",
+          background: "transparent",
+          border: "none",
+        }}
+      >
+        {relayPulsing && (
+          <span
+            className="relay-pulse-ring"
+            style={{
+              position: "absolute",
+              top: 0,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: "2px solid rgba(10,132,255,0.7)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+        <span style={{ fontSize: 20, marginBottom: 4 }}>🤝</span>
+        <span style={{ fontSize: 10, fontWeight: relayOpen ? 600 : 400 }}>
+          Relay
+        </span>
+      </button>
     </nav>
   );
 }

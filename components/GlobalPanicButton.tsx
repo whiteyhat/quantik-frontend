@@ -578,11 +578,8 @@ export function GlobalPanicButton() {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         title="Emergency Panic Mode"
+        className="fixed z-[1000] right-5 bottom-24 md:right-7 md:bottom-7"
         style={{
-          position: "fixed",
-          bottom: 28,
-          right: 28,
-          zIndex: 1000,
           width: hovered ? "auto" : 52,
           height: 52,
           borderRadius: 26,
