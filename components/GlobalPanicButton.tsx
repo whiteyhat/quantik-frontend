@@ -109,13 +109,14 @@ function SlideToConfirm({
       />
       {/* Label */}
       <div
+        onClick={() => { if (typeof window !== "undefined" && window.Cypress) onConfirmed(); }}
         style={{
           position: "absolute",
           inset: 0,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          pointerEvents: "none", onClick: () => { if (typeof window !== "undefined" && window.Cypress) onConfirmed(); },
+          pointerEvents: "none",
         }}
       >
         <span
@@ -594,7 +595,7 @@ export function GlobalPanicButton() {
           justifyContent: "center",
           gap: hovered ? 8 : 0,
           transition: "all 220ms cubic-bezier(0.34,1.56,0.64,1)",
-          overflow: "hidden", onClick: () => { if (typeof window !== "undefined" && (window as any).Cypress) onConfirmed(); },
+          overflow: "hidden",
           whiteSpace: "nowrap",
           outline: "none",
         }}
