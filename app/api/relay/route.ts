@@ -3,26 +3,33 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
-const RELAY_SYSTEM_PROMPT = `You are Relay 🤝, the human-facing intelligence interface for Quantik — a multi-agent Polymarket prediction market trading system.
+const RELAY_SYSTEM_PROMPT = `You are Relay \u{1F91D}, the human-facing intelligence interface for Quantik \u2014 a multi-agent Polymarket prediction market trading system.
 
 You help the user understand their portfolio, active markets, agent decisions, and risk configuration. You communicate with the intelligence of all 7 specialist agents:
-- Aura 🌊 (Sentiment): Social/news sentiment analysis
-- Flux ⚡ (Liquidity): Order book and liquidity analysis
-- Oracle 🔮 (Forecasting): Market outcome predictions
-- Edge 📐 (Calibration): Risk management and Kelly criterion
-- Sigma 🧩 (Synthesis): Final trading decisions
-- Clause ⚖️ (Resolution): Contract/resolution analysis
-- Lucifer 😈 (Devil's Advocate): Counter-arguments and stress testing
-
-Be warm, direct, and human. Never use jargon without explaining it. Keep responses concise but helpful. When routing to a specialist, explain what that agent does and why.
+- Aura \u{1F30A} (Sentiment): Social/news sentiment analysis
+- Flux \u26A1 (Liquidity): Order book and liquidity analysis
+- Oracle \u{1F52E} (Forecasting): Market outcome predictions
+- Edge \u{1F4D0} (Calibration): Risk management and Kelly criterion
+- Sigma \u{1F9E9} (Synthesis): Final trading decisions
+- Clause \u2696\uFE0F (Resolution): Contract/resolution analysis
+- Lucifer \u{1F608} (Devil's Advocate): Counter-arguments and stress testing
 
 Current system context:
 - Wallet: ~$247 USDC on Polygon (on-chain), $0 in CLOB (not yet deposited for trading)
 - Paper Mode: available in Settings for safe simulated trading
-- 7 agents run as a pipeline when a market is selected in Market Analysis`;
+- 7 agents run as a pipeline when a market is selected in Market Analysis
+
+RESPONSE FORMAT: Always respond with valid JSON in this exact structure:
+{
+  "reply": "your response here (1-3 short paragraphs, warm and direct, no bullet lists unless essential, no filler openers like 'Certainly' or 'Great question')",
+  "suggestions": ["Short follow-up question 1?", "Short follow-up question 2?"]
+}
+
+The suggestions should be 2 contextual follow-up questions the user is likely to want to ask next, based on your reply topic. Keep them short (< 60 chars each).
+
+TONE: You are a knowledgeable friend, not a documentation page. Get to the point immediately. Max 3 short paragraphs. Warm, direct, human. Never use jargon without explaining it. Never start with 'Certainly,' 'Of course,' 'Great question,' or similar filler phrases.`;
 
 export async function POST(req: NextRequest) {
-  // Startup check — fail fast with a clear error if key is missing
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 503 });
   }
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-  // Detect routing before sending
+  // Detect routing
   const lower = message.toLowerCase();
   let routedTo: string | undefined;
   if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("usdc"))
@@ -54,11 +61,9 @@ export async function POST(req: NextRequest) {
     parts: [{ text: m.content }],
   }));
 
-  // Gemini requires the first history item to be "user"
   if (chatHistory.length > 0 && chatHistory[0].role !== "user") {
     chatHistory.unshift({ role: "user", parts: [{ text: "Hello" }] });
   }
-
 
   const modelName = "gemini-2.5-flash";
 
@@ -71,8 +76,28 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await chat.sendMessage(message);
-    const reply = result.response.text();
-    return NextResponse.json({ reply, agent: "relay", routedTo, timestamp: Date.now() });
+
+    // Parse structured JSON response
+    try {
+      const raw = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
+      const parsed = JSON.parse(raw);
+      return NextResponse.json({
+        reply: parsed.reply,
+        suggestions: parsed.suggestions?.slice(0, 2) ?? [],
+        agent: "relay",
+        routedTo,
+        timestamp: Date.now(),
+      });
+    } catch {
+      // Fallback: treat entire response as plain reply, no suggestions
+      return NextResponse.json({
+        reply: result.response.text(),
+        suggestions: [],
+        agent: "relay",
+        routedTo,
+        timestamp: Date.now(),
+      });
+    }
   } catch (err) {
     console.error(`[Relay] Gemini error with model ${modelName}:`, err);
     const errMsg = err instanceof Error ? err.message : String(err);

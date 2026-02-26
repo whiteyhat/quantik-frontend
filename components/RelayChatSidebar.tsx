@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
 const RELAY_INTRO =
-  "Hi, I'm Relay 🤝 — your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config. I'm here to help.";
+  "Hi, I'm Relay \u{1F91D} \u2014 your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config. I'm here to help.";
 
 interface Message {
   id: number;
@@ -28,6 +28,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [hasInjectedIntro, setHasInjectedIntro] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -51,13 +52,13 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     }
   }, [open, hasInjectedIntro, onFirstOpen]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || sending) return;
+  const sendMessageWithText = useCallback(async (text: string) => {
+    if (!text.trim() || sending) return;
 
-    const userMsg: Message = { id: nextId(), role: "user", text };
+    const userMsg: Message = { id: nextId(), role: "user", text: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setSuggestions([]); // Clear suggestions on any send
     setSending(true);
 
     try {
@@ -69,35 +70,50 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       const res = await fetch("/api/relay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text.trim(), history }),
       });
 
       let replyText: string;
+      let replySuggestions: string[] = [];
+
       if (!res.ok) {
         const errData = (await res.json().catch(() => ({}))) as { error?: string };
         replyText = errData.error || "The intelligence network is currently unreachable. Please try again.";
       } else {
-        const data = (await res.json()) as { reply?: string; message?: string };
+        const data = (await res.json()) as { reply?: string; message?: string; suggestions?: string[] };
         replyText = data.reply ?? data.message ?? "Got it.";
+        replySuggestions = Array.isArray(data.suggestions) ? data.suggestions.slice(0, 2) : [];
       }
 
       setMessages((prev) => [
         ...prev,
         { id: nextId(), role: "agent", text: replyText },
       ]);
+      setSuggestions(replySuggestions);
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           id: nextId(),
           role: "agent",
-          text: "Unable to reach Relay. Check your connection and try again. 🤝",
+          text: "Unable to reach Relay. Check your connection and try again. \u{1F91D}",
         },
       ]);
+      setSuggestions([]);
     } finally {
       setSending(false);
     }
-  }, [input, sending, messages]);
+  }, [sending, messages]);
+
+  const sendMessage = useCallback(() => {
+    sendMessageWithText(input);
+  }, [input, sendMessageWithText]);
+
+  const handleSuggestionClick = useCallback((q: string) => {
+    setSuggestions([]);
+    setInput(q);
+    setTimeout(() => sendMessageWithText(q), 50);
+  }, [sendMessageWithText]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -107,7 +123,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   }
 
   return (
-    /* ── Relay drawer ────────────────────────────────────────────────── */
+    /* Relay drawer */
     <div
       className="md:w-[320px] w-screen"
       style={{
@@ -137,7 +153,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 20 }}>🤝</span>
+        <span style={{ fontSize: 20 }}>{"\u{1F91D}"}</span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>
             Relay
@@ -146,7 +162,6 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
             Quantik Intelligence Network
           </div>
         </div>
-        {/* Close X inside drawer */}
         <button
           onClick={onToggle}
           style={{
@@ -165,7 +180,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
             flexShrink: 0,
           }}
         >
-          ✕
+          {"\u2715"}
         </button>
       </div>
 
@@ -191,7 +206,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
               lineHeight: 1.6,
             }}
           >
-            <div style={{ fontSize: 28, marginBottom: 10 }}>🤝</div>
+            <div style={{ fontSize: 28, marginBottom: 10 }}>{"\u{1F91D}"}</div>
             <div>
               Ask Relay anything about your positions, market signals, or trading strategy.
             </div>
@@ -223,7 +238,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                   flexShrink: 0,
                 }}
               >
-                🤝
+                {"\u{1F91D}"}
               </div>
             )}
             <div
@@ -275,7 +290,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                 flexShrink: 0,
               }}
             >
-              🤝
+              {"\u{1F91D}"}
             </div>
             <div
               style={{
@@ -288,11 +303,48 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                 letterSpacing: 3,
               }}
             >
-              <span className="animate-pulse">···</span>
+              <span className="animate-pulse">{"\u00B7\u00B7\u00B7"}</span>
             </div>
           </div>
         )}
       </div>
+
+      {/* Suggestion pills */}
+      {suggestions.length > 0 && !sending && (
+        <div style={{
+          display: "flex", gap: 8, flexWrap: "wrap",
+          padding: "8px 12px 0",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+        }}>
+          {suggestions.map((q, i) => (
+            <button
+              key={i}
+              onClick={() => handleSuggestionClick(q)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 20,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(255,255,255,0.05)",
+                color: "rgba(255,255,255,0.65)",
+                fontSize: 12,
+                cursor: "pointer",
+                transition: "all 200ms ease",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = "rgba(10,132,255,0.40)";
+                e.currentTarget.style.color = "#0a84ff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)";
+                e.currentTarget.style.color = "rgba(255,255,255,0.65)";
+              }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input area */}
       <div
@@ -309,7 +361,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Relay…"
+          placeholder="Message Relay\u2026"
           rows={1}
           style={{
             flex: 1,
@@ -348,7 +400,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
             flexShrink: 0,
           }}
         >
-          ↑
+          {"\u2191"}
         </button>
       </div>
     </div>
