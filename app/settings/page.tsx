@@ -256,10 +256,10 @@ function PaperModePanel() {
   const { refreshPaperMode } = usePaperMode();
 
   useEffect(() => {
-    fetch(`${BASE_URL}/api/v1/settings/paper-mode`)
+    fetch(`${BASE_URL}/api/v1/settings`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: PaperModeStatus | null) => {
-        if (d) setEnabled(d.enabled);
+      .then((d: { paperMode?: boolean } | null) => {
+        if (d && typeof d.paperMode === "boolean") setEnabled(d.paperMode);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

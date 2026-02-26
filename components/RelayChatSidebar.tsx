@@ -361,7 +361,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Relay\u2026"
+          placeholder={"Message Relay\u2026"}
           rows={1}
           style={{
             flex: 1,

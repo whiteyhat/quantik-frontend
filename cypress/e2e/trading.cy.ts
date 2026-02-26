@@ -8,12 +8,8 @@ describe('Trading Flow', () => {
   beforeEach(() => {
     cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/v1/risk-config', { fixture: 'risk-config.json' }).as('riskConfig')
-    cy.intercept('GET', '**/api/v1/settings/paper-mode', (req) => {
-      req.reply({ enabled: req.headers['x-mock-toggled'] === 'true' ? true : false })
-    }).as('getPaperMode')
     cy.intercept('POST', '**/api/v1/settings/paper-mode', { body: { success: true } }).as('setPaperMode')
-    // Provide both settings endpoints since context and page fetch different ones
-    cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: true } }).as('getSettings')
+    cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: false } }).as('getSettings')
     cy.intercept('GET', '**/api/markets/bitcoin-100k-2026', { fixture: 'market-single.json' }).as('getMarket')
     cy.intercept('POST', '**/api/trade/execute', { statusCode: 200, body: {} }).as('executeTrade')
     cy.intercept('POST', '**/api/v1/panic-mode/activate', { statusCode: 200, body: { success: true } }).as('panicMode')
@@ -21,8 +17,7 @@ describe('Trading Flow', () => {
 
   it('toggles paper mode, visits a market, runs pipeline, and clicks trading buttons', () => {
     cy.visit('/settings')
-    cy.wait('@getPaperMode')
-    cy.intercept('GET', '**/api/v1/settings/paper-mode', { body: { enabled: true } }).as('getPaperModeEnabled')
+    cy.wait('@getSettings')
     cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: true } }).as('getSettingsEnabled')
     cy.get('button[aria-label="Toggle"]').first().click()
     cy.wait('@setPaperMode')

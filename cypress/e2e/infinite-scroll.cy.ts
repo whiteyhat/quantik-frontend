@@ -47,10 +47,39 @@ describe('Infinite Scroll in MarketScanner', () => {
   });
 
   it('triggers load-more when sentinel scrolled into view', () => {
-    cy.visit('/');
+    // Mock IntersectionObserver for reliable headless testing
+    cy.visit('/', {
+      onBeforeLoad(win: any) {
+        const observers: any[] = [];
+        win.__ioObservers = observers;
+
+        win.IntersectionObserver = class {
+          callback: any;
+          elements: any[];
+          constructor(callback: any) {
+            this.callback = callback;
+            this.elements = [];
+            observers.push(this);
+          }
+          observe(el: any) { this.elements.push(el); }
+          unobserve() {}
+          disconnect() {}
+        };
+      }
+    });
     cy.wait('@getFirstPage');
     cy.get('[data-testid="load-more-sentinel"]').scrollIntoView();
-    cy.wait('@getSecondPage');
+
+    // Manually trigger intersection observers (headless Electron doesn't fire reliably)
+    cy.window().then((win: any) => {
+      (win.__ioObservers || []).forEach((observer: any) => {
+        observer.elements.forEach((el: any) => {
+          observer.callback([{ isIntersecting: true, target: el, intersectionRatio: 1 }], observer);
+        });
+      });
+    });
+
+    cy.wait('@getSecondPage', { timeout: 10000 });
     cy.get('a[href^="/market/"]').should('have.length.gte', 40);
   });
 

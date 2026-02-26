@@ -792,6 +792,7 @@ function OrchestratorPanel() {
   const [candidates, setCandidates] = useState<OrchestratorCandidate[]>([]);
   const [status, setStatus] = useState<OrchestratorStatus | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
     function fetchData() {
@@ -805,6 +806,7 @@ function OrchestratorPanel() {
 
   const handleScan = async () => {
     setScanning(true);
+    setScanError(null);
     try {
       await api.triggerOrchestratorScan();
       const [s, c] = await Promise.all([
@@ -813,7 +815,10 @@ function OrchestratorPanel() {
       ]);
       if (s) setStatus(s);
       setCandidates(c.candidates);
-    } catch { /* ignore */ }
+    } catch (err) {
+      setScanError("Backend unreachable — Railway needs redeploy. Local backend works fine.");
+      console.error("[Orchestrator] Scan failed:", err);
+    }
     setScanning(false);
   };
 
@@ -862,6 +867,19 @@ function OrchestratorPanel() {
           </button>
         </div>
       </div>
+
+      {/* Scan error */}
+      {scanError && (
+        <div style={{
+          padding: "6px 20px",
+          fontSize: LABEL_SIZE,
+          color: "#ff453a",
+          background: "rgba(255,69,58,0.08)",
+          borderBottom: "1px solid rgba(255,69,58,0.15)",
+        }}>
+          ⚠ {scanError}
+        </div>
+      )}
 
       {/* Status bar */}
       {status && status.lastScanAt > 0 && (

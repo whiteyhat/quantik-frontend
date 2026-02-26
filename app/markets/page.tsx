@@ -19,7 +19,7 @@ const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
 
-const CATEGORIES = ["All", "Crypto", "Politics", "Sports", "Pop Culture", "Science", "World Events", "Business"] as const;
+const CATEGORIES = ["Trending \u{1F525}", "All", "Crypto", "Politics", "Sports", "Pop Culture", "Science", "World Events", "Business"] as const;
 type Category = (typeof CATEGORIES)[number];
 
 
@@ -179,17 +179,34 @@ function MarketCard({
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<Category>("All");
+  const [activeCategory, setActiveCategory] = useState<Category>("Trending \u{1F525}");
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
   const [loading, setLoading] = useState(true);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  const isTrending = activeCategory === "Trending \u{1F525}";
+
   useEffect(() => {
-    api.getMarkets(search || undefined)
-      .then(res => setMarkets(res.markets))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [search]);
+    setLoading(true);
+    if (isTrending && !search) {
+      api.getTrendingMarkets()
+        .then(res => {
+          if (res.markets.length === 0) {
+            // Fallback to All
+            setActiveCategory("All");
+            return;
+          }
+          setMarkets(res.markets);
+        })
+        .catch(() => setActiveCategory("All"))
+        .finally(() => setLoading(false));
+    } else {
+      api.getMarkets(search || undefined)
+        .then(res => setMarkets(res.markets))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  }, [search, isTrending]);
 
   useEffect(() => {
     if (markets.length === 0) return;
@@ -216,7 +233,7 @@ export default function MarketsPage() {
   };
 
   const filtered = markets.filter((m) => {
-    if (activeCategory === "All") return true;
+    if (activeCategory === "All" || isTrending) return true;
     const keywords = CATEGORY_KEYWORDS[activeCategory] ?? [];
     const q = m.question.toLowerCase();
     return keywords.some((kw) => q.includes(kw));
@@ -242,6 +259,13 @@ export default function MarketsPage() {
           Live CLOB prediction markets — click to analyze
         </p>
       </div>
+
+      {/* Trending micro-label */}
+      {isTrending && (
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.03em" }}>
+          {"\u{1F4E1}"} Live · Polymarket
+        </div>
+      )}
 
       {/* Search + Filter bar */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
