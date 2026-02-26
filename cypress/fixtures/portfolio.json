@@ -1,0 +1,9 @@
+{
+  "totalValue": 10000,
+  "cashBalance": 5000,
+  "positionsValue": 5000,
+  "totalPnl": 1000,
+  "dailyPnl": 200,
+  "winRate": 0.65,
+  "positions": []
+}

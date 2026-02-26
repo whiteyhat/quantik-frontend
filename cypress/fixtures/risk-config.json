@@ -1,0 +1,6 @@
+{
+  "agentVarThreshold": 0.05,
+  "maxPositionSize": 0.10,
+  "drawdownLimit": 0.15,
+  "kellyMultiplier": 0.25
+}

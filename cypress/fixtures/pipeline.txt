@@ -1,0 +1,4 @@
+{"type":"agent","agent":"Orion","status":"success","data":{"score": 0.8}}
+{"type":"agent","agent":"Lyra","status":"success","data":{"sentiment": 0.7}}
+{"type":"agent","agent":"Sigma","status":"success","data":{"decision": "BET_YES", "confidence": 0.85, "size_usd": 100, "entry_price": 0.45}}
+
