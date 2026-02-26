@@ -9,6 +9,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { api, fmtUSDC, type WalletBalance } from "@/lib/api";
+import { BottomTabBar } from "@/components/BottomTabBar";
 import { ToastNotification } from "@/components/ToastNotification";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
@@ -39,15 +40,8 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
 
   return (
     <aside
+      className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-[220px] z-40"
       style={{
-        position: "fixed",
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 220,
-        zIndex: 40,
-        display: "flex",
-        flexDirection: "column",
         // L006: Sidebar glassmorphism — must float above bg with frosted glass
         background: "rgba(255,255,255,0.03)",
         backdropFilter: "blur(40px)",
@@ -315,19 +309,10 @@ function TopWalletBar() {
 
   return (
     <div
+      className="sticky top-0 z-30 h-[52px] flex items-center px-4 md:px-[20px] bg-[rgba(5,5,8,0.88)] border-b border-[rgba(255,255,255,0.06)] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide"
       style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 30,
-        height: 52,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 20px",
-        background: "rgba(5,5,8,0.88)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        flexShrink: 0,
       }}
     >
       {/* Paper mode badge */}
@@ -520,16 +505,11 @@ export default function RootLayout({
           {/* Global panic mode floating action button */}
           <GlobalPanicButton />
 
+          <BottomTabBar />
+
           {/* Main content — offset by sidebar width */}
           <div
-            style={{
-              marginLeft: 220,
-              minHeight: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
-              zIndex: 1,
-            }}
+            className="md:ml-[220px] min-h-[100vh] flex flex-col relative z-10 pb-[68px] md:pb-0"
           >
             {/* Persistent top wallet bar */}
             <TopWalletBar />

@@ -254,11 +254,7 @@ export function MarketScanner({ showFilterPills = false }: MarketScannerProps) {
 
       {/* Market grid */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 16,
-        }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         {filtered.map((m) => (
           <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />

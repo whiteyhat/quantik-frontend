@@ -815,13 +815,7 @@ function RecentSignalsPanel() {
 export default function DashboardPage() {
   return (
     <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "300px 1fr 320px",
-        gap: 16,
-        alignItems: "start",
-        minHeight: "calc(100vh - 52px - 40px)", // full height minus wallet bar and padding
-      }}
+      className="grid grid-cols-1 md:grid-cols-[300px_1fr_320px] gap-4 items-start min-h-[calc(100vh-52px-40px)]"
     >
       {/* ── LEFT COLUMN ──────────────────────────────────────────────── */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

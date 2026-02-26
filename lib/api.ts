@@ -155,8 +155,12 @@ export const api = {
   // Markets
   getMarkets: async (search?: string): Promise<Market[]> => {
     try {
-      const res = await apiFetch<Market[]>(`/api/markets${search ? `?search=${encodeURIComponent(search)}` : ""}`);
-      return Array.isArray(res) ? res : [];
+      const res = await apiFetch<Market[] | { markets: Market[]; total: number; hasMore: boolean }>(
+        `/api/markets${search ? `?search=${encodeURIComponent(search)}` : ""}`
+      );
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray((res as { markets: Market[] }).markets)) return (res as { markets: Market[] }).markets;
+      return [];
     } catch {
       return [];
     }
