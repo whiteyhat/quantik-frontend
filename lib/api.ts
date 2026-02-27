@@ -173,6 +173,14 @@ export interface Signal {
   status: "TRADE" | "WATCH" | "SKIP";
 }
 
+export interface RiskStatus {
+  circuitBreaker: "ARMED" | "WARNING" | "TRIGGERED";
+  dailyPnl: number;
+  dailyPnlPct: number;
+  exposurePct: number;
+  availableCapital: number;
+}
+
 export interface TradeRequest {
   slug: string;
   tokenId: string;
@@ -316,6 +324,15 @@ export const api = {
 
   triggerOrchestratorScan: async (): Promise<{ triggered: boolean; marketsScanned: number; candidatesFound: number }> => {
     return apiFetch("/api/orchestrator/scan", { method: "POST" });
+  },
+
+  // Risk
+  getRiskStatus: async (): Promise<RiskStatus | null> => {
+    try {
+      return await apiFetch<RiskStatus>("/api/risk/status");
+    } catch {
+      return null;
+    }
   },
 };
 

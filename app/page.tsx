@@ -10,6 +10,7 @@ import {
   type Position,
   type OrchestratorCandidate,
   type OrchestratorStatus,
+  type RiskStatus,
 } from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
@@ -1005,6 +1006,198 @@ function OrchestratorPanel() {
   );
 }
 
+// ─── Risk Status Panel ───────────────────────────────────────────────────────
+
+function RiskStatusPanel() {
+  const [risk, setRisk] = useState<RiskStatus | null>(null);
+
+  useEffect(() => {
+    api.getRiskStatus().then(setRisk).catch(() => {});
+    const iv = setInterval(() => api.getRiskStatus().then(setRisk).catch(() => {}), 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const cb = risk?.circuitBreaker ?? "ARMED";
+  const cbColor = cb === "ARMED" ? "#30d158" : cb === "WARNING" ? "#ff9f0a" : "#ff453a";
+  const cbBg = cb === "ARMED"
+    ? "rgba(48,209,88,0.15)"
+    : cb === "WARNING"
+    ? "rgba(255,159,10,0.15)"
+    : "rgba(255,69,58,0.15)";
+  const cbBorder = cb === "ARMED"
+    ? "rgba(48,209,88,0.25)"
+    : cb === "WARNING"
+    ? "rgba(255,159,10,0.25)"
+    : "rgba(255,69,58,0.25)";
+
+  const pnl = risk?.dailyPnl ?? 0;
+  const pnlPct = risk?.dailyPnlPct ?? 0;
+  const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
+  const pnlSign = pnl >= 0 ? "+" : "";
+
+  const exposurePct = risk?.exposurePct ?? 0;
+  const exposureColor = exposurePct < 50 ? "#30d158" : exposurePct < 80 ? "#ff9f0a" : "#ff453a";
+
+  return (
+    <div style={panelStyle}>
+      <SectionHeader title="Risk Status" subtitle="Layer 3 — Live risk monitor" />
+
+      {/* Circuit Breaker */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 12px",
+          borderRadius: 8,
+          marginBottom: 16,
+          background: cb === "ARMED"
+            ? "rgba(48,209,88,0.07)"
+            : cb === "WARNING"
+            ? "rgba(255,159,10,0.07)"
+            : "rgba(255,69,58,0.10)",
+          border: `1px solid ${cbBorder}`,
+        }}
+      >
+        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>
+          Circuit Breaker
+        </span>
+        <span
+          style={{
+            fontSize: LABEL_SIZE,
+            fontWeight: 700,
+            padding: "3px 8px",
+            borderRadius: 6,
+            background: cbBg,
+            color: cbColor,
+            fontFamily: "monospace",
+            letterSpacing: "0.08em",
+            border: `1px solid ${cbBorder}`,
+          }}
+        >
+          {cb}
+        </span>
+      </div>
+
+      {/* Daily P&L */}
+      <div style={{ marginBottom: 16 }}>
+        <span
+          style={{
+            fontSize: LABEL_SIZE,
+            color: "rgba(255,255,255,0.35)",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          DAILY P&L
+        </span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 8,
+            marginTop: 4,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              fontSize: METRIC_SIZE,
+              fontWeight: 700,
+              color: pnlColor,
+              lineHeight: 1.2,
+            }}
+          >
+            {risk ? `${pnlSign}${fmtUSDC(pnl)}` : "···"}
+          </span>
+          {risk && (
+            <span
+              style={{
+                fontSize: META_SIZE,
+                fontFamily: '"SF Mono", monospace',
+                fontWeight: 600,
+                color: pnlColor,
+              }}
+            >
+              {pnlSign}{pnlPct.toFixed(1)}%
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Exposure */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <span
+            style={{
+              fontSize: LABEL_SIZE,
+              color: "rgba(255,255,255,0.35)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            EXPOSURE
+          </span>
+          <span
+            style={{
+              fontFamily: '"SF Mono", monospace',
+              fontSize: META_SIZE,
+              color: exposureColor,
+            }}
+          >
+            {exposurePct.toFixed(1)}%
+          </span>
+        </div>
+        <div
+          style={{
+            height: 5,
+            borderRadius: 3,
+            background: "rgba(255,255,255,0.07)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.min(exposurePct, 100)}%`,
+              borderRadius: 3,
+              background: exposureColor,
+              transition: "width 600ms ease",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Available Capital */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 12px",
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>
+          Available Capital
+        </span>
+        <span
+          style={{
+            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontSize: BODY_SIZE,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.92)",
+          }}
+        >
+          {risk ? fmtUSDC(risk.availableCapital) : "···"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Market Scanner Wrapper ───────────────────────────────────────────────────
 
 function MarketScannerPanel() {
@@ -1054,6 +1247,7 @@ export default function DashboardPage() {
       {/* ── CENTER COLUMN ────────────────────────────────────────────── */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <OrchestratorPanel />
+        <RiskStatusPanel />
         <MarketScannerPanel />
       </div>
 
