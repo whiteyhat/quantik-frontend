@@ -59,7 +59,7 @@ interface AgentState {
 // ─── Safe number guard ────────────────────────────────────────────────────────
 
 const safeFixed = (n: unknown, digits = 2) =>
-  (Number(n) || 0).toFixed(digits);
+  ((n as number) ?? 0).toFixed(digits);
 
 // ─── Agent summary lines ──────────────────────────────────────────────────────
 

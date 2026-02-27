@@ -28,11 +28,11 @@ function agentSummary(key: string, data: unknown): string | undefined {
   switch (key) {
     case "aura": {
       const d = data as AuraResult;
-      return `Sentiment: ${(Number(d.sentiment_score) ?? 0) > 0 ? "+" : ""}${(Number(d.sentiment_score) ?? 0).toFixed(2)}  Echo: ${d.echo_chamber ? "\u26A0" : "\u2713"}`;
+      return `Sentiment: ${(d.sentiment_score ?? 0) > 0 ? "+" : ""}${(d.sentiment_score ?? 0).toFixed(2)}  Echo: ${d.echo_chamber ? "\u26A0" : "\u2713"}`;
     }
     case "flux": {
       const d = data as FluxResult;
-      return `Liq: ${d.liquidity_grade}  Spread: ${(Number(d.spread) ?? 0).toFixed(1)}\u00A2`;
+      return `Liq: ${d.liquidity_grade}  Spread: ${(d.spread ?? 0).toFixed(1)}\u00A2`;
     }
     case "oracle": {
       const d = data as OracleResult;
@@ -40,7 +40,7 @@ function agentSummary(key: string, data: unknown): string | undefined {
     }
     case "edge": {
       const d = data as EdgeResult;
-      return `EV Grade: ${d.ev_grade}  Net EV: ${(Number(d.net_ev) ?? 0) > 0 ? "+" : ""}${(Number(d.net_ev) ?? 0).toFixed(1)}%`;
+      return `EV Grade: ${d.ev_grade}  Net EV: ${(d.net_ev ?? 0) > 0 ? "+" : ""}${(d.net_ev ?? 0).toFixed(1)}%`;
     }
     case "clause": {
       const d = data as ClauseResult;
@@ -48,7 +48,7 @@ function agentSummary(key: string, data: unknown): string | undefined {
     }
     case "lucifer": {
       const d = data as LuciferResult;
-      return `DA Score: ${(Number(d.devils_advocate_score) ?? 0).toFixed(2)}  Biases: ${(d.bias_flags ?? []).length}`;
+      return `DA Score: ${(d.devils_advocate_score ?? 0).toFixed(2)}  Biases: ${(d.bias_flags ?? []).length}`;
     }
     case "sigma": {
       const d = data as SigmaResult;
