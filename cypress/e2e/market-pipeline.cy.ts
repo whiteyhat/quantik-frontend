@@ -1,6 +1,5 @@
 describe('Market Pipeline', () => {
   Cypress.on('uncaught:exception', (err) => {
-    // Suppress pointer capture and hydration errors
     if (err.message.includes('setPointerCapture') || err.message.includes('Minified React error')) {
       return false
     }
@@ -16,18 +15,8 @@ describe('Market Pipeline', () => {
         const stream = new ReadableStream({
           start(controller) {
             const send = (agent: string, data: Record<string, unknown>) => {
-              // Send running state first
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({ agent, status: 'running' })}\n\n`
-                )
-              )
-              // Then done state with data
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({ agent, status: 'done', data })}\n\n`
-                )
-              )
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ agent, status: 'running' })}\n\n`))
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ agent, status: 'done', data })}\n\n`))
             }
             send('aura', { sentiment_score: 0.65, echo_chamber: false, echo_chamber_strength: 0.2 })
             send('oracle', { prob_estimate: 0.78, market_implied: 0.45, confidence: 82 })
@@ -45,7 +34,6 @@ describe('Market Pipeline', () => {
     })
   }
 
-  /** Sends pipeline data where spread/ev come as strings to test Number() coercion */
   function mockPipelineStreamWithStrings(win: Cypress.AUTWindow) {
     const originalFetch = win.fetch
     cy.stub(win, 'fetch').callsFake((url: string | URL | Request, options?: RequestInit) => {
@@ -54,11 +42,7 @@ describe('Market Pipeline', () => {
         const stream = new ReadableStream({
           start(controller) {
             const send = (agent: string, data: Record<string, unknown>) => {
-              controller.enqueue(
-                new TextEncoder().encode(
-                  `data: ${JSON.stringify({ agent, status: 'done', data })}\n\n`
-                )
-              )
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ agent, status: 'done', data })}\n\n`))
             }
             send('aura', { sentiment_score: '0.65', echo_chamber: false })
             send('oracle', { prob_estimate: '0.78', market_implied: '0.45', confidence: '82' })
@@ -92,14 +76,40 @@ describe('Market Pipeline', () => {
     cy.contains('Run Analysis Pipeline').should('be.visible')
   })
 
+  it('pipeline run does not crash with toFixed TypeError', () => {
+    const errors: string[] = [];
+    cy.on('uncaught:exception', (err) => {
+      errors.push(err.message);
+      return false; // don't fail test here, we assert below
+    });
+    cy.visit('/markets');
+    // Get first market slug
+    cy.get('a[href^="/market/"]').first().click();
+    cy.url().should('include', '/market/');
+    cy.contains('Run Analysis Pipeline').click();
+    cy.wait(3000);
+    cy.wrap(errors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(errors).should('not.include.match', /TypeError/);
+  });
+
   it('Run Analysis Pipeline button exists and is clickable', () => {
     cy.visit('/market/bitcoin-100k-2026', {
       onBeforeLoad: mockPipelineStream,
     })
     cy.wait('@getMarket')
+    
+    const consoleErrors: string[] = [];
+    cy.window().then((win) => {
+      cy.stub(win.console, 'error').callsFake((msg) => {
+        consoleErrors.push(String(msg));
+      });
+    });
+
     cy.contains('Run Analysis Pipeline').should('be.visible').click()
-    // Should switch to Stop Pipeline
     cy.contains('Stop Pipeline').should('be.visible')
+    
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 
   it('pipeline runs and each agent card shows done state', () => {
@@ -107,13 +117,23 @@ describe('Market Pipeline', () => {
       onBeforeLoad: mockPipelineStream,
     })
     cy.wait('@getMarket')
+
+    const consoleErrors: string[] = [];
+    cy.window().then((win) => {
+      cy.stub(win.console, 'error').callsFake((msg) => {
+        consoleErrors.push(String(msg));
+      });
+    });
+
     cy.contains('Run Analysis Pipeline').click()
 
-    // All 7 agents should show DONE
     AGENT_NAMES.forEach((name) => {
       cy.contains(name).should('be.visible')
     })
     cy.get('.status-dot-done', { timeout: 10000 }).should('have.length.at.least', 7)
+    
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 
   it('pipeline completes and Sigma decision card shows EXECUTE', () => {
@@ -121,18 +141,28 @@ describe('Market Pipeline', () => {
       onBeforeLoad: mockPipelineStream,
     })
     cy.wait('@getMarket')
+
+    const consoleErrors: string[] = [];
+    cy.window().then((win) => {
+      cy.stub(win.console, 'error').callsFake((msg) => {
+        consoleErrors.push(String(msg));
+      });
+    });
+
     cy.contains('Run Analysis Pipeline').click()
 
     cy.contains('SIGMA DECISION', { timeout: 10000 }).should('be.visible')
     cy.contains('EXECUTE YES').should('be.visible')
+
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 
   it('does not crash with toFixed when API returns string values', () => {
-    const consoleErrors: string[] = []
+    const consoleErrors: string[] = [];
 
     cy.visit('/market/bitcoin-100k-2026', {
       onBeforeLoad(win) {
-        // Capture console errors
         const origError = win.console.error
         win.console.error = (...args: unknown[]) => {
           consoleErrors.push(args.map(String).join(' '))
@@ -142,16 +172,24 @@ describe('Market Pipeline', () => {
       },
     })
     cy.wait('@getMarket')
-    cy.contains('Run Analysis Pipeline').click()
+    
+    cy.window().then((win) => {
+      if(!win.console.error.name?.includes('stub')) {
+        cy.stub(win.console, 'error').callsFake((msg) => {
+          consoleErrors.push(String(msg));
+        });
+      }
+    });
 
-    // Pipeline should complete without crash
+    cy.contains('Run Analysis Pipeline').click()
     cy.contains('SIGMA DECISION', { timeout: 10000 }).should('be.visible')
 
-    // Verify no toFixed errors
     cy.then(() => {
       const toFixedErrors = consoleErrors.filter((e) => e.includes('toFixed is not a function'))
       expect(toFixedErrors).to.have.length(0)
     })
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 
   it('Execute Trade button shown only when EXECUTE decision', () => {
@@ -159,10 +197,20 @@ describe('Market Pipeline', () => {
       onBeforeLoad: mockPipelineStream,
     })
     cy.wait('@getMarket')
-    cy.contains('Run Analysis Pipeline').click()
 
+    const consoleErrors: string[] = [];
+    cy.window().then((win) => {
+      cy.stub(win.console, 'error').callsFake((msg) => {
+        consoleErrors.push(String(msg));
+      });
+    });
+
+    cy.contains('Run Analysis Pipeline').click()
     cy.contains('SIGMA DECISION', { timeout: 10000 }).should('be.visible')
     cy.contains('Execute Trade').scrollIntoView().should('be.visible')
+
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 
   it('all 7 agent cards rendered with correct names', () => {
@@ -171,7 +219,6 @@ describe('Market Pipeline', () => {
     })
     cy.wait('@getMarket')
 
-    // All agents visible even before running pipeline
     AGENT_NAMES.forEach((name) => {
       cy.contains(name).should('exist')
     })
@@ -182,10 +229,21 @@ describe('Market Pipeline', () => {
       onBeforeLoad: mockPipelineStream,
     })
     cy.wait('@getMarket')
+
+    const consoleErrors: string[] = [];
+    cy.window().then((win) => {
+      cy.stub(win.console, 'error').callsFake((msg) => {
+        consoleErrors.push(String(msg));
+      });
+    });
+
     cy.contains('Run Analysis Pipeline').click()
 
     cy.contains('SIGNAL VALIDATOR', { timeout: 10000 }).scrollIntoView().should('be.visible')
     cy.get('[data-testid="signal-validator"]').should('exist')
     cy.get('[data-testid="signal-gate"]').should('have.length', 5)
+
+    cy.wrap(consoleErrors).should('not.include.match', /toFixed is not a function/);
+    cy.wrap(consoleErrors).should('not.include.match', /TypeError/);
   })
 })

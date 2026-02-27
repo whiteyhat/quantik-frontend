@@ -24,7 +24,7 @@ export default function MarketPage({ params }: PageProps) {
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [cancelPipeline, setCancelPipeline] = useState<(() => void) | null>(null);
 
-  const { data: market } = useQuery({
+  const { data: market, isError } = useQuery({
     queryKey: ["market", slug],
     queryFn: () => api.getMarket(slug),
   });
@@ -44,6 +44,22 @@ export default function MarketPage({ params }: PageProps) {
   function handleStopPipeline() {
     cancelPipeline?.();
     pipelineReset();
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: 20 }}>
+        <Link href="/" style={{ color: "var(--ios-blue)", textDecoration: "none", marginBottom: 16, display: "inline-block" }}>
+          {"\u2039"} Back to Dashboard
+        </Link>
+        <div className="glass-card" style={{ padding: 32, textAlign: "center", border: "1px solid rgba(255, 59, 48, 0.3)" }}>
+          <h2 style={{ color: "var(--ios-red)", marginBottom: 8, fontSize: 20 }}>Market Not Found</h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.5 }}>
+            Unable to load market data. The API might be unavailable or the market may not exist.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
