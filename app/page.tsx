@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
+import { PerformanceSummaryWidget } from "@/components/PerformancePanel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1248,6 +1249,7 @@ export default function DashboardPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <OrchestratorPanel />
         <RiskStatusPanel />
+        <PerformanceSummaryWidget />
         <MarketScannerPanel />
       </div>
 

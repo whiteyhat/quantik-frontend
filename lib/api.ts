@@ -189,6 +189,32 @@ export interface TradeRequest {
   limit_price?: number;
 }
 
+// ── Monitoring types (L5) ───────────────────────────────────────────────────
+
+export interface BrierEntry {
+  slug: string;
+  score: number;
+  timestamp: number;
+}
+
+export interface AttributionEntry {
+  signalType: string;
+  hitRate: number;
+  count: number;
+}
+
+export interface DriftStatus {
+  microstructure: "clear" | "detected";
+  concept: "clear" | "detected";
+  lastChecked: number;
+}
+
+export interface CalibrationEntry {
+  agent: string;
+  weight: number;
+  confidence: number;
+}
+
 // ─── API Client ───────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
@@ -339,6 +365,42 @@ export const api = {
       return await apiFetch<RiskStatus>("/api/risk/status");
     } catch {
       return null;
+    }
+  },
+
+  // Monitoring (L5)
+  getBrierScores: async (): Promise<BrierEntry[]> => {
+    try {
+      const res = await apiFetch<BrierEntry[]>("/api/monitoring/brier");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
+
+  getAttribution: async (): Promise<AttributionEntry[]> => {
+    try {
+      const res = await apiFetch<AttributionEntry[]>("/api/monitoring/attribution");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
+    }
+  },
+
+  getDriftStatus: async (): Promise<DriftStatus | null> => {
+    try {
+      return await apiFetch<DriftStatus>("/api/monitoring/drift");
+    } catch {
+      return null;
+    }
+  },
+
+  getCalibration: async (): Promise<CalibrationEntry[]> => {
+    try {
+      const res = await apiFetch<CalibrationEntry[]>("/api/monitoring/calibration");
+      return Array.isArray(res) ? res : [];
+    } catch {
+      return [];
     }
   },
 };
