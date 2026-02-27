@@ -5,13 +5,15 @@ import Link from "next/link";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-interface PipelineRun {
+interface Signal {
   id: string;
   slug: string;
-  market: string;
-  decision: "BET_YES" | "BET_NO" | "PASS";
+  question: string;
+  decision: string;
   confidence: number;
+  edge: number;
   timestamp: number;
+  status: "TRADE" | "WATCH" | "SKIP";
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -25,35 +27,39 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86_400)}d ago`;
 }
 
-interface DecisionStyle {
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max) + "…" : s;
+}
+
+interface StatusStyle {
   label: string;
   color: string;
   bg: string;
   border: string;
 }
 
-function decisionStyle(decision: PipelineRun["decision"]): DecisionStyle {
-  switch (decision) {
-    case "BET_YES":
+function statusStyle(status: Signal["status"]): StatusStyle {
+  switch (status) {
+    case "TRADE":
       return {
-        label: "BUY YES",
+        label: "TRADE",
         color: "#30d158",
         bg: "rgba(48,209,88,0.15)",
         border: "rgba(48,209,88,0.25)",
       };
-    case "BET_NO":
+    case "WATCH":
       return {
-        label: "BUY NO",
-        color: "#ff453a",
-        bg: "rgba(255,69,58,0.15)",
-        border: "rgba(255,69,58,0.25)",
-      };
-    default:
-      return {
-        label: "PASS",
+        label: "WATCH",
         color: "#ff9f0a",
         bg: "rgba(255,159,10,0.15)",
         border: "rgba(255,159,10,0.25)",
+      };
+    case "SKIP":
+      return {
+        label: "SKIP",
+        color: "#ff453a",
+        bg: "rgba(255,69,58,0.15)",
+        border: "rgba(255,69,58,0.25)",
       };
   }
 }
@@ -61,7 +67,7 @@ function decisionStyle(decision: PipelineRun["decision"]): DecisionStyle {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function RecentSignals() {
-  const [runs, setRuns] = useState<PipelineRun[]>([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
 
   useEffect(() => {
     const base =
@@ -69,34 +75,35 @@ export function RecentSignals() {
         ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001")
         : "http://localhost:3001";
 
-    fetch(`${base}/api/pipeline/history`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setRuns((data as PipelineRun[]).slice(0, 10));
-        }
-      })
-      .catch(() => {
-        // API not available — show empty state, no crash
-      });
-
-    const iv = setInterval(() => {
-      fetch(`${base}/api/pipeline/history`)
+    function fetchSignals() {
+      fetch(`${base}/api/signals`)
         .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
         .then((data: unknown) => {
           if (Array.isArray(data)) {
-            setRuns((data as PipelineRun[]).slice(0, 10));
+            setSignals((data as Signal[]).slice(0, 10));
           }
         })
-        .catch(() => {});
-    }, 30_000);
+        .catch(() => {
+          // Fallback to pipeline/results if /api/signals isn't available yet
+          fetch(`${base}/api/pipeline/results`)
+            .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+            .then((data: unknown) => {
+              if (Array.isArray(data)) {
+                setSignals((data as Signal[]).slice(0, 10));
+              }
+            })
+            .catch(() => {});
+        });
+    }
 
+    fetchSignals();
+    const iv = setInterval(fetchSignals, 30_000);
     return () => clearInterval(iv);
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {runs.length === 0 ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }} data-testid="recent-signals">
+      {signals.length === 0 ? (
         <div
           style={{
             padding: "20px 0",
@@ -105,15 +112,15 @@ export function RecentSignals() {
             color: "rgba(255,255,255,0.25)",
           }}
         >
-          No recent pipeline runs
+          No recent signals
         </div>
       ) : (
-        runs.map((run) => {
-          const ds = decisionStyle(run.decision);
+        signals.map((signal) => {
+          const ss = statusStyle(signal.status);
           return (
             <Link
-              key={run.id}
-              href={`/market/${run.slug ?? ""}`}
+              key={signal.id}
+              href={`/market/${signal.slug ?? ""}`}
               style={{ textDecoration: "none", color: "inherit" }}
             >
               <div
@@ -127,26 +134,27 @@ export function RecentSignals() {
                   gap: 9,
                   transition: "background 150ms ease",
                 }}
+                data-testid="signal-row"
               >
-                {/* Decision badge */}
+                {/* Status badge */}
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
                     padding: "2px 7px",
                     borderRadius: 5,
-                    background: ds.bg,
-                    color: ds.color,
-                    border: `1px solid ${ds.border}`,
+                    background: ss.bg,
+                    color: ss.color,
+                    border: `1px solid ${ss.border}`,
                     fontFamily: "monospace",
                     flexShrink: 0,
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {ds.label}
+                  {ss.label}
                 </span>
 
-                {/* Market slug */}
+                {/* Market question (truncated 50 chars) */}
                 <span
                   style={{
                     fontSize: 12,
@@ -157,7 +165,7 @@ export function RecentSignals() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {run.market ?? run.slug ?? "—"}
+                  {truncate(signal.question || signal.slug || "—", 50)}
                 </span>
 
                 {/* Confidence */}
@@ -169,7 +177,20 @@ export function RecentSignals() {
                     flexShrink: 0,
                   }}
                 >
-                  {((run.confidence ?? 0) * 100).toFixed(0)}%
+                  {Math.round((signal.confidence ?? 0) * 100)}%
+                </span>
+
+                {/* Edge */}
+                <span
+                  style={{
+                    fontFamily: '"SF Mono", monospace',
+                    fontSize: 11,
+                    color: signal.edge > 0 ? "#30d158" : "rgba(255,255,255,0.30)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {signal.edge > 0 ? "+" : ""}
+                  {(signal.edge * 100).toFixed(1)}%
                 </span>
 
                 {/* Timestamp */}
@@ -181,7 +202,7 @@ export function RecentSignals() {
                     fontFamily: "monospace",
                   }}
                 >
-                  {timeAgo(run.timestamp ?? 0)}
+                  {timeAgo(signal.timestamp ?? 0)}
                 </span>
               </div>
             </Link>
