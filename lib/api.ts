@@ -282,7 +282,15 @@ export const api = {
   // Wallet
   getBalance: async (): Promise<WalletBalance | null> => {
     try {
-      return await apiFetch<WalletBalance>("/api/portfolio/summary");
+      const raw = await apiFetch<Record<string, unknown>>("/api/portfolio/summary");
+      if (!raw) return null;
+      // Backend may return circuitBreakerStatus as an object {state, ...}
+      const cbs = raw.circuitBreakerStatus;
+      const cbStr =
+        typeof cbs === "string" ? cbs :
+        cbs && typeof cbs === "object" && "state" in (cbs as Record<string, unknown>) ? (cbs as { state: string }).state :
+        undefined;
+      return { ...raw, circuitBreakerStatus: cbStr } as unknown as WalletBalance;
     } catch {
       return null;
     }
@@ -362,7 +370,20 @@ export const api = {
   // Risk
   getRiskStatus: async (): Promise<RiskStatus | null> => {
     try {
-      return await apiFetch<RiskStatus>("/api/risk/status");
+      const raw = await apiFetch<Record<string, unknown>>("/api/risk/status");
+      // Backend may return circuitBreaker as an object {state, drawdownPct, ...}
+      const cb = raw?.circuitBreaker;
+      const cbStr: RiskStatus["circuitBreaker"] =
+        typeof cb === "string" ? (cb as RiskStatus["circuitBreaker"]) :
+        cb && typeof cb === "object" && "state" in cb ? (cb as { state: string }).state as RiskStatus["circuitBreaker"] :
+        "ARMED";
+      return {
+        circuitBreaker: cbStr,
+        dailyPnl: Number(raw?.dailyPnl ?? 0),
+        dailyPnlPct: Number(raw?.dailyPnlPct ?? 0),
+        exposurePct: Number(raw?.exposurePct ?? 0),
+        availableCapital: Number(raw?.availableCapital ?? 0),
+      };
     } catch {
       return null;
     }

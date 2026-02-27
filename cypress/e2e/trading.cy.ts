@@ -12,6 +12,7 @@ describe('Trading Flow', () => {
     cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: false } }).as('getSettings')
     cy.intercept('GET', '**/api/markets/bitcoin-100k-2026', { fixture: 'market-single.json' }).as('getMarket')
     cy.intercept('POST', '**/api/trade/execute', { statusCode: 200, body: {} }).as('executeTrade')
+    cy.intercept('POST', '**/api/execution/order', { statusCode: 200, body: { orderId: 'test-123', status: 'filled' } }).as('placeOrder')
     cy.intercept('POST', '**/api/v1/panic-mode/activate', { statusCode: 200, body: { success: true } }).as('panicMode')
   })
 
@@ -63,7 +64,8 @@ describe('Trading Flow', () => {
     cy.contains('Simulate Trade').scrollIntoView().should('be.visible').click({ force: true })
     cy.contains('Confirm Trade').should('be.visible')
     cy.contains('.glass-card-elevated', 'Confirm Trade').contains('button', 'Simulate Trade').click({ force: true })
-    cy.wait('@executeTrade')
+    // App uses api.placeOrder → POST /api/execution/order
+    cy.wait('@placeOrder', { timeout: 10000 })
 
     // 5. Panic Button
     cy.get('button[title="Emergency Panic Mode"]').click()
