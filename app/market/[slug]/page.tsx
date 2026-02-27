@@ -69,101 +69,89 @@ export default function MarketPage({ params }: PageProps) {
       {/* Hero Market Header */}
       <MarketHeader slug={slug} />
 
-      {/* Main content: Chart + Pipeline in glass containers */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 400px",
-          gap: 24,
-          alignItems: "start",
-        }}
-      >
-        {/* Left: Chart in glass wrapper */}
-        <div className="glass-card" style={{ padding: 20, overflow: "hidden" }}>
-          {market?.tokenId ? (
-            <PriceChart tokenId={market.tokenId} slug={slug} />
-          ) : (
-            <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Loading chart...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Right: Pipeline in glass wrapper */}
-        <div className="glass-card" style={{ padding: 20 }}>
-          {/* Run/Stop Pipeline button — full-width iOS blue */}
-          <div style={{ marginBottom: 16 }}>
-            {!pipeline.running ? (
-              <button
-                onClick={handleRunPipeline}
-                className="glass-card-interactive"
-                style={{
-                  width: "100%",
-                  height: 48,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  borderRadius: 12,
-                  border: "none",
-                  background: "var(--ios-blue)",
-                  color: "#fff",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 200ms ease",
-                  fontFamily: "inherit",
-                }}
-              >
-                <span>{"\u25B6"}</span>
-                <span>Run Analysis Pipeline</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleStopPipeline}
-                className="glass-card-interactive"
-                style={{
-                  width: "100%",
-                  height: 48,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "var(--ios-red)",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 200ms ease",
-                  fontFamily: "inherit",
-                }}
-              >
-                <span>{"\u25A0"}</span>
-                <span>Stop Pipeline</span>
-              </button>
-            )}
+      {/* Chart — full width */}
+      <div className="glass-card" style={{ padding: 20, overflow: "hidden", marginBottom: 24 }}>
+        {market?.tokenId ? (
+          <PriceChart tokenId={market.tokenId} slug={slug} />
+        ) : (
+          <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Loading chart...</span>
           </div>
-
-          <AgentPipeline
-            market={
-              market
-                ? {
-                    slug: market.slug,
-                    tokenId: market.tokenId,
-                    question: market.question,
-                    yesPrice: market.yesPrice,
-                    noPrice: market.noPrice,
-                  }
-                : undefined
-            }
-          />
-
-          {/* Pipeline duration timeline */}
-          <PipelineTimeline />
-        </div>
+        )}
       </div>
+
+      {/* Run/Stop Pipeline button — full-width iOS blue */}
+      <div style={{ marginBottom: 20 }}>
+        {!pipeline.running ? (
+          <button
+            onClick={handleRunPipeline}
+            data-testid="run-pipeline-btn"
+            style={{
+              width: "100%",
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              borderRadius: 12,
+              border: "none",
+              background: "var(--ios-blue)",
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 200ms ease",
+              fontFamily: "inherit",
+            }}
+          >
+            <span>{"\u25B6"}</span>
+            <span>Run Analysis Pipeline</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleStopPipeline}
+            data-testid="stop-pipeline-btn"
+            style={{
+              width: "100%",
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "var(--ios-red)",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 200ms ease",
+              fontFamily: "inherit",
+            }}
+          >
+            <span>{"\u25A0"}</span>
+            <span>Stop Pipeline</span>
+          </button>
+        )}
+      </div>
+
+      {/* Agent Pipeline — full width for all 7 agents */}
+      <AgentPipeline
+        market={
+          market
+            ? {
+                slug: market.slug,
+                tokenId: market.tokenId,
+                question: market.question,
+                yesPrice: market.yesPrice,
+                noPrice: market.noPrice,
+              }
+            : undefined
+        }
+      />
+
+      {/* Pipeline duration timeline */}
+      <PipelineTimeline />
 
       {/* Trade Confirmation Modal */}
       <TradeConfirmationModal />

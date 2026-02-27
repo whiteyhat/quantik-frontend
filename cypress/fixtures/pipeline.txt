@@ -1,4 +1,14 @@
-{"type":"agent","agent":"Orion","status":"success","data":{"score": 0.8}}
-{"type":"agent","agent":"Lyra","status":"success","data":{"sentiment": 0.7}}
-{"type":"agent","agent":"Sigma","status":"success","data":{"decision": "BET_YES", "confidence": 0.85, "size_usd": 100, "entry_price": 0.45}}
+data: {"agent":"aura","status":"done","data":{"sentiment_score":0.65,"echo_chamber":false,"echo_chamber_strength":0.2}}
+
+data: {"agent":"oracle","status":"done","data":{"prob_estimate":0.78,"market_implied":0.45,"confidence":82}}
+
+data: {"agent":"edge","status":"done","data":{"ev_grade":"A","net_ev":12.5,"kelly":4.8,"recommended_size":8}}
+
+data: {"agent":"clause","status":"done","data":{"resolution_risk":"LOW","technicality_risks":[]}}
+
+data: {"agent":"flux","status":"done","data":{"liquidity_grade":"A","spread":1.2,"whale_signals":3,"depth_score":0.85}}
+
+data: {"agent":"lucifer","status":"done","data":{"devils_advocate_score":0.35,"bias_flags":["recency"],"counter_thesis":"Market may be pricing in optimistic scenario"}}
+
+data: {"agent":"sigma","status":"done","data":{"decision":"BET_YES","confidence":85,"thesis":"Strong positive edge with healthy liquidity","size_pct":8,"size_usd":120,"entry_price":0.45}}
 
