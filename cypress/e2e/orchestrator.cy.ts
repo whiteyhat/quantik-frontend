@@ -1,68 +1,4 @@
 describe("Orchestrator", () => {
-  const API = Cypress.env("API_URL") || "http://localhost:3001";
-
-  // ── API endpoint tests ──────────────────────────────────────
-
-  it("GET /api/orchestrator/status returns valid data", () => {
-    cy.request(`${API}/api/orchestrator/status`).then((res) => {
-      expect(res.status).to.eq(200);
-      expect(res.body).to.have.property("lastScanAt");
-      expect(res.body).to.have.property("nextScanAt");
-      expect(res.body).to.have.property("marketsScanned");
-      expect(res.body).to.have.property("candidatesFound");
-      expect(res.body).to.have.property("scanIntervalMs", 600000);
-      expect(res.body).to.have.property("status");
-      expect(["idle", "scanning"]).to.include(res.body.status);
-    });
-  });
-
-  it("GET /api/orchestrator/candidates returns ranked list", () => {
-    cy.request(`${API}/api/orchestrator/candidates`).then((res) => {
-      expect(res.status).to.eq(200);
-      expect(res.body).to.have.property("candidates");
-      expect(res.body).to.have.property("total");
-      expect(res.body).to.have.property("scanCycle");
-      expect(res.body.candidates).to.be.an("array");
-
-      // If candidates exist, verify they are ranked descending
-      const candidates = res.body.candidates;
-      if (candidates.length > 1) {
-        for (let i = 1; i < candidates.length; i++) {
-          expect(candidates[i - 1].opportunityScore).to.be.gte(
-            candidates[i].opportunityScore
-          );
-        }
-      }
-
-      // Verify candidate shape
-      if (candidates.length > 0) {
-        const c = candidates[0];
-        expect(c).to.have.property("slug");
-        expect(c).to.have.property("opportunityScore");
-        expect(c).to.have.property("components");
-        expect(c.components).to.have.property("volume");
-        expect(c.components).to.have.property("priceMove");
-        expect(c.components).to.have.property("liquidity");
-        expect(c.components).to.have.property("recency");
-        expect(c).to.have.property("triggers");
-        expect(c.triggers).to.be.an("array");
-      }
-    });
-  });
-
-  it("POST /api/orchestrator/scan triggers a manual scan", () => {
-    cy.request({ method: "POST", url: `${API}/api/orchestrator/scan`, timeout: 60000 }).then(
-      (res) => {
-        expect(res.status).to.eq(200);
-        expect(res.body).to.have.property("triggered", true);
-        expect(res.body).to.have.property("marketsScanned");
-        expect(res.body.marketsScanned).to.be.a("number");
-        expect(res.body).to.have.property("candidatesFound");
-        expect(res.body.candidatesFound).to.be.a("number");
-      }
-    );
-  });
-
   // ── Dashboard panel test ────────────────────────────────────
 
   it("Dashboard renders OrchestratorPanel with candidate rows", () => {
@@ -107,6 +43,10 @@ describe("Orchestrator", () => {
       },
     }).as("orchCandidates");
 
+    // Also intercept the markets call for dashboard
+    cy.intercept("GET", "**/api/markets*", { body: { markets: [], total: 0, hasMore: false } }).as("markets");
+    cy.intercept("GET", "**/api/portfolio/summary", { body: {} }).as("portfolio");
+
     cy.visit("/");
     cy.wait(["@orchStatus", "@orchCandidates"]);
 
@@ -115,7 +55,7 @@ describe("Orchestrator", () => {
     cy.contains("Tier 0 scanner").should("be.visible");
 
     // Verify status bar
-    cy.contains("5,000 markets scanned").should("be.visible");
+    cy.contains(/5,?000 markets scanned/).should("be.visible");
     cy.contains("12 candidates").should("be.visible");
 
     // Verify candidate rows

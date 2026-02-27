@@ -187,7 +187,7 @@ export default function MarketsPage() {
   const isTrending = activeCategory === "Trending \u{1F525}";
 
   useEffect(() => {
-    setLoading(true);
+    console.log("FETCHING MARKETS", search, isTrending); setLoading(true);
     if (isTrending && !search) {
       api.getTrendingMarkets()
         .then(res => {
