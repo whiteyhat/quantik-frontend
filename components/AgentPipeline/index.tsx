@@ -1,8 +1,18 @@
 "use client";
 
+import React from "react";
 import { useQuantikStore, type AgentCardState } from "@/store/useQuantikStore";
 import { AgentStep, AgentDataView } from "./AgentStep";
 import { SigmaDecision } from "./SigmaDecision";
+import { SignalValidator } from "./SignalValidator";
+import {
+  AuraPanel,
+  OraclePanel,
+  EdgePanel,
+  ClausePanel,
+  FluxPanel,
+  LuciferPanel,
+} from "./AgentDetailPanels";
 import {
   type SigmaResult,
   type EdgeResult,
@@ -15,32 +25,40 @@ import {
 
 const AGENTS: { key: string; emoji: string; name: string; role: string; color: string }[] = [
   { key: "aura", emoji: "\u{1F30A}", name: "Aura", role: "Sentiment", color: "#0a84ff" },
-  { key: "flux", emoji: "\u26A1", name: "Flux", role: "Liquidity", color: "#0a84ff" },
   { key: "oracle", emoji: "\u{1F52E}", name: "Oracle", role: "Forecasting", color: "#0a84ff" },
   { key: "edge", emoji: "\u{1F4D0}", name: "Edge", role: "Calibration", color: "#ff9f0a" },
   { key: "clause", emoji: "\u2696\uFE0F", name: "Clause", role: "Resolution", color: "#30d158" },
+  { key: "flux", emoji: "\u26A1", name: "Flux", role: "Liquidity", color: "#0a84ff" },
   { key: "lucifer", emoji: "\u{1F608}", name: "Lucifer", role: "Devil's Advocate", color: "#bf5af2" },
   { key: "sigma", emoji: "\u{1F9E9}", name: "Sigma", role: "Synthesis", color: "#0a84ff" },
 ];
+
+/** Safe numeric coercion — prevents toFixed crash when API returns strings */
+function num(v: unknown): number {
+  const n = Number(v);
+  return isNaN(n) ? 0 : n;
+}
 
 function agentSummary(key: string, data: unknown): string | undefined {
   if (!data) return undefined;
   switch (key) {
     case "aura": {
       const d = data as AuraResult;
-      return `Sentiment: ${(d.sentiment_score ?? 0) > 0 ? "+" : ""}${(d.sentiment_score ?? 0).toFixed(2)}  Echo: ${d.echo_chamber ? "\u26A0" : "\u2713"}`;
+      const s = num(d.sentiment_score);
+      return `Sentiment: ${s > 0 ? "+" : ""}${s.toFixed(2)}  Echo: ${d.echo_chamber ? "\u26A0" : "\u2713"}`;
     }
     case "flux": {
       const d = data as FluxResult;
-      return `Liq: ${d.liquidity_grade}  Spread: ${(d.spread ?? 0).toFixed(1)}\u00A2`;
+      return `Liq: ${d.liquidity_grade}  Spread: ${num(d.spread).toFixed(1)}\u00A2`;
     }
     case "oracle": {
       const d = data as OracleResult;
-      return `Estimate: ${Math.round((d.prob_estimate ?? 0) * 100)}%  Market: ${Math.round((d.market_implied ?? 0) * 100)}%`;
+      return `Estimate: ${Math.round(num(d.prob_estimate) * 100)}%  Market: ${Math.round(num(d.market_implied) * 100)}%`;
     }
     case "edge": {
       const d = data as EdgeResult;
-      return `EV Grade: ${d.ev_grade}  Net EV: ${(d.net_ev ?? 0) > 0 ? "+" : ""}${(d.net_ev ?? 0).toFixed(1)}%`;
+      const ev = num(d.net_ev);
+      return `EV Grade: ${d.ev_grade}  Net EV: ${ev > 0 ? "+" : ""}${ev.toFixed(1)}%`;
     }
     case "clause": {
       const d = data as ClauseResult;
@@ -48,11 +66,11 @@ function agentSummary(key: string, data: unknown): string | undefined {
     }
     case "lucifer": {
       const d = data as LuciferResult;
-      return `DA Score: ${(d.devils_advocate_score ?? 0).toFixed(2)}  Biases: ${(d.bias_flags ?? []).length}`;
+      return `DA Score: ${num(d.devils_advocate_score).toFixed(2)}  Biases: ${(d.bias_flags ?? []).length}`;
     }
     case "sigma": {
       const d = data as SigmaResult;
-      return `${(d.decision ?? "").replace("_", " ")}  Confidence: ${d.confidence ?? 0}%`;
+      return `${(d.decision ?? "").replace("_", " ")}  Confidence: ${num(d.confidence)}%`;
     }
     default:
       return undefined;
@@ -69,12 +87,37 @@ interface AgentPipelineProps {
   };
 }
 
+function renderAgentDetail(key: string, data: unknown, error?: string): React.ReactNode {
+  if (error) return <AgentDataView data={error} />;
+  if (!data) return null;
+
+  switch (key) {
+    case "aura":
+      return <AuraPanel data={data as AuraResult} />;
+    case "oracle":
+      return <OraclePanel data={data as OracleResult} />;
+    case "edge":
+      return <EdgePanel data={data as EdgeResult} />;
+    case "clause":
+      return <ClausePanel data={data as ClauseResult} />;
+    case "flux":
+      return <FluxPanel data={data as FluxResult} />;
+    case "lucifer":
+      return <LuciferPanel data={data as LuciferResult} />;
+    default:
+      return <AgentDataView data={data} />;
+  }
+}
+
 export function AgentPipeline({ market }: AgentPipelineProps) {
   const pipeline = useQuantikStore((s) => s.pipeline);
   const agents = pipeline.agents;
 
   const sigmaData = agents.sigma?.data as SigmaResult | undefined;
   const edgeData = agents.edge?.data as EdgeResult | undefined;
+  const auraData = agents.aura?.data as AuraResult | undefined;
+  const fluxData = agents.flux?.data as FluxResult | undefined;
+  const luciferData = agents.lucifer?.data as LuciferResult | undefined;
 
   return (
     <div style={{ position: "relative" }}>
@@ -96,7 +139,7 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
               agentColor={agent.color}
               summary={agentSummary(agent.key, state.data)}
             >
-              <AgentDataView data={state.data || state.error} />
+              {renderAgentDetail(agent.key, state.data, state.error)}
             </AgentStep>
           );
         })}
@@ -105,6 +148,17 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
       {/* Sigma Decision Card */}
       {sigmaData && market && (
         <SigmaDecision sigma={sigmaData} edge={edgeData} market={market} />
+      )}
+
+      {/* Signal Validator — 5-gate checklist */}
+      {sigmaData && (
+        <SignalValidator
+          edge={edgeData}
+          sigma={sigmaData}
+          aura={auraData}
+          flux={fluxData}
+          lucifer={luciferData}
+        />
       )}
     </div>
   );

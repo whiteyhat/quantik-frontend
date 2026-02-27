@@ -4,6 +4,11 @@ import { type SigmaResult, type EdgeResult, fmtUSDC } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { usePaperMode } from "@/context/PaperModeContext";
 
+function num(v: unknown): number {
+  const n = Number(v);
+  return isNaN(n) ? 0 : n;
+}
+
 interface SigmaDecisionProps {
   sigma: SigmaResult;
   edge?: EdgeResult;
@@ -86,10 +91,10 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div className="confidence-bar" style={{ width: 80 }}>
-              <div className="confidence-bar-fill" style={{ width: `${sigma.confidence ?? 0}%`, background: decisionColor }} />
+              <div className="confidence-bar-fill" style={{ width: `${num(sigma.confidence)}%`, background: decisionColor }} />
             </div>
             <span className="font-mono-data" style={{ fontSize: 14, fontWeight: 700, color: decisionColor }}>
-              {sigma.confidence ?? 0}%
+              {num(sigma.confidence)}%
             </span>
           </div>
         </div>
@@ -99,7 +104,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
             Size
           </span>
           <span className="font-mono-data" style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
-            {fmtUSDC(sigma.size_usd ?? 0)}
+            {fmtUSDC(num(sigma.size_usd))}
           </span>
         </div>
 
@@ -108,7 +113,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
             EV
           </span>
           <span className="font-mono-data" style={{ fontSize: 14, fontWeight: 600, color: decisionColor }}>
-            {edge ? `${(edge.net_ev ?? 0) > 0 ? "+" : ""}${(edge.net_ev ?? 0).toFixed(1)}%` : "—"}
+            {edge ? `${num(edge.net_ev) > 0 ? "+" : ""}${num(edge.net_ev).toFixed(1)}%` : "—"}
           </span>
         </div>
       </div>
