@@ -2,19 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface Signal {
-  id: string;
-  slug: string;
-  question: string;
-  decision: string;
-  confidence: number;
-  edge: number;
-  timestamp: number;
-  status: "TRADE" | "WATCH" | "SKIP";
-}
+import { api, type Signal } from "@/lib/api";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -68,42 +56,39 @@ function statusStyle(status: Signal["status"]): StatusStyle {
 
 export function RecentSignals() {
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const base =
-      typeof window !== "undefined"
-        ? (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001")
-        : "http://localhost:3001";
+    let mounted = true;
 
-    function fetchSignals() {
-      fetch(`${base}/api/signals`)
-        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-        .then((data: unknown) => {
-          if (Array.isArray(data)) {
-            setSignals((data as Signal[]).slice(0, 10));
-          }
-        })
-        .catch(() => {
-          // Fallback to pipeline/results if /api/signals isn't available yet
-          fetch(`${base}/api/pipeline/results`)
-            .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-            .then((data: unknown) => {
-              if (Array.isArray(data)) {
-                setSignals((data as Signal[]).slice(0, 10));
-              }
-            })
-            .catch(() => {});
-        });
+    async function fetchSignals() {
+      try {
+        const data = await api.getSignals();
+        if (mounted) {
+          setSignals(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "Failed to load signals");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
 
     fetchSignals();
     const iv = setInterval(fetchSignals, 30_000);
-    return () => clearInterval(iv);
+    return () => {
+      mounted = false;
+      clearInterval(iv);
+    };
   }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }} data-testid="recent-signals">
-      {signals.length === 0 ? (
+      {loading ? (
         <div
           style={{
             padding: "20px 0",
@@ -111,12 +96,38 @@ export function RecentSignals() {
             fontSize: 13,
             color: "rgba(255,255,255,0.25)",
           }}
+          data-testid="signals-loading"
+        >
+          Loading signals...
+        </div>
+      ) : error ? (
+        <div
+          style={{
+            padding: "20px 0",
+            textAlign: "center",
+            fontSize: 13,
+            color: "rgba(255,69,58,0.6)",
+          }}
+          data-testid="signals-error"
+        >
+          {error}
+        </div>
+      ) : signals.length === 0 ? (
+        <div
+          style={{
+            padding: "20px 0",
+            textAlign: "center",
+            fontSize: 13,
+            color: "rgba(255,255,255,0.25)",
+          }}
+          data-testid="signals-empty"
         >
           No recent signals
         </div>
       ) : (
         signals.map((signal) => {
           const ss = statusStyle(signal.status);
+          const edge = signal.edge ?? 0;
           return (
             <Link
               key={signal.id}
@@ -150,6 +161,7 @@ export function RecentSignals() {
                     flexShrink: 0,
                     whiteSpace: "nowrap",
                   }}
+                  data-testid={`badge-${signal.status}`}
                 >
                   {ss.label}
                 </span>
@@ -185,12 +197,12 @@ export function RecentSignals() {
                   style={{
                     fontFamily: '"SF Mono", monospace',
                     fontSize: 11,
-                    color: signal.edge > 0 ? "#30d158" : "rgba(255,255,255,0.30)",
+                    color: edge > 0 ? "#30d158" : "rgba(255,255,255,0.30)",
                     flexShrink: 0,
                   }}
                 >
-                  {signal.edge > 0 ? "+" : ""}
-                  {(signal.edge * 100).toFixed(1)}%
+                  {edge > 0 ? "+" : ""}
+                  {(edge * 100).toFixed(1)}%
                 </span>
 
                 {/* Timestamp */}

@@ -162,6 +162,17 @@ export interface OrchestratorCandidatesResponse {
   scanCycle: number;
 }
 
+export interface Signal {
+  id: string;
+  slug: string;
+  question: string;
+  decision: string;
+  confidence: number;
+  edge: number;
+  timestamp: number;
+  status: "TRADE" | "WATCH" | "SKIP";
+}
+
 export interface TradeRequest {
   slug: string;
   tokenId: string;
@@ -270,6 +281,21 @@ export const api = {
 
   cancelAll: () =>
     apiFetch<{ cancelled: number }>("/api/trade/cancel-all", { method: "POST" }),
+
+  // Signals
+  getSignals: async (): Promise<Signal[]> => {
+    try {
+      const res = await apiFetch<Signal[]>("/api/signals");
+      return Array.isArray(res) ? res.slice(0, 10) : [];
+    } catch {
+      try {
+        const res = await apiFetch<Signal[]>("/api/pipeline/results");
+        return Array.isArray(res) ? res.slice(0, 10) : [];
+      } catch {
+        return [];
+      }
+    }
+  },
 
   // Orchestrator
   getOrchestratorStatus: async (): Promise<OrchestratorStatus | null> => {
