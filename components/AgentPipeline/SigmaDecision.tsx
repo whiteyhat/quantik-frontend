@@ -125,6 +125,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
 
       {/* Full-width execute button */}
       <button
+        data-testid="execute-trade-btn"
         disabled={!canExecute}
         onClick={() => {
           if (!canExecute || !edge) return;

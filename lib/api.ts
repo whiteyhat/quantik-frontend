@@ -290,6 +290,13 @@ export const api = {
   cancelAll: () =>
     apiFetch<{ cancelled: number }>("/api/trade/cancel-all", { method: "POST" }),
 
+  // Execution engine
+  placeOrder: (slug: string, direction: string, sizeUsdc: number) =>
+    apiFetch<{ orderId: string; status: string }>("/api/execution/order", {
+      method: "POST",
+      body: JSON.stringify({ slug, direction, sizeUsdc }),
+    }),
+
   // Signals
   getSignals: async (): Promise<Signal[]> => {
     try {
