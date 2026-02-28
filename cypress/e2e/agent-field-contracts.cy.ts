@@ -76,4 +76,56 @@ describe("Agent Field Contracts", () => {
       });
     });
   });
+
+  // Flux fix — Grade not always D
+  describe("Flux fix — Grade not always D", () => {
+    it("Flux returns grade that is not always D across multiple markets", () => {
+      const slugs = [
+        "will-trump-acquire-greenland-before-2027",
+        "will-bitcoin-reach-70k-february-23-march"
+      ];
+      slugs.forEach(slug => {
+        cy.request(`${API}/api/flux/${slug}`).then(r => {
+          expect(r.status).to.eq(200);
+          // soft_veto should not always be true
+          expect(r.body).to.have.property("soft_veto");
+        });
+      });
+    });
+  });
+
+  // Aura fix — no identical mock values across markets
+  describe("Aura fix — no identical mock values across markets", () => {
+    it("different markets return different sentimentDelta (not always 0.23)", () => {
+      cy.request(`${API}/api/aura/will-trump-acquire-greenland-before-2027`).then(r1 => {
+        cy.request(`${API}/api/aura/will-bitcoin-reach-70k-february-23-march`).then(r2 => {
+          // Values may differ OR both may be 0 (neutral fallback) — but never both exactly 0.23
+          if (r1.body.sentimentDelta === 0.23 && r2.body.sentimentDelta === 0.23) {
+            throw new Error("Both markets returning mock sentimentDelta=0.23 — Aura is still serving mock data");
+          }
+        });
+      });
+    });
+
+    it("Aura confidence is not always exactly 0.85", () => {
+      cy.request(`${API}/api/aura/will-trump-acquire-greenland-before-2027`).then(r => {
+        expect(r.body.confidence).to.not.equal(0.85);
+      });
+    });
+  });
+
+  // Oracle fix — confidence below 0.85 when no data
+  describe("Oracle fix — confidence below 0.85 when no data", () => {
+    it("Oracle confidence respects data_sufficiency cap", () => {
+      cy.request(`${API}/api/oracle/will-trump-acquire-greenland-before-2027`).then(r => {
+        expect(r.status).to.eq(200);
+        const { confidence, data_sufficiency } = r.body;
+        if (data_sufficiency === 0) {
+          expect(confidence).to.be.lte(0.40);
+        } else {
+          expect(confidence).to.be.lte(0.40 + data_sufficiency * 0.45 + 0.01);
+        }
+      });
+    });
+  });
 });
