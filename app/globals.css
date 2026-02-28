@@ -452,3 +452,19 @@ body {
   100% { content: ''; }
 }
 
+
+/* ─── Autopilot animations ─────────────────────────────────────────────────── */
+@keyframes quantik-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.25); }
+}
+
+@keyframes radar-ring {
+  0%   { transform: scale(0.4); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

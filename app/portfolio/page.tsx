@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib/api";
+import { PnlTicker } from "@/components/PnlTicker";
+import { ExecutionLog } from "@/components/ExecutionLog";
 
 // ─── Safe number formatter (guards against undefined/null from API) ───────────
 const fmt1 = (n: unknown) => ((n as number) ?? 0).toFixed(1);
@@ -488,6 +490,9 @@ export default function PortfolioPage() {
         </p>
       </div>
 
+      {/* P&L Ticker */}
+      <PnlTicker />
+
       {loading ? (
         /* Skeleton loading state — never crashes on null data */
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -535,6 +540,20 @@ export default function PortfolioPage() {
 
             {/* Risk panel */}
             {risk && <RiskPanel risk={risk} wallet={wallet} />}
+          </div>
+
+          {/* Execution Log */}
+          <div
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              padding: 20,
+            }}
+          >
+            <ExecutionLog />
           </div>
         </>
       )}
