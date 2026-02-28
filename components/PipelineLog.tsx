@@ -29,6 +29,8 @@ function formatTime(): string {
 export function PipelineLog() {
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>([]);
+  const [logQueue, setLogQueue] = useState<LogEntry[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,8 @@ export function PipelineLog() {
       setExpanded(true);
       setStartTime(Date.now());
       setLogs([]);
+      setVisibleLogs([]);
+      setLogQueue([]);
       prevAgents.current = {};
     }
   }, [pipeline.running]);
@@ -109,6 +113,21 @@ export function PipelineLog() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pipeline.running]);
+
+  // Queue new entries and drain with stagger (200ms each) for streaming effect
+  useEffect(() => {
+    setLogQueue(prev => [...prev, ...logs.slice(visibleLogs.length + prev.length)]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleLogs]);
+
+  useEffect(() => {
+    if (logQueue.length === 0) return;
+    const timer = setTimeout(() => {
+      setVisibleLogs(prev => [...prev, logQueue[0]]);
+      setLogQueue(prev => prev.slice(1));
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [logQueue]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -213,7 +232,7 @@ export function PipelineLog() {
             </div>
           )}
 
-          {logs.map((entry, i) => (
+          {visibleLogs.map((entry, i) => (
             <div
               key={`${entry.agentKey}-${entry.status}-${i}`}
               style={{

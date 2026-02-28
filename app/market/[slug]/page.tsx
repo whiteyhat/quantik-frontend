@@ -87,13 +87,7 @@ export default function MarketPage({ params }: PageProps) {
 
       {/* ── PRICE CHART ── Full width, dark, gradient fill */}
       <div className="glass-card" style={{ padding: 20, overflow: "hidden", marginBottom: 20 }}>
-        {market?.tokenId ? (
-          <PriceChart tokenId={market.tokenId} slug={slug} />
-        ) : (
-          <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Loading chart...</span>
-          </div>
-        )}
+        <PriceChart tokenId={market?.tokenId ?? ""} slug={slug} />
       </div>
 
       {/* ── RUN / STOP PIPELINE BUTTON ── Blue full-width */}

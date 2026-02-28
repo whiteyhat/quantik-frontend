@@ -62,13 +62,16 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-export function PriceChart({ tokenId }: { tokenId: string; slug: string }) {
+export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<NormalizedPoint[]>([]);
   const [isFallback, setIsFallback] = useState(false);
 
   useEffect(() => {
-    api.getPriceHistory(tokenId, interval).then((raw) => {
+    // Use tokenId if available, otherwise use slug for synthetic fallback
+    const id = tokenId || slug;
+    if (!id) return;
+    api.getPriceHistory(id, interval).then((raw) => {
       const { points, isSynthetic } = normalizeData(raw as unknown[]);
       setData(points);
       setIsFallback(isSynthetic);
@@ -76,7 +79,7 @@ export function PriceChart({ tokenId }: { tokenId: string; slug: string }) {
       setData([]);
       setIsFallback(false);
     });
-  }, [tokenId, interval]);
+  }, [tokenId, slug, interval]);
 
   return (
     <div data-testid="price-chart">
