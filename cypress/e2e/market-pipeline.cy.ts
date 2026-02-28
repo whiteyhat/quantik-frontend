@@ -227,6 +227,56 @@ describe('Market Pipeline', () => {
     })
   })
 
+  it('SSE named events: all 7 agents go idle → running → done', () => {
+    function mockNamedSSEStream(win: Cypress.AUTWindow) {
+      const originalFetch = win.fetch
+      cy.stub(win, 'fetch').callsFake((url: string | URL | Request, options?: RequestInit) => {
+        const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url
+        if (urlStr.includes('/api/pipeline/run')) {
+          const stream = new ReadableStream({
+            start(controller) {
+              const enc = new TextEncoder()
+              const agentData: Record<string, Record<string, unknown>> = {
+                aura: { sentiment_score: 0.65, echo_chamber: false, echo_chamber_strength: 0.2 },
+                oracle: { prob_estimate: 0.78, market_implied: 0.45, confidence: 82 },
+                edge: { ev_grade: 'A', net_ev: 12.5, kelly: 4.8, recommended_size: 8 },
+                clause: { resolution_risk: 'LOW', technicality_risks: [] },
+                flux: { liquidity_grade: 'A', spread: 1.2, whale_signals: 3, depth_score: 0.85 },
+                lucifer: { devils_advocate_score: 0.35, bias_flags: ['recency'], counter_thesis: 'Market may be pricing in optimistic scenario' },
+                sigma: { decision: 'BET_YES', confidence: 85, thesis: 'Strong positive edge with healthy liquidity', size_pct: 8, size_usd: 120, entry_price: 0.45 },
+              }
+              for (const [agent, data] of Object.entries(agentData)) {
+                controller.enqueue(enc.encode(`event: agent:start\ndata: ${JSON.stringify({ agent })}\n\n`))
+                controller.enqueue(enc.encode(`event: agent:complete\ndata: ${JSON.stringify({ agent, data })}\n\n`))
+              }
+              controller.enqueue(enc.encode(`event: pipeline:complete\ndata: ${JSON.stringify(agentData)}\n\n`))
+              controller.close()
+            }
+          })
+          return Promise.resolve(new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } }))
+        }
+        return originalFetch.call(win, url, options)
+      })
+    }
+
+    cy.visit('/market/bitcoin-100k-2026', {
+      onBeforeLoad: mockNamedSSEStream,
+    })
+    cy.wait('@getMarket')
+
+    cy.contains('Run Analysis Pipeline').click()
+
+    // All 7 agent cards should complete
+    cy.get('.status-dot-done', { timeout: 10000 }).should('have.length.at.least', 7)
+
+    // Sigma decision should render
+    cy.contains('SIGMA DECISION', { timeout: 10000 }).should('be.visible')
+    cy.contains('EXECUTE YES').should('be.visible')
+
+    // Signal validator should appear
+    cy.get('[data-testid="signal-validator"]').should('exist')
+  })
+
   it('Signal Validator 5-gate checklist visible after pipeline', () => {
     cy.visit('/market/bitcoin-100k-2026', {
       onBeforeLoad: mockPipelineStream,

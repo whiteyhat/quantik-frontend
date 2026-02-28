@@ -458,12 +458,11 @@ export function streamPrices(
   };
 }
 
-export interface PipelineEvent {
-  agent: string;
-  status: "running" | "done" | "error";
-  data?: Partial<PipelineResult[keyof PipelineResult]>;
-  error?: string;
-}
+export type PipelineEvent =
+  | { type: "pipeline:start" }
+  | { type: "agent:start"; agent: string }
+  | { type: "agent:complete"; agent: string; data: unknown }
+  | { type: "agent:error"; agent: string; error: unknown };
 
 export function runPipeline(
   slug: string,
@@ -497,14 +496,44 @@ export function runPipeline(
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
 
+        let currentEvent = "";
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
             try {
-              const event: PipelineEvent = JSON.parse(line.slice(6));
-              onEvent(event);
-              if (event.status === "done" && event.data) {
-                (result as Record<string, unknown>)[event.agent] = event.data;
+              const payload = JSON.parse(line.slice(6));
+
+              if (currentEvent === "agent:start") {
+                onEvent({ type: "agent:start", agent: payload.agent });
+              } else if (currentEvent === "agent:complete") {
+                onEvent({ type: "agent:complete", agent: payload.agent, data: payload.data });
+                if (payload.agent && payload.data) {
+                  (result as Record<string, unknown>)[payload.agent] = payload.data;
+                }
+              } else if (currentEvent === "agent:error") {
+                onEvent({ type: "agent:error", agent: payload.agent, error: payload.data });
+              } else if (currentEvent === "pipeline:complete") {
+                onComplete(payload);
+                return;
+              } else if (currentEvent === "pipeline:start") {
+                onEvent({ type: "pipeline:start" });
+              } else {
+                // Fallback: handle legacy format where data line has agent/status/data fields
+                if (payload.agent && payload.status) {
+                  if (payload.status === "running") {
+                    onEvent({ type: "agent:start", agent: payload.agent });
+                  } else if (payload.status === "done" || payload.status === "complete") {
+                    onEvent({ type: "agent:complete", agent: payload.agent, data: payload.data });
+                    if (payload.agent && payload.data) {
+                      (result as Record<string, unknown>)[payload.agent] = payload.data;
+                    }
+                  } else if (payload.status === "error") {
+                    onEvent({ type: "agent:error", agent: payload.agent, error: payload.error ?? payload.data });
+                  }
+                }
               }
+              currentEvent = "";
             } catch {}
           }
         }

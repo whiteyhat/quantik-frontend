@@ -627,10 +627,12 @@ export default function MarketAnalysisPage() {
     const cancel = runPipeline(
       market.slug,
       (event: PipelineEvent) => {
+        if (event.type === "pipeline:start") return;
+        if (!("agent" in event)) return;
         const key = event.agent;
         const now = Date.now();
 
-        if (event.status === "running") {
+        if (event.type === "agent:start") {
           agentStartTimes[key] = now;
           setAgentStates((prev) => ({
             ...prev,
@@ -640,7 +642,7 @@ export default function MarketAnalysisPage() {
             ...prev,
             `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} started`,
           ]);
-        } else if (event.status === "done") {
+        } else if (event.type === "agent:complete") {
           const started = agentStartTimes[key] ?? now;
           setAgentStates((prev) => ({
             ...prev,
@@ -658,14 +660,15 @@ export default function MarketAnalysisPage() {
             ...prev,
             `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} done${summary}`,
           ]);
-        } else if (event.status === "error") {
+        } else if (event.type === "agent:error") {
+          const errMsg = typeof event.error === "string" ? event.error : JSON.stringify(event.error) ?? "unknown error";
           setAgentStates((prev) => ({
             ...prev,
-            [key]: { status: "error", error: event.error ?? "unknown error" },
+            [key]: { status: "error", error: errMsg },
           }));
           setLog((prev) => [
             ...prev,
-            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} ERROR: ${event.error}`,
+            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} ERROR: ${errMsg}`,
           ]);
         }
       },

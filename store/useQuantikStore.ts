@@ -100,19 +100,23 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
     }),
 
   pipelineAgentEvent: (event) =>
-    set((s) => ({
-      pipeline: {
-        ...s.pipeline,
-        agents: {
-          ...s.pipeline.agents,
-          [event.agent]: {
-            status: event.status === "done" ? "done" : event.status === "error" ? "error" : "running",
-            data: event.data,
-            error: event.error,
-          },
+    set((s) => {
+      if (event.type === "pipeline:start") return s;
+      const agentKey = "agent" in event ? event.agent : undefined;
+      if (!agentKey) return s;
+      const card: AgentCardState =
+        event.type === "agent:start"
+          ? { status: "running" }
+          : event.type === "agent:complete"
+          ? { status: "done", data: event.data }
+          : { status: "error", error: typeof event.error === "string" ? event.error : JSON.stringify(event.error) };
+      return {
+        pipeline: {
+          ...s.pipeline,
+          agents: { ...s.pipeline.agents, [agentKey]: card },
         },
-      },
-    })),
+      };
+    }),
 
   pipelineComplete: (result) =>
     set((s) => ({
