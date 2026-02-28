@@ -11,6 +11,7 @@ import { AgentPipeline } from "@/components/AgentPipeline";
 import { PipelineLog } from "@/components/PipelineLog";
 import { PipelineTimeline } from "@/components/PipelineTimeline";
 import { TradeConfirmationModal } from "@/components/TradeConfirmationModal";
+import { RelayChat } from "@/components/RelayChat";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -165,6 +166,9 @@ export default function MarketPage({ params }: PageProps) {
 
       {/* Pipeline duration timeline */}
       <PipelineTimeline />
+
+      {/* Quantik Relay — LLM chat with agent routing */}
+      <RelayChat slug={slug} />
 
       {/* Trade Confirmation Modal */}
       <TradeConfirmationModal />
