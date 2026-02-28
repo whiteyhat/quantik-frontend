@@ -47,6 +47,8 @@ function getSessionId(): string {
 }
 
 const MODEL_LABELS: Record<string, string> = {
+  "gemini-2.5-flash-preview-04-17": "Gemini 2.5 Flash",
+  "gemini-2.0-flash": "Gemini 2.0 Flash",
   "llama4:maverick": "Llama 4 Maverick",
   phi4: "Phi-4",
   "llama3.2:3b": "Llama 3.2",
@@ -122,7 +124,7 @@ export function RelayChat({ slug }: RelayChatProps) {
           {
             id: nextId(),
             role: "relay",
-            text: "Relay is offline. Ensure Ollama is running and try again.",
+            text: "Relay is momentarily offline. Try again shortly.",
           },
         ]);
       } finally {
