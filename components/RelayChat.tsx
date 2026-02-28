@@ -533,7 +533,7 @@ export function RelayChat({ slug }: RelayChatProps) {
                   gap: 6,
                 }}
               >
-                {getSuggestedQuestions(msg.routedTo).map((question) => (
+                {getSuggestedQuestions(msg.routedTo ?? [], messages.filter(m => m.role === "relay").indexOf(msg)).map((question) => (
                   <button
                     key={question}
                     style={{
@@ -693,27 +693,36 @@ export function RelayChat({ slug }: RelayChatProps) {
 
 const MAX_VISIBLE = 10;
 
-function getSuggestedQuestions(routedTo: string[] = []): string[] {
+function getSuggestedQuestions(routedTo: string[] = [], msgIndex: number = 0): string[] {
+  // Contextual questions based on which agents were called
   const contextual: string[] = [];
-  if (routedTo.includes("edge")) contextual.push("What's the Kelly fraction right now?");
-  if (routedTo.includes("aura")) contextual.push("What's the sentiment score?");
-  if (routedTo.includes("oracle")) contextual.push("What probability does Oracle give this?");
-  if (routedTo.includes("flux")) contextual.push("How's the liquidity spread?");
-  if (routedTo.includes("risk")) contextual.push("What's my total exposure?");
+  if (routedTo.includes("edge"))   contextual.push("What Kelly fraction should I use?");
+  if (routedTo.includes("aura"))   contextual.push("What's the current sentiment score?");
+  if (routedTo.includes("oracle")) contextual.push("What probability does Oracle assign?");
+  if (routedTo.includes("flux"))   contextual.push("How's the liquidity and spread?");
+  if (routedTo.includes("risk"))   contextual.push("Show my full exposure breakdown");
+  if (routedTo.includes("sigma"))  contextual.push("What's Sigma's final recommendation?");
 
-  const fallbacks = [
-    "What signals should I watch?",
-    "Run the full pipeline",
+  // Platform navigation pool — always useful, rotate by msgIndex for variety
+  const platform = [
+    "Show the Autopilot scanner status",
+    "What trades fired today?",
+    "Check today's P&L",
     "What's the platform status?",
+    "Show my open positions",
     "Explain the latest signal",
-    "What's the edge on this market?",
+    "What are the circuit breakers?",
+    "How do I read the pipeline log?",
+    "What markets are being scanned?",
   ];
 
   const result: string[] = [...contextual];
-  let fi = 0;
-  while (result.length < 3 && fi < fallbacks.length) {
-    if (!result.includes(fallbacks[fi])) result.push(fallbacks[fi]);
-    fi++;
+  // Pick from platform pool starting at msgIndex offset for variety
+  let pi = msgIndex % platform.length;
+  while (result.length < 3) {
+    const q = platform[pi % platform.length];
+    if (!result.includes(q)) result.push(q);
+    pi++;
   }
   return result.slice(0, 3);
 }
