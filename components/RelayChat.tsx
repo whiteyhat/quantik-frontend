@@ -11,6 +11,7 @@ interface Message {
   id: number;
   role: "user" | "relay";
   text: string;
+  streaming?: boolean;
   latencyMs?: number;
   model?: string;
   routedTo?: string[];
@@ -82,52 +83,156 @@ export function RelayChat({ slug }: RelayChatProps) {
       setInput("");
       setSending(true);
 
-      try {
-        const history = messages.slice(-MAX_VISIBLE * 2).map((m) => ({
-          role: m.role === "user" ? "user" : "assistant",
-          content: m.text,
-        }));
+      const history = messages.slice(-MAX_VISIBLE * 2).map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
 
-        const res = await fetch(`${API_URL}/api/relay/chat`, {
+      const reqBody = JSON.stringify({ message: msg, history, slug: slug ?? undefined });
+      const headers = { "Content-Type": "application/json", "X-Session-Id": getSessionId() };
+
+      // Placeholder message for streaming
+      const placeholderId = nextId();
+
+      try {
+        const res = await fetch(`${API_URL}/api/relay/stream`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-Id": getSessionId(),
-          },
-          body: JSON.stringify({
-            message: msg,
-            history,
-            slug: slug ?? undefined,
-          }),
+          headers,
+          body: reqBody,
         });
 
-        if (!res.ok) {
-          throw new Error(`${res.status}`);
+        // Graceful fallback: if content-type is not SSE, parse as JSON
+        const contentType = res.headers.get("content-type") ?? "";
+        if (!res.ok || !contentType.includes("text/event-stream")) {
+          const data: RelayApiResponse = await res.json();
+          setCurrentModel(data.model);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: placeholderId,
+              role: "relay",
+              text: data.reply,
+              latencyMs: data.latencyMs,
+              model: data.model,
+              routedTo: data.routedTo,
+              agentData: data.agentData,
+            },
+          ]);
+          setSending(false);
+          return;
         }
 
-        const data: RelayApiResponse = await res.json();
-        setCurrentModel(data.model);
-
-        const relayMsg: Message = {
-          id: nextId(),
-          role: "relay",
-          text: data.reply,
-          latencyMs: data.latencyMs,
-          model: data.model,
-          routedTo: data.routedTo,
-          agentData: data.agentData,
-        };
-        setMessages((prev) => [...prev, relayMsg]);
-      } catch {
+        // Insert streaming placeholder
         setMessages((prev) => [
           ...prev,
-          {
-            id: nextId(),
-            role: "relay",
-            text: "Relay is momentarily offline. Try again shortly.",
-          },
+          { id: placeholderId, role: "relay", text: "", streaming: true },
         ]);
-      } finally {
+
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        const processChunk = (chunk: string) => {
+          buffer += chunk;
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
+
+            try {
+              const event = JSON.parse(jsonStr) as {
+                type: string;
+                token?: string;
+                reply?: string;
+                latencyMs?: number;
+                model?: string;
+                routedTo?: string[];
+                agentData?: Record<string, unknown> | null;
+                error?: string;
+              };
+
+              if (event.type === "token" && event.token) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === placeholderId
+                      ? { ...m, text: m.text + event.token! }
+                      : m
+                  )
+                );
+              } else if (event.type === "metadata") {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === placeholderId
+                      ? { ...m, routedTo: event.routedTo, agentData: event.agentData }
+                      : m
+                  )
+                );
+              } else if (event.type === "done") {
+                if (event.model) setCurrentModel(event.model);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === placeholderId
+                      ? {
+                          ...m,
+                          streaming: false,
+                          text: event.reply ?? m.text,
+                          latencyMs: event.latencyMs,
+                          model: event.model,
+                          routedTo: event.routedTo ?? m.routedTo,
+                          agentData: event.agentData ?? m.agentData,
+                        }
+                      : m
+                  )
+                );
+                setSending(false);
+              } else if (event.type === "error") {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === placeholderId
+                      ? { ...m, streaming: false, text: event.error ?? "Relay offline." }
+                      : m
+                  )
+                );
+                setSending(false);
+              }
+            } catch {
+              // skip malformed JSON
+            }
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          processChunk(decoder.decode(value, { stream: true }));
+        }
+
+        // Ensure streaming flag is cleared if stream ended without done event
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === placeholderId && m.streaming ? { ...m, streaming: false } : m
+          )
+        );
+        setSending(false);
+
+      } catch {
+        setMessages((prev) => {
+          const hasPlaceholder = prev.some(m => m.id === placeholderId);
+          if (hasPlaceholder) {
+            return prev.map((m) =>
+              m.id === placeholderId
+                ? { ...m, streaming: false, text: "Relay is momentarily offline. Try again shortly." }
+                : m
+            );
+          }
+          return [
+            ...prev,
+            { id: placeholderId, role: "relay" as const, text: "Relay is momentarily offline. Try again shortly." },
+          ];
+        });
         setSending(false);
       }
     },
@@ -313,7 +418,20 @@ export function RelayChat({ slug }: RelayChatProps) {
                 }}
               >
                 {msg.role === "relay" ? (
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  msg.streaming ? (
+                    <span>
+                      {msg.text}
+                      <span
+                        data-testid="relay-stream-cursor"
+                        className="animate-pulse"
+                        style={{ marginLeft: 1, color: "rgba(255,255,255,0.6)" }}
+                      >
+                        ▌
+                      </span>
+                    </span>
+                  ) : (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  )
                 ) : (
                   msg.text
                 )}
