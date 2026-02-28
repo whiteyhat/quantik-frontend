@@ -8,6 +8,7 @@ import { useQuantikStore } from "@/store/useQuantikStore";
 import { MarketHeader } from "@/components/MarketHeader";
 import { PriceChart } from "@/components/PriceChart";
 import { AgentPipeline } from "@/components/AgentPipeline";
+import { PipelineLog } from "@/components/PipelineLog";
 import { PipelineTimeline } from "@/components/PipelineTimeline";
 import { TradeConfirmationModal } from "@/components/TradeConfirmationModal";
 
@@ -64,29 +65,28 @@ export default function MarketPage({ params }: PageProps) {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+      {/* ‹ Back nav */}
+      <div style={{ marginBottom: 16 }}>
         <Link
           href="/"
           style={{
             fontSize: "var(--text-subhead)",
             color: "var(--ios-blue)",
             textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
           }}
         >
-          Dashboard
+          {"\u2039"} Back
         </Link>
-        <span style={{ color: "var(--text-tertiary)", fontSize: "var(--text-subhead)" }}>{"\u203A"}</span>
-        <span style={{ color: "var(--text-secondary)", fontSize: "var(--text-subhead)" }}>
-          Market Analysis
-        </span>
       </div>
 
-      {/* Hero Market Header */}
+      {/* ── MARKET HEADER ── Question + YES/NO prices */}
       <MarketHeader slug={slug} />
 
-      {/* Chart — full width */}
-      <div className="glass-card" style={{ padding: 20, overflow: "hidden", marginBottom: 24 }}>
+      {/* ── PRICE CHART ── Full width, dark, gradient fill */}
+      <div className="glass-card" style={{ padding: 20, overflow: "hidden", marginBottom: 20 }}>
         {market?.tokenId ? (
           <PriceChart tokenId={market.tokenId} slug={slug} />
         ) : (
@@ -96,7 +96,7 @@ export default function MarketPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Run/Stop Pipeline button — full-width iOS blue */}
+      {/* ── RUN / STOP PIPELINE BUTTON ── Blue full-width */}
       <div style={{ marginBottom: 20 }}>
         {!pipeline.running ? (
           <button
@@ -104,7 +104,7 @@ export default function MarketPage({ params }: PageProps) {
             data-testid="run-pipeline-btn"
             style={{
               width: "100%",
-              height: 48,
+              height: 52,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -113,7 +113,7 @@ export default function MarketPage({ params }: PageProps) {
               border: "none",
               background: "var(--ios-blue)",
               color: "#fff",
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 600,
               cursor: "pointer",
               transition: "all 200ms ease",
@@ -129,7 +129,7 @@ export default function MarketPage({ params }: PageProps) {
             data-testid="stop-pipeline-btn"
             style={{
               width: "100%",
-              height: 48,
+              height: 52,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -138,7 +138,7 @@ export default function MarketPage({ params }: PageProps) {
               border: "1px solid rgba(255,255,255,0.12)",
               background: "rgba(255,255,255,0.06)",
               color: "var(--ios-red)",
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 600,
               cursor: "pointer",
               transition: "all 200ms ease",
@@ -151,7 +151,10 @@ export default function MarketPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Agent Pipeline — full width for all 7 agents */}
+      {/* ── LIVE PIPELINE FEED ── Auto-expands when running */}
+      <PipelineLog />
+
+      {/* ── AGENT PIPELINE (7 cards) + SIGMA + VALIDATOR ── */}
       <AgentPipeline
         market={
           market

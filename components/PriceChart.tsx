@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type PricePoint } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   AreaChart,
   Area,
@@ -19,6 +19,25 @@ const INTERVAL_LABELS: Record<string, string> = {
   "1w": "1W",
   "all": "All",
 };
+
+interface NormalizedPoint {
+  timestamp: number;
+  yes: number;
+}
+
+/** Normalize both { t, p } and { timestamp, yes/price } formats */
+function normalizeData(raw: unknown[]): { points: NormalizedPoint[]; isSynthetic: boolean } {
+  if (raw.length === 0) return { points: [], isSynthetic: false };
+  const first = raw[0] as Record<string, unknown>;
+  const isSynthetic = "t" in first && "p" in first;
+  const points = raw.map((item) => {
+    const d = item as Record<string, unknown>;
+    const timestamp = Number(d.t ?? d.timestamp ?? 0);
+    const yes = Number(d.p ?? d.yes ?? d.price ?? 0);
+    return { timestamp, yes };
+  });
+  return { points, isSynthetic };
+}
 
 function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: number }) {
   if (!active || !payload?.length) return null;
@@ -45,19 +64,46 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 export function PriceChart({ tokenId }: { tokenId: string; slug: string }) {
   const [interval, setInterval] = useState<string>("1d");
-  const [data, setData] = useState<PricePoint[]>([]);
+  const [data, setData] = useState<NormalizedPoint[]>([]);
+  const [isFallback, setIsFallback] = useState(false);
 
   useEffect(() => {
-    api.getPriceHistory(tokenId, interval).then(setData).catch(() => {});
+    api.getPriceHistory(tokenId, interval).then((raw) => {
+      const { points, isSynthetic } = normalizeData(raw as unknown[]);
+      setData(points);
+      setIsFallback(isSynthetic);
+    }).catch(() => {
+      setData([]);
+      setIsFallback(false);
+    });
   }, [tokenId, interval]);
 
   return (
-    <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
+    <div data-testid="price-chart">
       {/* Header with segmented control */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: 0 }}>
-          Price History
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: 0 }}>
+            Price History
+          </h2>
+          {isFallback && data.length > 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: "2px 8px",
+                borderRadius: 6,
+                background: "rgba(255,159,10,0.15)",
+                color: "var(--ios-orange)",
+                border: "1px solid rgba(255,159,10,0.25)",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              Estimated data
+            </span>
+          )}
+        </div>
 
         <div className="segmented-control">
           {INTERVALS.map((iv) => (
@@ -74,63 +120,63 @@ export function PriceChart({ tokenId }: { tokenId: string; slug: string }) {
 
       {/* Chart */}
       <div style={{ height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--ios-green)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="var(--ios-green)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={(ts) => {
-                if (!ts) return "";
-                const d = new Date(ts);
-                if (isNaN(d.getTime())) return "";
-                return interval === "1h"
-                  ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                  : d.toLocaleDateString([], { month: "short", day: "numeric" });
-              }}
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[0, 1]}
-              tickFormatter={(v) => `${Math.round(v * 100)}¢`}
-              stroke="rgba(255,255,255,0.15)"
-              tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              width={45}
-            />
-            <Tooltip content={<GlassTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="yes"
-              stroke="var(--ios-green)"
-              strokeWidth={2}
-              fill="url(#greenGradient)"
-              dot={false}
-              activeDot={{
-                r: 4,
-                fill: "var(--ios-green)",
-                stroke: "rgba(48,209,88,0.3)",
-                strokeWidth: 6,
-              }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--ios-green)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--ios-green)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis
+                dataKey="timestamp"
+                tickFormatter={(ts) => {
+                  if (!ts) return "";
+                  const d = new Date(ts);
+                  if (isNaN(d.getTime())) return "";
+                  return interval === "1h"
+                    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : d.toLocaleDateString([], { month: "short", day: "numeric" });
+                }}
+                stroke="rgba(255,255,255,0.15)"
+                tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                domain={[0, 1]}
+                tickFormatter={(v) => `${Math.round(v * 100)}¢`}
+                stroke="rgba(255,255,255,0.15)"
+                tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                width={45}
+              />
+              <Tooltip content={<GlassTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="yes"
+                stroke="var(--ios-green)"
+                strokeWidth={2}
+                fill="url(#greenGradient)"
+                dot={false}
+                activeDot={{
+                  r: 4,
+                  fill: "var(--ios-green)",
+                  stroke: "rgba(48,209,88,0.3)",
+                  strokeWidth: 6,
+                }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>No price data available</span>
+          </div>
+        )}
       </div>
-
-      {data.length === 0 && (
-        <div style={{ textAlign: "center", padding: 40, color: "var(--text-tertiary)" }} className="text-body">
-          No price data available
-        </div>
-      )}
     </div>
   );
 }

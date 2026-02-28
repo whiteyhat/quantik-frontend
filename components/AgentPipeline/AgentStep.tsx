@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 export interface AgentStepProps {
   emoji: string;
@@ -32,6 +32,11 @@ function syntaxHighlight(json: string): string {
 
 export function AgentStep({ emoji, name, role, status, agentColor, latencyMs, summary, children }: AgentStepProps) {
   const [expanded, setExpanded] = useState(false);
+
+  // Auto-expand when running, auto-expand sigma when done
+  useEffect(() => {
+    if (status === "running") setExpanded(true);
+  }, [status]);
 
   const statusDotClass = `status-dot status-dot-${status}`;
   const isRunning = status === "running";
