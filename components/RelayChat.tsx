@@ -259,7 +259,9 @@ export function RelayChat({ slug }: RelayChatProps) {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        maxHeight: 520,
+        // Mobile: fill visual viewport (shrinks when keyboard opens)
+        // Desktop: cap at 520px
+        height: "min(520px, calc(100dvh - 160px))",
         border: "1px solid rgba(255,255,255,0.08)",
       }}
     >
@@ -368,7 +370,7 @@ export function RelayChat({ slug }: RelayChatProps) {
           </div>
         )}
 
-        {messages.map((msg) => (
+        {messages.map((msg, msgIdx) => (
           <div key={msg.id}>
             <div
               style={{
@@ -533,7 +535,7 @@ export function RelayChat({ slug }: RelayChatProps) {
                   gap: 6,
                 }}
               >
-                {getSuggestedQuestions(msg.routedTo ?? [], messages.filter(m => m.role === "relay").indexOf(msg)).map((question) => (
+                {getSuggestedQuestions(msg.routedTo ?? [], msgIdx).map((question) => (
                   <button
                     key={question}
                     style={{
@@ -634,6 +636,7 @@ export function RelayChat({ slug }: RelayChatProps) {
       <div
         style={{
           padding: "10px 12px",
+          paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))",
           borderTop: "1px solid rgba(255,255,255,0.07)",
           display: "flex",
           gap: 8,

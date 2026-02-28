@@ -479,8 +479,12 @@ export default function RootLayout({
           name="description"
           content="AI-powered prediction market trading terminal"
         />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+        />
       </head>
-      <body className="antialiased" style={{ minHeight: "100vh" }}>
+      <body className="antialiased" style={{ minHeight: "100dvh" }}>
         <Providers>
           {/* Animated gradient background */}
           <div className="crystal-bg" />
