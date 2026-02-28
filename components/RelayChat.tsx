@@ -246,6 +246,10 @@ export function RelayChat({ slug }: RelayChatProps) {
     }
   }
 
+  function handleSuggestionClick(q: string) {
+    sendMessage(q);
+  }
+
   return (
     <div
       data-testid="relay-chat-panel"
@@ -518,6 +522,48 @@ export function RelayChat({ slug }: RelayChatProps) {
               </div>
             )}
 
+            {/* Suggested follow-up questions */}
+            {msg.role === "relay" && !msg.streaming && (
+              <div
+                style={{
+                  marginLeft: 34,
+                  marginTop: 8,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 6,
+                }}
+              >
+                {getSuggestedQuestions(msg.routedTo).map((question) => (
+                  <button
+                    key={question}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 20,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.04)",
+                      color: "rgba(255,255,255,0.55)",
+                      fontSize: 11,
+                      fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "background 0.15s, border-color 0.15s",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+                    }}
+                    onClick={() => handleSuggestionClick(question)}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Expanded agent data */}
             {msg.role === "relay" &&
               expandedAgent === msg.id &&
@@ -646,6 +692,31 @@ export function RelayChat({ slug }: RelayChatProps) {
 // ── Constants & Utilities ──────────────────────────────────────
 
 const MAX_VISIBLE = 10;
+
+function getSuggestedQuestions(routedTo: string[] = []): string[] {
+  const contextual: string[] = [];
+  if (routedTo.includes("edge")) contextual.push("What's the Kelly fraction right now?");
+  if (routedTo.includes("aura")) contextual.push("What's the sentiment score?");
+  if (routedTo.includes("oracle")) contextual.push("What probability does Oracle give this?");
+  if (routedTo.includes("flux")) contextual.push("How's the liquidity spread?");
+  if (routedTo.includes("risk")) contextual.push("What's my total exposure?");
+
+  const fallbacks = [
+    "What signals should I watch?",
+    "Run the full pipeline",
+    "What's the platform status?",
+    "Explain the latest signal",
+    "What's the edge on this market?",
+  ];
+
+  const result: string[] = [...contextual];
+  let fi = 0;
+  while (result.length < 3 && fi < fallbacks.length) {
+    if (!result.includes(fallbacks[fi])) result.push(fallbacks[fi]);
+    fi++;
+  }
+  return result.slice(0, 3);
+}
 
 function agentChipColor(agent: string): {
   bg: string;
