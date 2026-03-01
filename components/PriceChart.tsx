@@ -41,7 +41,9 @@ function normalizeData(raw: unknown): { points: NormalizedPoint[]; isSynthetic: 
   const isSynthetic = "t" in first && "p" in first;
   const points = raw.map((item) => {
     const d = item as Record<string, unknown>;
-    const timestamp = Number(d.t ?? d.timestamp ?? 0);
+    let timestamp = Number(d.t ?? d.timestamp ?? 0);
+    // CLOB API returns timestamps in seconds — convert to ms for new Date()
+    if (timestamp > 0 && timestamp < 1e10) timestamp *= 1000;
     const yes = Number(d.p ?? d.yes ?? d.price ?? 0);
     return { timestamp, yes };
   });

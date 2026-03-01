@@ -13,20 +13,24 @@ function humanizeThesis(sigma: SigmaResult, edge?: EdgeResult): string {
   const confidence = typeof sigma.confidence === "number" ? sigma.confidence : 0;
   const decision = sigma.decision ?? (sigma as any).recommendation ?? "WATCH";
   const sizeUsd = typeof sigma.size_usd === "number" ? sigma.size_usd : 0;
+  const evGrade = edge?.ev_grade ?? "C";
 
   if (decision === "SKIP" || decision === "VETO") {
-    return "Clause flagged this one \u2014 resolution criteria are ambiguous enough to cause disputes. Sitting this out.";
+    return "Clause flagged this one — resolution criteria are ambiguous enough to cause disputes. Sitting this out.";
   }
-  if (decision === "BET_YES") {
-    return `Signal looks clean. ${confidence > 60 ? "Strong" : "Moderate"} edge on YES at ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, sizing $${sizeUsd.toFixed(0)}` : ""}. ${edge?.ev_grade === "A" ? "Kelly agrees." : "Kelly is cautious."}`;
+  if (decision === "BET_YES" || decision === "TRADE") {
+    const strength = confidence > 65 ? "Strong" : confidence > 50 ? "Decent" : "Marginal";
+    return `${strength} edge on YES at ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, sizing $${sizeUsd.toFixed(0)}` : ""}. ${evGrade === "A" ? "Kelly agrees." : evGrade === "B" ? "Kelly is cautiously in." : "Kelly is holding back."}`;
   }
   if (decision === "BET_NO") {
-    return `Market overpriced \u2014 the NO side has edge. ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, $${sizeUsd.toFixed(0)} on NO` : ""}. ${edge?.ev_grade === "A" ? "Kelly agrees." : "Kelly is cautious."}`;
+    return `Market overpriced — NO side has edge at ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, $${sizeUsd.toFixed(0)} on NO` : ""}. ${evGrade === "A" ? "Kelly agrees." : "Kelly is cautious."}`;
   }
-  if (decision === "PASS") {
-    return "Too close to call. No meaningful edge at current prices. Staying out until the picture clears.";
+  if (decision === "PASS" || decision === "WATCH") {
+    return "No meaningful edge at current prices. Watching until something shifts.";
   }
-  return sigma.thesis ?? "Watching this market.";
+  const raw = sigma.thesis ?? "";
+  if (raw) return raw;
+  return "Waiting for cleaner data before taking a position.";
 }
 
 interface SigmaDecisionProps {
