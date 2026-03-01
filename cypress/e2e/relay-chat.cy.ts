@@ -29,7 +29,7 @@ describe('Relay Chat', () => {
   })
 
   it('sends message and gets reply', () => {
-    cy.intercept('POST', '**/api/relay/chat', {
+    cy.intercept('POST', '**/api/relay*', {
       body: {
         reply: 'Market sentiment is bullish. Tip: check the order book spread.',
         routedTo: ['oracle'],
@@ -38,6 +38,7 @@ describe('Relay Chat', () => {
         model: 'llama4:maverick',
       },
     }).as('relayChat')
+    cy.intercept('POST', '**/api/relay/stream*', { statusCode: 200, body: '' }).as('relayStream')
 
     cy.visit('/market/bitcoin-100k-2026')
     cy.wait('@getMarket')
@@ -51,7 +52,7 @@ describe('Relay Chat', () => {
 
   it('reply is under 100 words', () => {
     const shortReply = 'Sentiment runs hot at 0.65 — bullish bias confirmed by Aura. Tip: size conservatively on momentum plays.'
-    cy.intercept('POST', '**/api/relay/chat', {
+    cy.intercept('POST', '**/api/relay*', {
       body: {
         reply: shortReply,
         routedTo: ['aura'],
@@ -75,7 +76,7 @@ describe('Relay Chat', () => {
   })
 
   it('latency badge shows on relay response', () => {
-    cy.intercept('POST', '**/api/relay/chat', {
+    cy.intercept('POST', '**/api/relay*', {
       body: {
         reply: 'All systems operational. Tip: run a pipeline first.',
         routedTo: [],
@@ -96,7 +97,7 @@ describe('Relay Chat', () => {
   })
 
   it('agent chips show when routing triggered', () => {
-    cy.intercept('POST', '**/api/relay/chat', {
+    cy.intercept('POST', '**/api/relay*', {
       body: {
         reply: 'Edge calculates 4.8% Kelly. Tip: respect the fraction.',
         routedTo: ['edge', 'oracle'],
@@ -119,7 +120,7 @@ describe('Relay Chat', () => {
   })
 
   it('model badge updates on response', () => {
-    cy.intercept('POST', '**/api/relay/chat', {
+    cy.intercept('POST', '**/api/relay*', {
       body: {
         reply: 'Running on primary model. Tip: fast is good.',
         routedTo: [],

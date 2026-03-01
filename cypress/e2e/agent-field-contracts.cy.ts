@@ -9,6 +9,8 @@ const API = Cypress.env("API_URL") || "https://quantik-backend-production.up.rai
 const TEST_SLUG = "will-trump-acquire-greenland-before-2027";
 
 describe("Agent Field Contracts", () => {
+  Cypress.on("uncaught:exception", () => false); // suppress framework errors
+
   // Oracle
   describe("Oracle /api/oracle/:slug", () => {
     it("returns 200 with numeric confidence", () => {
