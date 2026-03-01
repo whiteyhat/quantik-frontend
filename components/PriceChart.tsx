@@ -26,8 +26,17 @@ interface NormalizedPoint {
 }
 
 /** Normalize both { t, p } and { timestamp, yes/price } formats */
-function normalizeData(raw: unknown[]): { points: NormalizedPoint[]; isSynthetic: boolean } {
-  if (raw.length === 0) return { points: [], isSynthetic: false };
+function normalizeData(raw: unknown): { points: NormalizedPoint[]; isSynthetic: boolean } {
+  // Handle wrapped format { data: [...], synthetic: true } from old backend
+  if (raw && !Array.isArray(raw) && typeof raw === "object") {
+    const wrapped = raw as { data?: unknown[]; synthetic?: boolean };
+    if (wrapped.data) {
+      return normalizeData(wrapped.data);
+    }
+    return { points: [], isSynthetic: false };
+  }
+
+  if (!Array.isArray(raw) || raw.length === 0) return { points: [], isSynthetic: false };
   const first = raw[0] as Record<string, unknown>;
   const isSynthetic = "t" in first && "p" in first;
   const points = raw.map((item) => {
@@ -72,7 +81,7 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
     const id = tokenId || slug;
     if (!id) return;
     api.getPriceHistory(id, interval).then((raw) => {
-      const { points, isSynthetic } = normalizeData(raw as unknown[]);
+      const { points, isSynthetic } = normalizeData(raw);
       setData(points);
       setIsFallback(isSynthetic);
     }).catch(() => {

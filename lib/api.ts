@@ -122,7 +122,7 @@ export interface LuciferResult {
 }
 
 export interface SigmaResult {
-  decision: "BET_YES" | "BET_NO" | "PASS";
+  decision: "BET_YES" | "BET_NO" | "PASS" | "SKIP" | "VETO" | "TRADE" | "WATCH";
   confidence: number; // percent
   thesis: string;
   size_pct: number;

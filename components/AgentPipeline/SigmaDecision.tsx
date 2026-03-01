@@ -9,6 +9,26 @@ function num(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+function humanizeThesis(sigma: SigmaResult, edge?: EdgeResult): string {
+  const confidence = typeof sigma.confidence === "number" ? sigma.confidence : 0;
+  const decision = sigma.decision ?? (sigma as any).recommendation ?? "WATCH";
+  const sizeUsd = typeof sigma.size_usd === "number" ? sigma.size_usd : 0;
+
+  if (decision === "SKIP" || decision === "VETO") {
+    return "Clause flagged this one \u2014 resolution criteria are ambiguous enough to cause disputes. Sitting this out.";
+  }
+  if (decision === "BET_YES") {
+    return `Signal looks clean. ${confidence > 60 ? "Strong" : "Moderate"} edge on YES at ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, sizing $${sizeUsd.toFixed(0)}` : ""}. ${edge?.ev_grade === "A" ? "Kelly agrees." : "Kelly is cautious."}`;
+  }
+  if (decision === "BET_NO") {
+    return `Market overpriced \u2014 the NO side has edge. ${confidence.toFixed(0)}% confidence${sizeUsd > 0 ? `, $${sizeUsd.toFixed(0)} on NO` : ""}. ${edge?.ev_grade === "A" ? "Kelly agrees." : "Kelly is cautious."}`;
+  }
+  if (decision === "PASS") {
+    return "Too close to call. No meaningful edge at current prices. Staying out until the picture clears.";
+  }
+  return sigma.thesis ?? "Watching this market.";
+}
+
 interface SigmaDecisionProps {
   sigma: SigmaResult;
   edge?: EdgeResult;
@@ -25,31 +45,30 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
   const { paperMode } = usePaperMode();
 
-  const isExecute = sigma.decision === "BET_YES" || sigma.decision === "BET_NO";
-  const isPass = sigma.decision === "PASS";
+  const effectiveDecision = sigma.decision ?? (sigma as any).recommendation ?? "WATCH";
+  const isExecute = effectiveDecision === "BET_YES" || effectiveDecision === "BET_NO" || effectiveDecision === "TRADE";
+  const isSkip = effectiveDecision === "SKIP" || effectiveDecision === "VETO";
+  const isPass = !isExecute && !isSkip;
 
-  const glowClass = isExecute
-    ? "glow-green"
-    : isPass
-    ? "glow-red"
-    : "glow-orange";
+  const glowClass = isExecute ? "glow-green" : isSkip ? "glow-red" : "glow-orange";
 
   const decisionColor = isExecute
     ? "var(--ios-green)"
-    : isPass
+    : isSkip
     ? "var(--ios-red)"
     : "var(--ios-orange)";
 
-  const decisionLabel = isExecute
-    ? `EXECUTE ${sigma.decision === "BET_YES" ? "YES" : "NO"}`
-    : sigma.decision === "PASS"
-    ? "PASS"
+  const decisionLabel = isSkip
+    ? "SKIP"
+    : isExecute
+    ? `EXECUTE ${effectiveDecision === "BET_NO" ? "NO" : "YES"}`
     : "HOLD";
 
-  const canExecute =
+  const canExecute = Boolean(
     edge &&
     (edge.ev_grade === "A" || edge.ev_grade === "B") &&
-    sigma.decision !== "PASS";
+    isExecute
+  );
 
   return (
     <div
@@ -119,8 +138,8 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
       </div>
 
       {/* Thesis */}
-      <p className="text-body" style={{ color: "var(--text-secondary)", margin: "0 0 20px 0", lineHeight: 1.6, fontStyle: "italic" }}>
-        &ldquo;{sigma.thesis}&rdquo;
+      <p className="text-body" style={{ color: "var(--text-secondary)", margin: "0 0 20px 0", lineHeight: 1.6 }}>
+        {humanizeThesis(sigma, edge)}
       </p>
 
       {/* Full-width execute button */}
