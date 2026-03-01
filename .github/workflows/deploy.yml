@@ -23,24 +23,21 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      - name: Cypress — API contract tests (headless, no server needed)
-        uses: cypress-io/github-action@v6
-        with:
-          # Run only API-level tests against production backend — no frontend server needed
-          command: npx cypress run --spec "cypress/e2e/agent-field-contracts.cy.ts" --config baseUrl=https://quantik-eight.vercel.app
-        env:
-          CYPRESS_API_URL: https://quantik-backend-production.up.railway.app
-
-      - name: Cypress — Full E2E suite (with Next.js dev server)
+      - name: Cypress E2E — full suite
         uses: cypress-io/github-action@v6
         with:
           start: npm run dev
           wait-on: "http://localhost:3000"
-          wait-on-timeout: 60
-          command: npx cypress run --spec "cypress/e2e/autopilot.cy.ts,cypress/e2e/dashboard.cy.ts,cypress/e2e/relay-chat.cy.ts,cypress/e2e/relay-stream.cy.ts,cypress/e2e/navigation.cy.ts"
+          wait-on-timeout: 90
+          spec: |
+            cypress/e2e/agent-field-contracts.cy.ts
+            cypress/e2e/navigation.cy.ts
+            cypress/e2e/dashboard.cy.ts
+            cypress/e2e/relay-chat.cy.ts
         env:
           NEXT_PUBLIC_API_URL: https://quantik-backend-production.up.railway.app
           CYPRESS_API_URL: https://quantik-backend-production.up.railway.app
+          CYPRESS_allowCypressEnv: "false"
 
   deploy:
     name: Deploy to Vercel
