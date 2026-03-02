@@ -426,6 +426,56 @@ export const api = {
   },
 };
 
+
+// ─── Agent data normalizers ───────────────────────────────────────────────────
+// Backend field names differ from frontend interface — normalize at API boundary
+export function normalizeAgentData(agent: string, raw: Record<string, unknown>): Record<string, unknown> {
+  switch (agent) {
+    case "aura": return {
+      ...raw,
+      sentiment_score: raw.sentimentDelta ?? raw.sentiment_score ?? 0,
+      echo_chamber: raw.shiftDetected ?? raw.echo_chamber ?? false,
+      echo_chamber_strength: raw.echoChamberRisk ?? raw.echo_chamber_strength,
+    };
+    case "oracle": return {
+      ...raw,
+      prob_estimate: raw.calibrated_prob ?? raw.prob_estimate ?? 0,
+      market_implied: raw.market_implied ?? 0,
+      confidence: typeof raw.confidence === "number"
+        ? raw.confidence > 1 ? raw.confidence : raw.confidence * 100
+        : 0,
+    };
+    case "edge": return {
+      ...raw,
+      kelly: raw.fractional_kelly !== undefined
+        ? Number(raw.fractional_kelly) * 100
+        : typeof raw.kelly === "number" ? raw.kelly : 0,
+      recommended_size: raw.position_size ?? raw.recommended_size ?? 0,
+      net_ev: typeof raw.net_ev === "number"
+        ? raw.net_ev > 1 ? raw.net_ev : raw.net_ev * 100
+        : 0,
+    };
+    case "clause": return {
+      ...raw,
+      resolution_risk: (raw.riskLevel ?? raw.resolution_risk ?? "MED") as "LOW" | "MED" | "HIGH",
+      technicality_risks: Array.isArray(raw.technicality_risks) ? raw.technicality_risks : [],
+    };
+    case "sigma": return {
+      ...raw,
+      decision: raw.decision ?? raw.recommendation ?? "SKIP",
+      confidence: typeof raw.confidence === "number"
+        ? raw.confidence > 1 ? raw.confidence : raw.confidence * 100
+        : 0,
+    };
+    case "flux": return {
+      ...raw,
+      spread: typeof raw.spread === "number" ? raw.spread : 0,
+      depth_score: raw.depth_imbalance ?? raw.depth_score,
+    };
+    default: return raw;
+  }
+}
+
 // ─── SSE Helpers ──────────────────────────────────────────────────────────────
 
 export function streamPrices(
@@ -507,9 +557,12 @@ export function runPipeline(
               if (currentEvent === "agent:start") {
                 onEvent({ type: "agent:start", agent: payload.agent });
               } else if (currentEvent === "agent:complete") {
-                onEvent({ type: "agent:complete", agent: payload.agent, data: payload.data });
-                if (payload.agent && payload.data) {
-                  (result as Record<string, unknown>)[payload.agent] = payload.data;
+                const normalized = payload.data && payload.agent
+                  ? normalizeAgentData(payload.agent, payload.data as Record<string, unknown>)
+                  : payload.data;
+                onEvent({ type: "agent:complete", agent: payload.agent, data: normalized });
+                if (payload.agent && normalized) {
+                  (result as Record<string, unknown>)[payload.agent] = normalized;
                 }
               } else if (currentEvent === "agent:error") {
                 onEvent({ type: "agent:error", agent: payload.agent, error: payload.data });
@@ -524,9 +577,12 @@ export function runPipeline(
                   if (payload.status === "running") {
                     onEvent({ type: "agent:start", agent: payload.agent });
                   } else if (payload.status === "done" || payload.status === "complete") {
-                    onEvent({ type: "agent:complete", agent: payload.agent, data: payload.data });
-                    if (payload.agent && payload.data) {
-                      (result as Record<string, unknown>)[payload.agent] = payload.data;
+                    const normalized2 = payload.data && payload.agent
+                      ? normalizeAgentData(payload.agent, payload.data as Record<string, unknown>)
+                      : payload.data;
+                    onEvent({ type: "agent:complete", agent: payload.agent, data: normalized2 });
+                    if (payload.agent && normalized2) {
+                      (result as Record<string, unknown>)[payload.agent] = normalized2;
                     }
                   } else if (payload.status === "error") {
                     onEvent({ type: "agent:error", agent: payload.agent, error: payload.error ?? payload.data });

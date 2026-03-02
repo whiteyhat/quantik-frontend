@@ -73,6 +73,19 @@ export function RelayChat({ slug }: RelayChatProps) {
     }
   }, [messages, sending]);
 
+  // Auto-send Relay overview when market page loads (≤50-word humanized brief)
+  const overviewSent = useRef(false);
+  useEffect(() => {
+    if (slug && !overviewSent.current && messages.length === 0) {
+      overviewSent.current = true;
+      // Brief 50-word overview prompt — Relay enforces humanizer rules
+      setTimeout(() => {
+        sendMessage(`Give me a 50-word max overview of this market and whether Quantik has a bet signal. Be direct, warm, and human. No markdown. No bullet points.`);
+      }, 800);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
   const sendMessage = useCallback(
     async (text?: string) => {
       const msg = (text ?? input).trim();

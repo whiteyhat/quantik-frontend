@@ -16,6 +16,17 @@ function num(v: unknown): number {
 
 /* ── Shared sub-components ─────────────────────────────────────────────────── */
 
+// Strip lightweight markdown for plain display (no external lib needed)
+function stripMd(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
+    .replace(/#{1,6}\s/g, "")
+    .replace(/^[-*+]\s/gm, "• ")
+    .trim();
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <span
@@ -271,7 +282,7 @@ export function ClausePanel({ data }: { data: ClauseResult }) {
                   lineHeight: 1.4,
                 }}
               >
-                {risk}
+                {stripMd(risk)}
               </div>
             ))}
           </div>
@@ -380,7 +391,7 @@ export function LuciferPanel({ data }: { data: LuciferResult }) {
               fontStyle: "italic",
             }}
           >
-            &ldquo;{data.counter_thesis}&rdquo;
+            &ldquo;{stripMd(data.counter_thesis ?? "")}&rdquo;
           </p>
         </Section>
       )}
