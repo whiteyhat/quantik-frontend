@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api, fmtUSDC, type WalletBalance } from "@/lib/api";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { ToastNotification } from "@/components/ToastNotification";
+import { VersionLogButton } from "@/components/VersionLog";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -49,32 +50,35 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      {/* Wordmark */}
-      <div style={{ padding: "24px 20px 16px" }}>
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <span
+      {/* Wordmark + Changelog button */}
+      <div style={{ padding: "24px 20px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <span
+              style={{
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                fontSize: 15,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.92)",
+                letterSpacing: "0.08em",
+              }}
+            >
+              ◆ QUANTIK
+            </span>
+          </Link>
+          <div
             style={{
-              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-              fontSize: 15,
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.92)",
-              letterSpacing: "0.08em",
+              marginTop: 4,
+              fontSize: 11,
+              color: "rgba(255,255,255,0.25)",
+              fontFamily: "monospace",
+              letterSpacing: "0.05em",
             }}
           >
-            ◆ QUANTIK
-          </span>
-        </Link>
-        <div
-          style={{
-            marginTop: 4,
-            fontSize: 11,
-            color: "rgba(255,255,255,0.25)",
-            fontFamily: "monospace",
-            letterSpacing: "0.05em",
-          }}
-        >
-          MISSION CONTROL
+            MISSION CONTROL
+          </div>
         </div>
+        <VersionLogButton />
       </div>
 
       {/* Divider */}
