@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib/api";
 import { PnlTicker } from "@/components/PnlTicker";
 import { ExecutionLog } from "@/components/ExecutionLog";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 // ─── Safe number formatter (guards against undefined/null from API) ───────────
 const fmt1 = (n: unknown) => ((n as number) ?? 0).toFixed(1);
@@ -322,7 +323,10 @@ function RiskPanel({ risk, wallet }: { risk: RiskSummary | null; wallet: WalletB
           marginBottom: 16,
         }}
       >
-        <SectionHeader title="Risk Summary" />
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <SectionHeader title="Risk Summary" />
+          <HelpTooltip text="Overview of system risk state. Drawdown reflects today's relative loss, and Kelly Utilization shows how much of your capital is committed." />
+        </div>
         <span
           style={{
             fontSize: LABEL_SIZE,
@@ -473,18 +477,21 @@ export default function PortfolioPage() {
     <div className="flex flex-col gap-5 p-4 md:p-8 w-full max-w-full overflow-hidden">
       {/* Header */}
       <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 20,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-            letterSpacing: "0.04em",
-          }}
-        >
-          Portfolio
-        </h1>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.04em",
+            }}
+          >
+            Portfolio
+          </h1>
+          <HelpTooltip text="Comprehensive view of your active capital and historical performance. All data is verified on-chain where applicable." />
+        </div>
         <p style={{ margin: "4px 0 0", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.30)" }}>
           Live positions, balances, and risk exposure
         </p>
@@ -531,10 +538,13 @@ export default function PortfolioPage() {
           <div className={`grid grid-cols-1 ${risk ? "lg:grid-cols-[1fr_320px]" : ""} gap-4 items-start w-full`}>
             {/* Positions table */}
             <div style={panelStyle} className="w-full max-w-full overflow-hidden">
-              <SectionHeader
-                title="Open Positions"
-                subtitle={`${positions.length} active trade${positions.length !== 1 ? "s" : ""}`}
-              />
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <SectionHeader
+                  title="Open Positions"
+                  subtitle={`${positions.length} active trade${positions.length !== 1 ? "s" : ""}`}
+                />
+                <HelpTooltip text="Currently active bets on prediction markets. P&L is calculated using the current mid-price from the scanner." />
+              </div>
               <PositionsTable positions={positions} />
             </div>
 

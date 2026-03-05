@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtUSDC, fmtPrice, type Trade } from "@/lib/api";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -133,18 +134,21 @@ export default function TradeHistoryPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header */}
       <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 20,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-            letterSpacing: "0.04em",
-          }}
-        >
-          Trade History
-        </h1>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.04em",
+            }}
+          >
+            Trade History
+          </h1>
+          <HelpTooltip text="Audit trail of all executed trades, including both live CLOB orders and historical paper trades." />
+        </div>
         <p style={{ margin: "4px 0 0", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.30)" }}>
           All historical trades and outcomes
         </p>

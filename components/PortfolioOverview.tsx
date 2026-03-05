@@ -9,7 +9,9 @@ function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
   const pct = Math.round(safeRate * 100);
   const r = 36;
   const circumference = 2 * Math.PI * r;
-  const offset = circumference - (safeRate * circumference);
+  // Indicator sliver if 0 rate but has trades
+  const displayRate = safeRate === 0 && trades > 0 ? 0.01 : safeRate;
+  const offset = circumference - (displayRate * circumference);
 
   return (
     <div style={{ position: "relative", width: 88, height: 88 }}>
@@ -25,7 +27,7 @@ function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
         <circle
           cx="44" cy="44" r={r}
           fill="none"
-          stroke="var(--ios-green)"
+          stroke={safeRate > 0 ? "var(--ios-green)" : "rgba(255,255,255,0.15)"}
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={circumference}

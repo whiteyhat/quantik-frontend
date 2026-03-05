@@ -5,24 +5,28 @@ import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
 import { PnlTicker } from "@/components/PnlTicker";
 import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 export default function AutopilotPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Page title */}
       <div>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 18,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            letterSpacing: "0.04em",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          }}
-        >
-          ⚡ AUTOPILOT
-        </h1>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              letterSpacing: "0.04em",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            }}
+          >
+            ⚡ AUTOPILOT
+          </h1>
+          <HelpTooltip text="The autonomous trade execution engine. In this mode, the consensus of all 7 agents leads to automatic trade placement on the Polymarket CLOB." />
+        </div>
         <p
           style={{
             margin: "4px 0 0",
@@ -68,6 +72,10 @@ export default function AutopilotPage() {
             padding: 20,
           }}
         >
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", margin: 0, textTransform: "uppercase" }}>Live Scanner</h2>
+            <HelpTooltip text="The real-time analysis engine. Shows every market being processed by our 7 specialist agents." />
+          </div>
           <ScannerFeed />
         </div>
 
@@ -85,6 +93,10 @@ export default function AutopilotPage() {
             gap: 16
           }}
         >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", margin: 0, textTransform: "uppercase" }}>Executions</h2>
+            <HelpTooltip text="Audit trail of trades placed by the autopilot engine. Tracks order IDs and fill status." />
+          </div>
           <ExecutionLog />
           <TelegramWebhookEditor />
         </div>

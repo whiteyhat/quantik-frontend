@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, fmtUSDC, type Position } from "@/lib/api";
+import { HelpTooltip } from "./ui/HelpTooltip";
 
 function PositionRow({ position }: { position: Position }) {
   const isYes = position.direction === "YES";
@@ -21,71 +22,19 @@ function PositionRow({ position }: { position: Position }) {
         borderRadius: 12,
       }}
     >
-      {/* Left accent bar */}
-      <div
-        style={{
-          width: 3,
-          height: 32,
-          borderRadius: 2,
-          background: accentColor,
-          flexShrink: 0,
-        }}
-      />
-
-      {/* Market question */}
+      <div style={{ width: 3, height: 32, borderRadius: 2, background: accentColor, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          className="text-subhead"
-          style={{
-            color: "var(--text-primary)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
+        <div className="text-subhead" style={{ color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {position.market}
         </div>
       </div>
-
-      {/* Direction badge */}
-      <span
-        style={{
-          fontSize: "var(--text-caption)",
-          fontWeight: 600,
-          padding: "2px 8px",
-          borderRadius: 6,
-          background: isYes ? "var(--ios-green-glow)" : "var(--ios-red-glow)",
-          color: accentColor,
-          flexShrink: 0,
-        }}
-      >
+      <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: isYes ? "var(--ios-green-glow)" : "var(--ios-red-glow)", color: accentColor, flexShrink: 0 }}>
         {position.direction}
       </span>
-
-      {/* Entry → Current price */}
-      <span
-        className="font-mono-data"
-        style={{
-          fontSize: "var(--text-subhead)",
-          color: "var(--text-secondary)",
-          flexShrink: 0,
-        }}
-      >
+      <span className="font-mono-data" style={{ fontSize: "var(--text-subhead)", color: "var(--text-secondary)", flexShrink: 0 }}>
         {Math.round((position.entryPrice ?? 0) * 100)}¢ → {Math.round((position.currentPrice ?? 0) * 100)}¢
       </span>
-
-      {/* P&L */}
-      <span
-        className="font-mono-data"
-        style={{
-          fontSize: "var(--text-subhead)",
-          fontWeight: 600,
-          color: pnlColor,
-          flexShrink: 0,
-          textAlign: "right",
-          minWidth: 80,
-        }}
-      >
+      <span className="font-mono-data" style={{ fontSize: "var(--text-subhead)", fontWeight: 600, color: pnlColor, flexShrink: 0, textAlign: "right", minWidth: 80 }}>
         {pnlSign}{fmtUSDC(position.pnl)} ({pnlSign}{(position.pnlPct ?? 0).toFixed(1)}%)
       </span>
     </div>
@@ -97,13 +46,18 @@ export function ActivePositions() {
 
   useEffect(() => {
     api.getPositions().then(setPositions).catch(() => {});
+    const iv = setInterval(() => api.getPositions().then(setPositions).catch(() => {}), 15000);
+    return () => clearInterval(iv);
   }, []);
 
   return (
     <div className="glass-card" style={{ padding: 24 }}>
-      <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: "0 0 16px 0" }}>
-        Active Positions
-      </h2>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+        <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: 0 }}>
+          Active Positions
+        </h2>
+        <HelpTooltip text="Your current open exposure on Polymarket. Prices and P&L are updated every 15 seconds." />
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {positions.map((p) => (

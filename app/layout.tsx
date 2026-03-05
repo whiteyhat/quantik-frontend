@@ -294,22 +294,13 @@ function TopWalletBar() {
   const truncAddr = (addr: string) =>
     addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
 
-  const pnl = wallet?.pnl ?? 0;
-  const pnlPct = wallet?.pnlPct ?? 0;
+  const pnl = wallet?.pnlToday ?? 0;
+  const pnlPct = wallet?.pnlTodayPct ?? 0;
   const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = pnl >= 0 ? "+" : "";
 
-  // Use onChainUsdc if available (new backend), fall back to legacy usdc field
-  const usdcValue = wallet ? (wallet.onChainUsdc ?? wallet.usdc ?? 0) : null;
-  const usdcDisplay = usdcValue !== null ? fmtUSDC(usdcValue) : "···";
-
-  // POL balance — use formatted string if available, otherwise format the raw number
-  const polDisplay = wallet
-    ? (wallet.polFormatted ?? (wallet.pol != null ? wallet.pol.toFixed(2) : "0.00"))
-    : "···";
-
-  // Total value = on-chain USDC (primary balance)
-  const totalDisplay = usdcValue !== null ? fmtUSDC(usdcValue) : "···";
+  // Total value includes open positions (from new backend field)
+  const totalDisplay = wallet ? fmtUSDC(wallet.totalValue) : "···";
 
   return (
     <div
