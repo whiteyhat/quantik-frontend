@@ -421,17 +421,23 @@ function ActivePositionsCard() {
 // ─── Risk Limits Card ─────────────────────────────────────────────────────────
 
 function RiskLimitsCard() {
-  // Mocked risk data — will be replaced by /api/portfolio/risk
-  const drawdown = 2.1;
-  const drawdownLimit = 10;
-  const drawdownPct = (drawdown / drawdownLimit) * 100;
+  const [risk, setRisk] = useState<RiskStatus | null>(null);
+
+  useEffect(() => {
+    api.getRiskStatus().then(setRisk).catch(() => {});
+    const iv = setInterval(() => api.getRiskStatus().then(setRisk).catch(() => {}), 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const drawdown = risk?.dailyPnlPct ?? 0;
+  const drawdownLimit = 15; // 15% system limit
+  const drawdownPct = Math.min((Math.abs(drawdown) / drawdownLimit) * 100, 100);
   const drawdownColor =
     drawdownPct < 50 ? "#30d158" : drawdownPct < 80 ? "#ff9f0a" : "#ff453a";
 
-  const statusLabel =
-    drawdownPct < 50 ? "NORMAL" : drawdownPct < 80 ? "WARNING" : "HALT";
+  const statusLabel = risk?.circuitBreaker ?? "ARMED";
   const statusColor =
-    drawdownPct < 50 ? "#30d158" : drawdownPct < 80 ? "#ff9f0a" : "#ff453a";
+    statusLabel === "ARMED" ? "#30d158" : statusLabel === "WARNING" ? "#ff9f0a" : "#ff453a";
 
   interface RiskRow {
     label: string;

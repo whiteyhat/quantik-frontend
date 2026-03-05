@@ -106,16 +106,19 @@ export function PerformancePanel() {
 
       {/* ── Brier Scores ─────────────────────────────────────────── */}
       <div style={{ marginBottom: 16 }}>
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            color: "rgba(255,255,255,0.35)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
-          BRIER SCORES (LAST 5)
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span
+            style={{
+              fontSize: LABEL_SIZE,
+              color: "rgba(255,255,255,0.35)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            BRIER SCORES (LAST 5)
+          </span>
+          <HelpTooltip text="A measure of prediction accuracy. Score ranges from 0 to 1, where 0 is a perfect prediction and 1 is a total miss." />
+        </div>
         <div
           style={{
             display: "flex",
@@ -178,16 +181,19 @@ export function PerformancePanel() {
 
       {/* ── Attribution ──────────────────────────────────────────── */}
       <div style={{ marginBottom: 16 }}>
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            color: "rgba(255,255,255,0.35)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
-          TOP SIGNAL ATTRIBUTION
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span
+            style={{
+              fontSize: LABEL_SIZE,
+              color: "rgba(255,255,255,0.35)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            TOP SIGNAL ATTRIBUTION
+          </span>
+          <HelpTooltip text="Identifies which logic branch (Oracle, Aura, Flux, etc.) is contributing most to successful trades." />
+        </div>
         <div
           style={{
             display: "flex",
@@ -259,18 +265,19 @@ export function PerformancePanel() {
 
       {/* ── Drift Status ─────────────────────────────────────────── */}
       <div style={{ marginBottom: 16 }}>
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            color: "rgba(255,255,255,0.35)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            display: "block",
-            marginBottom: 8,
-          }}
-        >
-          DRIFT DETECTION
-        </span>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+          <span
+            style={{
+              fontSize: LABEL_SIZE,
+              color: "rgba(255,255,255,0.35)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            DRIFT DETECTION
+          </span>
+          <HelpTooltip text="Automatic detection of market regime shifts. Concept drift flags when market behavior deviates from training logic." />
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           {drift === null ? (
             <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
