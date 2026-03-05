@@ -409,6 +409,12 @@ export function PerformanceSummaryWidget() {
   const microOk = drift?.microstructure === "clear";
   const conceptOk = drift?.concept === "clear";
 
+  // Enrichment: calculate hit rate from attribution
+  const totalTrades = attribution.reduce((acc, a) => acc + a.count, 0);
+  const avgHitRate = totalTrades > 0 
+    ? attribution.reduce((acc, a) => acc + (a.hitRate * a.count), 0) / totalTrades 
+    : null;
+
   return (
     <div style={panelStyle}>
       <div style={{ marginBottom: 10 }}>
@@ -445,6 +451,24 @@ export function PerformanceSummaryWidget() {
           flexWrap: "wrap",
         }}
       >
+        {/* Avg Hit Rate */}
+        {avgHitRate !== null && (
+          <span
+            style={{
+              fontSize: LABEL_SIZE,
+              fontWeight: 700,
+              fontFamily: '"SF Mono", monospace',
+              padding: "3px 8px",
+              borderRadius: 6,
+              background: "rgba(10,132,255,0.12)",
+              color: "#0a84ff",
+              border: "1px solid rgba(10,132,255,0.25)",
+            }}
+          >
+            Hit Rate {(avgHitRate * 100).toFixed(1)}%
+          </span>
+        )}
+
         {/* Avg Brier */}
         <span
           style={{

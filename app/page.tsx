@@ -1080,52 +1080,6 @@ function RiskStatusPanel() {
         </span>
       </div>
 
-      {/* Daily P&L */}
-      <div style={{ marginBottom: 16 }}>
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            color: "rgba(255,255,255,0.35)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
-          DAILY P&L
-        </span>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 8,
-            marginTop: 4,
-          }}
-        >
-          <span
-            style={{
-              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-              fontSize: METRIC_SIZE,
-              fontWeight: 700,
-              color: pnlColor,
-              lineHeight: 1.2,
-            }}
-          >
-            {risk ? `${pnlSign}${fmtUSDC(pnl)}` : "···"}
-          </span>
-          {risk && (
-            <span
-              style={{
-                fontSize: META_SIZE,
-                fontFamily: '"SF Mono", monospace',
-                fontWeight: 600,
-                color: pnlColor,
-              }}
-            >
-              {pnlSign}{pnlPct.toFixed(1)}%
-            </span>
-          )}
-        </div>
-      </div>
-
       {/* Exposure */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
