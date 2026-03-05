@@ -8,6 +8,7 @@ import {
   type DriftStatus,
   type CalibrationEntry,
 } from "@/lib/api";
+import { HelpTooltip } from "./ui/HelpTooltip";
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 
