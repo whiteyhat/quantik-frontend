@@ -75,18 +75,21 @@ export function PerformancePanel() {
     <div style={panelStyle}>
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: HEADLINE_SIZE,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-          }}
-        >
-          Performance
-        </h2>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: HEADLINE_SIZE,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Performance
+          </h2>
+          <HelpTooltip text="Advanced performance metrics and signal attribution. Tracks the accuracy of agent predictions over time." />
+        </div>
         <span
           style={{
             display: "block",
@@ -420,18 +423,21 @@ export function PerformanceSummaryWidget() {
   return (
     <div style={panelStyle}>
       <div style={{ marginBottom: 10 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: HEADLINE_SIZE,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-          }}
-        >
-          Performance
-        </h2>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: HEADLINE_SIZE,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Performance
+          </h2>
+          <HelpTooltip text="Summary of platform effectiveness. Brier score measures prediction error (lower is better), and Hit Rate measures winning signal percentage." />
+        </div>
         <span
           style={{
             display: "block",

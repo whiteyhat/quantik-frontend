@@ -424,6 +424,18 @@ export const api = {
       return [];
     }
   },
+
+  // Settings
+  getTelegramSettings: async (): Promise<{ chatId: string; botToken: string; hasToken: boolean }> => {
+    return apiFetch("/api/v1/settings/telegram");
+  },
+
+  updateTelegramSettings: async (settings: { chatId?: string; botToken?: string }): Promise<{ success: boolean }> => {
+    return apiFetch("/api/v1/settings/telegram", {
+      method: "POST",
+      body: JSON.stringify(settings),
+    });
+  },
 };
 
 

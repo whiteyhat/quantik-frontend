@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, fmtUSDC, type WalletBalance } from "@/lib/api";
+import { HelpTooltip } from "./ui/HelpTooltip";
 
 function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
   const safeRate = isNaN(rate) ? 0 : Math.max(0, Math.min(1, rate));
@@ -70,9 +71,12 @@ export function PortfolioOverview() {
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
       {/* Total Portfolio Value */}
       <div className="glass-card" style={{ padding: 24 }}>
-        <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Total Portfolio
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Total Portfolio
+          </span>
+          <HelpTooltip text="Total estimated value of your holdings, including on-chain USDC, CLOB deposits, and open position P&L." />
+        </div>
         <div
           className="font-mono-data"
           style={{
@@ -101,9 +105,12 @@ export function PortfolioOverview() {
 
       {/* P&L Today */}
       <div className="glass-card" style={{ padding: 24 }}>
-        <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          P&L Today
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            P&L Today
+          </span>
+          <HelpTooltip text="Your profit or loss for the current calendar day, combining realized gains/losses and unrealized price movements." />
+        </div>
         <div
           className="font-mono-data"
           style={{
@@ -136,9 +143,12 @@ export function PortfolioOverview() {
       {/* Win Rate */}
       <div className="glass-card" style={{ padding: 24, display: "flex", alignItems: "center", gap: 20 }}>
         <div style={{ flex: 1 }}>
-          <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Win Rate
-          </span>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span className="text-caption" style={{ color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Win Rate
+            </span>
+            <HelpTooltip text="Percentage of settled trades that resulted in a profit. Calculated as (winning trades / total settled trades)." />
+          </div>
           <div style={{ marginTop: 4 }}>
             <span className="text-headline" style={{ color: "var(--text-primary)" }}>
               {wallet ? `${Math.round((wallet.winRate ?? 0) * 100)}%` : "···"}

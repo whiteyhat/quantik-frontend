@@ -4,6 +4,7 @@ import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
 import { PnlTicker } from "@/components/PnlTicker";
+import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
 
 export default function AutopilotPage() {
   return (
@@ -79,9 +80,13 @@ export default function AutopilotPage() {
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 12,
             padding: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 16
           }}
         >
           <ExecutionLog />
+          <TelegramWebhookEditor />
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
 import { PerformanceSummaryWidget } from "@/components/PerformancePanel";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,9 @@ function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
   const pct = Math.round(safeRate * 100);
   const r = 28;
   const circumference = 2 * Math.PI * r;
-  const offset = circumference - safeRate * circumference;
+  // If rate is 0, show a tiny sliver to indicate the ring is active
+  const displayRate = safeRate === 0 && trades > 0 ? 0.01 : safeRate;
+  const offset = circumference - (displayRate * circumference);
 
   return (
     <div style={{ position: "relative", width: 68, height: 68, flexShrink: 0 }}>
@@ -90,7 +93,7 @@ function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
         <circle
           cx="34" cy="34" r={r}
           fill="none"
-          stroke="#30d158"
+          stroke={safeRate > 0 ? "#30d158" : "rgba(255,255,255,0.15)"}
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -149,13 +152,19 @@ function PortfolioCard() {
 
   return (
     <div style={panelStyle}>
-      <SectionHeader title="Portfolio" subtitle="Layer 3 — Risk Control" />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SectionHeader title="Portfolio" subtitle="Layer 3 — Risk Control" />
+        <HelpTooltip text="Your current wallet and trading performance. Metrics are unified across on-chain and internal execution logs." />
+      </div>
 
       {/* Total USDC — primary metric */}
       <div style={{ marginBottom: 16 }}>
-        <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          TOTAL USDC
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            TOTAL USDC
+          </span>
+          <HelpTooltip text="The sum of on-chain USDC.e, CLOB deposit collateral, and open position value." />
+        </div>
         <div
           style={{
             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -300,7 +309,10 @@ function ActivePositionsCard() {
 
   return (
     <div style={panelStyle}>
-      <SectionHeader title="Active Positions" />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SectionHeader title="Active Positions" />
+        <HelpTooltip text="Currently open trades on Polymarket. Values are marked-to-market using the latest scanner prices." />
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {positions.length === 0 ? (
@@ -437,7 +449,10 @@ function RiskLimitsCard() {
     <div style={panelStyle}>
       {/* Header with status badge */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <SectionHeader title="Risk Limits" />
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <SectionHeader title="Risk Limits" />
+          <HelpTooltip text="Thresholds and parameters governing the autonomous trading engine. These limits prevent catastrophic drawdowns." />
+        </div>
         <span
           style={{
             fontSize: LABEL_SIZE,
@@ -581,7 +596,10 @@ function SystemStatusPanel() {
 
   return (
     <div style={panelStyle}>
-      <SectionHeader title="System Status" subtitle="Agent health · Layer 1–5" />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SectionHeader title="System Status" subtitle="Agent health · Layer 1–5" />
+        <HelpTooltip text="Health and latency status for the backend API and all 7 Quantik agent sub-processes." />
+      </div>
 
       {/* Backend health bar */}
       <div
@@ -843,7 +861,10 @@ function OrchestratorPanel() {
   return (
     <div style={{ ...panelStyle, padding: 0, overflow: "hidden" }}>
       <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <SectionHeader title="Orchestrator" subtitle="Tier 0 scanner · Layer 1" />
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <SectionHeader title="Orchestrator" subtitle="Tier 0 scanner · Layer 1" />
+          <HelpTooltip text="The high-level market filter. It scans thousands of markets to identify candidates with high volume, liquidity, or sharp price moves." />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           {status && status.lastScanAt > 0 && (
             <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", whiteSpace: "nowrap" }}>
@@ -1041,7 +1062,10 @@ function RiskStatusPanel() {
 
   return (
     <div style={panelStyle}>
-      <SectionHeader title="Risk Status" subtitle="Layer 3 — Live risk monitor" />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SectionHeader title="Risk Status" subtitle="Layer 3 — Live risk monitor" />
+        <HelpTooltip text="Real-time monitoring of current exposure and circuit breaker health. If drawdown hits limits, all trading stops." />
+      </div>
 
       {/* Circuit Breaker */}
       <div
@@ -1164,8 +1188,9 @@ function MarketScannerPanel() {
         overflow: "hidden",
       }}
     >
-      <div style={{ padding: "16px 20px 12px" }}>
+      <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "center" }}>
         <SectionHeader title="Market Scanner" subtitle="Live CLOB markets · Layer 0" />
+        <HelpTooltip text="The execution loop interface. Shows all liquid markets currently being analyzed by the specialist agent teams." />
       </div>
       <div style={{ padding: "0 16px 16px" }}>
         <MarketScanner showFilterPills maxCols={2} compact />
@@ -1179,7 +1204,10 @@ function MarketScannerPanel() {
 function RecentSignalsPanel() {
   return (
     <div style={panelStyle}>
-      <SectionHeader title="Recent Signals" subtitle="Last pipeline decisions" />
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <SectionHeader title="Recent Signals" subtitle="Last pipeline decisions" />
+        <HelpTooltip text="The historical log of final team decisions. Shows where the consensus of all 7 agents led to a trade or skip." />
+      </div>
       <RecentSignals />
     </div>
   );
