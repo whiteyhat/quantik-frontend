@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { HelpTooltip } from "./ui/HelpTooltip";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://quantik-backend-production.up.railway.app";
 
@@ -83,7 +84,8 @@ export function ScannerFeed() {
     try {
       const res = await fetch(`${BASE_URL}/api/scanner/results`);
       if (!res.ok) return;
-      const data: ScannerResult[] = await res.json();
+      const json = await res.json();
+      const data: ScannerResult[] = Array.isArray(json) ? json : json.results ?? [];
       const newIds = new Set<string>();
       data.forEach((r, i) => {
         const id = r.id ?? r.slug ?? String(i);
@@ -122,18 +124,21 @@ export function ScannerFeed() {
           marginBottom: 10,
         }}
       >
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.45)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: "\"SF Mono\", monospace",
-          }}
-        >
-          Scanner Feed
-        </span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.45)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontFamily: "\"SF Mono\", monospace",
+            }}
+          >
+            Scanner Feed
+          </span>
+          <HelpTooltip text="Real-time surveillance of prediction markets. Only liquid markets with high trading activity are tracked here." />
+        </div>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace" }}>
           {results.length} signals
         </span>
