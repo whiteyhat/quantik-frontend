@@ -382,11 +382,13 @@ export function PerformanceSummaryWidget() {
   const [drift, setDrift] = useState<DriftStatus | null>(null);
   const [brier, setBrier] = useState<BrierEntry[]>([]);
   const [topAgent, setTopAgent] = useState<CalibrationEntry | null>(null);
+  const [attribution, setAttribution] = useState<AttributionEntry[]>([]);
 
   useEffect(() => {
     function fetchAll() {
       api.getDriftStatus().then(setDrift).catch(() => {});
       api.getBrierScores().then(setBrier).catch(() => {});
+      api.getAttribution().then(setAttribution).catch(() => {});
       api
         .getCalibration()
         .then((c) => {
@@ -410,9 +412,9 @@ export function PerformanceSummaryWidget() {
   const conceptOk = drift?.concept === "clear";
 
   // Enrichment: calculate hit rate from attribution
-  const totalTrades = attribution.reduce((acc, a) => acc + a.count, 0);
-  const avgHitRate = totalTrades > 0 
-    ? attribution.reduce((acc, a) => acc + (a.hitRate * a.count), 0) / totalTrades 
+  const totalTradesCount = attribution.reduce((acc: number, a: AttributionEntry) => acc + a.count, 0);
+  const avgHitRate = totalTradesCount > 0 
+    ? attribution.reduce((acc: number, a: AttributionEntry) => acc + (a.hitRate * a.count), 0) / totalTradesCount 
     : null;
 
   return (
