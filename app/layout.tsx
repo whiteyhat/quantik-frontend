@@ -299,7 +299,9 @@ function TopWalletBar() {
   const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = pnl >= 0 ? "+" : "";
 
-  // Total value includes open positions (from new backend field)
+  // New backend fields
+  const usdcDisplay = wallet ? fmtUSDC(wallet.usdc) : "···";
+  const polDisplay = wallet ? (wallet.polFormatted ?? wallet.pol?.toFixed(2) ?? "0.00") : "···";
   const totalDisplay = wallet ? fmtUSDC(wallet.totalValue) : "···";
 
   return (

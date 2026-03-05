@@ -23,9 +23,9 @@ export interface PricePoint {
 
 export interface WalletBalance {
   address: string;
-  // Legacy field — kept for backward compatibility
+  // Legacy field
   usdc: number;
-  // On-chain balances (new backend fields)
+  // On-chain balances
   onChainUsdc?: number;
   onChainUsdcFormatted?: string;
   pol?: number;
@@ -34,7 +34,11 @@ export interface WalletBalance {
   pnlPct: number;
   winRate: number;
   totalTrades: number;
-  // Risk fields from portfolio summary
+  // New backend fields
+  pnlToday: number;
+  pnlTodayPct: number;
+  totalValue: number;
+  // Risk fields
   circuitBreakerStatus?: "ARMED" | "WARNING" | "TRIGGERED";
   kellyUtilization?: number;
   drawdown?: number;
