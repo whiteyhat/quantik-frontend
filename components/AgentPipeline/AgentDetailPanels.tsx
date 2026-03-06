@@ -146,6 +146,61 @@ export function AuraPanel({ data }: { data: AuraResult }) {
           )}
         </Row>
       </Section>
+
+      {/* News source pills */}
+      {data.newsArticles && data.newsArticles.length > 0 && (
+        <Section mb={0}>
+          <Label>Sentiment Sources</Label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 4 }}>
+            {data.newsArticles.map((article, i) => (
+              <a
+                key={i}
+                href={article.url || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 8,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  textDecoration: "none",
+                  cursor: article.url ? "pointer" : "default",
+                }}
+                onMouseEnter={(e) => {
+                  if (article.url) (e.currentTarget as HTMLAnchorElement).style.background = "rgba(10,132,255,0.10)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                }}
+              >
+                {article.source && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: "var(--ios-blue)",
+                    background: "rgba(10,132,255,0.12)", border: "1px solid rgba(10,132,255,0.20)",
+                    padding: "1px 7px", borderRadius: 6, whiteSpace: "nowrap",
+                    fontFamily: '"SF Mono","JetBrains Mono",monospace', flexShrink: 0,
+                  }}>
+                    {article.source}
+                  </span>
+                )}
+                <span style={{
+                  fontSize: 12, color: "rgba(255,255,255,0.70)", lineHeight: 1.4,
+                  overflow: "hidden", display: "-webkit-box",
+                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                }}>
+                  {article.title}
+                </span>
+                {article.url && (
+                  <span style={{ fontSize: 11, color: "rgba(10,132,255,0.60)", flexShrink: 0 }}>↗</span>
+                )}
+              </a>
+            ))}
+          </div>
+        </Section>
+      )}
     </div>
   );
 }

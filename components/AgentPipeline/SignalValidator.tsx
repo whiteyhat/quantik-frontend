@@ -29,55 +29,60 @@ interface SignalValidatorProps {
   lucifer?: LuciferResult;
 }
 
-export function SignalValidator({ edge, sigma, aura, flux, lucifer }: SignalValidatorProps) {
+export function SignalValidator({
+  edge,
+  sigma,
+  aura,
+  flux,
+  lucifer,
+}: SignalValidatorProps) {
   const gates: Gate[] = [
-    // 1. Min Edge
     (() => {
       const ev = edge ? num(edge.net_ev) : 0;
       const grade = edge?.ev_grade ?? "PASS";
-      if (grade === "A" || grade === "B") return { label: "Min Edge", status: "pass" as GateStatus, detail: `EV ${ev > 0 ? "+" : ""}${ev.toFixed(1)}% (${grade})` };
-      if (grade === "C") return { label: "Min Edge", status: "watch" as GateStatus, detail: `EV ${ev.toFixed(1)}% — marginal` };
-      return { label: "Min Edge", status: "fail" as GateStatus, detail: edge ? `Grade: ${grade}` : "No edge data" };
+      if (grade === "A" || grade === "B")
+        return { label: "Identity Verification", status: "pass" as GateStatus, detail: `EV ${grade}` };
+      if (grade === "C")
+        return { label: "Identity Verification", status: "watch" as GateStatus, detail: `EV marginal` };
+      return { label: "Identity Verification", status: "fail" as GateStatus, detail: edge ? `Grade: ${grade}` : "No data" };
     })(),
 
-    // 2. Confidence
     (() => {
       const conf = num(sigma.confidence);
-      if (conf >= 70) return { label: "Confidence", status: "pass" as GateStatus, detail: `${conf}%` };
-      if (conf >= 50) return { label: "Confidence", status: "watch" as GateStatus, detail: `${conf}% — low` };
-      return { label: "Confidence", status: "fail" as GateStatus, detail: `${conf}% — insufficient` };
+      if (conf >= 60)
+        return { label: "Balance Check", status: "pass" as GateStatus, detail: `${conf.toFixed(0)}% conf` };
+      if (conf >= 45)
+        return { label: "Balance Check", status: "watch" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
+      return { label: "Balance Check", status: "fail" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
     })(),
 
-    // 3. Resolution Clarity (from aura echo chamber as proxy)
     (() => {
-      if (!aura) return { label: "Resolution Clarity", status: "watch" as GateStatus, detail: "No sentiment data" };
-      if (!aura.echo_chamber) return { label: "Resolution Clarity", status: "pass" as GateStatus, detail: "No echo chamber" };
-      return { label: "Resolution Clarity", status: "watch" as GateStatus, detail: "Echo chamber detected" };
-    })(),
-
-    // 4. DA Check
-    (() => {
-      if (!lucifer) return { label: "DA Check", status: "watch" as GateStatus, detail: "No DA data" };
-      const da = num(lucifer.devils_advocate_score);
-      if (da <= 0.5) return { label: "DA Check", status: "pass" as GateStatus, detail: `Score: ${da.toFixed(2)}` };
-      if (da <= 0.7) return { label: "DA Check", status: "watch" as GateStatus, detail: `Score: ${da.toFixed(2)} — elevated` };
-      return { label: "DA Check", status: "fail" as GateStatus, detail: `Score: ${da.toFixed(2)} — VETO` };
-    })(),
-
-    // 5. Liquidity
-    (() => {
-      if (!flux) return { label: "Liquidity", status: "watch" as GateStatus, detail: "No liquidity data" };
+      if (!flux)
+        return { label: "Slippage Tolerance", status: "watch" as GateStatus, detail: "No data" };
       const grade = flux.liquidity_grade;
-      if (grade === "A" || grade === "B") return { label: "Liquidity", status: "pass" as GateStatus, detail: `Grade: ${grade}` };
-      if (grade === "C") return { label: "Liquidity", status: "watch" as GateStatus, detail: `Grade: ${grade} — thin` };
-      return { label: "Liquidity", status: "fail" as GateStatus, detail: `Grade: ${grade} — illiquid` };
+      if (grade === "A" || grade === "B")
+        return { label: "Slippage Tolerance", status: "pass" as GateStatus, detail: `Liq ${grade}` };
+      if (grade === "C")
+        return { label: "Slippage Tolerance", status: "watch" as GateStatus, detail: "Thin" };
+      return { label: "Slippage Tolerance", status: "fail" as GateStatus, detail: "Illiquid" };
+    })(),
+
+    (() => {
+      if (!lucifer)
+        return { label: "Gas Fees", status: "watch" as GateStatus, detail: "Estimating..." };
+      const da = num(lucifer.devils_advocate_score);
+      if (da <= 0.5)
+        return { label: "Gas Fees", status: "pass" as GateStatus, detail: "Low" };
+      if (da <= 0.7)
+        return { label: "Gas Fees", status: "watch" as GateStatus, detail: "Medium" };
+      return { label: "Gas Fees", status: "fail" as GateStatus, detail: "High risk" };
     })(),
   ];
 
   const passCount = gates.filter((g) => g.status === "pass").length;
   const failCount = gates.filter((g) => g.status === "fail").length;
-
-  const finalVerdict = failCount > 0 ? "SKIP" : passCount >= 4 ? "TRADE" : "WATCH";
+  const finalVerdict =
+    failCount > 0 ? "SKIP" : passCount >= 3 ? "TRADE" : "WATCH";
   const verdictColor =
     finalVerdict === "TRADE"
       ? "var(--ios-green)"
@@ -86,40 +91,55 @@ export function SignalValidator({ edge, sigma, aura, flux, lucifer }: SignalVali
       : "var(--ios-orange)";
 
   return (
-    <div className="glass-card" style={{ padding: 20, marginTop: 12 }} data-testid="signal-validator">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+    <div className="glass-card" style={{ padding: 16 }} data-testid="signal-validator">
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ fontSize: 16 }}>{"✅"}</span>
+          <span
+            style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}
+          >
+            Validator
+          </span>
+        </div>
         <span
-          className="font-mono-data"
-          style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.06em" }}
-        >
-          SIGNAL VALIDATOR
-        </span>
-        <span
-          className="font-mono-data"
           style={{
-            fontSize: 14,
+            fontSize: 10,
             fontWeight: 700,
-            padding: "4px 12px",
-            borderRadius: 8,
+            padding: "2px 10px",
+            borderRadius: 6,
             color: verdictColor,
             background: `color-mix(in srgb, ${verdictColor} 15%, transparent)`,
-            border: `1px solid color-mix(in srgb, ${verdictColor} 25%, transparent)`,
-            letterSpacing: "0.05em",
+            border: `1px solid color-mix(in srgb, ${verdictColor} 28%, transparent)`,
+            letterSpacing: "0.06em",
           }}
         >
           {finalVerdict}
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Gate list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {gates.map((gate) => {
-          const icon = gate.status === "pass" ? "\u2713" : gate.status === "fail" ? "\u2717" : "\u26A0";
           const color =
             gate.status === "pass"
               ? "var(--ios-green)"
               : gate.status === "fail"
               ? "var(--ios-red)"
               : "var(--ios-orange)";
+          const icon =
+            gate.status === "pass"
+              ? "\u2713"
+              : gate.status === "fail"
+              ? "\u2717"
+              : "\u26A0";
 
           return (
             <div
@@ -127,21 +147,38 @@ export function SignalValidator({ edge, sigma, aura, flux, lucifer }: SignalVali
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "8px 12px",
-                borderRadius: 10,
-                background: "rgba(255,255,255,0.02)",
+                justifyContent: "space-between",
+                padding: "5px 0",
+                borderBottom: "1px solid rgba(255,255,255,0.04)",
               }}
               data-testid="signal-gate"
             >
-              <span style={{ fontSize: 14, color, fontWeight: 700, width: 18, textAlign: "center" }}>
-                {icon}
-              </span>
-              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, flex: 1 }}>
+              <span
+                style={{ fontSize: 13, color: "var(--text-secondary)", flex: 1 }}
+              >
                 {gate.label}
               </span>
-              <span className="font-mono-data" style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                {gate.detail}
+              <span
+                className="font-mono-data"
+                style={{
+                  fontSize: 11,
+                  color,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                {gate.status === "pass" ? (
+                  gate.detail
+                ) : (
+                  <>
+                    {icon} {gate.detail}
+                  </>
+                )}
+                {gate.status === "pass" && (
+                  <span style={{ color, fontWeight: 700 }}>{icon}</span>
+                )}
               </span>
             </div>
           );

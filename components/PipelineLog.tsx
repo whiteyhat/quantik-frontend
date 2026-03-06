@@ -184,16 +184,20 @@ export function PipelineLog() {
         }}
       >
         {pipeline.running && (
-          <span style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: "var(--ios-green)",
-            boxShadow: "0 0 8px var(--ios-green)",
-            flexShrink: 0,
-            display: "inline-block",
-          }} />
+          <>
+            <style>{`@keyframes pipelinePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}`}</style>
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: "var(--ios-green)",
+              boxShadow: "0 0 8px var(--ios-green)",
+              flexShrink: 0,
+              display: "inline-block",
+              animation: "pipelinePulse 1.2s ease-in-out infinite",
+            }} />
+          </>
         )}
         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
-          \u26A1 Live Pipeline Feed
+          {"\u26A1"} Live Pipeline Feed
         </span>
         <span className="font-mono-data" style={{ fontSize: 11, color: "var(--text-tertiary)", marginLeft: "auto" }}>
           {visibleLogs.length} events

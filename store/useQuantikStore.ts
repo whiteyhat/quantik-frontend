@@ -17,6 +17,8 @@ export interface AgentCardState {
   status: AgentStatus;
   data?: unknown;
   error?: string;
+  startedAt?: number;   // Date.now() when agent:start fired
+  latencyMs?: number;   // ms from start to done/error
 }
 
 export interface PipelineState {
@@ -104,12 +106,18 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
       if (event.type === "pipeline:start") return s;
       const agentKey = "agent" in event ? event.agent : undefined;
       if (!agentKey) return s;
-      const card: AgentCardState =
-        event.type === "agent:start"
-          ? { status: "running" }
-          : event.type === "agent:complete"
-          ? { status: "done", data: event.data }
-          : { status: "error", error: typeof event.error === "string" ? event.error : JSON.stringify(event.error) };
+      const now = Date.now();
+      const prev = s.pipeline.agents[agentKey];
+      let card: AgentCardState;
+      if (event.type === "agent:start") {
+        card = { status: "running", startedAt: now };
+      } else if (event.type === "agent:complete") {
+        const latencyMs = prev?.startedAt ? now - prev.startedAt : undefined;
+        card = { status: "done", data: event.data, startedAt: prev?.startedAt, latencyMs };
+      } else {
+        const latencyMs = prev?.startedAt ? now - prev.startedAt : undefined;
+        card = { status: "error", error: typeof event.error === "string" ? event.error : JSON.stringify(event.error), startedAt: prev?.startedAt, latencyMs };
+      }
       return {
         pipeline: {
           ...s.pipeline,

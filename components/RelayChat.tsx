@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -64,35 +65,22 @@ export function RelayChat({ slug }: RelayChatProps) {
   const [sending, setSending] = useState(false);
   const [currentModel, setCurrentModel] = useState<string>("");
   const [expandedAgent, setExpandedAgent] = useState<number | null>(null);
+  const [pipelineDone, setPipelineDone] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, sending]);
-
-  // Auto-send Relay overview when market page loads (≤50-word humanized brief)
+  const pipelineRunning = useQuantikStore((s) => s.pipeline.running);
+  const pipelineResult = useQuantikStore((s) => s.pipeline.result);
+  const wasRunning = useRef(false);
   const overviewSent = useRef(false);
-  useEffect(() => {
-    if (slug && !overviewSent.current && messages.length === 0) {
-      overviewSent.current = true;
-      // Brief 50-word overview prompt — Relay enforces humanizer rules
-      setTimeout(() => {
-        sendMessage(`Give me a 50-word max overview of this market and whether Quantik has a bet signal. Be direct, warm, and human. No markdown. No bullet points.`);
-      }, 800);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
 
   const sendMessage = useCallback(
-    async (text?: string) => {
+    async (text?: string, opts?: { silent?: boolean; pipelineData?: unknown }) => {
       const msg = (text ?? input).trim();
       if (!msg || sending) return;
 
-      const userMsg: Message = { id: nextId(), role: "user", text: msg };
-      setMessages((prev) => [...prev, userMsg]);
+      if (!opts?.silent) {
+        const userMsg: Message = { id: nextId(), role: "user", text: msg };
+        setMessages((prev) => [...prev, userMsg]);
+      }
       setInput("");
       setSending(true);
 
@@ -101,7 +89,12 @@ export function RelayChat({ slug }: RelayChatProps) {
         content: m.text,
       }));
 
-      const reqBody = JSON.stringify({ message: msg, history, slug: slug ?? undefined });
+      const reqBody = JSON.stringify({
+        message: msg,
+        history,
+        slug: slug ?? undefined,
+        ...(opts?.pipelineData ? { pipelineData: opts.pipelineData } : {}),
+      });
       const headers = { "Content-Type": "application/json", "X-Session-Id": getSessionId() };
 
       // Placeholder message for streaming
@@ -251,6 +244,36 @@ export function RelayChat({ slug }: RelayChatProps) {
     },
     [input, sending, messages, slug]
   );
+
+  // Track when pipeline starts running during this page visit
+  useEffect(() => {
+    if (pipelineRunning) {
+      wasRunning.current = true;
+      overviewSent.current = false;
+    }
+  }, [pipelineRunning]);
+
+  // Reveal component and send overview only when pipeline completes THIS visit
+  useEffect(() => {
+    if (wasRunning.current && !pipelineRunning && pipelineResult && !overviewSent.current) {
+      overviewSent.current = true;
+      setPipelineDone(true);
+      sendMessage(
+        `Pipeline complete for market "${slug}". Using the agent data provided, give me a sharp 50-word summary of the signal and whether to bet. Name numbers. End with one sentence welcoming the user to ask follow-up questions.`,
+        { silent: true, pipelineData: pipelineResult }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineRunning, pipelineResult]);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, sending]);
+
+  if (!pipelineDone) return null;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -725,37 +748,66 @@ export function RelayChat({ slug }: RelayChatProps) {
 const MAX_VISIBLE = 10;
 
 function getSuggestedQuestions(routedTo: string[] = [], msgIndex: number = 0): string[] {
-  // Contextual questions based on which agents were called
-  const contextual: string[] = [];
-  if (routedTo.includes("edge"))   contextual.push("What Kelly fraction should I use?");
-  if (routedTo.includes("aura"))   contextual.push("What's the current sentiment score?");
-  if (routedTo.includes("oracle")) contextual.push("What probability does Oracle assign?");
-  if (routedTo.includes("flux"))   contextual.push("How's the liquidity and spread?");
-  if (routedTo.includes("risk"))   contextual.push("Show my full exposure breakdown");
-  if (routedTo.includes("sigma"))  contextual.push("What's Sigma's final recommendation?");
+  // Analysis-specific: 2 questions that dig deeper into what Relay just answered
+  const analysisByAgent: Record<string, string[]> = {
+    edge: [
+      "What's the exact edge over market price right now?",
+      "Should I size up or down given the current Kelly fraction?",
+    ],
+    aura: [
+      "Which news sources are driving the bullish bias?",
+      "How strong is this sentiment signal relative to past market moves?",
+    ],
+    oracle: [
+      "How does Oracle's probability compare to what the market is pricing in?",
+      "What would shift Oracle's estimate to below 50%?",
+    ],
+    flux: [
+      "Is the spread tight enough to enter without excessive slippage?",
+      "At what liquidity grade should I stop trading this market?",
+    ],
+    lucifer: [
+      "What's the strongest counter-argument Lucifer raised against this trade?",
+      "Which bias flag should I be most concerned about here?",
+    ],
+    sigma: [
+      "Walk me through exactly why Sigma chose this position size.",
+      "Under what conditions would Sigma flip to a SKIP decision?",
+    ],
+  };
 
-  // Platform navigation pool — always useful, rotate by msgIndex for variety
-  const platform = [
-    "Show the Autopilot scanner status",
-    "What trades fired today?",
-    "Check today's P&L",
-    "What's the platform status?",
-    "Show my open positions",
-    "Explain the latest signal",
-    "What are the circuit breakers?",
-    "How do I read the pipeline log?",
-    "What markets are being scanned?",
+  // Platform how-to: 1 question about how the platform works (rotated for variety)
+  const howTo = [
+    "How does the Kelly criterion work in Quantik's sizing model?",
+    "What's the difference between Oracle and Edge agents?",
+    "How does Lucifer's adversarial score affect the final decision?",
+    "What does the confidence level in the execute bar actually measure?",
+    "How does Quantik's pipeline filter out false-positive signals?",
   ];
 
-  const result: string[] = [...contextual];
-  // Pick from platform pool starting at msgIndex offset for variety
-  let pi = msgIndex % platform.length;
-  while (result.length < 3) {
-    const q = platform[pi % platform.length];
-    if (!result.includes(q)) result.push(q);
-    pi++;
+  const analysis: string[] = [];
+  for (const agent of routedTo) {
+    const pool = analysisByAgent[agent] ?? [];
+    for (const q of pool) {
+      if (!analysis.includes(q) && analysis.length < 2) analysis.push(q);
+    }
+    if (analysis.length >= 2) break;
   }
-  return result.slice(0, 3);
+
+  // Fallback if no agents matched
+  const fallback = [
+    "What's the net expected value if I bet YES right now?",
+    "At what probability would this signal flip to bearish?",
+  ];
+  let fi = 0;
+  while (analysis.length < 2) {
+    if (!analysis.includes(fallback[fi % fallback.length])) {
+      analysis.push(fallback[fi % fallback.length]);
+    }
+    fi++;
+  }
+
+  return [...analysis.slice(0, 2), howTo[msgIndex % howTo.length]];
 }
 
 function agentChipColor(agent: string): {

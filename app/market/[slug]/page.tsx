@@ -1,12 +1,13 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { api, runPipeline } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { MarketHeader } from "@/components/MarketHeader";
 import { PriceChart } from "@/components/PriceChart";
+import { OrderBook } from "@/components/OrderBook";
 import { AgentPipeline } from "@/components/AgentPipeline";
 import { PipelineLog } from "@/components/PipelineLog";
 import { PipelineTimeline } from "@/components/PipelineTimeline";
@@ -25,6 +26,18 @@ export default function MarketPage({ params }: PageProps) {
   const pipelineReset = useQuantikStore((s) => s.pipelineReset);
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [cancelPipeline, setCancelPipeline] = useState<(() => void) | null>(null);
+  const [chartAnimKey, setChartAnimKey] = useState(0);
+  const pipelineWasRunning = useRef(false);
+
+  // Re-animate chart when pipeline completes
+  useEffect(() => {
+    if (pipeline.running) {
+      pipelineWasRunning.current = true;
+    } else if (pipelineWasRunning.current) {
+      pipelineWasRunning.current = false;
+      setChartAnimKey((k) => k + 1);
+    }
+  }, [pipeline.running]);
 
   const { data: market, isError } = useQuery({
     queryKey: ["market", slug],
@@ -51,13 +64,39 @@ export default function MarketPage({ params }: PageProps) {
   if (isError) {
     return (
       <div style={{ padding: 20 }}>
-        <Link href="/" style={{ color: "var(--ios-blue)", textDecoration: "none", marginBottom: 16, display: "inline-block" }}>
+        <Link
+          href="/"
+          style={{
+            color: "var(--ios-blue)",
+            textDecoration: "none",
+            marginBottom: 16,
+            display: "inline-block",
+          }}
+        >
           {"\u2039"} Back to Dashboard
         </Link>
-        <div className="glass-card" style={{ padding: 32, textAlign: "center", border: "1px solid rgba(255, 59, 48, 0.3)" }}>
-          <h2 style={{ color: "var(--ios-red)", marginBottom: 8, fontSize: 20 }}>Market Not Found</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.5 }}>
-            Unable to load market data. The API might be unavailable or the market may not exist.
+        <div
+          className="glass-card"
+          style={{
+            padding: 32,
+            textAlign: "center",
+            border: "1px solid rgba(255, 59, 48, 0.3)",
+          }}
+        >
+          <h2
+            style={{ color: "var(--ios-red)", marginBottom: 8, fontSize: 20 }}
+          >
+            Market Not Found
+          </h2>
+          <p
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: 15,
+              lineHeight: 1.5,
+            }}
+          >
+            Unable to load market data. The API might be unavailable or the
+            market may not exist.
           </p>
         </div>
       </div>
@@ -66,7 +105,7 @@ export default function MarketPage({ params }: PageProps) {
 
   return (
     <div>
-      {/* ‹ Back nav */}
+      {/* Back nav */}
       <div style={{ marginBottom: 16 }}>
         <Link
           href="/"
@@ -83,15 +122,28 @@ export default function MarketPage({ params }: PageProps) {
         </Link>
       </div>
 
-      {/* ── MARKET HEADER ── Question + YES/NO prices */}
+      {/* MARKET HEADER — question + YES/NO cards */}
       <MarketHeader slug={slug} />
 
-      {/* ── PRICE CHART ── Full width, dark, gradient fill */}
-      <div className="glass-card" style={{ padding: 20, overflow: "hidden", marginBottom: 20 }}>
-        <PriceChart tokenId={market?.tokenId ?? ""} slug={slug} />
+      {/* CHART + ORDER BOOK — two-column */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 320px",
+          gap: 16,
+          marginBottom: 20,
+        }}
+      >
+        <div className="glass-card" style={{ padding: 20, overflow: "hidden" }}>
+          <PriceChart tokenId={market?.tokenId ?? ""} slug={slug} animationKey={chartAnimKey} />
+        </div>
+        <OrderBook
+          yesPrice={market?.yesPrice ?? 0.5}
+          spread={market?.spread ?? 2.1}
+        />
       </div>
 
-      {/* ── RUN / STOP PIPELINE BUTTON ── Blue full-width */}
+      {/* RUN / STOP PIPELINE BUTTON */}
       <div style={{ marginBottom: 20 }}>
         {!pipeline.running ? (
           <button
@@ -99,24 +151,52 @@ export default function MarketPage({ params }: PageProps) {
             data-testid="run-pipeline-btn"
             style={{
               width: "100%",
-              height: 52,
+              height: 56,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
-              borderRadius: 12,
+              gap: 10,
+              borderRadius: 16,
               border: "none",
-              background: "var(--ios-blue)",
+              background:
+                "linear-gradient(135deg, #007AFF 0%, #00C6FF 100%)",
               color: "#fff",
               fontSize: 16,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: "pointer",
-              transition: "all 200ms ease",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
               fontFamily: "inherit",
+              boxShadow: "0 4px 24px rgba(0,122,255,0.35)",
+              transition: "all 200ms ease",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 6px 32px rgba(0,122,255,0.5)";
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 4px 24px rgba(0,122,255,0.35)";
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
             }}
           >
-            <span>{"\u25B6"}</span>
-            <span>Run Analysis Pipeline</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+            </svg>
+            <span>Run Pipeline</span>
           </button>
         ) : (
           <button
@@ -124,32 +204,49 @@ export default function MarketPage({ params }: PageProps) {
             data-testid="stop-pipeline-btn"
             style={{
               width: "100%",
-              height: 52,
+              height: 56,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.06)",
+              gap: 10,
+              borderRadius: 16,
+              border: "1px solid rgba(255,69,58,0.30)",
+              background: "rgba(255,69,58,0.08)",
               color: "var(--ios-red)",
               fontSize: 16,
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: "pointer",
-              transition: "all 200ms ease",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
               fontFamily: "inherit",
+              transition: "all 200ms ease",
             }}
           >
-            <span>{"\u25A0"}</span>
-            <span>Stop Pipeline</span>
+            <span style={{ fontSize: 12 }}>{"\u25A0"}</span>
+            <span className="pipeline-running-text">Running</span>
+            <style>{`
+              .pipeline-running-text::after {
+                content: '';
+                display: inline-block;
+                width: 1.5em;
+                animation: dotdotdot 1.4s steps(4, end) infinite;
+              }
+              @keyframes dotdotdot {
+                0%   { content: ''; }
+                25%  { content: '.'; }
+                50%  { content: '..'; }
+                75%  { content: '...'; }
+                100% { content: ''; }
+              }
+            `}</style>
           </button>
         )}
       </div>
 
-      {/* ── LIVE PIPELINE FEED ── Auto-expands when running */}
+      {/* LIVE PIPELINE FEED */}
       <PipelineLog />
 
-      {/* ── AGENT PIPELINE (7 cards) + SIGMA + VALIDATOR ── */}
+      {/* AGENT PIPELINE — compact grid + insight + execute bar */}
       <AgentPipeline
         market={
           market
@@ -167,7 +264,7 @@ export default function MarketPage({ params }: PageProps) {
       {/* Pipeline duration timeline */}
       <PipelineTimeline />
 
-      {/* Quantik Relay — LLM chat with agent routing */}
+      {/* Quantik Relay */}
       <RelayChat slug={slug} />
 
       {/* Trade Confirmation Modal */}

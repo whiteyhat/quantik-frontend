@@ -61,7 +61,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
         fontSize: "var(--text-subhead)",
       }}
     >
-      <div className="font-mono-data" style={{ color: "var(--ios-green)", fontWeight: 600 }}>
+      <div className="font-mono-data" style={{ color: "#BF5AF2", fontWeight: 600 }}>
         YES: {Math.round(payload[0].value * 100)}¢
       </div>
       {label && (
@@ -73,7 +73,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
+export function PriceChart({ tokenId, slug, animationKey = 0 }: { tokenId: string; slug: string; animationKey?: number }) {
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<NormalizedPoint[]>([]);
   const [isFallback, setIsFallback] = useState(false);
@@ -136,11 +136,11 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
       <div style={{ height: 280 }}>
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
+            <AreaChart key={animationKey} data={data}>
               <defs>
-                <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--ios-green)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--ios-green)" stopOpacity={0} />
+                <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#BF5AF2" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#BF5AF2" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -172,14 +172,14 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
               <Area
                 type="monotone"
                 dataKey="yes"
-                stroke="var(--ios-green)"
+                stroke="#BF5AF2"
                 strokeWidth={2}
-                fill="url(#greenGradient)"
+                fill="url(#purpleGradient)"
                 dot={false}
                 activeDot={{
                   r: 4,
-                  fill: "var(--ios-green)",
-                  stroke: "rgba(48,209,88,0.3)",
+                  fill: "#BF5AF2",
+                  stroke: "rgba(191,90,242,0.3)",
                   strokeWidth: 6,
                 }}
               />

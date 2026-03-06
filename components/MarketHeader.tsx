@@ -3,33 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, fmtUSDC } from "@/lib/api";
 
-function LiqGradeChip({ grade }: { grade: string }) {
-  const colors: Record<string, string> = {
-    A: "var(--ios-green)",
-    B: "var(--ios-blue)",
-    C: "var(--ios-orange)",
-    D: "var(--ios-red)",
-  };
-  const c = colors[grade] || "var(--text-tertiary)";
-  return (
-    <span
-      style={{
-        fontSize: 12,
-        fontWeight: 700,
-        padding: "3px 10px",
-        borderRadius: 8,
-        background: `color-mix(in srgb, ${c} 15%, transparent)`,
-        color: c,
-        border: `1px solid color-mix(in srgb, ${c} 25%, transparent)`,
-        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-        letterSpacing: "0.05em",
-      }}
-    >
-      Liq: {grade}
-    </span>
-  );
-}
-
 export function MarketHeader({ slug }: { slug: string }) {
   const { data: market } = useQuery({
     queryKey: ["market", slug],
@@ -38,10 +11,21 @@ export function MarketHeader({ slug }: { slug: string }) {
 
   if (!market) {
     return (
-      <div className="glass-card-elevated" style={{ padding: 24, marginBottom: 24 }}>
-        <div style={{ height: 24, width: 200, borderRadius: 8, background: "rgba(255,255,255,0.06)", marginBottom: 16 }} />
-        <div style={{ height: 32, width: "70%", borderRadius: 8, background: "rgba(255,255,255,0.04)", marginBottom: 20 }} />
-        <div style={{ height: 40, borderRadius: 10, background: "rgba(255,255,255,0.03)" }} />
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              <div style={{ height: 24, width: 120, borderRadius: 8, background: "rgba(255,255,255,0.06)" }} />
+              <div style={{ height: 24, width: 56, borderRadius: 8, background: "rgba(255,255,255,0.04)" }} />
+            </div>
+            <div style={{ height: 44, width: "80%", borderRadius: 8, background: "rgba(255,255,255,0.04)", marginBottom: 16 }} />
+            <div style={{ height: 20, width: "55%", borderRadius: 6, background: "rgba(255,255,255,0.03)" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 190 }}>
+            <div style={{ height: 90, borderRadius: 14, background: "rgba(48,209,88,0.08)" }} />
+            <div style={{ height: 90, borderRadius: 14, background: "rgba(255,69,58,0.08)" }} />
+          </div>
+        </div>
       </div>
     );
   }
@@ -51,100 +35,172 @@ export function MarketHeader({ slug }: { slug: string }) {
   const volume = market.volume ?? 0;
   const liquidity = market.liquidity ?? 0;
 
-  const resolutionLabel = market.resolutionDate && !isNaN(new Date(market.resolutionDate).getTime())
-    ? new Date(market.resolutionDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    : "TBD";
+  const resolutionLabel =
+    market.resolutionDate && !isNaN(new Date(market.resolutionDate).getTime())
+      ? new Date(market.resolutionDate).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      : "TBD";
+
+  const slugDisplay = market.slug?.toUpperCase().replace(/-/g, "-") ?? slug.toUpperCase();
 
   return (
-    <div className="glass-card-elevated" style={{ padding: 24, marginBottom: 24 }}>
-      {/* Top badge row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <LiqGradeChip grade={market.liquidityGrade ?? "D"} />
-        <span
-          className="font-mono-data"
-          style={{
-            fontSize: 12,
-            color: "var(--text-secondary)",
-            padding: "3px 10px",
-            borderRadius: 8,
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          Vol: {fmtUSDC(volume)}
-        </span>
-      </div>
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        {/* LEFT: ID + LIVE + question + stats */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Badge row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span
+              className="font-mono-data"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--text-secondary)",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                borderRadius: 6,
+                padding: "3px 10px",
+                letterSpacing: "0.04em",
+              }}
+            >
+              ID: {slugDisplay}
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--ios-green)",
+                background: "rgba(48,209,88,0.12)",
+                border: "1px solid rgba(48,209,88,0.25)",
+                borderRadius: 6,
+                padding: "3px 10px",
+                letterSpacing: "0.06em",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "var(--ios-green)",
+                  boxShadow: "0 0 6px var(--ios-green)",
+                  display: "inline-block",
+                }}
+              />
+              LIVE
+            </span>
+          </div>
 
-      {/* Market question */}
-      <h1
+          {/* Market question */}
+          <h1
+            style={{
+              fontSize: 30,
+              fontWeight: 800,
+              color: "var(--text-primary)",
+              margin: "0 0 16px 0",
+              lineHeight: 1.2,
+              letterSpacing: "-0.5px",
+            }}
+          >
+            {market.question}
+          </h1>
+
+          {/* Stats row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <StatPill icon="bar" label="Vol" value={fmtUSDC(volume)} />
+            <Dot />
+            <StatPill icon="drop" label="Liq" value={fmtUSDC(liquidity)} />
+            <Dot />
+            <StatPill icon="clock" label="Resolves" value={resolutionLabel} />
+          </div>
+        </div>
+
+        {/* RIGHT: YES / NO price boxes */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+          <PriceBox side="YES" cents={yesPct} color="var(--ios-green)" bg="rgba(48,209,88,0.08)" border="rgba(48,209,88,0.25)" />
+          <PriceBox side="NO" cents={noPct} color="var(--ios-red)" bg="rgba(255,69,58,0.08)" border="rgba(255,69,58,0.25)" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dot() {
+  return <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>•</span>;
+}
+
+function StatPill({ icon, label, value }: { icon: string; label: string; value: string }) {
+  const icons: Record<string, string> = {
+    bar: "📊",
+    drop: "💧",
+    clock: "⏱",
+  };
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: 13 }}>{icons[icon]}</span>
+      <span
+        className="font-mono-data"
+        style={{ fontSize: 13, color: "var(--text-secondary)" }}
+      >
+        {label}:{" "}
+        <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{value}</span>
+      </span>
+    </span>
+  );
+}
+
+function PriceBox({
+  side,
+  cents,
+  color,
+  bg,
+  border,
+}: {
+  side: "YES" | "NO";
+  cents: number;
+  color: string;
+  bg: string;
+  border: string;
+}) {
+  return (
+    <div
+      style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 14,
+        padding: "18px 28px",
+        textAlign: "center",
+        minWidth: 150,
+      }}
+    >
+      <div
         style={{
-          fontSize: 20,
+          fontSize: 11,
           fontWeight: 700,
-          color: "var(--text-primary)",
-          margin: "0 0 20px 0",
-          lineHeight: 1.3,
-          letterSpacing: "-0.3px",
+          color,
+          letterSpacing: "0.10em",
+          marginBottom: 6,
+          textTransform: "uppercase",
         }}
       >
-        {market.question}
-      </h1>
-
-      {/* YES / NO price bars — tinted glass per L004 */}
-      <div style={{ display: "flex", gap: 3, borderRadius: 10, overflow: "hidden", height: 44, marginBottom: 20 }}>
-        <div
-          style={{
-            width: `${Math.max(yesPct, 10)}%`,
-            background: "rgba(48,209,88,0.15)",
-            border: "1px solid rgba(48,209,88,0.25)",
-            borderRadius: "10px 0 0 10px",
-            display: "flex",
-            alignItems: "center",
-            paddingLeft: 16,
-            gap: 10,
-            minWidth: 70,
-            transition: "width 300ms ease",
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ios-green)" }}>YES</span>
-          <span className="font-mono-data" style={{ fontSize: 18, fontWeight: 700, color: "var(--ios-green)" }}>
-            {yesPct}¢
-          </span>
-        </div>
-        <div
-          style={{
-            width: `${Math.max(noPct, 10)}%`,
-            background: "rgba(255,69,58,0.15)",
-            border: "1px solid rgba(255,69,58,0.25)",
-            borderRadius: "0 10px 10px 0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            paddingRight: 16,
-            gap: 10,
-            minWidth: 70,
-            transition: "width 300ms ease",
-          }}
-        >
-          <span className="font-mono-data" style={{ fontSize: 18, fontWeight: 700, color: "var(--ios-red)" }}>
-            {noPct}¢
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ios-red)" }}>NO</span>
-        </div>
+        BET {side}
       </div>
-
-      {/* Stats row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        <span className="font-mono-data" style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-          24h Volume: {fmtUSDC(volume)}
-        </span>
-        <span style={{ color: "var(--text-tertiary)" }}>·</span>
-        <span className="font-mono-data" style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-          Liquidity: {fmtUSDC(liquidity)}
-        </span>
-        <span style={{ color: "var(--text-tertiary)" }}>·</span>
-        <span className="font-mono-data" style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-          Ends: {resolutionLabel}
-        </span>
+      <div
+        className="font-mono-data"
+        style={{
+          fontSize: 34,
+          fontWeight: 800,
+          color: "var(--text-primary)",
+          lineHeight: 1,
+          marginBottom: 6,
+        }}
+      >
+        {cents}¢
       </div>
     </div>
   );

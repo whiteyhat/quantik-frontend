@@ -3,8 +3,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
 const RELAY_INTRO =
   "Hi, I'm Relay \u{1F91D} \u2014 your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config. I'm here to help.";
+
+const FALLBACK_SUGGESTIONS = [
+  ["What's my current PnL?", "Show active positions"],
+  ["Any new signals?", "What's the risk status?"],
+  ["Summarize recent trades", "Show top performing markets"],
+  ["What did the agent decide?", "Any liquidation risks?"],
+  ["How is autopilot performing?", "Show my portfolio breakdown"],
+];
 
 interface Message {
   id: number;
@@ -30,6 +40,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const [hasInjectedIntro, setHasInjectedIntro] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -37,6 +48,13 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  // Focus input when sidebar opens
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 320);
+    }
+  }, [open]);
 
   // Inject intro message on first open
   useEffect(() => {
@@ -58,8 +76,10 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     const userMsg: Message = { id: nextId(), role: "user", text: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setSuggestions([]); // Clear suggestions on any send
+    setSuggestions([]);
     setSending(true);
+
+    const agentId = nextId();
 
     try {
       const history = messages.map((m) => ({
@@ -67,34 +87,77 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         content: m.text,
       }));
 
-      const res = await fetch("/api/relay", {
+      const res = await fetch(`${API_URL}/api/relay/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text.trim(), history }),
       });
 
-      let replyText: string;
-      let replySuggestions: string[] = [];
-
       if (!res.ok) {
         const errData = (await res.json().catch(() => ({}))) as { error?: string };
-        replyText = errData.error || "The intelligence network is currently unreachable. Please try again.";
-      } else {
-        const data = (await res.json()) as { reply?: string; message?: string; suggestions?: string[] };
-        replyText = data.reply ?? data.message ?? "Got it.";
-        replySuggestions = Array.isArray(data.suggestions) ? data.suggestions.slice(0, 2) : [];
+        const replyText = errData.error || "The intelligence network is currently unreachable. Please try again.";
+        setMessages((prev) => [...prev, { id: agentId, role: "agent", text: replyText }]);
+        return;
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId(), role: "agent", text: replyText },
-      ]);
-      setSuggestions(replySuggestions);
+      const contentType = res.headers.get("content-type") ?? "";
+      const isStream = contentType.includes("text/event-stream") || contentType.includes("text/plain");
+
+      if (isStream && res.body) {
+        // Insert empty agent message immediately so it streams in
+        setMessages((prev) => [...prev, { id: agentId, role: "agent", text: "" }]);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") break;
+
+            let token: string;
+            try {
+              const parsed = JSON.parse(payload) as { token?: string; text?: string; delta?: string; content?: string; suggestions?: string[] };
+              if (Array.isArray(parsed.suggestions)) {
+                setSuggestions(parsed.suggestions.slice(0, 2));
+                continue;
+              }
+              token = parsed.token ?? parsed.delta ?? parsed.text ?? parsed.content ?? "";
+            } catch {
+              token = payload;
+            }
+
+            if (token) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === agentId ? { ...m, text: m.text + token } : m
+                )
+              );
+            }
+          }
+        }
+      } else {
+        // Fallback: non-streaming JSON response
+        const data = (await res.json()) as { reply?: string; message?: string; suggestions?: string[] };
+        const replyText = data.reply ?? data.message ?? "Got it.";
+        const replySuggestions = Array.isArray(data.suggestions) ? data.suggestions.slice(0, 2) : [];
+        setMessages((prev) => [...prev, { id: agentId, role: "agent", text: replyText }]);
+        setSuggestions(replySuggestions);
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
         {
-          id: nextId(),
+          id: agentId,
           role: "agent",
           text: "Unable to reach Relay. Check your connection and try again. \u{1F91D}",
         },
@@ -102,6 +165,11 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       setSuggestions([]);
     } finally {
       setSending(false);
+      setSuggestions((prev) => {
+        if (prev.length > 0) return prev;
+        const pool = FALLBACK_SUGGESTIONS[Math.floor(Math.random() * FALLBACK_SUGGESTIONS.length)];
+        return pool;
+      });
     }
   }, [sending, messages]);
 
@@ -358,6 +426,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         }}
       >
         <textarea
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

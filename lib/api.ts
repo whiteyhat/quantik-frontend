@@ -92,6 +92,10 @@ export interface AuraResult {
   sentiment_score: number; // -1 to +1
   echo_chamber: boolean;
   echo_chamber_strength?: number;
+  newsHeadlines?: string[];
+  newsArticles?: { title: string; url: string; source: string }[];
+  sourcesUsed?: string[];
+  sourceStatus?: Record<string, string>;
 }
 
 export interface FluxResult {
