@@ -1,44 +1,45 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { api, type OrderBookLevel } from "@/lib/api";
+
 interface OrderBookProps {
+  tokenId: string;
   yesPrice: number;
-  spread?: number;
 }
 
 function fmtCents(v: number): string {
-  return `${(v * 100).toFixed(1)}\u00A2`;
+  return `${(v * 100).toFixed(1)}¢`;
 }
 
 function fmtK(n: number): string {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
 }
 
 function fmtDollar(n: number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
-export function OrderBook({ yesPrice, spread = 0.02 }: OrderBookProps) {
-  const p = yesPrice;
-  const s = spread / 100; // spread is in cents, convert to fraction
+export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["orderbook", tokenId],
+    queryFn: () => api.getOrderBook(tokenId),
+    enabled: Boolean(tokenId),
+    refetchInterval: 10_000,
+  });
 
-  // Asks: prices above market (sells)
-  const asks = [
-    { price: p + s * 0.4, amount: 1500 },
-    { price: p + s * 1.0, amount: 8100 },
-    { price: p + s * 2.0, amount: 4200 },
-  ];
+  const asks: OrderBookLevel[] = data?.asks?.slice(0, 3) ?? [];
+  const bids: OrderBookLevel[] = data?.bids?.slice(0, 3) ?? [];
+  const midPrice = yesPrice * 100;
 
-  // Bids: prices below market (buys)
-  const bids = [
-    { price: p - s * 0.05, amount: 12400 },
-    { price: p - s * 0.25, amount: 6200 },
-    { price: p - s * 0.5, amount: 24100 },
-  ];
+  const bestAsk = asks[0]?.price ?? 0;
+  const bestBid = bids[0]?.price ?? 0;
+  const spreadCents = bestAsk > 0 && bestBid > 0
+    ? ((bestAsk - bestBid) * 100).toFixed(1)
+    : null;
 
-  const midPrice = p * 100;
-
-  const maxAskTotal = Math.max(...asks.map((a) => a.price * a.amount));
-  const maxBidTotal = Math.max(...bids.map((b) => b.price * b.amount));
+  const maxAskTotal = asks.length ? Math.max(...asks.map((a) => a.price * a.size)) : 1;
+  const maxBidTotal = bids.length ? Math.max(...bids.map((b) => b.price * b.size)) : 1;
 
   return (
     <div
@@ -46,114 +47,97 @@ export function OrderBook({ yesPrice, spread = 0.02 }: OrderBookProps) {
       style={{ padding: 20, display: "flex", flexDirection: "column", height: "100%" }}
     >
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
-        <span
-          style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}
-        >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           Order Book
         </span>
-        <span
-          className="font-mono-data"
-          style={{ fontSize: 12, color: "var(--text-secondary)" }}
-        >
-          Spread:{" "}
-          <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-            {spread.toFixed(1)}\u00A2
+        {spreadCents && (
+          <span className="font-mono-data" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            Spread:{" "}
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{spreadCents}¢</span>
           </span>
-        </span>
+        )}
       </div>
 
-      {/* Column headers */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 4,
-          marginBottom: 6,
-          padding: "0 10px",
-        }}
-      >
-        {["PRICE", "AMOUNT", "TOTAL"].map((h) => (
-          <span
-            key={h}
-            className="font-mono-data"
+      {isLoading ? (
+        <OrderBookSkeleton />
+      ) : asks.length === 0 && bids.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          {/* Column headers */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 6, padding: "0 10px" }}>
+            {["PRICE", "SIZE", "TOTAL"].map((h) => (
+              <span
+                key={h}
+                className="font-mono-data"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--text-tertiary)",
+                  letterSpacing: "0.08em",
+                  textAlign: h === "TOTAL" ? "right" : "left",
+                }}
+              >
+                {h}
+              </span>
+            ))}
+          </div>
+
+          {/* Asks (sells — red) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
+            {asks.map((row, i) => {
+              const total = row.price * row.size;
+              return (
+                <OrderRow
+                  key={i}
+                  price={fmtCents(row.price)}
+                  amount={fmtK(row.size)}
+                  total={fmtDollar(total)}
+                  color="var(--ios-red)"
+                  depth={total / maxAskTotal}
+                  side="ask"
+                />
+              );
+            })}
+          </div>
+
+          {/* Mid price */}
+          <div
             style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--text-tertiary)",
-              letterSpacing: "0.08em",
-              textAlign: h === "TOTAL" ? "right" : "left",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px 0",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              marginBottom: 8,
             }}
           >
-            {h}
-          </span>
-        ))}
-      </div>
+            <span className="font-mono-data" style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
+              {midPrice.toFixed(1)}¢ USD
+            </span>
+          </div>
 
-      {/* Asks (sells — red) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
-        {asks.map((row, i) => {
-          const total = row.price * row.amount;
-          const depth = total / maxAskTotal;
-          return (
-            <OrderRow
-              key={i}
-              price={fmtCents(row.price)}
-              amount={fmtK(row.amount)}
-              total={fmtDollar(total)}
-              color="var(--ios-red)"
-              depth={depth}
-              side="ask"
-            />
-          );
-        })}
-      </div>
-
-      {/* Mid price separator */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "8px 0",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          marginBottom: 8,
-        }}
-      >
-        <span
-          className="font-mono-data"
-          style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}
-        >
-          {midPrice.toFixed(1)}\u00A2 USD
-        </span>
-      </div>
-
-      {/* Bids (buys — green) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {bids.map((row, i) => {
-          const total = row.price * row.amount;
-          const depth = total / maxBidTotal;
-          return (
-            <OrderRow
-              key={i}
-              price={fmtCents(row.price)}
-              amount={fmtK(row.amount)}
-              total={fmtDollar(total)}
-              color="var(--ios-green)"
-              depth={depth}
-              side="bid"
-            />
-          );
-        })}
-      </div>
+          {/* Bids (buys — green) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {bids.map((row, i) => {
+              const total = row.price * row.size;
+              return (
+                <OrderRow
+                  key={i}
+                  price={fmtCents(row.price)}
+                  amount={fmtK(row.size)}
+                  total={fmtDollar(total)}
+                  color="var(--ios-green)"
+                  depth={total / maxBidTotal}
+                  side="bid"
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -185,7 +169,6 @@ function OrderRow({
         overflow: "hidden",
       }}
     >
-      {/* Depth background bar */}
       <div
         style={{
           position: "absolute",
@@ -193,40 +176,39 @@ function OrderRow({
           bottom: 0,
           right: 0,
           width: `${depth * 100}%`,
-          background:
-            side === "ask"
-              ? "rgba(255,69,58,0.07)"
-              : "rgba(48,209,88,0.07)",
+          background: side === "ask" ? "rgba(255,69,58,0.07)" : "rgba(48,209,88,0.07)",
           pointerEvents: "none",
         }}
       />
-      <span
-        className="font-mono-data"
-        style={{ fontSize: 13, fontWeight: 600, color, zIndex: 1 }}
-      >
-        {price}
-      </span>
-      <span
-        className="font-mono-data"
-        style={{
-          fontSize: 13,
-          color: "var(--text-secondary)",
-          zIndex: 1,
-        }}
-      >
-        {amount}
-      </span>
-      <span
-        className="font-mono-data"
-        style={{
-          fontSize: 13,
-          color: "var(--text-secondary)",
-          textAlign: "right",
-          zIndex: 1,
-        }}
-      >
-        {total}
-      </span>
+      <span className="font-mono-data" style={{ fontSize: 13, fontWeight: 600, color, zIndex: 1 }}>{price}</span>
+      <span className="font-mono-data" style={{ fontSize: 13, color: "var(--text-secondary)", zIndex: 1 }}>{amount}</span>
+      <span className="font-mono-data" style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "right", zIndex: 1 }}>{total}</span>
+    </div>
+  );
+}
+
+function OrderBookSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {[...Array(7)].map((_, i) => (
+        <div
+          key={i}
+          style={{
+            height: 24,
+            borderRadius: 4,
+            background: "rgba(255,255,255,0.04)",
+            opacity: 1 - i * 0.1,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", fontSize: 12 }}>
+      No order book data available
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { api, runPipeline } from "@/lib/api";
@@ -26,18 +26,6 @@ export default function MarketPage({ params }: PageProps) {
   const pipelineReset = useQuantikStore((s) => s.pipelineReset);
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [cancelPipeline, setCancelPipeline] = useState<(() => void) | null>(null);
-  const [chartAnimKey, setChartAnimKey] = useState(0);
-  const pipelineWasRunning = useRef(false);
-
-  // Re-animate chart when pipeline completes
-  useEffect(() => {
-    if (pipeline.running) {
-      pipelineWasRunning.current = true;
-    } else if (pipelineWasRunning.current) {
-      pipelineWasRunning.current = false;
-      setChartAnimKey((k) => k + 1);
-    }
-  }, [pipeline.running]);
 
   const { data: market, isError } = useQuery({
     queryKey: ["market", slug],
@@ -135,11 +123,11 @@ export default function MarketPage({ params }: PageProps) {
         }}
       >
         <div className="glass-card" style={{ padding: 20, overflow: "hidden" }}>
-          <PriceChart tokenId={market?.tokenId ?? ""} slug={slug} animationKey={chartAnimKey} />
+          <PriceChart tokenId={market?.tokenId ?? ""} slug={slug} />
         </div>
         <OrderBook
+          tokenId={market?.tokenId ?? ""}
           yesPrice={market?.yesPrice ?? 0.5}
-          spread={market?.spread ?? 2.1}
         />
       </div>
 

@@ -78,6 +78,11 @@ export interface Order {
   status: "OPEN" | "FILLED" | "CANCELLED";
 }
 
+export interface OrderBookLevel {
+  price: number;
+  size: number;
+}
+
 export interface PipelineResult {
   aura?: AuraResult;
   flux?: FluxResult;
@@ -284,6 +289,16 @@ export const api = {
       return Array.isArray(res) ? res : [];
     } catch {
       return [];
+    }
+  },
+
+  getOrderBook: async (tokenId: string): Promise<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }> => {
+    try {
+      const res = await apiFetch<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }>(`/api/markets/${tokenId}/orderbook`);
+      if (res && Array.isArray(res.bids) && Array.isArray(res.asks)) return res;
+      return { bids: [], asks: [] };
+    } catch {
+      return { bids: [], asks: [] };
     }
   },
 

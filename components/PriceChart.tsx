@@ -73,7 +73,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-export function PriceChart({ tokenId, slug, animationKey = 0 }: { tokenId: string; slug: string; animationKey?: number }) {
+export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<NormalizedPoint[]>([]);
   const [isFallback, setIsFallback] = useState(false);
@@ -136,7 +136,7 @@ export function PriceChart({ tokenId, slug, animationKey = 0 }: { tokenId: strin
       <div style={{ height: 280 }}>
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart key={animationKey} data={data}>
+            <AreaChart data={data}>
               <defs>
                 <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#BF5AF2" stopOpacity={0.35} />

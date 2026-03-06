@@ -134,38 +134,87 @@ function SentimentGauge({ score }: { score: number }) {
   );
 }
 
-/* ── Oracle compare chart (Oracle prob vs market-implied) ────────────────────── */
+/* ── Oracle probability ring ─────────────────────────────────────────────────── */
 
-function OracleCompareChart({ prob, market }: { prob: number; market: number }) {
+function ProbabilityRing({ prob, market }: { prob: number; market: number }) {
   const [animated, setAnimated] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  const bars = [
-    { label: "Model", value: prob, color: "var(--ios-purple)" },
-    { label: "Market", value: market, color: "rgba(255,255,255,0.22)" },
-  ];
+  // SVG dimensions
+  const size = 96;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Outer ring: oracle prob (purple)
+  const R_OUTER = 38;
+  const STROKE_OUTER = 7;
+  const circOuter = 2 * Math.PI * R_OUTER;
+  const fillOuter = animated ? circOuter * Math.max(prob, 0.02) : 0;
+
+  // Inner ring: market implied (dim white)
+  const R_INNER = 27;
+  const STROKE_INNER = 5;
+  const circInner = 2 * Math.PI * R_INNER;
+  const fillInner = animated ? circInner * Math.max(market, 0.02) : 0;
+
+  // Rotate so arcs start from top (-90deg)
+  const rotate = "rotate(-90 48 48)";
+
+  const delta = prob - market;
+  const deltaColor = delta > 0.02 ? "var(--ios-green)" : delta < -0.02 ? "var(--ios-red)" : "var(--text-tertiary)";
+  const deltaSign = delta >= 0 ? "+" : "";
 
   return (
-    <div style={{ display: "flex", gap: 8, height: 44, margin: "8px 4px 4px", alignItems: "flex-end" }}>
-      {bars.map(({ label, value, color }) => (
-        <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, height: "100%" }}>
-          <div style={{ flex: 1, width: "100%", background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-            <div
-              style={{
-                width: "100%",
-                height: animated ? `${Math.max(value * 100, 4)}%` : "0%",
-                background: color,
-                borderRadius: 3,
-                transition: "height 800ms ease",
-              }}
-            />
-          </div>
-          <span style={{ fontSize: 9, color: "var(--text-tertiary)", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{label}</span>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "6px 0 2px" }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Outer track */}
+        <circle cx={cx} cy={cy} r={R_OUTER} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={STROKE_OUTER} />
+        {/* Outer fill — oracle */}
+        <circle
+          cx={cx} cy={cy} r={R_OUTER}
+          fill="none"
+          stroke="var(--ios-purple)"
+          strokeWidth={STROKE_OUTER}
+          strokeLinecap="round"
+          strokeDasharray={`${fillOuter} ${circOuter}`}
+          transform={rotate}
+          style={{ transition: "stroke-dasharray 900ms cubic-bezier(0.34,1.56,0.64,1)" }}
+        />
+        {/* Inner track */}
+        <circle cx={cx} cy={cy} r={R_INNER} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={STROKE_INNER} />
+        {/* Inner fill — market */}
+        <circle
+          cx={cx} cy={cy} r={R_INNER}
+          fill="none"
+          stroke="rgba(255,255,255,0.30)"
+          strokeWidth={STROKE_INNER}
+          strokeLinecap="round"
+          strokeDasharray={`${fillInner} ${circInner}`}
+          transform={rotate}
+          style={{ transition: "stroke-dasharray 900ms cubic-bezier(0.34,1.56,0.64,1) 100ms" }}
+        />
+        {/* Center: delta label */}
+        <text x={cx} y={cy - 3} textAnchor="middle" fontSize="10" fontWeight="700" fill={deltaColor} fontFamily="'SF Mono','JetBrains Mono',monospace">
+          {deltaSign}{Math.round(delta * 100)}%
+        </text>
+        <text x={cx} y={cy + 9} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.35)" fontFamily="'SF Mono','JetBrains Mono',monospace" letterSpacing="0.04em">
+          EDGE
+        </text>
+      </svg>
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 12, marginTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--ios-purple)" }} />
+          <span style={{ fontSize: 9, color: "var(--text-tertiary)", letterSpacing: "0.04em" }}>MODEL</span>
         </div>
-      ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "rgba(255,255,255,0.30)" }} />
+          <span style={{ fontSize: 9, color: "var(--text-tertiary)", letterSpacing: "0.04em" }}>MARKET</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -358,10 +407,7 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
           <div style={{ fontSize: 11, color: "var(--ios-purple)", textAlign: "center", marginBottom: 2 }}>
             {"±"}{conf.toFixed(1)}% Confidence
           </div>
-          <OracleCompareChart prob={prob} market={market} />
-          <div className="font-mono-data" style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", letterSpacing: "0.06em" }}>
-            MARKET: {Math.round(market * 100)}% {"·"} MODEL: {Math.round(prob * 100)}%
-          </div>
+          <ProbabilityRing prob={prob} market={market} />
         </>
       ) : (
         <IdlePlaceholder status={status} />
