@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://quantik-backend-production.up.railway.app";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export interface ExecutedTrade {
   id?: string;

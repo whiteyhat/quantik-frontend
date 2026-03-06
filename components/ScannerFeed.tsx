@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { HelpTooltip } from "./ui/HelpTooltip";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://quantik-backend-production.up.railway.app";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export type Recommendation = "BET_YES" | "BET_NO" | "VETO" | "SKIP";
 

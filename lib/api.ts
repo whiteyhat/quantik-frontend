@@ -394,6 +394,10 @@ export const api = {
   },
 
   // Monitoring (L5)
+  getPerformanceSummary: async (): Promise<any> => {
+    return apiFetch("/api/performance/summary");
+  },
+
   getBrierScores: async (): Promise<BrierEntry[]> => {
     try {
       const res = await apiFetch<BrierEntry[]>("/api/monitoring/brier");

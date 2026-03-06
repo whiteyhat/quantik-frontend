@@ -7,6 +7,7 @@ import {
   type AttributionEntry,
   type DriftStatus,
   type CalibrationEntry,
+  fmtUSDC,
 } from "@/lib/api";
 import { HelpTooltip } from "./ui/HelpTooltip";
 
@@ -390,47 +391,26 @@ export function PerformancePanel() {
 // ─── Compact summary for dashboard ───────────────────────────────────────────
 
 export function PerformanceSummaryWidget() {
-  const [drift, setDrift] = useState<DriftStatus | null>(null);
-  const [brier, setBrier] = useState<BrierEntry[]>([]);
-  const [topAgent, setTopAgent] = useState<CalibrationEntry | null>(null);
-  const [attribution, setAttribution] = useState<AttributionEntry[]>([]);
+  const [summary, setSummary] = useState<any>(null);
 
   useEffect(() => {
     function fetchAll() {
-      api.getDriftStatus().then(setDrift).catch(() => {});
-      api.getBrierScores().then(setBrier).catch(() => {});
-      api.getAttribution().then(setAttribution).catch(() => {});
-      api
-        .getCalibration()
-        .then((c) => {
-          if (c.length > 0) {
-            setTopAgent(c.reduce((a, b) => (b.weight > a.weight ? b : a)));
-          }
-        })
-        .catch(() => {});
+      api.getPerformanceSummary().then(setSummary).catch(() => {});
     }
     fetchAll();
-    const iv = setInterval(fetchAll, 60_000);
+    const iv = setInterval(fetchAll, 30_000);
     return () => clearInterval(iv);
   }, []);
 
-  const avgBrier =
-    brier.length > 0
-      ? brier.reduce((sum, b) => sum + b.score, 0) / brier.length
-      : null;
+  if (!summary) return <div style={panelStyle}>Loading performance summary...</div>;
 
-  const microOk = drift?.microstructure === "clear";
-  const conceptOk = drift?.concept === "clear";
-
-  // Enrichment: calculate hit rate from attribution
-  const totalTradesCount = attribution.reduce((acc: number, a: AttributionEntry) => acc + a.count, 0);
-  const avgHitRate = totalTradesCount > 0 
-    ? attribution.reduce((acc: number, a: AttributionEntry) => acc + (a.hitRate * a.count), 0) / totalTradesCount 
-    : null;
+  const winRate = (summary.winRate * 100).toFixed(1);
+  const pnlColor = summary.pnlToday >= 0 ? "#30d158" : "#ff453a";
+  const streak = summary.metrics?.currentStreak ?? 0;
 
   return (
     <div style={panelStyle}>
-      <div style={{ marginBottom: 10 }}>
+      <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <h2
             style={{
@@ -442,9 +422,9 @@ export function PerformanceSummaryWidget() {
               textTransform: "uppercase",
             }}
           >
-            Performance
+            Performance Summary
           </h2>
-          <HelpTooltip text="Summary of platform effectiveness. Brier score measures prediction error (lower is better), and Hit Rate measures winning signal percentage." />
+          <HelpTooltip text="Unified performance tracking. Real-time Win Rate, P&L, and logic-branch attribution from the Layer 5 monitoring engine." />
         </div>
         <span
           style={{
@@ -455,104 +435,68 @@ export function PerformanceSummaryWidget() {
             letterSpacing: "0.03em",
           }}
         >
-          Layer 5 summary
+          Layer 5 Unified Dashboard
         </span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Avg Hit Rate */}
-        {avgHitRate !== null && (
-          <span
-            style={{
-              fontSize: LABEL_SIZE,
-              fontWeight: 700,
-              fontFamily: '"SF Mono", monospace',
-              padding: "3px 8px",
-              borderRadius: 6,
-              background: "rgba(10,132,255,0.12)",
-              color: "#0a84ff",
-              border: "1px solid rgba(10,132,255,0.25)",
-            }}
-          >
-            Hit Rate {(avgHitRate * 100).toFixed(1)}%
-          </span>
-        )}
-
-        {/* Avg Brier */}
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            fontWeight: 700,
-            fontFamily: '"SF Mono", monospace',
-            padding: "3px 8px",
-            borderRadius: 6,
-            background: avgBrier !== null ? brierBg(avgBrier) : "rgba(255,255,255,0.06)",
-            color: avgBrier !== null ? brierColor(avgBrier) : "rgba(255,255,255,0.30)",
-            border: `1px solid ${avgBrier !== null ? brierColor(avgBrier) + "40" : "rgba(255,255,255,0.08)"}`,
-          }}
-        >
-          Brier {avgBrier !== null ? avgBrier.toFixed(3) : "···"}
-        </span>
-
-        {/* Drift badges */}
-        {drift && (
-          <>
-            <span
-              style={{
-                fontSize: LABEL_SIZE,
-                fontWeight: 700,
-                fontFamily: "monospace",
-                padding: "3px 8px",
-                borderRadius: 6,
-                background: microOk ? "rgba(48,209,88,0.12)" : "rgba(255,69,58,0.12)",
-                color: microOk ? "#30d158" : "#ff453a",
-                border: `1px solid ${microOk ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)"}`,
-              }}
-            >
-              Micro {microOk ? "OK" : "DRIFT"}
-            </span>
-            <span
-              style={{
-                fontSize: LABEL_SIZE,
-                fontWeight: 700,
-                fontFamily: "monospace",
-                padding: "3px 8px",
-                borderRadius: 6,
-                background: conceptOk ? "rgba(48,209,88,0.12)" : "rgba(255,69,58,0.12)",
-                color: conceptOk ? "#30d158" : "#ff453a",
-                border: `1px solid ${conceptOk ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)"}`,
-              }}
-            >
-              Concept {conceptOk ? "OK" : "DRIFT"}
-            </span>
-          </>
-        )}
-
-        {/* Top agent */}
-        {topAgent && (
-          <span
-            style={{
-              fontSize: LABEL_SIZE,
-              fontWeight: 700,
-              fontFamily: "monospace",
-              padding: "3px 8px",
-              borderRadius: 6,
-              background: "rgba(191,90,242,0.12)",
-              color: "#bf5af2",
-              border: "1px solid rgba(191,90,242,0.25)",
-            }}
-          >
-            Top: {topAgent.agent}
-          </span>
-        )}
+      {/* Primary Metrics */}
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>WIN RATE</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#30d158", fontFamily: "monospace" }}>{winRate}%</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>DAILY P&L</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: pnlColor, fontFamily: "monospace" }}>
+            {summary.pnlToday >= 0 ? "+" : ""}{fmtUSDC(summary.pnlToday)}
+          </div>
+        </div>
       </div>
+
+      {/* Rich Details */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Active Streak</span>
+          <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: streak >= 0 ? "#30d158" : "#ff453a", fontFamily: "monospace" }}>
+            {streak > 0 ? `+${streak}` : streak}
+          </span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Best Trade</span>
+          <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: "#30d158", fontFamily: "monospace" }}>
+            {summary.metrics?.bestTrade?.split("-")[0].toUpperCase() ?? "N/A"} (+{fmtUSDC(summary.metrics?.bestPnl)})
+          </span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Cumulative Vol</span>
+          <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.85)", fontFamily: "monospace" }}>
+            {fmtUSDC(summary.metrics?.totalVolume)}
+          </span>
+        </div>
+      </div>
+
+      {/* Alpha Decay Status */}
+      {summary.alphaDecay && (
+        <div style={{ 
+          marginTop: 12, 
+          padding: "8px 12px", 
+          borderRadius: 8, 
+          background: summary.alphaDecay.detected ? "rgba(255,69,58,0.10)" : "rgba(48,209,88,0.08)",
+          border: `1px solid ${summary.alphaDecay.detected ? "rgba(255,69,58,0.20)" : "rgba(48,209,88,0.15)"}`
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, color: summary.alphaDecay.detected ? "#ff453a" : "#30d158" }}>
+              ALPHA HEALTH
+            </span>
+            <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "rgba(255,255,255,0.40)" }}>
+              {Math.round(summary.alphaDecay.rollingHitRate * 100)}% ROLLING
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: 10, lineHeight: 1.3, color: "rgba(255,255,255,0.50)" }}>
+            {summary.alphaDecay.recommendation}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

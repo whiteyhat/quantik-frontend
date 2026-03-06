@@ -25,7 +25,7 @@ export default function AutopilotPage() {
           >
             ⚡ AUTOPILOT
           </h1>
-          <HelpTooltip text="The autonomous trade execution engine. In this mode, the consensus of all 7 agents leads to automatic trade placement on the Polymarket CLOB." />
+          <HelpTooltip text="The autonomous trade execution engine. In this mode, the consensus of all 7 agents leads to automatic trade placement on the Polymarket CLOB without human intervention." />
         </div>
         <p
           style={{
@@ -55,11 +55,7 @@ export default function AutopilotPage() {
 
       {/* Main grid: Scanner (60%) + Execution Log (40%) */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "60fr 40fr",
-          gap: 16,
-        }}
+        className="grid grid-cols-1 lg:grid-cols-[60fr_40fr] gap-4"
       >
         {/* Scanner Feed */}
         <div
@@ -74,7 +70,7 @@ export default function AutopilotPage() {
         >
           <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", margin: 0, textTransform: "uppercase" }}>Live Scanner</h2>
-            <HelpTooltip text="The real-time analysis engine. Shows every market being processed by our 7 specialist agents." />
+            <HelpTooltip text="The real-time surveillance engine. It continuously monitors hundreds of markets, running the 7-agent pipeline on any that meet volatility and liquidity thresholds." />
           </div>
           <ScannerFeed />
         </div>
@@ -95,7 +91,7 @@ export default function AutopilotPage() {
         >
           <div style={{ display: "flex", alignItems: "center" }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", margin: 0, textTransform: "uppercase" }}>Executions</h2>
-            <HelpTooltip text="Audit trail of trades placed by the autopilot engine. Tracks order IDs and fill status." />
+            <HelpTooltip text="Audit trail of all orders submitted by the autopilot. In live mode, these are real CLOB transactions. In paper mode, these are locally tracked simulations." />
           </div>
           <ExecutionLog />
           <TelegramWebhookEditor />
