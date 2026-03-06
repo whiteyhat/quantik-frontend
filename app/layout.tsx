@@ -17,6 +17,7 @@ import { VersionLogButton } from "@/components/VersionLog";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: "🏠" },
+  { label: "Arena", href: "/arena", icon: "🕹️" },
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Portfolio", href: "/portfolio", icon: "💼" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
