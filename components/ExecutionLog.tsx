@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -71,6 +72,7 @@ function EmptyState() {
 
 export function ExecutionLog() {
   const [trades, setTrades] = useState<ExecutedTrade[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   const fetchTrades = async () => {
     try {
@@ -96,7 +98,7 @@ export function ExecutionLog() {
   };
 
   useEffect(() => {
-    fetchTrades();
+    fetchTrades().finally(() => setLoaded(true));
     const iv = setInterval(fetchTrades, 20_000);
     return () => clearInterval(iv);
   }, []);
@@ -129,7 +131,18 @@ export function ExecutionLog() {
         </span>
       </div>
 
-      {trades.length === 0 ? (
+      {!loaded ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <Skeleton width={16} height={14} borderRadius={3} />
+              <Skeleton width="50%" height={12} borderRadius={4} />
+              <Skeleton width={50} height={11} borderRadius={4} style={{ marginLeft: "auto" }} />
+              <Skeleton width={40} height={11} borderRadius={4} />
+            </div>
+          ))}
+        </div>
+      ) : trades.length === 0 ? (
         <EmptyState />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

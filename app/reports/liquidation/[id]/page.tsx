@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -550,17 +551,32 @@ export default function LiquidationReportPage({
 
   if (loading) {
     return (
-      <div
-        style={{
-          ...panelStyle,
-          textAlign: "center",
-          padding: 60,
-          color: "rgba(255,255,255,0.25)",
-          fontSize: BODY_SIZE,
-          fontFamily: "monospace",
-        }}
-      >
-        Loading liquidation report…
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 1000 }}>
+        <div>
+          <Skeleton width={200} height={22} borderRadius={6} style={{ marginBottom: 8 }} />
+          <Skeleton width={300} height={12} borderRadius={4} />
+        </div>
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ ...panelStyle, padding: "18px 20px", flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 10 }}>
+              <Skeleton width={80} height={10} borderRadius={4} />
+              <Skeleton width={100} height={24} borderRadius={6} />
+              <Skeleton width={120} height={10} borderRadius={4} />
+            </div>
+          ))}
+        </div>
+        <div style={panelStyle}>
+          <Skeleton width={160} height={14} borderRadius={4} style={{ marginBottom: 16 }} />
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ display: "flex", gap: 20, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <Skeleton width="25%" height={13} borderRadius={4} />
+              <Skeleton width="15%" height={13} borderRadius={4} />
+              <Skeleton width="15%" height={13} borderRadius={4} />
+              <Skeleton width="15%" height={13} borderRadius={4} />
+              <Skeleton width={60} height={20} borderRadius={20} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

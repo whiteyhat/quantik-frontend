@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Signal } from "@/lib/api";
+import { SkeletonRow } from "./ui/skeleton";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,15 +91,10 @@ export function RecentSignals() {
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }} data-testid="recent-signals">
       {loading ? (
         <div
-          style={{
-            padding: "20px 0",
-            textAlign: "center",
-            fontSize: 13,
-            color: "rgba(255,255,255,0.25)",
-          }}
+          style={{ display: "flex", flexDirection: "column", gap: 7 }}
           data-testid="signals-loading"
         >
-          Loading signals...
+          {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
         </div>
       ) : error ? (
         <div

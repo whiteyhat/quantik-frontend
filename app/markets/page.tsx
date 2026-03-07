@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { api, fmtUSDC, streamPrices, type Market } from "@/lib/api";
+import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -359,14 +360,14 @@ export default function MarketsPage() {
       {loading ? (
         <div
           style={{
-            ...panelStyle,
-            padding: 40,
-            textAlign: "center",
-            fontSize: BODY_SIZE,
-            color: "rgba(255,255,255,0.25)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gap: 14,
           }}
         >
-          Loading markets…
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <SkeletonCard key={i} height={160} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div

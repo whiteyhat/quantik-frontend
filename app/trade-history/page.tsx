@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtUSDC, fmtPrice, type Trade } from "@/lib/api";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { Skeleton, SkeletonTableRows } from "@/components/ui/skeleton";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -162,8 +163,15 @@ export default function TradeHistoryPage() {
           gap: 12,
         }}
       >
-        {[
-          {
+        {loading ? (
+          [1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ ...panelStyle, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <Skeleton width={80} height={10} borderRadius={4} />
+              <Skeleton width={100} height={20} borderRadius={6} />
+            </div>
+          ))
+        ) : (
+          [{
             label: "Total Trades",
             value: String(filtered.length),
             color: "rgba(255,255,255,0.92)",
@@ -182,34 +190,34 @@ export default function TradeHistoryPage() {
             label: "Wins / Losses",
             value: `${wins} / ${losses}`,
             color: "rgba(255,255,255,0.70)",
-          },
-        ].map((m) => (
-          <div key={m.label} style={{ ...panelStyle, padding: "14px 18px" }}>
-            <span
-              style={{
-                display: "block",
-                fontSize: LABEL_SIZE,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.30)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                marginBottom: 4,
-              }}
-            >
-              {m.label}
-            </span>
-            <span
-              style={{
-                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                fontSize: 20,
-                fontWeight: 700,
-                color: m.color,
-              }}
-            >
-              {m.value}
-            </span>
-          </div>
-        ))}
+          }].map((m) => (
+            <div key={m.label} style={{ ...panelStyle, padding: "14px 18px" }}>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: LABEL_SIZE,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.30)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: 4,
+                }}
+              >
+                {m.label}
+              </span>
+              <span
+                style={{
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: m.color,
+                }}
+              >
+                {m.value}
+              </span>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Filter bar */}
@@ -275,15 +283,36 @@ export default function TradeHistoryPage() {
       {/* Table */}
       <div style={panelStyle}>
         {loading ? (
-          <div
-            style={{
-              padding: "32px 0",
-              textAlign: "center",
-              fontSize: BODY_SIZE,
-              color: "rgba(255,255,255,0.25)",
-            }}
-          >
-            Loading trade history…
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {["Date", "Market", "Direction", "Size", "Price", "Outcome", "P&L"].map(
+                    (col) => (
+                      <th
+                        key={col}
+                        style={{
+                          padding: "8px 12px",
+                          textAlign: "left",
+                          fontSize: LABEL_SIZE,
+                          fontWeight: 700,
+                          color: "rgba(255,255,255,0.25)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          borderBottom: "1px solid rgba(255,255,255,0.06)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {col}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                <SkeletonTableRows rows={5} cols={7} />
+              </tbody>
+            </table>
           </div>
         ) : error ? (
           <div

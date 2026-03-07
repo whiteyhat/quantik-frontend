@@ -11,6 +11,7 @@ import {
   fmtUSDC,
 } from "@/lib/api";
 import { HelpTooltip } from "./ui/HelpTooltip";
+import { Skeleton } from "./ui/skeleton";
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 
@@ -57,13 +58,16 @@ export function PerformancePanel() {
   const [attribution, setAttribution] = useState<AttributionEntry[]>([]);
   const [drift, setDrift] = useState<DriftStatus | null>(null);
   const [calibration, setCalibration] = useState<CalibrationEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     function fetchAll() {
-      api.getBrierScores().then(setBrier).catch(() => {});
-      api.getAttribution().then(setAttribution).catch(() => {});
-      api.getDriftStatus().then(setDrift).catch(() => {});
-      api.getCalibration().then(setCalibration).catch(() => {});
+      Promise.allSettled([
+        api.getBrierScores().then(setBrier),
+        api.getAttribution().then(setAttribution),
+        api.getDriftStatus().then(setDrift),
+        api.getCalibration().then(setCalibration),
+      ]).then(() => setLoaded(true));
     }
     fetchAll();
     const iv = setInterval(fetchAll, 60_000);
@@ -129,7 +133,16 @@ export function PerformancePanel() {
             marginTop: 8,
           }}
         >
-          {brier.length === 0 ? (
+          {!loaded ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", borderRadius: 6, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <Skeleton width="55%" height={12} borderRadius={4} />
+                  <Skeleton width={40} height={14} borderRadius={4} />
+                </div>
+              ))}
+            </div>
+          ) : brier.length === 0 ? (
             <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
               No scores yet
             </span>
@@ -204,7 +217,19 @@ export function PerformancePanel() {
             marginTop: 8,
           }}
         >
-          {attribution.length === 0 ? (
+          {!loaded ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <Skeleton width={80} height={12} borderRadius={4} />
+                    <Skeleton width={30} height={12} borderRadius={4} />
+                  </div>
+                  <Skeleton width="100%" height={5} borderRadius={3} />
+                </div>
+              ))}
+            </div>
+          ) : attribution.length === 0 ? (
             <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
               No data
             </span>
@@ -282,9 +307,10 @@ export function PerformancePanel() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {drift === null ? (
-            <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
-              Loading…
-            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Skeleton width="50%" height={32} borderRadius={8} />
+              <Skeleton width="50%" height={32} borderRadius={8} />
+            </div>
           ) : (
             <>
               {(["microstructure", "concept"] as const).map((key) => {
@@ -374,15 +400,7 @@ export function PerformancePanel() {
             </span>
           </div>
         ) : (
-          <span
-            style={{
-              fontSize: META_SIZE,
-              fontFamily: "monospace",
-              color: "rgba(255,255,255,0.30)",
-            }}
-          >
-            ···
-          </span>
+          <Skeleton width={80} height={14} borderRadius={4} />
         )}
       </div>
     </div>
@@ -407,7 +425,30 @@ export function PerformanceSummaryWidget() {
   }, []);
 
   if (error) return <div style={{ ...panelStyle, flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)" }}>Failed to load performance data</span></div>;
-  if (!summary) return <div style={{ ...panelStyle, flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>Loading performance summary...</span></div>;
+  if (!summary) return (
+    <div style={{ ...panelStyle, flex: 1 }}>
+      <Skeleton width={160} height={14} borderRadius={4} style={{ marginBottom: 8 }} />
+      <Skeleton width={100} height={10} borderRadius={3} style={{ marginBottom: 16 }} />
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+          <Skeleton width={60} height={10} borderRadius={3} />
+          <Skeleton width={80} height={24} borderRadius={6} />
+        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+          <Skeleton width={60} height={10} borderRadius={3} />
+          <Skeleton width={100} height={24} borderRadius={6} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+            <Skeleton width={90} height={13} borderRadius={4} />
+            <Skeleton width={50} height={13} borderRadius={4} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const winRateNum = summary.winRate * 100;
   const winRate = winRateNum.toFixed(1);

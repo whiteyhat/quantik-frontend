@@ -17,7 +17,7 @@ import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
 import { PerformanceSummaryWidget } from "@/components/PerformancePanel";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
-import { Skeleton, SkeletonMetric, SkeletonRow } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -177,9 +177,9 @@ function PortfolioCard() {
             marginTop: 4,
           }}
         >
-          {wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc) : "···"}
+          {wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc) : <Skeleton width={140} height={22} borderRadius={6} style={{ marginTop: 2 }} />}
         </div>
-        {wallet && (
+        {wallet ? (
           <span
             style={{
               display: "inline-block",
@@ -196,6 +196,8 @@ function PortfolioCard() {
           >
             {pnlSign}{fmtUSDC(pnl)} ({pnlSign}{(pnlPct ?? 0).toFixed(1)}%)
           </span>
+        ) : (
+          <Skeleton width={100} height={18} borderRadius={100} style={{ marginTop: 6 }} />
         )}
       </div>
 
@@ -214,11 +216,19 @@ function PortfolioCard() {
           <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             WIN RATE
           </span>
-          <div style={{ marginTop: 2, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>
-            {wallet?.totalTrades ?? 0} total trades
-          </div>
+          {wallet ? (
+            <div style={{ marginTop: 2, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>
+              {wallet?.totalTrades ?? 0} total trades
+            </div>
+          ) : (
+            <Skeleton width={80} height={13} borderRadius={4} style={{ marginTop: 4 }} />
+          )}
         </div>
-        <WinRateRing rate={wallet?.winRate ?? 0} trades={wallet?.totalTrades ?? 0} />
+        {wallet ? (
+          <WinRateRing rate={wallet?.winRate ?? 0} trades={wallet?.totalTrades ?? 0} />
+        ) : (
+          <Skeleton width={68} height={68} borderRadius="50%" />
+        )}
       </div>
 
       <div style={{ marginBottom: 14 }}>
@@ -226,9 +236,13 @@ function PortfolioCard() {
           <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             KELLY UTILIZATION
           </span>
-          <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: "rgba(255,255,255,0.65)" }}>
-            {kellyPct}% / 100%
-          </span>
+          {wallet ? (
+            <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: "rgba(255,255,255,0.65)" }}>
+              {kellyPct}% / 100%
+            </span>
+          ) : (
+            <Skeleton width={70} height={12} borderRadius={4} />
+          )}
         </div>
         <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${kellyPct}%`, borderRadius: 3, background: "#0a84ff", transition: "width 600ms ease" }} />
@@ -247,9 +261,13 @@ function PortfolioCard() {
         }}
       >
         <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Circuit Breaker</span>
-        <span style={{ fontSize: META_SIZE, fontWeight: 700, fontFamily: "monospace", color: circuitArmed ? "#30d158" : "#ff453a", letterSpacing: "0.08em" }}>
-          {circuitArmed ? "ARMED" : "TRIGGERED"}
-        </span>
+        {wallet ? (
+          <span style={{ fontSize: META_SIZE, fontWeight: 700, fontFamily: "monospace", color: circuitArmed ? "#30d158" : "#ff453a", letterSpacing: "0.08em" }}>
+            {circuitArmed ? "ARMED" : "TRIGGERED"}
+          </span>
+        ) : (
+          <Skeleton width={60} height={16} borderRadius={6} />
+        )}
       </div>
     </div>
   );
@@ -284,8 +302,17 @@ function ActivePositionsCard() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {loading ? (
-          <div style={{ padding: "20px 0", textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
-            Loading positions…
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
+                <Skeleton width="70%" height={13} borderRadius={4} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Skeleton width={36} height={18} borderRadius={5} />
+                  <Skeleton width="50%" height={12} borderRadius={4} />
+                  <Skeleton width={80} height={12} borderRadius={4} style={{ marginLeft: "auto" }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div style={{ padding: "16px 12px", textAlign: "center", fontSize: BODY_SIZE, color: "#ff453a", background: "rgba(255,69,58,0.06)", borderRadius: 8, border: "1px solid rgba(255,69,58,0.15)" }}>
@@ -357,9 +384,9 @@ function RiskLimitsCard() {
   const statusLabel = risk?.circuitBreaker ?? "ARMED";
   const statusColor = statusLabel === "ARMED" ? "#30d158" : statusLabel === "WARNING" ? "#ff9f0a" : "#ff453a";
 
-  const maxPos = riskConfig ? `${Math.round(riskConfig.maxPositionSize * 100)}%` : "···";
-  const kellyMult = riskConfig ? `${riskConfig.kellyMultiplier}×` : "···";
-  const varThreshold = riskConfig ? `> ${riskConfig.agentVarThreshold}` : "···";
+  const maxPos = riskConfig ? `${Math.round(riskConfig.maxPositionSize * 100)}%` : null;
+  const kellyMult = riskConfig ? `${riskConfig.kellyMultiplier}×` : null;
+  const varThreshold = riskConfig ? `> ${riskConfig.agentVarThreshold}` : null;
 
   const rows = [
     { label: "Max Position Size", value: maxPos, sub: "of portfolio" },
@@ -376,17 +403,25 @@ function RiskLimitsCard() {
       
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
         <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Status</span>
-        <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `color-mix(in srgb, ${statusColor} 12%, transparent)`, color: statusColor, fontFamily: "monospace", letterSpacing: "0.08em", border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)` }}>
-          {statusLabel}
-        </span>
+        {risk ? (
+          <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `color-mix(in srgb, ${statusColor} 12%, transparent)`, color: statusColor, fontFamily: "monospace", letterSpacing: "0.08em", border: `1px solid color-mix(in srgb, ${statusColor} 25%, transparent)` }}>
+            {statusLabel}
+          </span>
+        ) : (
+          <Skeleton width={60} height={20} borderRadius={6} />
+        )}
       </div>
 
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
           <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em" }}>DRAWDOWN</span>
-          <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: drawdownColor }}>
-            {drawdown.toFixed(1)}% / {drawdownLimit}%
-          </span>
+          {risk ? (
+            <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: drawdownColor }}>
+              {drawdown.toFixed(1)}% / {drawdownLimit}%
+            </span>
+          ) : (
+            <Skeleton width={80} height={12} borderRadius={4} />
+          )}
         </div>
         <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${drawdownPct}%`, borderRadius: 3, background: drawdownColor, transition: "width 600ms ease" }} />
@@ -400,7 +435,11 @@ function RiskLimitsCard() {
               <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>{row.label}</div>
               {row.sub && <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.25)", marginTop: 1 }}>{row.sub}</div>}
             </div>
-            <span style={{ fontFamily: '"SF Mono", monospace', fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.80)" }}>{row.value}</span>
+            {row.value !== null ? (
+              <span style={{ fontFamily: '"SF Mono", monospace', fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.80)" }}>{row.value}</span>
+            ) : (
+              <Skeleton width={50} height={13} borderRadius={4} />
+            )}
           </div>
         ))}
       </div>
@@ -634,29 +673,42 @@ function RiskStatusPanel() {
         tooltip="Real-time exposure tracking. Monitors current drawdown and total capital deployment to prevent recursive losses."
       />
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: `color-mix(in srgb, ${cbColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${cbColor} 20%, transparent)` }}>
-        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Circuit Breaker</span>
-        <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `color-mix(in srgb, ${cbColor} 12%, transparent)`, color: cbColor, fontFamily: "monospace", letterSpacing: "0.08em", border: `1px solid color-mix(in srgb, ${cbColor} 25%, transparent)` }}>
-          {cb}
-        </span>
-      </div>
+      {!risk ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <Skeleton width={90} height={13} borderRadius={4} />
+              <Skeleton width={50} height={13} borderRadius={4} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: `color-mix(in srgb, ${cbColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${cbColor} 20%, transparent)` }}>
+            <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Circuit Breaker</span>
+            <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `color-mix(in srgb, ${cbColor} 12%, transparent)`, color: cbColor, fontFamily: "monospace", letterSpacing: "0.08em", border: `1px solid color-mix(in srgb, ${cbColor} 25%, transparent)` }}>
+              {cb}
+            </span>
+          </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Exposure</span>
-        <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: exposureColor }}>{exposurePct.toFixed(1)}%</span>
-      </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Exposure</span>
+            <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: exposureColor }}>{exposurePct.toFixed(1)}%</span>
+          </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Daily P&L</span>
-        <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: pnlColor }}>
-          {dailyPnl >= 0 ? "+" : ""}{fmtUSDC(dailyPnl)}
-        </span>
-      </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Daily P&L</span>
+            <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: pnlColor }}>
+              {dailyPnl >= 0 ? "+" : ""}{fmtUSDC(dailyPnl)}
+            </span>
+          </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Available Capital</span>
-        <span style={{ fontFamily: "monospace", fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>{risk ? fmtUSDC(risk.availableCapital) : "···"}</span>
-      </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Available Capital</span>
+            <span style={{ fontFamily: "monospace", fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>{fmtUSDC(risk.availableCapital)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

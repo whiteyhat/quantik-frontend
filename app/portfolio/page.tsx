@@ -6,6 +6,7 @@ import { api, fmtUSDC, fmtPrice, type WalletBalance, type Position } from "@/lib
 import { PnlTicker } from "@/components/PnlTicker";
 import { ExecutionLog } from "@/components/ExecutionLog";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { Skeleton, SkeletonTableRows } from "@/components/ui/skeleton";
 
 const fmt1 = (n: unknown) => ((n as number) ?? 0).toFixed(1);
 
@@ -132,8 +133,8 @@ function SkeletonTile() {
         gap: 8,
       }}
     >
-      <div style={{ width: 80, height: 10, borderRadius: 5, background: "rgba(255,255,255,0.07)" }} />
-      <div style={{ width: 120, height: 22, borderRadius: 6, background: "rgba(255,255,255,0.05)" }} />
+      <Skeleton width={80} height={10} borderRadius={5} />
+      <Skeleton width={120} height={22} borderRadius={6} />
     </div>
   );
 }
@@ -328,7 +329,14 @@ export default function PortfolioPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => <SkeletonTile key={i} />)}
           </div>
-          <div style={{ ...panelStyle, padding: 40, textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>Loading portfolio…</div>
+          <div style={panelStyle}>
+            <Skeleton width={120} height={14} borderRadius={4} style={{ marginBottom: 16 }} />
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                <SkeletonTableRows rows={3} cols={7} />
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <>

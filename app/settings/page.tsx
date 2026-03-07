@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { usePaperMode } from "@/context/PaperModeContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -502,8 +503,16 @@ function RiskConfigPanel() {
       {open && (
         <div>
           {loading ? (
-            <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)", padding: "12px 0" }}>
-              Loading configuration…
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 0" }}>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <Skeleton width={120} height={13} borderRadius={4} />
+                    <Skeleton width={50} height={18} borderRadius={4} />
+                  </div>
+                  <Skeleton width="100%" height={5} borderRadius={3} />
+                </div>
+              ))}
             </div>
           ) : (
             <>

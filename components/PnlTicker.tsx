@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -69,6 +70,7 @@ function Metric({
 
 export function PnlTicker() {
   const [data, setData] = useState<PerformanceSummary>({});
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -77,6 +79,7 @@ export function PnlTicker() {
         if (!res.ok) return;
         const d: PerformanceSummary = await res.json();
         setData(d);
+        setLoaded(true);
       } catch { /* silently fail */ }
     };
     fetch_();
@@ -108,30 +111,46 @@ export function PnlTicker() {
         borderRadius: 12,
       }}
     >
-      <Metric
-        label="Today P&L"
-        value={`${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`}
-        color={pnlColor}
-        flashing={pnlFlash}
-      />
-      <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
-      <Metric
-        label="Trades"
-        value={String(trades)}
-        flashing={tradesFlash}
-      />
-      <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
-      <Metric
-        label="Win Rate"
-        value={`${(winRate * 100).toFixed(1)}%`}
-        color={winRate >= 0.5 ? "#30d158" : winRate > 0 ? "#FF9F0A" : "rgba(255,255,255,0.55)"}
-      />
-      <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
-      <Metric
-        label="Open Positions"
-        value={String(open)}
-        color="rgba(255,255,255,0.75)"
-      />
+      {loaded ? (
+        <>
+          <Metric
+            label="Today P&L"
+            value={`${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`}
+            color={pnlColor}
+            flashing={pnlFlash}
+          />
+          <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
+          <Metric
+            label="Trades"
+            value={String(trades)}
+            flashing={tradesFlash}
+          />
+          <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
+          <Metric
+            label="Win Rate"
+            value={`${(winRate * 100).toFixed(1)}%`}
+            color={winRate >= 0.5 ? "#30d158" : winRate > 0 ? "#FF9F0A" : "rgba(255,255,255,0.55)"}
+          />
+          <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />
+          <Metric
+            label="Open Positions"
+            value={String(open)}
+            color="rgba(255,255,255,0.75)"
+          />
+        </>
+      ) : (
+        <>
+          {["Today P&L", "Trades", "Win Rate", "Open Positions"].map((label, i) => (
+            <React.Fragment key={label}>
+              {i > 0 && <div style={{ width: 1, height: 28, background: "rgba(255,255,255,0.07)" }} />}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                <Skeleton width={70} height={10} borderRadius={3} />
+                <Skeleton width={60} height={15} borderRadius={4} />
+              </div>
+            </React.Fragment>
+          ))}
+        </>
+      )}
     </div>
   );
 }

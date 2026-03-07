@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, fmtUSDC, type WalletBalance } from "@/lib/api";
 import { HelpTooltip } from "./ui/HelpTooltip";
+import { Skeleton } from "./ui/skeleton";
 
 function WinRateRing({ rate, trades }: { rate: number; trades: number }) {
   const safeRate = isNaN(rate) ? 0 : Math.max(0, Math.min(1, rate));
@@ -90,9 +91,9 @@ export function PortfolioOverview() {
             marginTop: 8,
           }}
         >
-          {wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc) : "···"}
+          {wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc) : <Skeleton width={140} height={28} borderRadius={6} style={{ marginTop: 2 }} />}
         </div>
-        {wallet && (
+        {wallet ? (
           <span
             className="font-mono-data"
             style={{
@@ -104,6 +105,8 @@ export function PortfolioOverview() {
           >
             {pnlSign}{pnlTodayPct.toFixed(1)}% today
           </span>
+        ) : (
+          <Skeleton width={100} height={14} borderRadius={4} style={{ marginTop: 6 }} />
         )}
       </div>
 
@@ -124,9 +127,9 @@ export function PortfolioOverview() {
             marginTop: 8,
           }}
         >
-          {wallet ? `${pnlSign}${fmtUSDC(pnlToday)}` : "···"}
+          {wallet ? `${pnlSign}${fmtUSDC(pnlToday)}` : <Skeleton width={120} height={28} borderRadius={6} style={{ marginTop: 2 }} />}
         </div>
-        {wallet && (
+        {wallet ? (
           <span
             style={{
               display: "inline-block",
@@ -141,6 +144,8 @@ export function PortfolioOverview() {
           >
             {pnlSign}{pnlTodayPct.toFixed(1)}%
           </span>
+        ) : (
+          <Skeleton width={60} height={20} borderRadius={100} style={{ marginTop: 8 }} />
         )}
       </div>
 
@@ -154,12 +159,20 @@ export function PortfolioOverview() {
             <HelpTooltip text="Percentage of settled trades that resulted in a profit. Calculated as (winning trades / total settled trades)." />
           </div>
           <div style={{ marginTop: 4 }}>
-            <span className="text-headline" style={{ color: "var(--text-primary)" }}>
-              {wallet ? `${Math.round((wallet.winRate ?? 0) * 100)}%` : "···"}
-            </span>
+            {wallet ? (
+              <span className="text-headline" style={{ color: "var(--text-primary)" }}>
+                {Math.round((wallet.winRate ?? 0) * 100)}%
+              </span>
+            ) : (
+              <Skeleton width={50} height={20} borderRadius={4} />
+            )}
           </div>
         </div>
-        {wallet && <WinRateRing rate={wallet.winRate ?? 0} trades={wallet.totalTrades ?? 0} />}
+        {wallet ? (
+          <WinRateRing rate={wallet.winRate ?? 0} trades={wallet.totalTrades ?? 0} />
+        ) : (
+          <Skeleton width={88} height={88} borderRadius="50%" />
+        )}
       </div>
     </div>
   );
