@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -76,22 +77,25 @@ const AVATAR_ALL = [
 
 // ─── Section header ───────────────────────────────────────────────────────────
 
-function SectionHeader({ icon, title }: { icon?: string; title: string }) {
+function SectionHeader({ icon, title, tooltip }: { icon?: string; title: string; tooltip?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-      {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-      <span
-        style={{
-          fontSize: LABEL_SIZE,
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.50)",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-        }}
-      >
-        {title}
-      </span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+        <span
+          style={{
+            fontSize: LABEL_SIZE,
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.50)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+          }}
+        >
+          {title}
+        </span>
+      </div>
+      {tooltip && <HelpTooltip text={tooltip} />}
     </div>
   );
 }
@@ -587,7 +591,7 @@ function StepBasicIdentity({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={panelStyle}>
-          <SectionHeader icon="🧬" title="Agent Personality" />
+          <SectionHeader icon="🧬" title="Agent Personality" tooltip="Is your AI Agent a careful player or a bold risk-taker with your money?" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.personality === "guardian"}
@@ -611,7 +615,7 @@ function StepBasicIdentity({
         </div>
 
         <div style={panelStyle}>
-          <SectionHeader icon="✨" title="Decision Style" />
+          <SectionHeader icon="✨" title="Decision Style" tooltip="Does your AI Agent act on gut feeling, deep research, or patience?" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.decisionStyle === "gut"}
@@ -651,7 +655,7 @@ function StepTradingStyle({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Trading Instinct — 2x2 grid */}
       <div style={panelStyle}>
-        <SectionHeader icon="✨" title="Trading Instinct" />
+        <SectionHeader icon="✨" title="Trading Instinct" tooltip="What kind of money-making opportunities does your AI Agent chase?" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.tradingInstinct === "trend_chaser"}
@@ -683,7 +687,7 @@ function StepTradingStyle({
       {/* Time Patience + Profit Dream — side by side */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={panelStyle}>
-          <SectionHeader icon="⏱️" title="Time Patience" />
+          <SectionHeader icon="⏱️" title="Time Patience" tooltip="Does your AI Agent make quick moves or wait days for the right moment?" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.timePatience === "lightning"}
@@ -707,7 +711,7 @@ function StepTradingStyle({
         </div>
 
         <div style={panelStyle}>
-          <SectionHeader icon="📈" title="Profit Dream" />
+          <SectionHeader icon="📈" title="Profit Dream" tooltip="Do you prefer earning a little often or going for bigger but riskier wins?" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.profitDream === "quick_wins"}
@@ -747,7 +751,7 @@ function StepRiskMoney({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Money Approach — 3 in a row */}
       <div style={panelStyle}>
-        <SectionHeader icon="💰" title="Money Approach" />
+        <SectionHeader icon="💰" title="Money Approach" tooltip="How much of your money goes into each trade — safe, smart, or all-in?" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.moneyApproach === "fixed_safe"}
@@ -773,7 +777,7 @@ function StepRiskMoney({
       {/* Protection Mindset + Leverage Vibe — side by side */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={panelStyle}>
-          <SectionHeader icon="🔵" title="Protection Mindset" />
+          <SectionHeader icon="🔵" title="Protection Mindset" tooltip="How quickly your AI Agent stops a losing trade to protect your money" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.protectionMindset === "tight"}
@@ -797,7 +801,7 @@ function StepRiskMoney({
         </div>
 
         <div style={panelStyle}>
-          <SectionHeader icon="⚡" title="Leverage Vibe" />
+          <SectionHeader icon="⚡" title="Leverage Vibe" tooltip="Should your AI Agent borrow extra money to make bigger trades? More reward but more risk" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.leverageVibe === "none"}
@@ -837,7 +841,7 @@ function StepPreferences({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Market Sense — 2 in a row */}
       <div style={panelStyle}>
-        <SectionHeader icon="🟢" title="Market Sense" />
+        <SectionHeader icon="🟢" title="Market Sense" tooltip="Does your AI Agent follow strict math rules or also read news and social buzz?" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.marketSense === "fixed_rules"}
@@ -856,7 +860,7 @@ function StepPreferences({
 
       {/* Asset Love — 2x2 grid */}
       <div style={panelStyle}>
-        <SectionHeader icon="💎" title="Asset Love" />
+        <SectionHeader icon="💎" title="Asset Love" tooltip="Pick what your AI Agent trades — stocks, currencies, crypto, or everything" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.assetLove === "stocks"}
