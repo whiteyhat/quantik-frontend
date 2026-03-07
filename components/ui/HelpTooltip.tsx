@@ -11,6 +11,7 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const iconRef = useRef<HTMLDivElement>(null);
+  const [flipped, setFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -19,11 +20,20 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
     if (!iconRef.current) return;
     const rect = iconRef.current.getBoundingClientRect();
     const TOOLTIP_W = 220;
+    const TOOLTIP_H_ESTIMATE = 60;
     const MARGIN = 8;
-    // Center above the icon, but clamp to viewport edges
+    // Center horizontally, clamp to viewport edges
     let left = rect.left + rect.width / 2 - TOOLTIP_W / 2;
     left = Math.max(MARGIN, Math.min(left, window.innerWidth - TOOLTIP_W - MARGIN));
-    setCoords({ top: rect.top - MARGIN, left });
+    // Flip below if not enough space above
+    const spaceAbove = rect.top;
+    if (spaceAbove < TOOLTIP_H_ESTIMATE + MARGIN) {
+      setCoords({ top: rect.bottom + MARGIN, left });
+      setFlipped(true);
+    } else {
+      setCoords({ top: rect.top - MARGIN, left });
+      setFlipped(false);
+    }
     setVisible(true);
   }
 
@@ -55,7 +65,7 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
             position: "fixed",
             top: coords.top,
             left: coords.left,
-            transform: "translateY(-100%)",
+            transform: flipped ? "none" : "translateY(-100%)",
             width: 220,
             padding: "5px 10px",
             background: "#27272a",

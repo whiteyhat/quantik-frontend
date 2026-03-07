@@ -155,13 +155,15 @@ function SkeletonCard() {
 
 interface MarketScannerProps {
   showFilterPills?: boolean;
-  /** Max columns in the market grid. Defaults to 3 (auto-responsive). Pass 1 or 2 for narrow contexts. */
-  maxCols?: 1 | 2 | 3;
+  /** Max columns in the market grid. Defaults to 3 (auto-responsive). Pass 1–4 for layout control. */
+  maxCols?: 1 | 2 | 3 | 4;
   /** When true, wraps the grid in a scrollable container with max-height for embedded contexts. */
   compact?: boolean;
+  /** Limit visible cards (renders only the first N). Infinite scroll still loads more into the page. */
+  visibleLimit?: number;
 }
 
-export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = false }: MarketScannerProps) {
+export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = false, visibleLimit }: MarketScannerProps) {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending \u{1F525}");
@@ -252,6 +254,9 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
   }, [markets]);
 
   const filtered = markets;
+  const visible = visibleLimit ? filtered.slice(0, visibleLimit) : filtered;
+
+  const gridCols = `grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} ${maxCols >= 4 ? "xl:grid-cols-4" : ""} gap-4`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -309,17 +314,17 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
         </div>
       )}
 
-      {/* Market grid — scrollable when compact */}
-      <div style={compact ? { overflowY: "auto", maxHeight: 700 } : undefined}>
-        <div className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`}>
-          {filtered.map((m) => (
+      {/* Market grid */}
+      <div>
+        <div className={gridCols}>
+          {visible.map((m) => (
             <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
           ))}
         </div>
 
         {/* Loading shimmer skeletons */}
         {loading && markets.length > 0 && (
-          <div data-testid="scanner-loading" className={`grid grid-cols-1 ${maxCols >= 2 ? "md:grid-cols-2" : ""} ${maxCols >= 3 ? "lg:grid-cols-3" : ""} gap-4`} style={{ marginTop: 16 }}>
+          <div data-testid="scanner-loading" className={gridCols} style={{ marginTop: 16 }}>
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />

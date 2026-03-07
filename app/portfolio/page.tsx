@@ -23,8 +23,6 @@ const META_SIZE = 12;
 const BODY_SIZE = 13;
 const HEADLINE_SIZE = 14;
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
 interface RiskSummary {
   drawdown: number;
   drawdownLimit: number;
@@ -278,7 +276,6 @@ function RiskPanel({ risk, wallet }: { risk: RiskSummary | null; wallet: WalletB
 export default function PortfolioPage() {
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [risk, setRisk] = useState<RiskSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -288,13 +285,12 @@ export default function PortfolioPage() {
         const safe = Array.isArray(data) ? data : (data as any)?.positions ?? [];
         setPositions(safe as Position[]);
       }).catch(() => {}),
-      fetch(`${BASE_URL}/api/portfolio/risk`).then((r) => (r.ok ? r.json() : null)).then((d) => d && setRisk(d)).catch(() => {}),
     ]).finally(() => setLoading(false));
 
     const iv = setInterval(() => {
       api.getBalance().then(setWallet).catch(() => {});
       api.getPositions().then((data) => {
-        const safe = Array.isArray(data) ? data : [];
+        const safe = Array.isArray(data) ? data : (data as any)?.positions ?? [];
         setPositions(safe as Position[]);
       }).catch(() => {});
     }, 15_000);
@@ -302,9 +298,18 @@ export default function PortfolioPage() {
     return () => clearInterval(iv);
   }, []);
 
-  const totalPnl = positions.reduce((acc, p) => acc + ((p.pnl ?? 0) as number), 0);
+  const totalPnl = wallet?.pnl ?? positions.reduce((acc, p) => acc + ((p.pnl ?? 0) as number), 0);
   const pnlColor = totalPnl >= 0 ? "#30d158" : "#ff453a";
   const pnlSign = totalPnl >= 0 ? "+" : "";
+
+  // Derive risk summary from wallet fields (already returned by /api/portfolio/summary)
+  const risk: RiskSummary | null = wallet && (wallet.drawdown != null || wallet.kellyUtilization != null) ? {
+    drawdown: wallet.drawdown ?? 0,
+    drawdownLimit: wallet.drawdownLimit ?? 1,
+    kellyUtilization: wallet.kellyUtilization ?? 0,
+    status: wallet.circuitBreakerStatus === "TRIGGERED" ? "HALT" : wallet.circuitBreakerStatus === "WARNING" ? "WARNING" : "NORMAL",
+    circuitArmed: wallet.circuitBreakerStatus !== "TRIGGERED",
+  } : null;
 
   return (
     <div className="flex flex-col gap-5 p-4 md:p-8 w-full max-w-full overflow-hidden">
@@ -328,7 +333,7 @@ export default function PortfolioPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <MetricTile label="USDC Balance" value={wallet ? fmtUSDC(wallet.usdc ?? 0) : "···"} tooltip="Available cash balance (USDC.e on Polygon + CLOB collateral)." />
+            <MetricTile label="Total Value" value={wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc ?? 0) : "···"} tooltip="Total portfolio value including on-chain USDC.e, CLOB collateral, and marked-to-market open positions." />
             <MetricTile label="Open Positions" value={String(positions.length)} tooltip="Count of currently active trades on Polymarket." />
             <MetricTile label="Total P&L" value={`${pnlSign}${fmtUSDC(totalPnl)}`} valueColor={pnlColor} tooltip="Sum of realized and unrealized profit or loss from all historical and current trades." />
             <MetricTile label="Win Rate" value={wallet ? `${Math.round(((wallet.winRate ?? 0) as number) * 100)}%` : "···"} sub={wallet ? `${wallet.totalTrades ?? 0} trades` : undefined} tooltip="Success rate of settled trades. Calculated as total wins divided by total settled trade outcomes." />

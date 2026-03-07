@@ -7,6 +7,7 @@ import {
   type AttributionEntry,
   type DriftStatus,
   type CalibrationEntry,
+  type PerformanceSummary,
   fmtUSDC,
 } from "@/lib/api";
 import { HelpTooltip } from "./ui/HelpTooltip";
@@ -391,25 +392,31 @@ export function PerformancePanel() {
 // ─── Compact summary for dashboard ───────────────────────────────────────────
 
 export function PerformanceSummaryWidget() {
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<PerformanceSummary | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     function fetchAll() {
-      api.getPerformanceSummary().then(setSummary).catch(() => {});
+      api.getPerformanceSummary()
+        .then((data) => { setSummary(data); setError(false); })
+        .catch(() => setError(true));
     }
     fetchAll();
     const iv = setInterval(fetchAll, 30_000);
     return () => clearInterval(iv);
   }, []);
 
-  if (!summary) return <div style={panelStyle}>Loading performance summary...</div>;
+  if (error) return <div style={{ ...panelStyle, flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)" }}>Failed to load performance data</span></div>;
+  if (!summary) return <div style={{ ...panelStyle, flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>Loading performance summary...</span></div>;
 
-  const winRate = (summary.winRate * 100).toFixed(1);
+  const winRateNum = summary.winRate * 100;
+  const winRate = winRateNum.toFixed(1);
+  const winRateColor = winRateNum >= 55 ? "#30d158" : winRateNum >= 45 ? "#ff9f0a" : "#ff453a";
   const pnlColor = summary.pnlToday >= 0 ? "#30d158" : "#ff453a";
-  const streak = summary.metrics?.currentStreak ?? 0;
+  const streak = summary.metrics.currentStreak;
 
   return (
-    <div style={panelStyle}>
+    <div style={{ ...panelStyle, flex: 1 }}>
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <h2
@@ -443,7 +450,7 @@ export function PerformanceSummaryWidget() {
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>WIN RATE</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#30d158", fontFamily: "monospace" }}>{winRate}%</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: winRateColor, fontFamily: "monospace" }}>{winRate}%</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>DAILY P&L</div>
@@ -464,7 +471,7 @@ export function PerformanceSummaryWidget() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
           <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Best Trade</span>
           <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: "#30d158", fontFamily: "monospace" }}>
-            {summary.metrics?.bestTrade?.split("-")[0].toUpperCase() ?? "N/A"} (+{fmtUSDC(summary.metrics?.bestPnl)})
+            {summary.metrics.bestTrade ? `${summary.metrics.bestTrade.split("-")[0].toUpperCase()} (+${fmtUSDC(summary.metrics.bestPnl)})` : "N/A"}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>

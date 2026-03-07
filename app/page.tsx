@@ -11,11 +11,13 @@ import {
   type OrchestratorCandidate,
   type OrchestratorStatus,
   type RiskStatus,
+  type RiskConfig,
 } from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
 import { PerformanceSummaryWidget } from "@/components/PerformancePanel";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { Skeleton, SkeletonMetric, SkeletonRow } from "@/components/ui/skeleton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -257,22 +259,39 @@ function PortfolioCard() {
 
 function ActivePositionsCard() {
   const [positions, setPositions] = useState<Position[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.getPositions().then(setPositions).catch(() => {});
-    const iv = setInterval(() => api.getPositions().then(setPositions).catch(() => {}), 15_000);
-    return () => clearInterval(iv);
+    let mounted = true;
+    function fetchPositions() {
+      api.getPositions()
+        .then((data) => { if (mounted) { setPositions(data); setError(false); } })
+        .catch(() => { if (mounted) setError(true); })
+        .finally(() => { if (mounted) setLoading(false); });
+    }
+    fetchPositions();
+    const iv = setInterval(fetchPositions, 15_000);
+    return () => { mounted = false; clearInterval(iv); };
   }, []);
 
   return (
     <div style={panelStyle}>
-      <SectionHeader 
-        title="Active Positions" 
+      <SectionHeader
+        title="Active Positions"
         tooltip="Currently open bets on the Polymarket orderbook. Unrealized P&L is calculated in real-time by comparing your entry price to the current scanner mid-price."
       />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {positions.length === 0 ? (
+        {loading ? (
+          <div style={{ padding: "20px 0", textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
+            Loading positions…
+          </div>
+        ) : error ? (
+          <div style={{ padding: "16px 12px", textAlign: "center", fontSize: BODY_SIZE, color: "#ff453a", background: "rgba(255,69,58,0.06)", borderRadius: 8, border: "1px solid rgba(255,69,58,0.15)" }}>
+            Failed to load positions
+          </div>
+        ) : positions.length === 0 ? (
           <div style={{ padding: "20px 0", textAlign: "center", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
             No open positions
           </div>
@@ -316,30 +335,42 @@ function ActivePositionsCard() {
 
 function RiskLimitsCard() {
   const [risk, setRisk] = useState<RiskStatus | null>(null);
+  const [riskConfig, setRiskConfig] = useState<RiskConfig | null>(null);
 
   useEffect(() => {
-    api.getRiskStatus().then(setRisk).catch(() => {});
-    const iv = setInterval(() => api.getRiskStatus().then(setRisk).catch(() => {}), 30_000);
-    return () => clearInterval(iv);
+    let mounted = true;
+    function fetchRisk() {
+      api.getRiskStatus()
+        .then((data) => { if (mounted) setRisk(data); })
+        .catch(() => {});
+    }
+    fetchRisk();
+    api.getRiskConfig().then((data) => { if (mounted) setRiskConfig(data); }).catch(() => {});
+    const iv = setInterval(fetchRisk, 30_000);
+    return () => { mounted = false; clearInterval(iv); };
   }, []);
 
   const drawdown = risk?.dailyPnlPct ?? 0;
-  const drawdownLimit = 15;
+  const drawdownLimit = (riskConfig?.drawdownLimit ?? 0.15) * 100;
   const drawdownPct = Math.min((Math.abs(drawdown) / drawdownLimit) * 100, 100);
   const drawdownColor = drawdownPct < 50 ? "#30d158" : drawdownPct < 80 ? "#ff9f0a" : "#ff453a";
   const statusLabel = risk?.circuitBreaker ?? "ARMED";
   const statusColor = statusLabel === "ARMED" ? "#30d158" : statusLabel === "WARNING" ? "#ff9f0a" : "#ff453a";
 
+  const maxPos = riskConfig ? `${Math.round(riskConfig.maxPositionSize * 100)}%` : "···";
+  const kellyMult = riskConfig ? `${riskConfig.kellyMultiplier}×` : "···";
+  const varThreshold = riskConfig ? `> ${riskConfig.agentVarThreshold}` : "···";
+
   const rows = [
-    { label: "Max Position Size", value: "5%", sub: "of portfolio" },
-    { label: "Fractional Kelly", value: "0.25×", sub: "risk multiplier" },
-    { label: "Lucifer Veto", value: "> 0.85", sub: "threshold" },
+    { label: "Max Position Size", value: maxPos, sub: "of portfolio" },
+    { label: "Fractional Kelly", value: kellyMult, sub: "risk multiplier" },
+    { label: "Agent VaR Threshold", value: varThreshold, sub: "threshold" },
   ];
 
   return (
-    <div style={panelStyle}>
-      <SectionHeader 
-        title="Risk Limits" 
+    <div style={{ ...panelStyle, flex: 1 }}>
+      <SectionHeader
+        title="Risk Limits"
         tooltip="Static safety parameters enforced by the risk engine. These thresholds prevent any single agent or logic branch from over-exposing the bankroll."
       />
       
@@ -401,23 +432,35 @@ function SystemStatusPanel() {
   const [apiOk, setApiOk] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const start = Date.now();
-    api.getBalance().then((result) => {
-      if (result !== null) {
-        setLatency(Date.now() - start);
-        setApiOk(true);
-      } else {
+    function ping() {
+      const start = Date.now();
+      api.getBalance().then((result) => {
+        if (result !== null) {
+          setLatency(Date.now() - start);
+          setApiOk(true);
+        } else {
+          setLatency(null);
+          setApiOk(false);
+        }
+      }).catch(() => {
+        setLatency(null);
         setApiOk(false);
-      }
-    });
+      });
+    }
+    ping();
+    const iv = setInterval(ping, 30_000);
+    return () => clearInterval(iv);
   }, []);
+
+  const agentStatus = apiOk === true ? "READY" : apiOk === false ? "DOWN" : "…";
+  const agentStatusColor = apiOk === true ? "#30d158" : apiOk === false ? "#ff453a" : "#ff9f0a";
 
   return (
     <div style={panelStyle}>
-      <SectionHeader 
-        title="System Status" 
-        subtitle="Agent health · Layer 1–5" 
-        tooltip="Operational heartbeat of the Quantik network. Monitors API connectivity and the active status of each specialist agent logic block."
+      <SectionHeader
+        title="System Status"
+        subtitle="Agent config · Layer 1–5"
+        tooltip="Shows API connectivity and the registered agent logic blocks. Individual agent health monitoring requires a backend /api/agents/health endpoint."
       />
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 14, background: apiOk === true ? "rgba(48,209,88,0.06)" : apiOk === false ? "rgba(255,69,58,0.06)" : "rgba(255,255,255,0.03)", border: `1px solid ${apiOk === true ? "rgba(48,209,88,0.15)" : apiOk === false ? "rgba(255,69,58,0.15)" : "rgba(255,255,255,0.06)"}` }}>
@@ -430,10 +473,10 @@ function SystemStatusPanel() {
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
         {AGENTS.map((agent) => (
           <div key={agent.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: apiOk ? "#30d158" : "#ff9f0a", boxShadow: apiOk ? "0 0 5px rgba(48,209,88,0.5)" : "none", flexShrink: 0 }} />
-            <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agent.color, fontFamily: "monospace", flexShrink: 0, width: 58 }}>{agent.emoji} {agent.name}</span>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: agentStatusColor, boxShadow: apiOk ? "0 0 5px rgba(48,209,88,0.5)" : "none", flexShrink: 0 }} />
+            <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agent.color, fontFamily: "monospace", flexShrink: 0, width: 80 }}>{agent.emoji} {agent.name}</span>
             <span style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.30)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agent.role}</span>
-            <span style={{ fontFamily: "monospace", fontSize: LABEL_SIZE, color: "#30d158", flexShrink: 0 }}>LIVE</span>
+            <span style={{ fontFamily: "monospace", fontSize: LABEL_SIZE, color: agentStatusColor, flexShrink: 0 }}>{agentStatus}</span>
           </div>
         ))}
       </div>
@@ -443,15 +486,32 @@ function SystemStatusPanel() {
 
 // ─── Orchestrator Panel ──────────────────────────────────────────────────────
 
+function orchestratorTimeAgo(ts: number): string {
+  if (!ts) return "never";
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86_400)}d ago`;
+}
+
 function OrchestratorPanel() {
   const [candidates, setCandidates] = useState<OrchestratorCandidate[]>([]);
   const [status, setStatus] = useState<OrchestratorStatus | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState(false);
+  const [scanError, setScanError] = useState(false);
 
   useEffect(() => {
     function fetchData() {
-      api.getOrchestratorStatus().then(setStatus).catch(() => {});
-      api.getOrchestratorCandidates().then((r) => setCandidates(r.candidates)).catch(() => {});
+      Promise.all([
+        api.getOrchestratorStatus(),
+        api.getOrchestratorCandidates(),
+      ]).then(([s, c]) => {
+        setStatus(s);
+        setCandidates(c.candidates);
+        setError(false);
+      }).catch(() => setError(true));
     }
     fetchData();
     const iv = setInterval(fetchData, 30_000);
@@ -460,12 +520,15 @@ function OrchestratorPanel() {
 
   const handleScan = async () => {
     setScanning(true);
+    setScanError(false);
     try {
       await api.triggerOrchestratorScan();
       const [s, c] = await Promise.all([api.getOrchestratorStatus(), api.getOrchestratorCandidates()]);
       if (s) setStatus(s);
       setCandidates(c.candidates);
-    } catch {}
+    } catch {
+      setScanError(true);
+    }
     setScanning(false);
   };
 
@@ -478,9 +541,9 @@ function OrchestratorPanel() {
   return (
     <div style={{ ...panelStyle, padding: 0, overflow: "hidden" }}>
       <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <SectionHeader 
-          title="Orchestrator" 
-          subtitle="Tier 0 scanner · Layer 1" 
+        <SectionHeader
+          title="Orchestrator"
+          subtitle="Tier 0 scanner · Layer 1"
           tooltip="The primary market filter. Scans Polymarket and filters for high-conviction targets based on volume spikes and liquidity depth."
         />
         <button onClick={handleScan} disabled={scanning} style={{ padding: "4px 10px", borderRadius: 6, background: scanning ? "rgba(255,255,255,0.04)" : "rgba(0,122,255,0.15)", color: scanning ? "rgba(255,255,255,0.30)" : "#007aff", border: `1px solid ${scanning ? "rgba(255,255,255,0.06)" : "rgba(0,122,255,0.25)"}`, fontSize: LABEL_SIZE, fontWeight: 600, cursor: scanning ? "not-allowed" : "pointer" }}>
@@ -488,16 +551,43 @@ function OrchestratorPanel() {
         </button>
       </div>
 
+      {/* Scan metadata */}
+      {status && (
+        <div style={{ padding: "0 20px 10px", display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)" }}>
+            Last scan: <span style={{ color: "rgba(255,255,255,0.55)", fontFamily: "monospace" }}>{orchestratorTimeAgo(status.lastScanAt)}</span>
+          </span>
+          <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)" }}>
+            Scanned: <span style={{ color: "rgba(255,255,255,0.55)", fontFamily: "monospace" }}>{status.marketsScanned}</span>
+          </span>
+          <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)" }}>
+            Found: <span style={{ color: "rgba(255,255,255,0.55)", fontFamily: "monospace" }}>{status.candidatesFound}</span>
+          </span>
+        </div>
+      )}
+
+      {scanError && (
+        <div style={{ padding: "0 20px 8px" }}>
+          <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,69,58,0.7)" }}>Scan failed — try again</span>
+        </div>
+      )}
+
       <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-        {candidates.slice(0, 5).map((c) => {
-          const badge = badgeColor(c.opportunityScore);
-          return (
-            <Link key={c.slug} href={`/market/${c.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", textDecoration: "none" }}>
-              <span style={{ flexShrink: 0, padding: "2px 7px", borderRadius: 5, background: badge.bg, color: badge.text, fontSize: LABEL_SIZE, fontWeight: 700, fontFamily: "monospace", minWidth: 32, textAlign: "center" }}>{c.opportunityScore.toFixed(0)}</span>
-              <span style={{ flex: 1, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.80)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.question}</span>
-            </Link>
-          );
-        })}
+        {error ? (
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)", padding: "8px 0" }}>Failed to load orchestrator data</span>
+        ) : candidates.length === 0 ? (
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)", padding: "8px 0" }}>No candidates — trigger a scan</span>
+        ) : (
+          candidates.slice(0, 5).map((c) => {
+            const badge = badgeColor(c.opportunityScore);
+            return (
+              <Link key={c.slug} href={`/market/${c.slug}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", textDecoration: "none" }}>
+                <span style={{ flexShrink: 0, padding: "2px 7px", borderRadius: 5, background: badge.bg, color: badge.text, fontSize: LABEL_SIZE, fontWeight: 700, fontFamily: "monospace", minWidth: 32, textAlign: "center" }}>{c.opportunityScore.toFixed(0)}</span>
+                <span style={{ flex: 1, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.80)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.question}</span>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -507,29 +597,60 @@ function OrchestratorPanel() {
 
 function RiskStatusPanel() {
   const [risk, setRisk] = useState<RiskStatus | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    api.getRiskStatus().then(setRisk).catch(() => {});
-    const iv = setInterval(() => api.getRiskStatus().then(setRisk).catch(() => {}), 30_000);
+    function fetch() {
+      api.getRiskStatus()
+        .then((data) => { setRisk(data); setError(false); })
+        .catch(() => setError(true));
+    }
+    fetch();
+    const iv = setInterval(fetch, 30_000);
     return () => clearInterval(iv);
   }, []);
+
+  if (error) {
+    return (
+      <div style={panelStyle}>
+        <SectionHeader title="Risk Status" subtitle="Layer 3 — Live risk monitor" tooltip="Real-time exposure tracking. Monitors current drawdown and total capital deployment to prevent recursive losses." />
+        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)" }}>Failed to load risk data</span>
+      </div>
+    );
+  }
 
   const cb = risk?.circuitBreaker ?? "ARMED";
   const cbColor = cb === "ARMED" ? "#30d158" : cb === "WARNING" ? "#ff9f0a" : "#ff453a";
   const exposurePct = risk?.exposurePct ?? 0;
   const exposureColor = exposurePct < 50 ? "#30d158" : exposurePct < 80 ? "#ff9f0a" : "#ff453a";
+  const dailyPnl = risk?.dailyPnl ?? 0;
+  const pnlColor = dailyPnl >= 0 ? "#30d158" : "#ff453a";
 
   return (
     <div style={panelStyle}>
-      <SectionHeader 
-        title="Risk Status" 
-        subtitle="Layer 3 — Live risk monitor" 
+      <SectionHeader
+        title="Risk Status"
+        subtitle="Layer 3 — Live risk monitor"
         tooltip="Real-time exposure tracking. Monitors current drawdown and total capital deployment to prevent recursive losses."
       />
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: `color-mix(in srgb, ${cbColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${cbColor} 20%, transparent)` }}>
+        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Circuit Breaker</span>
+        <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `color-mix(in srgb, ${cbColor} 12%, transparent)`, color: cbColor, fontFamily: "monospace", letterSpacing: "0.08em", border: `1px solid color-mix(in srgb, ${cbColor} 25%, transparent)` }}>
+          {cb}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
         <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Exposure</span>
         <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: exposureColor }}>{exposurePct.toFixed(1)}%</span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>Daily P&L</span>
+        <span style={{ fontFamily: "monospace", fontSize: META_SIZE, fontWeight: 600, color: pnlColor }}>
+          {dailyPnl >= 0 ? "+" : ""}{fmtUSDC(dailyPnl)}
+        </span>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -544,31 +665,36 @@ function RiskStatusPanel() {
 
 export default function DashboardPage() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_320px] gap-4 items-start">
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <PortfolioCard />
-        <ActivePositionsCard />
-        <RiskLimitsCard />
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_320px] gap-4 items-stretch">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <PortfolioCard />
+          <ActivePositionsCard />
+          <RiskLimitsCard />
+        </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <OrchestratorPanel />
-        <RiskStatusPanel />
-        <PerformanceSummaryWidget />
-        <div style={{ ...panelStyle, padding: 0 }}>
-           <div style={{ padding: "16px 20px 0" }}>
-             <SectionHeader title="Live Market Scanner" tooltip="Real-time monitoring of all active prediction markets. Blue icons indicate high-conviction candidates identified by the Orchestrator." />
-           </div>
-           <MarketScanner maxCols={2} compact />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <OrchestratorPanel />
+          <RiskStatusPanel />
+          <PerformanceSummaryWidget />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <SystemStatusPanel />
+          <div style={{ ...panelStyle, flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <SectionHeader title="Recent Signals" tooltip="History of recent trading decisions. Shows the final consensus and executed trade logic for recently analyzed markets." />
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+              <RecentSignals />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <SystemStatusPanel />
-        <div style={panelStyle}>
-          <SectionHeader title="Recent Signals" tooltip="History of recent trading decisions. Shows the final consensus and executed trade logic for recently analyzed markets." />
-          <RecentSignals />
+      <div style={{ ...panelStyle, padding: 0 }}>
+        <div style={{ padding: "16px 20px 0" }}>
+          <SectionHeader title="Live Market Scanner" tooltip="Real-time monitoring of all active prediction markets. Blue icons indicate high-conviction candidates identified by the Orchestrator." />
         </div>
+        <MarketScanner maxCols={4} visibleLimit={8} />
       </div>
     </div>
   );

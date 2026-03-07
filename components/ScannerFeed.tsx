@@ -152,7 +152,8 @@ export function ScannerFeed() {
             const id = r.id ?? r.slug ?? String(i);
             const cfg = REC_CONFIG[r.recommendation] ?? REC_CONFIG.SKIP;
             const isNew = animatingIds.has(id);
-            const shortQ = r.question.length > 50 ? r.question.slice(0, 50) + "…" : r.question;
+            const q = r.question ?? r.slug ?? "";
+            const shortQ = q.length > 50 ? q.slice(0, 50) + "…" : q;
             return (
               <div
                 key={id}

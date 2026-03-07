@@ -194,6 +194,29 @@ export interface RiskStatus {
   availableCapital: number;
 }
 
+export interface RiskConfig {
+  maxPositionSize: number;
+  kellyMultiplier: number;
+  drawdownLimit: number;
+  agentVarThreshold: number;
+}
+
+export interface PerformanceSummary {
+  winRate: number;
+  pnlToday: number;
+  metrics: {
+    currentStreak: number;
+    bestTrade: string;
+    bestPnl: number;
+    totalVolume: number;
+  };
+  alphaDecay: {
+    detected: boolean;
+    rollingHitRate: number;
+    recommendation: string;
+  } | null;
+}
+
 export interface TradeRequest {
   slug: string;
   tokenId: string;
@@ -356,23 +379,43 @@ export const api = {
 
   // Signals
   getSignals: async (): Promise<Signal[]> => {
+    let raw: unknown[];
     try {
-      const res = await apiFetch<Signal[]>("/api/signals");
-      return Array.isArray(res) ? res.slice(0, 10) : [];
+      const res = await apiFetch<unknown[]>("/api/signals");
+      raw = Array.isArray(res) ? res : [];
     } catch {
-      try {
-        const res = await apiFetch<Signal[]>("/api/pipeline/results");
-        return Array.isArray(res) ? res.slice(0, 10) : [];
-      } catch {
-        return [];
-      }
+      const res = await apiFetch<unknown[]>("/api/pipeline/results");
+      raw = Array.isArray(res) ? res : [];
     }
+    const validStatuses = new Set(["TRADE", "WATCH", "SKIP"]);
+    return raw.slice(0, 10).map((r) => {
+      const item = r as Record<string, unknown>;
+      const rawStatus = String(item?.status ?? item?.decision ?? "SKIP").toUpperCase();
+      return {
+        id: String(item?.id ?? item?.slug ?? ""),
+        slug: String(item?.slug ?? ""),
+        question: String(item?.question ?? ""),
+        decision: String(item?.decision ?? ""),
+        confidence: Number(item?.confidence ?? 0),
+        edge: Number(item?.edge ?? 0),
+        timestamp: Number(item?.timestamp ?? 0),
+        status: (validStatuses.has(rawStatus) ? rawStatus : "SKIP") as Signal["status"],
+      };
+    });
   },
 
   // Orchestrator
   getOrchestratorStatus: async (): Promise<OrchestratorStatus | null> => {
     try {
-      return await apiFetch<OrchestratorStatus>("/api/orchestrator/status");
+      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/status");
+      return {
+        lastScanAt: Number(raw?.lastScanAt ?? 0),
+        nextScanAt: Number(raw?.nextScanAt ?? 0),
+        marketsScanned: Number(raw?.marketsScanned ?? 0),
+        candidatesFound: Number(raw?.candidatesFound ?? 0),
+        scanIntervalMs: Number(raw?.scanIntervalMs ?? 0),
+        status: raw?.status === "scanning" ? "scanning" : "idle",
+      };
     } catch {
       return null;
     }
@@ -380,7 +423,29 @@ export const api = {
 
   getOrchestratorCandidates: async (): Promise<OrchestratorCandidatesResponse> => {
     try {
-      return await apiFetch<OrchestratorCandidatesResponse>("/api/orchestrator/candidates");
+      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/candidates");
+      const rawCandidates = Array.isArray(raw?.candidates) ? raw.candidates : [];
+      return {
+        candidates: rawCandidates.map((c: Record<string, unknown>) => {
+          const comp = (c?.components ?? {}) as Record<string, unknown>;
+          return {
+            slug: String(c?.slug ?? ""),
+            tokenId: String(c?.tokenId ?? ""),
+            question: String(c?.question ?? ""),
+            opportunityScore: Number(c?.opportunityScore ?? 0),
+            components: {
+              volume: Number(comp?.volume ?? 0),
+              priceMove: Number(comp?.priceMove ?? 0),
+              liquidity: Number(comp?.liquidity ?? 0),
+              recency: Number(comp?.recency ?? 0),
+            },
+            triggers: Array.isArray(c?.triggers) ? c.triggers.map(String) : [],
+            scoredAt: Number(c?.scoredAt ?? 0),
+          };
+        }),
+        total: Number(raw?.total ?? 0),
+        scanCycle: Number(raw?.scanCycle ?? 0),
+      };
     } catch {
       return { candidates: [], total: 0, scanCycle: 0 };
     }
@@ -412,9 +477,38 @@ export const api = {
     }
   },
 
+  getRiskConfig: async (): Promise<RiskConfig | null> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/v1/risk-config");
+      return {
+        maxPositionSize: Number(raw?.maxPositionSize ?? 0.10),
+        kellyMultiplier: Number(raw?.kellyMultiplier ?? 0.25),
+        drawdownLimit: Number(raw?.drawdownLimit ?? 0.15),
+        agentVarThreshold: Number(raw?.agentVarThreshold ?? 0.05),
+      };
+    } catch {
+      return null;
+    }
+  },
+
   // Monitoring (L5)
-  getPerformanceSummary: async (): Promise<any> => {
-    return apiFetch("/api/performance/summary");
+  getPerformanceSummary: async (): Promise<PerformanceSummary> => {
+    const raw = await apiFetch<Record<string, unknown>>("/api/performance/summary");
+    return {
+      winRate: Number(raw?.winRate ?? 0),
+      pnlToday: Number(raw?.pnlToday ?? 0),
+      metrics: {
+        currentStreak: Number((raw?.metrics as Record<string, unknown>)?.currentStreak ?? 0),
+        bestTrade: String((raw?.metrics as Record<string, unknown>)?.bestTrade ?? ""),
+        bestPnl: Number((raw?.metrics as Record<string, unknown>)?.bestPnl ?? 0),
+        totalVolume: Number((raw?.metrics as Record<string, unknown>)?.totalVolume ?? 0),
+      },
+      alphaDecay: raw?.alphaDecay ? {
+        detected: Boolean((raw.alphaDecay as Record<string, unknown>).detected),
+        rollingHitRate: Number((raw.alphaDecay as Record<string, unknown>).rollingHitRate ?? 0),
+        recommendation: String((raw.alphaDecay as Record<string, unknown>).recommendation ?? ""),
+      } : null,
+    };
   },
 
   getBrierScores: async (): Promise<BrierEntry[]> => {

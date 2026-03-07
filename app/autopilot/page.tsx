@@ -3,7 +3,6 @@
 import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
-import { PnlTicker } from "@/components/PnlTicker";
 import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
@@ -49,9 +48,6 @@ export default function AutopilotPage() {
       >
         <AutopilotStatusBar />
       </div>
-
-      {/* P&L Ticker — full width */}
-      <PnlTicker />
 
       {/* Main grid: Scanner (60%) + Execution Log (40%) */}
       <div

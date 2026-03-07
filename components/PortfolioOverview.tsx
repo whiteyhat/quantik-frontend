@@ -66,8 +66,10 @@ export function PortfolioOverview() {
     api.getBalance().then(setWallet).catch(() => {});
   }, []);
 
-  const pnlColor = (wallet?.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)";
-  const pnlSign = (wallet?.pnl ?? 0) >= 0 ? "+" : "";
+  const pnlToday = wallet?.pnlToday ?? wallet?.pnl ?? 0;
+  const pnlTodayPct = wallet?.pnlTodayPct ?? wallet?.pnlPct ?? 0;
+  const pnlColor = pnlToday >= 0 ? "var(--ios-green)" : "var(--ios-red)";
+  const pnlSign = pnlToday >= 0 ? "+" : "";
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
@@ -88,7 +90,7 @@ export function PortfolioOverview() {
             marginTop: 8,
           }}
         >
-          {wallet ? fmtUSDC(wallet.usdc) : "···"}
+          {wallet ? fmtUSDC(wallet.totalValue ?? wallet.usdc) : "···"}
         </div>
         {wallet && (
           <span
@@ -100,7 +102,7 @@ export function PortfolioOverview() {
               display: "inline-block",
             }}
           >
-            {pnlSign}{(wallet.pnlPct ?? 0).toFixed(1)}% today
+            {pnlSign}{pnlTodayPct.toFixed(1)}% today
           </span>
         )}
       </div>
@@ -122,7 +124,7 @@ export function PortfolioOverview() {
             marginTop: 8,
           }}
         >
-          {wallet ? `${pnlSign}${fmtUSDC(wallet.pnl)}` : "···"}
+          {wallet ? `${pnlSign}${fmtUSDC(pnlToday)}` : "···"}
         </div>
         {wallet && (
           <span
@@ -133,11 +135,11 @@ export function PortfolioOverview() {
               borderRadius: 100,
               fontSize: "var(--text-caption)",
               fontWeight: 600,
-              background: ((wallet.pnl ?? 0) >= 0) ? "var(--ios-green-glow)" : "var(--ios-red-glow)",
+              background: pnlToday >= 0 ? "var(--ios-green-glow)" : "var(--ios-red-glow)",
               color: pnlColor,
             }}
           >
-            {pnlSign}{(wallet.pnlPct ?? 0).toFixed(1)}%
+            {pnlSign}{pnlTodayPct.toFixed(1)}%
           </span>
         )}
       </div>
