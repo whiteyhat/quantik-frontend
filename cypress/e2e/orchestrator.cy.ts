@@ -45,9 +45,9 @@ describe("Orchestrator", () => {
 
     // Also intercept the markets call for dashboard
     cy.intercept("GET", "**/api/markets*", { body: { markets: [], total: 0, hasMore: false } }).as("markets");
-    cy.intercept("GET", "**/api/portfolio/summary", { body: {} }).as("portfolio");
+    cy.intercept("GET", "**/api/performance/summary", { body: {} }).as("portfolio");
 
-    cy.visit("/");
+    cy.visit("/dashboard");
     cy.wait(["@orchStatus", "@orchCandidates"]);
 
     // Verify panel header

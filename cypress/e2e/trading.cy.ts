@@ -6,7 +6,7 @@ describe('Trading Flow', () => {
   })
 
   beforeEach(() => {
-    cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
+    cy.intercept('GET', '**/api/performance/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/v1/risk-config', { fixture: 'risk-config.json' }).as('riskConfig')
     cy.intercept('POST', '**/api/v1/settings/paper-mode', { body: { success: true } }).as('setPaperMode')
     cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: false } }).as('getSettings')

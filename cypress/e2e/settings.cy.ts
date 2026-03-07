@@ -2,7 +2,7 @@ describe('Settings / Risk Config', () => {
   beforeEach(() => {
     cy.intercept('GET', '**/api/v1/risk-config*', { fixture: 'risk-config.json' }).as('getRiskConfig')
     cy.intercept('PUT', '**/api/v1/risk-config*').as('saveRiskConfig')
-    cy.intercept('GET', '**/api/portfolio/summary*', { fixture: 'portfolio.json' }).as('portfolio')
+    cy.intercept('GET', '**/api/performance/summary*', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: false } }).as('getSettings')
     cy.visit('/settings')
   })

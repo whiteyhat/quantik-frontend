@@ -21,7 +21,7 @@ describe('Market Scanner', () => {
     // Intercept both trending and regular market endpoints
     cy.intercept('GET', '**/api/markets/trending*', { body: mockMarkets }).as('getTrendingMarkets')
     cy.intercept('GET', '**/api/markets*', { body: mockMarkets }).as('getMarkets')
-    cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
+    cy.intercept('GET', '**/api/performance/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.visit('/markets')
   })
 

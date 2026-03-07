@@ -75,6 +75,13 @@ const AVATAR_ALL = [
   "🐝", "🦜", "🐘", "🦔", "🤖",
 ];
 
+const EMOJI_TO_ANIMAL: Record<string, string> = {
+  "🦊": "fox", "🐱": "cat", "🐺": "wolf", "🦁": "lion", "🐉": "dragon",
+  "🦅": "eagle", "🐙": "octopus", "🦈": "shark", "🐍": "snake", "🦎": "lizard",
+  "🐻": "bear", "🐼": "panda", "🦇": "bat", "🐬": "dolphin", "🦋": "butterfly",
+  "🐝": "bee", "🦜": "parrot", "🐘": "elephant", "🦔": "hedgehog", "🤖": "robot",
+};
+
 // ─── Section header ───────────────────────────────────────────────────────────
 
 function SectionHeader({ icon, title, tooltip }: { icon?: string; title: string; tooltip?: string }) {
@@ -920,12 +927,18 @@ function StepLaunch({
   config,
   isDeploying,
   privateKeySecured,
+  walletAddress,
+  isGeneratingWallet,
+  walletError,
   onSecureKey,
   onDeploy,
 }: {
   config: AgentConfig;
   isDeploying: boolean;
   privateKeySecured: boolean;
+  walletAddress: string | null;
+  isGeneratingWallet: boolean;
+  walletError: string | null;
   onSecureKey: () => void;
   onDeploy: () => void;
 }) {
@@ -1129,17 +1142,17 @@ function StepLaunch({
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: "#30d158",
+                background: walletAddress ? "#30d158" : isGeneratingWallet ? "#ff9f0a" : "#ff453a",
               }}
             />
             <span
               style={{
                 fontSize: LABEL_SIZE,
-                color: "#30d158",
+                color: walletAddress ? "#30d158" : isGeneratingWallet ? "#ff9f0a" : "#ff453a",
                 fontWeight: 600,
               }}
             >
-              Live
+              {walletAddress ? "Live" : isGeneratingWallet ? "Generating..." : "Error"}
             </span>
           </div>
         </div>
@@ -1175,24 +1188,30 @@ function StepLaunch({
                 color: "rgba(255,255,255,0.65)",
               }}
             >
-              0x7B2819F3...2A94
+              {isGeneratingWallet
+                ? "Generating wallet..."
+                : walletAddress
+                  ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-4)}`
+                  : walletError ?? "Failed to generate"}
             </span>
           </div>
-          <button
-            onClick={() => navigator.clipboard?.writeText("0x7B2819F3...2A94")}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: 4,
-              color: "rgba(255,255,255,0.30)",
-              fontSize: 16,
-              outline: "none",
-            }}
-            title="Copy address"
-          >
-            📋
-          </button>
+          {walletAddress && (
+            <button
+              onClick={() => navigator.clipboard?.writeText(walletAddress)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 4,
+                color: "rgba(255,255,255,0.30)",
+                fontSize: 16,
+                outline: "none",
+              }}
+              title="Copy address"
+            >
+              📋
+            </button>
+          )}
         </div>
       </div>
 
@@ -1208,21 +1227,27 @@ function StepLaunch({
       {/* Download Private Key button */}
       <button
         onClick={onSecureKey}
-        disabled={privateKeySecured}
+        disabled={privateKeySecured || !walletAddress || isGeneratingWallet}
         style={{
           width: "100%",
           padding: "14px 24px",
           borderRadius: 14,
           background: privateKeySecured
             ? "rgba(10,132,255,0.15)"
-            : "rgba(10,132,255,0.85)",
+            : !walletAddress || isGeneratingWallet
+              ? "rgba(255,255,255,0.04)"
+              : "rgba(10,132,255,0.85)",
           border: privateKeySecured
             ? "1px solid rgba(10,132,255,0.30)"
             : "none",
-          color: privateKeySecured ? "rgba(10,132,255,0.60)" : "#fff",
+          color: privateKeySecured
+            ? "rgba(10,132,255,0.60)"
+            : !walletAddress || isGeneratingWallet
+              ? "rgba(255,255,255,0.20)"
+              : "#fff",
           fontSize: 15,
           fontWeight: 700,
-          cursor: privateKeySecured ? "default" : "pointer",
+          cursor: privateKeySecured || !walletAddress || isGeneratingWallet ? "default" : "pointer",
           transition: "all 220ms ease",
           outline: "none",
           display: "flex",
@@ -1289,7 +1314,7 @@ function StepLaunch({
             color: "rgba(255,255,255,0.30)",
           }}
         >
-          Private key must be secured before deployment is allowed.
+          Download and secure your private key before deployment. This is your only copy — Quantik never stores it.
         </span>
       </div>
     </div>
@@ -1337,6 +1362,15 @@ export default function AgentFactoryPage() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployError, setDeployError] = useState<string | null>(null);
   const [privateKeySecured, setPrivateKeySecured] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  // WDK wallet state — private key & seed only live in memory, never persisted
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [walletPrivateKey, setWalletPrivateKey] = useState<string | null>(null);
+  const [walletSeedPhrase, setWalletSeedPhrase] = useState<string | null>(null);
+  const [isGeneratingWallet, setIsGeneratingWallet] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   const updateConfig = useCallback(
     (updates: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...updates })),
@@ -1380,12 +1414,47 @@ export default function AgentFactoryPage() {
     setStep(5);
   }, []);
 
+  // Generate WDK wallet when entering Step 5
+  useEffect(() => {
+    if (step !== 5 || walletAddress) return;
+    let cancelled = false;
+    setIsGeneratingWallet(true);
+    setWalletError(null);
+    fetch(`${BASE_URL}/api/wallet/generate`, { method: "POST" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: { address: string; privateKey: string; seedPhrase: string }) => {
+        if (cancelled) return;
+        setWalletAddress(data.address);
+        setWalletPrivateKey(data.privateKey);
+        setWalletSeedPhrase(data.seedPhrase);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setWalletError(err instanceof Error ? err.message : "Failed to generate wallet");
+      })
+      .finally(() => {
+        if (!cancelled) setIsGeneratingWallet(false);
+      });
+    return () => { cancelled = true; };
+  }, [step, walletAddress]);
+
   const handleSecureKey = useCallback(() => {
-    // Simulate private key download
-    const blob = new Blob(
-      [`# Quantik Agent Private Key\n# Agent: ${config.name}\n# WARNING: Keep this file secure.\n\npk_${crypto.randomUUID().replace(/-/g, "")}`],
-      { type: "text/plain" }
-    );
+    if (!walletAddress || !walletPrivateKey || !walletSeedPhrase) return;
+    const now = new Date().toISOString();
+    const content = [
+      "# Quantik Agent Wallet — KEEP THIS FILE SECURE",
+      `# Agent: ${config.name}`,
+      `# Generated: ${now}`,
+      "# WARNING: This is your only copy. Quantik does NOT store your private key.",
+      "",
+      `Wallet Address: ${walletAddress}`,
+      `Private Key: ${walletPrivateKey}`,
+      `Seed Phrase: ${walletSeedPhrase}`,
+    ].join("\n");
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1393,16 +1462,49 @@ export default function AgentFactoryPage() {
     a.click();
     URL.revokeObjectURL(url);
     setPrivateKeySecured(true);
-  }, [config.name]);
+    // Clear sensitive data from memory after download
+    setWalletPrivateKey(null);
+    setWalletSeedPhrase(null);
+  }, [config.name, walletAddress, walletPrivateKey, walletSeedPhrase]);
+
+  const handleGenerate = useCallback(async () => {
+    const animal = EMOJI_TO_ANIMAL[config.avatar] || "fox";
+    setIsGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await fetch("/api/relay/imagine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ animal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      if (data.image) {
+        setGeneratedImage(data.image);
+      }
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Failed to generate image");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [config.avatar]);
 
   const handleDeploy = useCallback(async () => {
+    if (!walletAddress) return;
     setIsDeploying(true);
     setDeployError(null);
     try {
       const res = await fetch(`${BASE_URL}/api/v1/agents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          ...config,
+          wallet_address: walletAddress,
+          generatedImage,
+          animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       router.push("/");
@@ -1411,7 +1513,7 @@ export default function AgentFactoryPage() {
     } finally {
       setIsDeploying(false);
     }
-  }, [config, router]);
+  }, [config, walletAddress, generatedImage, router]);
 
   const header = STEP_HEADERS[step];
   const isLaunchStep = step === 5;
@@ -1521,6 +1623,9 @@ export default function AgentFactoryPage() {
                   config={config}
                   isDeploying={isDeploying}
                   privateKeySecured={privateKeySecured}
+                  walletAddress={walletAddress}
+                  isGeneratingWallet={isGeneratingWallet}
+                  walletError={walletError}
                   onSecureKey={handleSecureKey}
                   onDeploy={handleDeploy}
                 />

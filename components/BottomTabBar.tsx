@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/", icon: "🏠" },
+  { label: "Dashboard", href: "/dashboard", icon: "🏠" },
   { label: "Markets", href: "/markets", icon: "📊" },
-  { label: "Portfolio", href: "/portfolio", icon: "💼" },
+  { label: "Trades", href: "/trade-history", icon: "📈" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
@@ -25,7 +25,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
     >
       {NAV_ITEMS.map((item) => {
         const isActive =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
 
         return (
           <Link

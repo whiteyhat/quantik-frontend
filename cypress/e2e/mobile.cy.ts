@@ -1,7 +1,7 @@
 describe('Mobile Responsiveness', () => {
   beforeEach(() => {
     cy.viewport('iphone-x'); // 375x812
-    cy.visit('/');
+    cy.visit('/dashboard');
   });
 
   it('hides the desktop sidebar and shows the BottomTabBar', () => {
@@ -20,14 +20,14 @@ describe('Mobile Responsiveness', () => {
     cy.url().should('include', '/markets');
 
     cy.get('nav').filter('.md\\:hidden').within(() => {
-      // Click Portfolio
-      cy.contains('Portfolio').click();
+      // Click Trades
+      cy.contains('Trades').click();
     });
-    cy.url().should('include', '/portfolio');
+    cy.url().should('include', '/trade-history');
   });
 
   it('collapses the dashboard 3-column layout to a single column', () => {
-    cy.visit('/');
+    cy.visit('/dashboard');
     // Check that the grid container is now a single column
     // The grid should have elements stacked vertically, which means 
     // we check the grid container has grid-cols-1 by verifying elements overlap horizontally (or simply have the same left bound)
@@ -87,12 +87,12 @@ describe('Mobile Responsiveness', () => {
   });
 
 
-  it('portfolio page loads without horizontal overflow', () => {
+  it('trade history page loads without horizontal overflow', () => {
     cy.viewport('iphone-x');
-    cy.visit('/portfolio');
-    
+    cy.visit('/trade-history');
+
     // Page loads without crashing
-    cy.get('h1').contains('Portfolio').should('be.visible');
+    cy.get('h1').contains('Trade History').should('be.visible');
 
     // The main content area does not exceed 100vw
     cy.document().then((doc) => {

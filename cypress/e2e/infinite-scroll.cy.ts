@@ -36,11 +36,11 @@ describe('Infinite Scroll in MarketScanner', () => {
     }).as('getSecondPage');
 
     cy.intercept('GET', '**/api/stream/prices*', { body: {} }).as('streamPrices');
-    cy.intercept('GET', '**/api/portfolio/summary*', { body: {} }).as('summary');
+    cy.intercept('GET', '**/api/performance/summary*', { body: {} }).as('summary');
   });
 
   it('loads initial 20 markets on dashboard', () => {
-    cy.visit('/');
+    cy.visit('/dashboard');
     cy.wait('@getFirstPage');
     cy.get('[data-testid="load-more-sentinel"]').should('exist');
     cy.get('a[href^="/market/"]').should('have.length.gte', 20);
@@ -48,7 +48,7 @@ describe('Infinite Scroll in MarketScanner', () => {
 
   it('triggers load-more when sentinel scrolled into view', () => {
     // Mock IntersectionObserver for reliable headless testing
-    cy.visit('/', {
+    cy.visit('/dashboard', {
       onBeforeLoad(win: any) {
         const observers: any[] = [];
         win.__ioObservers = observers;
@@ -90,7 +90,7 @@ describe('Infinite Scroll in MarketScanner', () => {
         body: { markets: page1, total: 40, hasMore: true }
       });
     }).as('slowFirstPage');
-    cy.visit('/');
+    cy.visit('/dashboard');
     cy.get('[data-testid="scanner-loading"]').should('exist');
     cy.wait('@slowFirstPage');
     cy.get('[data-testid="scanner-loading"]').should('not.exist');

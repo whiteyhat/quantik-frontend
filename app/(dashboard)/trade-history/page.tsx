@@ -99,7 +99,7 @@ export default function TradeHistoryPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch(`${BASE_URL}/api/portfolio/attribution`)
+    fetch(`${BASE_URL}/api/performance/trades`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -470,7 +470,7 @@ export default function TradeHistoryPage() {
           letterSpacing: "0.06em",
         }}
       >
-        {filtered.length} trades shown · Attribution via /api/portfolio/attribution
+        {filtered.length} trades shown · Source: /api/performance/trades
       </div>
     </div>
   );

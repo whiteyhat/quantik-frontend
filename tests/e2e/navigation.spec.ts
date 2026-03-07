@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const routes = [
-  { path: '/', name: 'Home / Dashboard' },
+  { path: '/dashboard', name: 'Home / Dashboard' },
   { path: '/markets', name: 'Markets' },
-  { path: '/portfolio', name: 'Portfolio' },
   { path: '/trade-history', name: 'Trade History' },
   { path: '/settings', name: 'Settings' },
   { path: '/market-analysis', name: 'Market Analysis' },

@@ -6,7 +6,7 @@ describe('Dashboard', () => {
       body: { reply: '**Bold** and *italic*' }
     }).as('relayRequest')
 
-    cy.visit('/')
+    cy.visit('/dashboard')
 
     // Wait for the page to render some dashboard content
     cy.get('main', { timeout: 10000 }).should('be.visible')

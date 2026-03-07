@@ -41,11 +41,11 @@ test('GET /api/markets?category=politics → 200, titles contain political conte
   }
 });
 
-test('GET /api/portfolio/summary → 200, onChainUsdc field exists', async ({ request }) => {
-  const res = await request.get(`${BASE}/api/portfolio/summary`);
+test('GET /api/performance/summary → 200', async ({ request }) => {
+  const res = await request.get(`${BASE}/api/performance/summary`);
   expect(res.status()).toBe(200);
   const body = await res.json();
-  expect(body).toHaveProperty('onChainUsdc');
+  expect(body).toHaveProperty('tradesToday');
 });
 
 test('GET /api/v1/risk-config → 200, required fields present', async ({ request }) => {

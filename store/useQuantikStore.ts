@@ -9,6 +9,32 @@ import {
   Trade,
 } from "@/lib/api";
 
+// ─── My Agent (user's configured trading agent) ──────────────────────────────
+
+export interface MyAgent {
+  id: string;
+  agent_code: string;
+  status: string;
+  name: string;
+  avatar_emoji: string;
+  animal_type: string | null;
+  avatar_image: string | null;
+  personality: string;
+  decision_style: string;
+  trading_instinct: string;
+  time_patience: string;
+  profit_dream: string;
+  money_approach: string;
+  protection_mindset: string;
+  leverage_vibe: string;
+  market_sense: string;
+  asset_love: string;
+  wallet_address: string | null;
+  created_at: number;
+  updated_at: number;
+  deployed_at: number | null;
+}
+
 // ─── Pipeline State ───────────────────────────────────────────────────────────
 
 export type AgentStatus = "idle" | "running" | "done" | "error";
@@ -30,6 +56,12 @@ export interface PipelineState {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface QuantikStore {
+  // My Agent
+  myAgent: MyAgent | null;
+  myAgentLoading: boolean;
+  setMyAgent: (a: MyAgent | null) => void;
+  setMyAgentLoading: (l: boolean) => void;
+
   // Wallet
   wallet: WalletBalance | null;
   setWallet: (w: WalletBalance) => void;
@@ -73,6 +105,11 @@ function defaultAgents(): Record<string, AgentCardState> {
 }
 
 export const useQuantikStore = create<QuantikStore>((set) => ({
+  myAgent: null,
+  myAgentLoading: false,
+  setMyAgent: (myAgent) => set({ myAgent }),
+  setMyAgentLoading: (myAgentLoading) => set({ myAgentLoading }),
+
   wallet: null,
   setWallet: (wallet) => set({ wallet }),
 

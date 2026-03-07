@@ -1,5 +1,12 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+// ─── Auth Token ───────────────────────────────────────────────────────────────
+// Set by useAuth() hook in layout — allows apiFetch to attach Bearer token
+let _authToken: string | null = null;
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Market {
@@ -280,10 +287,16 @@ export interface CalibrationEntry {
 // ─── API Client ───────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (_authToken) {
+    headers["Authorization"] = `Bearer ${_authToken}`;
+  }
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...headers,
       ...options?.headers,
     },
   });
@@ -354,7 +367,7 @@ export const api = {
   // Wallet
   getBalance: async (): Promise<WalletBalance | null> => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/portfolio/summary");
+      const raw = await apiFetch<Record<string, unknown>>("/api/performance/summary");
       if (!raw) return null;
       // Backend may return circuitBreakerStatus as an object {state, ...}
       const cbs = raw.circuitBreakerStatus;
@@ -369,12 +382,8 @@ export const api = {
   },
 
   getPositions: async (): Promise<Position[]> => {
-    try {
-      const res = await apiFetch<Position[]>("/api/wallet/positions");
-      return Array.isArray(res) ? res : [];
-    } catch {
-      return [];
-    }
+    const res = await apiFetch<Position[]>("/api/wallet/positions");
+    return Array.isArray(res) ? res : [];
   },
 
   getOrders: async (): Promise<Order[]> => {
@@ -572,6 +581,15 @@ export const api = {
     }
   },
 
+  // My Agent (user's configured trading agent)
+  getMyAgent: async (): Promise<Record<string, unknown> | null> => {
+    try {
+      return await apiFetch<Record<string, unknown>>("/api/v1/agent/me");
+    } catch {
+      return null;
+    }
+  },
+
   // Settings
   getTelegramSettings: async (): Promise<{ chatId: string; botToken: string; hasToken: boolean }> => {
     return apiFetch("/api/v1/settings/telegram");
@@ -696,7 +714,10 @@ export function runPipeline(
 
   fetch(`${BASE_URL}/api/pipeline/run`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
+    },
     body: JSON.stringify({ slug }),
     signal: controller.signal,
   })

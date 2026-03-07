@@ -53,7 +53,7 @@ export default function MarketPage({ params }: PageProps) {
     return (
       <div style={{ padding: 20 }}>
         <Link
-          href="/"
+          href="/dashboard"
           style={{
             color: "var(--ios-blue)",
             textDecoration: "none",
@@ -96,7 +96,7 @@ export default function MarketPage({ params }: PageProps) {
       {/* Back nav */}
       <div style={{ marginBottom: 16 }}>
         <Link
-          href="/"
+          href="/dashboard"
           style={{
             fontSize: "var(--text-subhead)",
             color: "var(--ios-blue)",

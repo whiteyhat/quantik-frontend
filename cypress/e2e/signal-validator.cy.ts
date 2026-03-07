@@ -41,7 +41,7 @@ describe('Signal Validator L2', () => {
   }
 
   beforeEach(() => {
-    cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
+    cy.intercept('GET', '**/api/performance/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/markets/bitcoin-100k-2026', { fixture: 'market-single.json' }).as('getMarket')
     cy.intercept('GET', '**/api/markets/btc-100k/price-history*', { body: [] }).as('priceHistory')
     cy.intercept('GET', '**/api/v1/settings', { body: { paperMode: false } }).as('getSettings')
@@ -64,7 +64,7 @@ describe('Signal Validator L2', () => {
     }).as('getSignals')
     cy.intercept('GET', '**/api/pipeline/results', { body: MOCK_SIGNALS }).as('getPipelineResults')
 
-    cy.visit('/')
+    cy.visit('/dashboard')
     cy.wait(['@getSignals', '@portfolio'], { timeout: 10000 })
 
     cy.get('[data-testid="recent-signals"]', { timeout: 10000 }).should('exist').and('be.visible')
@@ -79,7 +79,7 @@ describe('Signal Validator L2', () => {
     }).as('getSignals')
     cy.intercept('GET', '**/api/pipeline/results', { body: MOCK_SIGNALS }).as('getPipelineResults')
 
-    cy.visit('/')
+    cy.visit('/dashboard')
     cy.wait(['@getSignals', '@portfolio'], { timeout: 10000 })
 
     cy.get('[data-testid="recent-signals"]', { timeout: 10000 }).should('exist')

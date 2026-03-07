@@ -330,26 +330,38 @@ function ActivePositionsCard() {
             const pnlPct = p.pnlPct ?? 0;
             const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
             const pnlSign = pnl >= 0 ? "+" : "";
+            const positionKey = p.id || `${p.slug}-${p.direction}`;
 
-            return (
-              <Link key={p.id} href={`/market/${p.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
-                <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderLeft: `3px solid ${accentColor}`, display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.80)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            const card = (
+              <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderLeft: `3px solid ${accentColor}`, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.80)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                     {p.market}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: isYes ? "rgba(48,209,88,0.15)" : "rgba(255,69,58,0.15)", color: accentColor, border: `1px solid ${isYes ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)"}`, fontFamily: "monospace", flexShrink: 0 }}>
-                      {p.direction}
-                    </span>
-                    <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: "rgba(255,255,255,0.40)", flex: 1 }}>
-                      {fmtPrice(p.entryPrice)} → {fmtPrice(p.currentPrice)}
-                    </span>
-                    <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, fontWeight: 600, color: pnlColor, flexShrink: 0 }}>
-                      {pnlSign}{fmtUSDC(pnl)} ({pnlSign}{(pnlPct).toFixed(1)}%)
-                    </span>
-                  </div>
+                  <span style={{ fontFamily: '"SF Mono", monospace', fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>
+                    {fmtUSDC(p.size)}
+                  </span>
                 </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, padding: "2px 6px", borderRadius: 5, background: isYes ? "rgba(48,209,88,0.15)" : "rgba(255,69,58,0.15)", color: accentColor, border: `1px solid ${isYes ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)"}`, fontFamily: "monospace", flexShrink: 0 }}>
+                    {p.direction}
+                  </span>
+                  <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, color: "rgba(255,255,255,0.40)", flex: 1 }}>
+                    {fmtPrice(p.entryPrice)} → {fmtPrice(p.currentPrice)}
+                  </span>
+                  <span style={{ fontFamily: '"SF Mono", monospace', fontSize: META_SIZE, fontWeight: 600, color: pnlColor, flexShrink: 0 }}>
+                    {pnlSign}{fmtUSDC(pnl)} ({pnlSign}{(pnlPct).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            );
+
+            return p.slug ? (
+              <Link key={positionKey} href={`/market/${p.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+                {card}
               </Link>
+            ) : (
+              <div key={positionKey}>{card}</div>
             );
           })
         )}
@@ -746,7 +758,9 @@ export default function DashboardPage() {
         <div style={{ padding: "16px 20px 0" }}>
           <SectionHeader title="Live Market Scanner" tooltip="Real-time monitoring of all active prediction markets. Blue icons indicate high-conviction candidates identified by the Orchestrator." />
         </div>
-        <MarketScanner maxCols={4} visibleLimit={8} />
+        <div style={{ padding: "0 20px 20px" }}>
+          <MarketScanner maxCols={4} visibleLimit={8} />
+        </div>
       </div>
     </div>
   );

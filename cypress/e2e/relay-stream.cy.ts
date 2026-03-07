@@ -19,7 +19,7 @@ const JSON_FALLBACK_BODY = JSON.stringify({
 
 describe('Relay SSE Streaming', () => {
   beforeEach(() => {
-    cy.visit('/');
+    cy.visit('/dashboard');
   });
 
   it('1. Streaming panel loads', () => {

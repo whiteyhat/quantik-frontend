@@ -6,7 +6,7 @@ describe('Relay Chat', () => {
   })
 
   beforeEach(() => {
-    cy.intercept('GET', '**/api/portfolio/summary', { fixture: 'portfolio.json' }).as('portfolio')
+    cy.intercept('GET', '**/api/performance/summary', { fixture: 'portfolio.json' }).as('portfolio')
     cy.intercept('GET', '**/api/markets/bitcoin-100k-2026', { fixture: 'market-single.json' }).as('getMarket')
     cy.intercept('GET', '**/api/markets/*/price-history*', {
       body: Array.from({ length: 10 }, (_, i) => ({

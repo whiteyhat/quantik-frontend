@@ -277,7 +277,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
 
       {/* Trending micro-label */}
       {isTrending && (
-        <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.03em" }}>
+        <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.03em", textAlign: "center" }}>
           {"\u{1F4E1}"} Live · Polymarket
         </div>
       )}

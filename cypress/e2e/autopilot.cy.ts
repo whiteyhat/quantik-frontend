@@ -127,7 +127,7 @@ describe("ExecutionLog", () => {
     cy.contains("No trades yet").should("be.visible");
   });
 
-  it("portfolio execution log appears below portfolio metrics", () => {
+  it("dashboard execution log appears with trade data", () => {
     cy.intercept("GET", `${API_BASE}/api/scanner/results**`, {
       statusCode: 200,
       body: [
@@ -146,7 +146,7 @@ describe("ExecutionLog", () => {
       statusCode: 200,
       body: { pnlToday: 12.5, tradesToday: 1, winRate: 1.0, openPositions: 1 },
     });
-    cy.visit("/portfolio");
+    cy.visit("/dashboard");
     cy.get("[data-testid=execution-log]").should("be.visible");
   });
 });
@@ -206,7 +206,7 @@ describe("Autopilot navigation", () => {
     cy.intercept("GET", `${API_BASE}/api/scanner/status`, { statusCode: 200, body: {} });
     cy.intercept("GET", `${API_BASE}/api/scanner/results**`, { statusCode: 200, body: [] });
     cy.intercept("GET", `${API_BASE}/api/performance/summary`, { statusCode: 200, body: {} });
-    cy.visit("/");
+    cy.visit("/dashboard");
     cy.get("a[href=\"/autopilot\"]").first().click();
     cy.url().should("include", "/autopilot");
     cy.get("[data-testid=autopilot-status-bar]").should("be.visible");
