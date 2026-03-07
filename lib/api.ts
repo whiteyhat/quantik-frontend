@@ -201,6 +201,32 @@ export interface RiskConfig {
   agentVarThreshold: number;
 }
 
+export interface LiquidationAsset {
+  asset: string;
+  executionPrice: number;
+  triggerPrice: number;
+  size: number;
+  pnlImpact: number;
+}
+
+export interface TimelineEvent {
+  timestamp: number;
+  type: string;
+  message: string;
+}
+
+export interface LiquidationReport {
+  id: string;
+  timestamp: number;
+  triggeredBy: string;
+  totalRealizedValue: number;
+  totalSlippage: number;
+  totalGas: number;
+  assets: LiquidationAsset[];
+  timeline: TimelineEvent[];
+  status: "complete" | "partial" | "failed";
+}
+
 export interface PerformanceSummary {
   winRate: number;
   pnlToday: number;
@@ -556,6 +582,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify(settings),
     });
+  },
+
+  // Emergency
+  activatePanicMode: async (options: { cancelOrders: boolean; liquidatePositions: boolean }): Promise<{ success: boolean }> => {
+    return apiFetch("/api/v1/panic-mode/activate", {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  },
+
+  getLiquidationReport: async (id: string): Promise<LiquidationReport> => {
+    return apiFetch(`/api/v1/liquidation-reports/${id}`);
   },
 };
 

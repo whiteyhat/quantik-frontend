@@ -2,8 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+import { api, type LiquidationReport, type LiquidationAsset, type TimelineEvent } from "@/lib/api";
 
 // ─── Font sizes — L003 compliant ─────────────────────────────────────────────
 const LABEL_SIZE = 11;
@@ -21,33 +20,6 @@ const panelStyle: React.CSSProperties = {
   borderRadius: 12,
   padding: 24,
 };
-
-// ─── API types ────────────────────────────────────────────────────────────────
-interface LiquidationAsset {
-  asset: string;
-  executionPrice: number;
-  triggerPrice: number;
-  size: number;
-  pnlImpact: number;
-}
-
-interface TimelineEvent {
-  timestamp: number; // unix ms
-  type: "order_cancel" | "position_close" | "circuit_break" | "protocol_start" | "protocol_end" | string;
-  message: string;
-}
-
-interface LiquidationReport {
-  id: string;
-  timestamp: number; // unix ms
-  triggeredBy: string;
-  totalRealizedValue: number;
-  totalSlippage: number;
-  totalGas: number;
-  assets: LiquidationAsset[];
-  timeline: TimelineEvent[];
-  status: "complete" | "partial" | "failed";
-}
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 function fmtUSDC(n: number | null | undefined): string {
@@ -75,60 +47,6 @@ function fmtDate(ts: number): string {
     month: "short",
     day: "numeric",
   });
-}
-
-// ─── Stub data for when API is offline ───────────────────────────────────────
-function makeStub(id: string): LiquidationReport {
-  const base = Date.now() - 3_600_000;
-  return {
-    id,
-    timestamp: base,
-    triggeredBy: "Manual Panic Protocol",
-    totalRealizedValue: 4823.41,
-    totalSlippage: 38.92,
-    totalGas: 2.17,
-    status: "complete",
-    assets: [
-      {
-        asset: "TRUMP-WIN-2026",
-        executionPrice: 0.61,
-        triggerPrice: 0.63,
-        size: 1200,
-        pnlImpact: -24.0,
-      },
-      {
-        asset: "FED-CUT-JUN",
-        executionPrice: 0.45,
-        triggerPrice: 0.48,
-        size: 800,
-        pnlImpact: -24.0,
-      },
-      {
-        asset: "BTC-100K-DEC",
-        executionPrice: 0.72,
-        triggerPrice: 0.70,
-        size: 950,
-        pnlImpact: 19.0,
-      },
-      {
-        asset: "AI-REGULATION-Q4",
-        executionPrice: 0.33,
-        triggerPrice: 0.35,
-        size: 600,
-        pnlImpact: -12.0,
-      },
-    ],
-    timeline: [
-      { timestamp: base + 0, type: "protocol_start", message: "Emergency protocol initiated by operator." },
-      { timestamp: base + 1_200, type: "circuit_break", message: "Circuit breaker engaged — pipeline halted." },
-      { timestamp: base + 3_400, type: "order_cancel", message: "12 open orders cancelled across 4 markets." },
-      { timestamp: base + 8_100, type: "position_close", message: "TRUMP-WIN-2026 position closed at 61¢." },
-      { timestamp: base + 9_500, type: "position_close", message: "FED-CUT-JUN position closed at 45¢." },
-      { timestamp: base + 11_200, type: "position_close", message: "BTC-100K-DEC position closed at 72¢." },
-      { timestamp: base + 13_800, type: "position_close", message: "AI-REGULATION-Q4 position closed at 33¢." },
-      { timestamp: base + 15_000, type: "protocol_end", message: "Liquidation complete. Report generated." },
-    ],
-  };
 }
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
@@ -519,17 +437,13 @@ export default function LiquidationReportPage({
   const { id } = use(params);
   const [report, setReport] = useState<LiquidationReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error] = useState<string | undefined>();
+  const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
     if (!id) return;
 
-    fetch(`${BASE_URL}/api/v1/liquidation-reports/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: LiquidationReport) => {
+    api.getLiquidationReport(id)
+      .then((data) => {
         setReport({
           id: data?.id ?? id,
           timestamp: data?.timestamp ?? Date.now(),
@@ -542,9 +456,8 @@ export default function LiquidationReportPage({
           status: data?.status ?? "complete",
         });
       })
-      .catch(() => {
-        // API offline — use stub so UI renders
-        setReport(makeStub(id));
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Failed to load report");
       })
       .finally(() => setLoading(false));
   }, [id]);

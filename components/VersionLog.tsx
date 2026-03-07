@@ -15,6 +15,24 @@ interface VersionEntry {
 
 const CHANGELOG: VersionEntry[] = [
   {
+    version: "v0.7.0",
+    date: "2026-03-07",
+    highlight: "Agent Factory wizard, skeleton loading system, and Arena prototype.",
+    features: [
+      "🏭 Agent Factory page — multi-step wizard to configure custom trading agents (identity, strategy, risk, preferences)",
+      "💀 Skeleton loading placeholders across all major pages — markets, dashboard, portfolio, trade history, settings, reports",
+      "📦 Skeleton shimmer components added to ExecutionLog, PerformancePanel, PnlTicker, PortfolioOverview, RecentSignals",
+      "🕹️ Arena page prototype — Agent Battle Royale concept with multiplayer evolutionary trading (replaced by Agent Factory in nav)",
+      "🧱 Reusable Skeleton UI primitive component for consistent loading states",
+    ],
+    fixes: [
+      "🧭 Sidebar nav reorganized — Arena removed, Agent Factory added between Autopilot and Settings",
+      "🗑️ Deprecated ActivePositions component cleaned up",
+      "🔄 Resilient polling and loading/error states added to risk, orchestrator, and status panels",
+      "⚡ PnlTicker removed from autopilot page to reduce layout noise",
+    ],
+  },
+  {
     version: "v0.6.0",
     date: "2026-03-06",
     highlight: "Market page & agent pipeline overhaul with animated visualizations and real order book data.",

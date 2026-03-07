@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+import { api } from "@/lib/api";
 
 // ─── Font sizes — L003 compliant ──────────────────────────────────────────────
 const LABEL_SIZE = 11;
@@ -281,12 +280,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
     setPanicStatus("activating");
     setErrorMsg(undefined);
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/panic-mode/activate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cancelOrders, liquidatePositions }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await api.activatePanicMode({ cancelOrders, liquidatePositions });
       setPanicStatus("activated");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Unknown error");

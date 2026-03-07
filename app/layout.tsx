@@ -17,11 +17,11 @@ import { VersionLogButton } from "@/components/VersionLog";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: "🏠" },
-  { label: "Arena", href: "/arena", icon: "🕹️" },
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Portfolio", href: "/portfolio", icon: "💼" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
   { label: "Autopilot", href: "/autopilot", icon: "⚡" },
+  { label: "Agent Factory", href: "/agent-factory", icon: "🏭" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
