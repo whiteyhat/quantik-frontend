@@ -15,7 +15,7 @@ const panelStyle: React.CSSProperties = {
 interface ToolUsage {
   tool: string;
   requests: number;
-  avg_latency_ms: number;
+  avg_latency_ms: number | null;
   errors: number;
 }
 
@@ -53,7 +53,8 @@ function formatToolName(name: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function latencyColor(ms: number): string {
+function latencyColor(ms: number | null): string {
+  if (ms == null) return "rgba(255,255,255,0.30)";
   if (ms < 200) return "#30d158";
   if (ms < 1000) return "#ff9f0a";
   return "#ff453a";
@@ -67,14 +68,14 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
   const fetchUsage = useCallback(async () => {
     try {
       setError(false);
-      const json = await api.getToolUsage();
+      const json = await api.getAgentUsage(agentId);
       if (json.success) setData(json.data);
     } catch {
       if (!data) setError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [agentId, data]);
 
   useEffect(() => {
     fetchUsage();
@@ -189,7 +190,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
                 </span>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <span style={{ ...mono, fontSize: 10, color: latencyColor(t.avg_latency_ms) }}>
-                    {t.avg_latency_ms}ms
+                    {t.avg_latency_ms == null ? "—" : `${t.avg_latency_ms}ms`}
                   </span>
                   <span style={{ ...mono, fontSize: 11, fontWeight: 600, color: t.errors > 0 ? "#ff453a" : "#0a84ff" }}>
                     {t.requests}

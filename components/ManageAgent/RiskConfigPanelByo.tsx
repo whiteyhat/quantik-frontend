@@ -95,7 +95,7 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Risk Configuration
+          Global Risk Policy
         </span>
         <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>Loading...</div>
       </div>
@@ -106,7 +106,7 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Risk Configuration
+          Global Risk Policy
         </span>
         <div style={{ marginTop: 12, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>Failed to load</div>
@@ -142,7 +142,7 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     <div style={panelStyle}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Risk Configuration
+          Global Risk Policy
         </span>
         {!editing ? (
           <button

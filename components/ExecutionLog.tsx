@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+import { api } from "@/lib/api";
 
 export interface ExecutedTrade {
   id?: string;
@@ -76,24 +75,21 @@ export function ExecutionLog() {
 
   const fetchTrades = async () => {
     try {
-      // Try executed trades endpoint first, fall back to performance summary
-      const res = await fetch(`${BASE_URL}/api/scanner/results?executed=true`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setTrades(data as ExecutedTrade[]);
-          return;
-        }
-      }
-    } catch { /* fall through */ }
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/performance/summary`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.recentTrades && Array.isArray(data.recentTrades)) {
-        setTrades(data.recentTrades as ExecutedTrade[]);
-      }
+      const recentTrades = await api.getTrades();
+      setTrades(
+        recentTrades.slice(0, 20).map((trade) => ({
+          id: trade.id,
+          slug: trade.slug,
+          direction: trade.direction,
+          amount: trade.size,
+          confidence: 0,
+          status:
+            trade.outcome === "LOSS" ? "FAILED" :
+            trade.outcome === "PENDING" ? "PAPER" :
+            "PLACED",
+          executedAt: new Date(trade.timestamp).toISOString(),
+        }))
+      );
     } catch { /* silently fail */ }
   };
 

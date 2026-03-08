@@ -40,6 +40,7 @@ import { ConnectionActivityLog } from "@/components/ManageAgent/ConnectionActivi
 import { HealthScoreBadge } from "@/components/ManageAgent/HealthScoreBadge";
 import { WebhookConfigPanel } from "@/components/ManageAgent/WebhookConfigPanel";
 import { RiskConfigPanelByo } from "@/components/ManageAgent/RiskConfigPanelByo";
+import { AutopilotControlCard } from "@/components/ManageAgent/AutopilotControlCard";
 
 type TabId = "dashboard" | "architecture" | "world";
 
@@ -136,6 +137,16 @@ export default function ManageAgentPage() {
     },
     []
   );
+
+  const refreshWallet = useCallback(async () => {
+    try {
+      const nextWallet = await api.getBalance();
+      if (nextWallet) setWallet(nextWallet);
+      return nextWallet;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Loading state
   if (myAgentLoading) {
@@ -282,6 +293,10 @@ export default function ManageAgentPage() {
 
           {/* RIGHT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+            <AutopilotControlCard
+              wallet={wallet}
+              onWalletRefresh={refreshWallet}
+            />
             <AiInsightCard signals={signals} loading={loading} />
             {storeAgent?.agent_type === "byo" ? (
               <>

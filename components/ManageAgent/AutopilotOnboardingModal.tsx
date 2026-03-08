@@ -24,7 +24,7 @@ const BULLET_POINTS = [
   {
     icon: "📡",
     title: "Continuous Scanning",
-    desc: "The scanner runs every 15 minutes, monitoring hundreds of markets for volatility and liquidity thresholds.",
+    desc: "The scanner runs every 5 minutes, monitoring hundreds of markets for volatility and liquidity thresholds.",
   },
   {
     icon: "🛡️",

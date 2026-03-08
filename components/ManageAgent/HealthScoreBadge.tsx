@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { api } from "@/lib/api";
+import { api, type HealthScoreResponse } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -15,21 +15,6 @@ const panelStyle: React.CSSProperties = {
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
 };
-
-interface HealthScoreData {
-  score: number;
-  grade: "A" | "B" | "C" | "D" | "F";
-  components: {
-    uptime: number;
-    error_rate: number;
-    latency: number;
-    connection: number;
-  };
-  total_requests_24h: number;
-  error_count_24h: number;
-  avg_latency_ms: number;
-  connection_status: string;
-}
 
 function gradeColor(grade: string): string {
   switch (grade) {
@@ -80,7 +65,7 @@ interface HealthScoreBadgeProps {
 }
 
 export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
-  const [data, setData] = useState<HealthScoreData | null>(null);
+  const [data, setData] = useState<HealthScoreResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -143,6 +128,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
     { label: "Latency", value: data.components.latency, weight: "20%" },
     { label: "Connection", value: data.components.connection, weight: "10%" },
   ];
+  const noData = data.status === "insufficient_data" || data.score == null || data.grade == null;
 
   return (
     <div style={panelStyle}>
@@ -156,22 +142,55 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <ScoreRing score={data.score} grade={data.grade} />
+        {noData ? (
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              border: "1px dashed rgba(255,255,255,0.18)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "rgba(255,255,255,0.45)",
+              ...mono,
+              fontSize: 11,
+              textAlign: "center",
+              lineHeight: 1.3,
+            }}
+          >
+            NO DATA
+          </div>
+        ) : (
+          <ScoreRing score={data.score!} grade={data.grade!} />
+        )}
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          {components.map(c => (
+          {noData ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ ...mono, fontSize: 11, color: "#ff9f0a", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Insufficient Data
+              </div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.60)", lineHeight: 1.6 }}>
+                {data.message}
+              </div>
+              <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+                {data.request_samples_24h} requests · {data.heartbeat_samples_24h} heartbeat intervals
+              </div>
+            </div>
+          ) : components.map(c => (
             <div key={c.label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
                 <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>
                   {c.label} ({c.weight})
                 </span>
-                <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.50)" }}>{c.value}</span>
+                <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.50)" }}>{c.value ?? "—"}</span>
               </div>
               <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
                 <div style={{
                   height: "100%", borderRadius: 2,
-                  width: `${c.value}%`,
-                  background: c.value >= 75 ? "#30d158" : c.value >= 50 ? "#ff9f0a" : "#ff453a",
+                  width: `${c.value ?? 0}%`,
+                  background: (c.value ?? 0) >= 75 ? "#30d158" : (c.value ?? 0) >= 50 ? "#ff9f0a" : "#ff453a",
                   transition: "width 600ms ease",
                 }} />
               </div>
@@ -185,7 +204,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
         {[
           { label: "Requests", value: data.total_requests_24h.toLocaleString() },
           { label: "Errors", value: String(data.error_count_24h), color: data.error_count_24h > 0 ? "#ff453a" : undefined },
-          { label: "Avg Latency", value: `${data.avg_latency_ms}ms` },
+          { label: "Avg Latency", value: data.avg_latency_ms == null ? "—" : `${data.avg_latency_ms}ms` },
         ].map(s => (
           <div key={s.label} style={{ textAlign: "center" }}>
             <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: s.color ?? "rgba(255,255,255,0.65)" }}>{s.value}</div>

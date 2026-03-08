@@ -1,17 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
-import { api, type RiskConfig } from "@/lib/api";
-import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
-import { ScannerFeed } from "@/components/ScannerFeed";
-import { ExecutionLog } from "@/components/ExecutionLog";
-import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
-import {
-  AutopilotOnboardingModal,
-  isAutopilotOnboarded,
-} from "./AutopilotOnboardingModal";
+import { type RiskConfig } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -106,42 +96,6 @@ interface AgentConfigPanelProps {
 
 export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
   const myAgent = useQuantikStore((s) => s.myAgent);
-  const setMyAgent = useQuantikStore((s) => s.setMyAgent);
-  const [autopilotActive, setAutopilotActive] = useState(false);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-
-  const activateAutopilot = useCallback(() => {
-    setAutopilotActive(true);
-    if (myAgent && myAgent.status !== "active") {
-      api.deployAgent(myAgent.id).then(() => {
-        setMyAgent({ ...myAgent, status: "active" });
-      }).catch(() => {});
-    }
-  }, [myAgent, setMyAgent]);
-
-  const handleAutopilotToggle = useCallback(
-    (enabled: boolean) => {
-      if (enabled) {
-        if (!isAutopilotOnboarded()) {
-          setShowOnboardingModal(true);
-          return;
-        }
-        activateAutopilot();
-      } else {
-        setAutopilotActive(false);
-      }
-    },
-    [activateAutopilot]
-  );
-
-  const handleOnboardingConfirm = useCallback(() => {
-    setShowOnboardingModal(false);
-    activateAutopilot();
-  }, [activateAutopilot]);
-
-  const handleOnboardingCancel = useCallback(() => {
-    setShowOnboardingModal(false);
-  }, []);
 
   if (!myAgent) return null;
 
@@ -272,127 +226,6 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
         </div>
       )}
 
-      {/* ─── Autopilot toggle ─────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 0",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: autopilotActive ? "#FF9F0A" : "rgba(255,255,255,0.85)",
-              letterSpacing: "0.04em",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            AUTOPILOT
-            {autopilotActive && (
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "#FF9F0A",
-                  display: "inline-block",
-                  animation: "pulse 2s infinite",
-                }}
-              />
-            )}
-          </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 2 }}>
-            {autopilotActive
-              ? "Autonomous execution active — 7-agent consensus trading."
-              : "Enable fully autonomous trade execution."}
-          </div>
-        </div>
-        <ToggleSwitch
-          checked={autopilotActive}
-          onChange={handleAutopilotToggle}
-          disabled={myAgent.status === "terminated"}
-        />
-      </div>
-
-      {/* ─── Inline Autopilot Dashboard ───────────────────────────────── */}
-      {autopilotActive && (
-        <div
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            paddingTop: 14,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <AutopilotStatusBar />
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 10,
-              padding: 14,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "rgba(255,255,255,0.50)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                marginBottom: 10,
-              }}
-            >
-              Live Scanner
-            </div>
-            <ScannerFeed />
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 10,
-              padding: 14,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "rgba(255,255,255,0.50)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-              }}
-            >
-              Executions
-            </div>
-            <ExecutionLog />
-            <TelegramWebhookEditor />
-          </div>
-        </div>
-      )}
-
-      {/* Autopilot onboarding modal */}
-      <AutopilotOnboardingModal
-        open={showOnboardingModal}
-        onConfirm={handleOnboardingConfirm}
-        onCancel={handleOnboardingCancel}
-      />
     </div>
   );
 }

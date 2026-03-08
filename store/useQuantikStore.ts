@@ -42,6 +42,8 @@ export interface MyAgent {
   connection_status?: "pending" | "connected" | "disconnected" | "error";
   last_heartbeat?: number | null;
   description?: string | null;
+  autopilot_enabled?: boolean;
+  autopilot_updated_at?: number | null;
 }
 
 // ─── Pipeline State ───────────────────────────────────────────────────────────

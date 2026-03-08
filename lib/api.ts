@@ -63,6 +63,8 @@ export interface WalletBalance {
   balanceStatus?: "live" | "unfunded" | "unavailable" | "no_wallet";
   balanceMessage?: string | null;
   liveBalanceAvailable?: boolean;
+  fundingStatus?: "ready" | "funding_required" | "unavailable" | "no_wallet";
+  fundingMessage?: string | null;
 }
 
 export interface Position {
@@ -267,6 +269,25 @@ export interface ByoOnboardingSession {
   last_error: string | null;
 }
 
+export interface HealthScoreResponse {
+  score: number | null;
+  grade: "A" | "B" | "C" | "D" | "F" | null;
+  status: "healthy" | "degraded" | "critical" | "insufficient_data";
+  components: {
+    uptime: number | null;
+    error_rate: number | null;
+    latency: number | null;
+    connection: number | null;
+  };
+  total_requests_24h: number;
+  error_count_24h: number;
+  avg_latency_ms: number | null;
+  connection_status: string;
+  request_samples_24h: number;
+  heartbeat_samples_24h: number;
+  message: string;
+}
+
 export interface GeneratedWalletCredentials {
   address: string;
   privateKey: string;
@@ -430,7 +451,16 @@ export const api = {
         typeof cbs === "string" ? cbs :
         cbs && typeof cbs === "object" && "state" in (cbs as Record<string, unknown>) ? (cbs as { state: string }).state :
         undefined;
-      return { ...raw, circuitBreakerStatus: cbStr } as unknown as WalletBalance;
+      return {
+        ...raw,
+        circuitBreakerStatus: cbStr,
+        fundingStatus: String(raw?.fundingStatus ?? raw?.funding_status ?? "") as WalletBalance["fundingStatus"],
+        fundingMessage: typeof raw?.fundingMessage === "string"
+          ? raw.fundingMessage
+          : typeof raw?.funding_message === "string"
+            ? raw.funding_message
+            : null,
+      } as unknown as WalletBalance;
     } catch {
       return null;
     }
@@ -492,7 +522,7 @@ export const api = {
   getScannerStatus: async (): Promise<{
     isRunning: boolean; lastScan: string | null; scannedToday: number;
     alertsTriggered: number; marketsChecked: number; tradesToday: number;
-    circuitBreakerTriggered: boolean; paperMode: boolean;
+    circuitBreakerTriggered: boolean; paperMode: boolean; scanIntervalMs?: number;
   } | null> => {
     try {
       return await apiFetch("/api/scanner/status");
@@ -797,6 +827,44 @@ export const api = {
     return apiFetch(`/api/v1/agents/${id}/deploy`, { method: "POST" });
   },
 
+  updateAutopilot: async (agentId: string, enabled: boolean): Promise<{
+    ok: boolean;
+    agent_id: string;
+    autopilot_enabled: boolean;
+    autopilot_updated_at: number;
+  }> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (_authToken) {
+      headers.Authorization = `Bearer ${_authToken}`;
+    }
+    const res = await fetch(`${BASE_URL}/api/v1/agents/${agentId}/autopilot`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null) as Record<string, unknown> | null;
+      const error = new Error(
+        typeof payload?.message === "string"
+          ? payload.message
+          : typeof payload?.error === "string"
+            ? payload.error
+            : `API error ${res.status}`
+      ) as Error & {
+        status?: number;
+        code?: string;
+        data?: Record<string, unknown> | null;
+      };
+      error.status = res.status;
+      error.code = typeof payload?.error === "string" ? payload.error : undefined;
+      error.data = payload;
+      throw error;
+    }
+    return res.json();
+  },
+
   updateRiskConfig: async (config: RiskConfig): Promise<void> => {
     await apiFetch("/api/v1/risk-config", {
       method: "PUT",
@@ -900,37 +968,31 @@ export const api = {
   getAgentActivity: async (agentId: string, limit = 50, offset = 0): Promise<{
     success: boolean;
     data: { tool_name: string; method: string; status_code: number; latency_ms: number; created_at: number }[];
+    total: number;
+    hasMore: boolean;
   }> => {
     return apiFetch(`/api/v1/agents/${agentId}/activity?limit=${limit}&offset=${offset}`);
   },
 
-  getToolUsage: async (): Promise<{
+  getAgentUsage: async (agentId: string): Promise<{
     success: boolean;
     data: {
       total_requests_24h: number;
       requests_last_hour: number;
       error_count_24h: number;
       error_rate_24h: string;
-      by_tool: { tool: string; requests: number; avg_latency_ms: number; errors: number }[];
+      by_tool: { tool: string; requests: number; avg_latency_ms: number | null; errors: number }[];
       daily_breakdown: { day: string; count: number; errors: number }[];
       recent_errors: { tool_name: string; status_code: number; error: string | null; created_at: number }[];
     };
   }> => {
-    return apiFetch("/api/v1/tools/usage");
+    return apiFetch(`/api/v1/agents/${agentId}/usage`);
   },
 
   // BYO Dashboard — Health Score
   getHealthScore: async (agentId: string): Promise<{
     success: boolean;
-    data: {
-      score: number;
-      grade: "A" | "B" | "C" | "D" | "F";
-      components: { uptime: number; error_rate: number; latency: number; connection: number };
-      total_requests_24h: number;
-      error_count_24h: number;
-      avg_latency_ms: number;
-      connection_status: string;
-    };
+    data: HealthScoreResponse;
   }> => {
     return apiFetch(`/api/v1/agents/${agentId}/health-score`);
   },

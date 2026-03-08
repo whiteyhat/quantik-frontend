@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const SCAN_INTERVAL_SECONDS = 5 * 60;
 
 type AutopilotStatus = "HUNTING" | "TRADING" | "PAUSED" | "CIRCUIT_BREAKER";
 
@@ -13,6 +14,7 @@ interface ScannerStatus {
   circuitBreakerTriggered?: boolean;
   paperMode?: boolean;
   isRunning?: boolean;
+  scanIntervalMs?: number;
 }
 
 function deriveStatus(data: ScannerStatus): AutopilotStatus {
@@ -33,7 +35,7 @@ const STATUS_CONFIG: Record<AutopilotStatus, { label: string; color: string; bg:
 export function AutopilotStatusBar() {
   const [status, setStatus] = useState<AutopilotStatus>("HUNTING");
   const [scannerData, setScannerData] = useState<ScannerStatus>({});
-  const [countdown, setCountdown] = useState(15 * 60); // 15 min in seconds
+  const [countdown, setCountdown] = useState(SCAN_INTERVAL_SECONDS);
   const [lastScanLabel, setLastScanLabel] = useState<string>("—");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -42,9 +44,10 @@ export function AutopilotStatusBar() {
       const res = await fetch(`${BASE_URL}/api/scanner/status`);
       if (!res.ok) return;
       const data: ScannerStatus = await res.json();
+      const nextCountdown = Math.max(1, Math.round((data.scanIntervalMs ?? (SCAN_INTERVAL_SECONDS * 1000)) / 1000));
       setScannerData(data);
       setStatus(deriveStatus(data));
-      setCountdown(15 * 60); // reset countdown on each successful fetch
+      setCountdown(nextCountdown);
       if (data.lastScan) {
         const diffMs = Date.now() - new Date(data.lastScan).getTime();
         const diffMin = Math.floor(diffMs / 60000);
@@ -64,12 +67,15 @@ export function AutopilotStatusBar() {
   // Countdown timer
   useEffect(() => {
     timerRef.current = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 15 * 60));
+      setCountdown((prev) => {
+        const fallback = Math.max(1, Math.round((scannerData.scanIntervalMs ?? (SCAN_INTERVAL_SECONDS * 1000)) / 1000));
+        return prev > 0 ? prev - 1 : fallback;
+      });
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [scannerData.scanIntervalMs]);
 
   const fmtCountdown = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, "0");

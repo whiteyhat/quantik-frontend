@@ -1360,6 +1360,8 @@ const NEXT_LABELS: Record<number, string> = {
 export default function AgentFactoryPage() {
   const router = useRouter();
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const myAgent = useQuantikStore((s) => s.myAgent);
+  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const [step, setStep] = useState(0);
   const [config, setConfig] = useState<AgentConfig>(DEFAULT_CONFIG);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -1374,8 +1376,8 @@ export default function AgentFactoryPage() {
   const [walletSeedPhrase, setWalletSeedPhrase] = useState<string | null>(null);
   const [isGeneratingWallet, setIsGeneratingWallet] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
-
-  const [agentLimitToast, setAgentLimitToast] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const jsConfettiRef = useRef<JSConfetti | null>(null);
   useEffect(() => {
@@ -1383,20 +1385,314 @@ export default function AgentFactoryPage() {
     return () => { jsConfettiRef.current = null; };
   }, []);
 
-  // ── Check if user already has an agent — redirect if so ────
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  // ── Locked state: user already has an agent (1/1) ────
+  if (myAgent && !myAgentLoading) {
+    const handleDelete = async () => {
+      setIsDeleting(true);
       try {
-        const data = await api.getMyAgent();
-        if (data && (data as Record<string, unknown>).id && (data as Record<string, unknown>).status !== "terminated" && !cancelled) {
-          setAgentLimitToast("You already have an agent. Delete it first from Manage Agent.");
-          setTimeout(() => { if (!cancelled) router.push("/manage-agent"); }, 2500);
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [router]);
+        await api.deleteAgent(myAgent.id);
+        setMyAgent(null);
+        setShowDeleteConfirm(false);
+      } catch {
+        /* ignore */
+      } finally {
+        setIsDeleting(false);
+      }
+    };
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxWidth: 1100,
+          minHeight: "calc(100vh - 120px)",
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <span
+            style={{
+              fontSize: 20,
+              fontWeight: 800,
+              color: "rgba(255,255,255,0.92)",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.06em",
+            }}
+          >
+            AGENT FACTORY
+          </span>
+          <span
+            style={{
+              padding: "3px 10px",
+              borderRadius: 100,
+              fontSize: 11,
+              fontWeight: 700,
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.04em",
+              background: "rgba(48,209,88,0.15)",
+              border: "1px solid rgba(48,209,88,0.35)",
+              color: "#30d158",
+            }}
+          >
+            1/1 AGENTS
+          </span>
+        </div>
+
+        {/* Locked content */}
+        <div
+          style={{
+            ...panelStyle,
+            maxWidth: 560,
+            margin: "40px auto 0",
+            textAlign: "center",
+            padding: "48px 32px",
+          }}
+        >
+          <div style={{ fontSize: 56, marginBottom: 16 }}>{myAgent.avatar_emoji}</div>
+          <h2
+            style={{
+              margin: "0 0 6px",
+              fontSize: 22,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+            }}
+          >
+            {myAgent.name}
+          </h2>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 12px",
+              borderRadius: 100,
+              background: myAgent.agent_type === "byo" ? "rgba(10,132,255,0.12)" : "rgba(48,209,88,0.12)",
+              border: `1px solid ${myAgent.agent_type === "byo" ? "rgba(10,132,255,0.25)" : "rgba(48,209,88,0.25)"}`,
+              marginBottom: 20,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: myAgent.agent_type === "byo" ? "#0a84ff" : "#30d158",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: myAgent.agent_type === "byo" ? "#0a84ff" : "#30d158",
+                letterSpacing: "0.08em",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              }}
+            >
+              {myAgent.agent_type === "byo" ? "OPENCLAW AGENT" : "QUANTIK AGENT"} · ACTIVE
+            </span>
+          </div>
+
+          <p
+            style={{
+              margin: "0 0 32px",
+              fontSize: 13,
+              color: "rgba(255,255,255,0.40)",
+              lineHeight: 1.6,
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            }}
+          >
+            Max agent limit reached (1/1). Delete your current agent to create or import a new OpenClaw agent.
+          </p>
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            {/* Create disabled */}
+            <div className="relative group" style={{ position: "relative" }}>
+              <button
+                disabled
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.20)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "not-allowed",
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                }}
+              >
+                🧪 Create Agent
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+                style={{ maxWidth: 240, whiteSpace: "normal", textAlign: "center" }}
+              >
+                Max agent reached. Delete current agent first.
+              </div>
+            </div>
+            {/* Import disabled */}
+            <div className="relative group" style={{ position: "relative" }}>
+              <button
+                disabled
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.20)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "not-allowed",
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                }}
+              >
+                🦞 Import OpenClaw
+              </button>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+                style={{ maxWidth: 240, whiteSpace: "normal", textAlign: "center" }}
+              >
+                Max agent reached. Delete current agent first.
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "28px 0" }} />
+
+          {/* Bottom actions */}
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => router.push("/manage-agent")}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 10,
+                background: "rgba(10,132,255,0.15)",
+                border: "1px solid rgba(10,132,255,0.35)",
+                color: "#0a84ff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                transition: "all 180ms ease",
+              }}
+            >
+              Manage {myAgent.name} →
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 10,
+                background: "rgba(255,69,58,0.10)",
+                border: "1px solid rgba(255,69,58,0.25)",
+                color: "#ff453a",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                transition: "all 180ms ease",
+              }}
+            >
+              Delete Agent
+            </button>
+          </div>
+        </div>
+
+        {/* Delete confirmation dialog */}
+        {showDeleteConfirm && createPortal(
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 99999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.60)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+            onClick={() => !isDeleting && setShowDeleteConfirm(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                ...panelStyle,
+                maxWidth: 400,
+                width: "90vw",
+                textAlign: "center",
+                padding: "32px 28px",
+                background: "rgba(20,20,25,0.95)",
+                border: "1px solid rgba(255,69,58,0.25)",
+              }}
+            >
+              <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+              <h3
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.92)",
+                }}
+              >
+                Delete {myAgent.name}?
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 24px",
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.45)",
+                  lineHeight: 1.5,
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                }}
+              >
+                This will permanently remove your agent, its configuration, and trading history. This action cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  style={{
+                    padding: "10px 24px",
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.60)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: isDeleting ? "not-allowed" : "pointer",
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  style={{
+                    padding: "10px 24px",
+                    borderRadius: 10,
+                    background: isDeleting ? "rgba(255,69,58,0.08)" : "rgba(255,69,58,0.15)",
+                    border: "1px solid rgba(255,69,58,0.35)",
+                    color: "#ff453a",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: isDeleting ? "not-allowed" : "pointer",
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                    transition: "all 180ms ease",
+                  }}
+                >
+                  {isDeleting ? "Deleting..." : "Yes, Delete Agent"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </div>
+    );
+  }
 
   const updateConfig = useCallback(
     (updates: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...updates })),
@@ -1535,8 +1831,7 @@ export default function AgentFactoryPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to deploy agent";
       if (msg.includes("409")) {
-        setAgentLimitToast("You already have an agent. Delete it first from Manage Agent.");
-        setTimeout(() => router.push("/manage-agent"), 2500);
+        router.push("/manage-agent");
         return;
       }
       setDeployError(msg);
@@ -1550,32 +1845,6 @@ export default function AgentFactoryPage() {
 
   return (
     <>
-    {/* Agent limit toast */}
-    {agentLimitToast && (
-      <div
-        style={{
-          position: "fixed",
-          top: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 9999,
-          padding: "12px 24px",
-          borderRadius: 12,
-          background: "rgba(255,159,10,0.18)",
-          border: "1px solid rgba(255,159,10,0.35)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          color: "#ff9f0a",
-          fontSize: 13,
-          fontWeight: 600,
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          letterSpacing: "0.03em",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-        }}
-      >
-        ⚠ {agentLimitToast}
-      </div>
-    )}
     <div
       style={{
         display: "flex",

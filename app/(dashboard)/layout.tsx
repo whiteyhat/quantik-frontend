@@ -4,7 +4,7 @@ import { GlobalPanicButton } from "@/components/GlobalPanicButton";
 import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { usePaperMode } from "@/context/PaperModeContext";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useAuth, UserButton } from "@clerk/nextjs";
 import { api, fmtUSDC, setAuthToken, type WalletBalance } from "@/lib/api";
@@ -19,6 +19,10 @@ function AuthSync() {
   const { getToken, isSignedIn } = useAuth();
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const setMyAgentLoading = useQuantikStore((s) => s.setMyAgentLoading);
+  const myAgent = useQuantikStore((s) => s.myAgent);
+  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let active = true;
@@ -44,17 +48,24 @@ function AuthSync() {
       .finally(() => setMyAgentLoading(false));
   }, [isSignedIn, setMyAgent, setMyAgentLoading]);
 
+  // Redirect first-time users (no agent) to Agent Factory
+  useEffect(() => {
+    if (!isSignedIn || myAgentLoading || myAgent !== null) return;
+    if (pathname.startsWith("/agent-factory")) return;
+    router.replace("/agent-factory");
+  }, [isSignedIn, myAgentLoading, myAgent, pathname, router]);
+
   return null;
 }
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS: { label: string; href: string; icon: string; requiresAgent?: boolean }[] = [
+const NAV_ITEMS: { label: string; href: string; icon: string; isFactory?: boolean }[] = [
   { label: "Dashboard", href: "/dashboard", icon: "🏠" },
-  { label: "My Agent", href: "/manage-agent", icon: "🤖", requiresAgent: true },
+  { label: "My Agent", href: "/manage-agent", icon: "🤖" },
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
-  { label: "Agent Factory", href: "/agent-factory", icon: "🏭" },
+  { label: "Agent Factory", href: "/agent-factory", icon: "🏭", isFactory: true },
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
@@ -72,6 +83,7 @@ interface SidebarProps {
 function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const pathname = usePathname();
   const myAgent = useQuantikStore((s) => s.myAgent);
+  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
 
   return (
     <aside
@@ -125,40 +137,81 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
 
       {/* Nav links */}
       <nav style={{ flex: 1, padding: "0 10px" }}>
-        {NAV_ITEMS.filter((item) => !item.requiresAgent || myAgent).map((item) => {
+        {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
+          const isDisabled = !myAgentLoading && !myAgent && !item.isFactory;
+          const isLoading = myAgentLoading && !item.isFactory;
+
+          const sharedStyle: React.CSSProperties = {
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 12px",
+            marginBottom: 3,
+            borderRadius: 10,
+            textDecoration: "none",
+            color: isActive
+              ? "rgba(255,255,255,0.92)"
+              : "rgba(255,255,255,0.45)",
+            background: isActive
+              ? "rgba(255,255,255,0.07)"
+              : "transparent",
+            borderLeft: isActive
+              ? "2px solid #0a84ff"
+              : "2px solid transparent",
+            fontSize: 14,
+            fontWeight: isActive ? 600 : 400,
+            transition: "all 180ms ease",
+            opacity: isDisabled ? 0.35 : isLoading ? 0.55 : 1,
+            cursor: isDisabled ? "not-allowed" : undefined,
+            pointerEvents: isDisabled ? "none" as const : undefined,
+          };
+
+          const content = (
+            <>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+              <span>{item.label}</span>
+              {item.isFactory && (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    padding: "1px 7px",
+                    borderRadius: 100,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                    letterSpacing: "0.04em",
+                    background: myAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
+                    border: `1px solid ${myAgent ? "rgba(48,209,88,0.35)" : "rgba(255,159,10,0.35)"}`,
+                    color: myAgent ? "#30d158" : "#FF9F0A",
+                    transition: "all 300ms ease",
+                  }}
+                >
+                  {myAgent ? "1/1" : "0/1"}
+                </span>
+              )}
+            </>
+          );
+
+          if (isDisabled) {
+            return (
+              <div key={item.href} style={sharedStyle} title="Create an agent first">
+                {content}
+              </div>
+            );
+          }
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "9px 12px",
-                marginBottom: 3,
-                borderRadius: 10,
-                textDecoration: "none",
-                color: isActive
-                  ? "rgba(255,255,255,0.92)"
-                  : "rgba(255,255,255,0.45)",
-                background: isActive
-                  ? "rgba(255,255,255,0.07)"
-                  : "transparent",
-                borderLeft: isActive
-                  ? "2px solid #0a84ff"
-                  : "2px solid transparent",
-                fontSize: 14,
-                fontWeight: isActive ? 600 : 400,
-                transition: "all 180ms ease",
-              }}
+              className={!myAgent && item.isFactory ? "onboarding-glow" : undefined}
+              style={sharedStyle}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
-              <span>{item.label}</span>
+              {content}
             </Link>
           );
         })}

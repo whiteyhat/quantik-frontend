@@ -41,7 +41,7 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
         } else {
           setEntries(json.data);
         }
-        setHasMore((json as unknown as { hasMore?: boolean }).hasMore ?? false);
+        setHasMore(json.hasMore);
       }
     } catch {
       if (!append) setError(true);
