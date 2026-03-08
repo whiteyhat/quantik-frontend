@@ -6,6 +6,7 @@ describe("BYO onboarding helpers", () => {
     const prompt = buildByoOnboardingPrompt(" https://quantik.app/api/v1/agents/byo/claim/abc123 ");
     expect(prompt).toContain("https://quantik.app/api/v1/agents/byo/claim/abc123");
     expect(prompt).toContain("POST the agent identity payload back to the same URL");
+    expect(prompt).toContain("Include the public OpenClaw agent_url");
   });
 
   it("formats countdown values and expired state", () => {

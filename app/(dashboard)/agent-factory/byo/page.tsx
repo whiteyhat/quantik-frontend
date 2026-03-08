@@ -6,7 +6,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import JSConfetti from "js-confetti";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { api, type ByoOnboardingSession } from "@/lib/api";
+import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
 import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } from "@/lib/byoImport";
+import { AVAILABLE_WEBHOOK_EVENTS, validateOptionalPublicHttpsUrl } from "@/lib/webhookEvents";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -23,6 +25,26 @@ const panelStyle: React.CSSProperties = {
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
+
+const reviewPanelStyle: React.CSSProperties = {
+  ...panelStyle,
+  background: [
+    "radial-gradient(circle at top left, rgba(255,128,94,0.16), transparent 34%)",
+    "radial-gradient(circle at bottom right, rgba(110,162,255,0.12), transparent 38%)",
+    "linear-gradient(145deg, rgba(18,27,42,0.92), rgba(9,15,28,0.94))",
+  ].join(", "),
+  border: "1px solid rgba(255,255,255,0.10)",
+  boxShadow: "0 28px 90px rgba(3,8,18,0.42)",
+};
+
+function formatUrlLabel(value: string): string {
+  try {
+    const parsed = new URL(value);
+    return `${parsed.hostname}${parsed.pathname === "/" ? "" : parsed.pathname}`;
+  } catch {
+    return value;
+  }
+}
 
 const BYO_STEPS = [
   { title: "Generate Link", subtitle: "Create a one-time OpenClaw claim URL" },
@@ -293,6 +315,7 @@ function StepSend({
   prompt,
   session,
   expiresLabel,
+  pollError,
   onCopyUrl,
   onCopyPrompt,
   onRegenerate,
@@ -301,6 +324,7 @@ function StepSend({
   prompt: string;
   session: ByoOnboardingSession | null;
   expiresLabel: string | null;
+  pollError: string | null;
   onCopyUrl: () => void;
   onCopyPrompt: () => void;
   onRegenerate: () => void;
@@ -351,6 +375,11 @@ function StepSend({
               {session.status === "failed" && `The claim failed${session.last_error ? `: ${session.last_error}` : "."} Generate a fresh link after fixing the issue.`}
               {session.status === "cancelled" && "This onboarding session was cancelled. Generate a fresh link to continue."}
             </div>
+            {pollError && (
+              <div style={{ marginTop: 10, fontSize: 12, color: "#ffb340", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+                {pollError}
+              </div>
+            )}
             {session.identity && (
               <div
                 style={{
@@ -413,13 +442,88 @@ function MetaRow({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+function LaunchStatePill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "ready" | "pending" | "muted";
+}) {
+  const tones = {
+    ready: {
+      background: "rgba(48,209,88,0.14)",
+      border: "rgba(48,209,88,0.28)",
+      color: "#64dd8c",
+    },
+    pending: {
+      background: "rgba(255,159,10,0.14)",
+      border: "rgba(255,159,10,0.24)",
+      color: "#ffbe55",
+    },
+    muted: {
+      background: "rgba(255,255,255,0.06)",
+      border: "rgba(255,255,255,0.10)",
+      color: "rgba(255,255,255,0.58)",
+    },
+  }[tone];
+
+  return (
+    <span
+      style={{
+        padding: "6px 10px",
+        borderRadius: 999,
+        background: tones.background,
+        border: `1px solid ${tones.border}`,
+        color: tones.color,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        textTransform: "uppercase",
+        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 function StepReview({
   session,
+  webhookUrl,
+  webhookEvents,
+  webhookDirty,
+  webhookSaving,
+  webhookSaveMessage,
+  webhookError,
+  webhookValidationError,
+  onWebhookUrlChange,
+  onToggleWebhookEvent,
+  onSaveWebhookConfig,
+  onDownloadWallet,
+  isDownloadingWallet,
+  walletDownloadError,
+  canActivate,
+  activationMessage,
   onDeploy,
   isDeploying,
   deployError,
 }: {
   session: ByoOnboardingSession | null;
+  webhookUrl: string;
+  webhookEvents: string[];
+  webhookDirty: boolean;
+  webhookSaving: boolean;
+  webhookSaveMessage: string | null;
+  webhookError: string | null;
+  webhookValidationError: string | null;
+  onWebhookUrlChange: (value: string) => void;
+  onToggleWebhookEvent: (eventKey: string) => void;
+  onSaveWebhookConfig: () => void;
+  onDownloadWallet: () => void;
+  isDownloadingWallet: boolean;
+  walletDownloadError: string | null;
+  canActivate: boolean;
+  activationMessage: string | null;
   onDeploy: () => void;
   isDeploying: boolean;
   deployError: string | null;
@@ -435,57 +539,281 @@ function StepReview({
     );
   }
 
+  const isAllEvents = webhookEvents.length === 1 && webhookEvents[0] === "*";
+  const walletBackedUp = Boolean(session.wallet_downloaded_at);
+  const walletDownloadDisabled = !session.wallet_download_ready || walletBackedUp || isDownloadingWallet;
+  const webhookStateTone: "ready" | "pending" | "muted" =
+    webhookDirty || webhookSaving
+      ? "pending"
+      : webhookUrl.trim()
+        ? (webhookValidationError ? "pending" : "ready")
+        : "muted";
+  const readyTone: "ready" | "pending" = canActivate ? "ready" : "pending";
+  const runtimeUrlLabel = session.agent_url ? formatUrlLabel(session.agent_url) : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ ...panelStyle, textAlign: "center", padding: 32 }}>
-        <div style={{ fontSize: 56, marginBottom: 12 }}>{session.identity.avatar}</div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.92)", marginBottom: 4 }}>
-          {session.identity.name}
-        </div>
-        <div style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.45)", fontFamily: '"SF Mono", "JetBrains Mono", monospace', maxWidth: 480, margin: "0 auto" }}>
-          {session.identity.description ?? "No description provided"}
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <StatusPill status={session.status} />
+      <div style={{ ...reviewPanelStyle, overflow: "hidden" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+              <div
+                style={{
+                  width: 88,
+                  height: 88,
+                  borderRadius: 28,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 48,
+                  background: "radial-gradient(circle at 30% 30%, rgba(255,157,120,0.34), rgba(45,79,130,0.16) 64%, rgba(255,255,255,0.04) 100%)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  boxShadow: "0 20px 60px rgba(255,128,94,0.18)",
+                }}
+              >
+                {session.identity.avatar}
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+                  Imported OpenClaw Agent
+                </div>
+                <div style={{ marginTop: 6, fontSize: 24, fontWeight: 800, color: "rgba(255,255,255,0.95)", letterSpacing: "-0.02em" }}>
+                  {session.identity.name}
+                </div>
+                <div style={{ marginTop: 6, maxWidth: 560, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.68)", lineHeight: 1.7 }}>
+                  {session.identity.description ?? "OpenClaw completed the handshake. Quantik has imported the runtime identity and locked it to the lobster avatar."}
+                </div>
+              </div>
+            </div>
+            <StatusPill status={session.status} />
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <LaunchStatePill label="Claimed" tone="ready" />
+            <LaunchStatePill
+              label={webhookDirty ? "Webhook Unsaved" : webhookUrl.trim() ? "Webhook Ready" : "Webhook Optional"}
+              tone={webhookStateTone}
+            />
+            <LaunchStatePill label={walletBackedUp ? "Wallet Backed Up" : "Wallet Backup Required"} tone={walletBackedUp ? "ready" : "pending"} />
+            <LaunchStatePill label={canActivate ? "Ready To Activate" : "Activation Locked"} tone={readyTone} />
+          </div>
         </div>
       </div>
 
       <div style={panelStyle}>
-        <SectionHeader title="Claimed Metadata" icon="📦" tooltip="OpenClaw now has the sensitive Quantik credentials. The dashboard only shows non-secret confirmation." />
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <MetaRow label="Claimed At" value={session.claimed_at ? new Date(session.claimed_at).toLocaleString() : null} />
-          <MetaRow label="Agent URL" value={session.agent_url} />
-          <MetaRow label="Webhook URL" value={session.endpoint_url} />
-          <MetaRow label="Webhook Events" value={session.webhook_events.join(", ")} />
-          <MetaRow label="API Key Prefix" value={session.api_key_prefix} />
-          <MetaRow label="Wallet Address" value={session.wallet_address} />
-          <MetaRow label="Connection State" value={session.connection_status} />
+        <SectionHeader title="OpenClaw Runtime URL" icon="🌐" tooltip="This public agent URL is now required in the OpenClaw claim payload." />
+        {session.agent_url ? (
+          <>
+            <a
+              href={session.agent_url}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 14px",
+                borderRadius: 14,
+                textDecoration: "none",
+                background: "rgba(86,157,255,0.10)",
+                border: "1px solid rgba(86,157,255,0.18)",
+                color: "#85c2ff",
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                wordBreak: "break-all",
+              }}
+            >
+              <span>{runtimeUrlLabel}</span>
+              <span style={{ color: "rgba(255,255,255,0.44)" }}>↗</span>
+            </a>
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              <MetaRow label="Claimed At" value={session.claimed_at ? new Date(session.claimed_at).toLocaleString() : null} />
+              <MetaRow label="API Key Prefix" value={session.api_key_prefix} />
+              <MetaRow label="Wallet Address" value={session.wallet_address} />
+              <MetaRow label="Connection State" value={session.connection_status} />
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: BODY_SIZE, color: "#ffb340", lineHeight: 1.7 }}>
+            OpenClaw did not submit a valid public agent URL. Re-run the claim with a valid HTTPS `agent_url`.
+          </div>
+        )}
+      </div>
+
+      <div style={panelStyle}>
+        <SectionHeader title="Webhook Bridge" icon="📡" tooltip="Configure where Quantik should POST event notifications back into your OpenClaw runtime." />
+        <p style={{ margin: "0 0 14px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.62)", lineHeight: 1.7 }}>
+          Webhooks are optional. If you want Quantik to push trade and risk notifications into OpenClaw, enter a public HTTPS endpoint and choose the events to deliver before activation.
+        </p>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+            Webhook URL
+          </div>
+          <input
+            value={webhookUrl}
+            onChange={(event) => onWebhookUrlChange(event.target.value)}
+            placeholder="https://openclaw.example/webhook"
+            type="url"
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${webhookValidationError ? "rgba(255,159,10,0.34)" : "rgba(255,255,255,0.10)"}`,
+              color: "rgba(255,255,255,0.88)",
+              fontSize: 13,
+              outline: "none",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: webhookValidationError ? "#ffb340" : "rgba(255,255,255,0.38)", lineHeight: 1.6 }}>
+            {webhookValidationError ?? (webhookUrl.trim() ? "Quantik will sign deliveries with the webhook secret OpenClaw received during the claim." : "No webhook configured yet. You can still activate without one.")}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 8 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+              Webhook Events
+            </div>
+            <button
+              onClick={() => onToggleWebhookEvent("*")}
+              style={{
+                border: "none",
+                background: "none",
+                color: "#85c2ff",
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                outline: "none",
+              }}
+            >
+              {isAllEvents ? "Customize" : "Select All"}
+            </button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {AVAILABLE_WEBHOOK_EVENTS.map((event) => {
+              const active = isAllEvents || webhookEvents.includes(event.key);
+              return (
+                <button
+                  key={event.key}
+                  onClick={() => onToggleWebhookEvent(event.key)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    border: `1px solid ${active ? "rgba(86,157,255,0.24)" : "rgba(255,255,255,0.08)"}`,
+                    background: active ? "rgba(86,157,255,0.12)" : "rgba(255,255,255,0.03)",
+                    color: active ? "#85c2ff" : "rgba(255,255,255,0.46)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    outline: "none",
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  }}
+                >
+                  {event.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 12, color: webhookError ? "#ff6b60" : webhookSaveMessage ? "#64dd8c" : "rgba(255,255,255,0.38)", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+            {webhookError ?? webhookSaveMessage ?? (webhookDirty ? "You have unsaved webhook changes." : "Webhook settings are synced.")}
+          </div>
+          <button
+            onClick={onSaveWebhookConfig}
+            disabled={!webhookDirty || webhookSaving || Boolean(webhookValidationError)}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "none",
+              background: !webhookDirty || webhookSaving || webhookValidationError ? "rgba(255,255,255,0.06)" : "#0a84ff",
+              color: !webhookDirty || webhookSaving || webhookValidationError ? "rgba(255,255,255,0.28)" : "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: !webhookDirty || webhookSaving || webhookValidationError ? "not-allowed" : "pointer",
+              outline: "none",
+            }}
+          >
+            {webhookSaving ? "Saving..." : "Save Webhook Settings"}
+          </button>
+        </div>
+      </div>
+
+      <div style={panelStyle}>
+        <SectionHeader title="Secure Wallet Backup" icon="🔐" tooltip="Quantik only exposes the WDK wallet bundle here once. Download it before activation." />
+        <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
+          OpenClaw already received the runtime wallet credentials during claim. This dashboard gives the owner one secure download so the WDK private key and seed phrase are backed up outside Quantik.
+        </p>
+        <button
+          onClick={onDownloadWallet}
+          disabled={walletDownloadDisabled}
+          style={{
+            width: "100%",
+            padding: "14px 20px",
+            borderRadius: 12,
+            border: "none",
+            background: walletBackedUp
+              ? "rgba(48,209,88,0.16)"
+              : walletDownloadDisabled
+                ? "rgba(255,255,255,0.06)"
+                : "linear-gradient(135deg, rgba(255,128,94,0.95), rgba(86,157,255,0.95))",
+            color: walletBackedUp
+              ? "#64dd8c"
+              : walletDownloadDisabled
+                ? "rgba(255,255,255,0.28)"
+                : "#fff",
+            fontSize: BODY_SIZE,
+            fontWeight: 700,
+            cursor: walletDownloadDisabled ? "not-allowed" : "pointer",
+            outline: "none",
+            boxShadow: walletBackedUp ? "none" : walletDownloadDisabled ? "none" : "0 16px 48px rgba(76,128,215,0.20)",
+          }}
+        >
+          {walletBackedUp ? "✓ Wallet Backup Secured" : isDownloadingWallet ? "Preparing Download..." : "Download OpenClaw Wallet Backup"}
+        </button>
+        <div style={{ marginTop: 10, fontSize: 12, color: walletDownloadError ? "#ff6b60" : walletBackedUp ? "#64dd8c" : "rgba(255,255,255,0.40)", lineHeight: 1.6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+          {walletDownloadError
+            ?? (walletBackedUp
+              ? `Downloaded ${session.wallet_downloaded_at ? new Date(session.wallet_downloaded_at).toLocaleString() : "just now"}.`
+              : session.wallet_download_ready
+                ? "Activation stays locked until the wallet backup has been downloaded."
+                : "Wallet backup is not available yet. Finish the claim handshake first.")}
         </div>
       </div>
 
       <div style={panelStyle}>
         <SectionHeader title="Activate Agent" icon="🚀" />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
-          The OpenClaw handshake is complete. Activate the agent when you are ready for it to begin using Quantik with the credentials it already received.
+          The OpenClaw handshake is complete. Activation only unlocks after the owner secures the wallet backup and there are no invalid or unsaved webhook settings.
         </p>
         <button
           onClick={onDeploy}
-          disabled={!isByoSessionReady(session.status) || isDeploying}
+          disabled={!canActivate || isDeploying}
           style={{
             width: "100%",
             padding: "14px 20px",
             borderRadius: 12,
             border: "none",
-            background: isByoSessionReady(session.status) && !isDeploying ? "#0a84ff" : "rgba(255,255,255,0.06)",
-            color: isByoSessionReady(session.status) && !isDeploying ? "#fff" : "rgba(255,255,255,0.25)",
+            background: canActivate && !isDeploying ? "#0a84ff" : "rgba(255,255,255,0.06)",
+            color: canActivate && !isDeploying ? "#fff" : "rgba(255,255,255,0.25)",
             fontSize: BODY_SIZE,
             fontWeight: 700,
-            cursor: isByoSessionReady(session.status) && !isDeploying ? "pointer" : "not-allowed",
+            cursor: canActivate && !isDeploying ? "pointer" : "not-allowed",
             outline: "none",
           }}
         >
           {isDeploying ? "Activating..." : "Activate BYO Agent"}
         </button>
+        {activationMessage && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#ffb340", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+            {activationMessage}
+          </div>
+        )}
         {deployError && (
           <div style={{ marginTop: 10, fontSize: 12, color: "#ff6b60", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
             {deployError}
@@ -511,12 +839,37 @@ export default function ByoAgentPage() {
   const [isDeploying, setIsDeploying] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
   const [copyToast, setCopyToast] = useState<string | null>(null);
+  const [pollError, setPollError] = useState<string | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEvents, setWebhookEvents] = useState<string[]>(["*"]);
+  const [webhookDirty, setWebhookDirty] = useState(false);
+  const [webhookSaving, setWebhookSaving] = useState(false);
+  const [webhookSaveMessage, setWebhookSaveMessage] = useState<string | null>(null);
+  const [webhookError, setWebhookError] = useState<string | null>(null);
+  const [isDownloadingWallet, setIsDownloadingWallet] = useState(false);
+  const [walletDownloadError, setWalletDownloadError] = useState<string | null>(null);
 
   const jsConfettiRef = useRef<JSConfetti | null>(null);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
     return () => { jsConfettiRef.current = null; };
+  }, []);
+
+  const loadSession = useCallback(async (id: string) => {
+    try {
+      const data = await api.getByoOnboardingSession(id);
+      setPollError(null);
+      setSession(data);
+      if (data.status === "claimed") {
+        setStep(3);
+      }
+      return data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to refresh OpenClaw claim status";
+      setPollError(message);
+      throw err;
+    }
   }, []);
 
   useEffect(() => {
@@ -540,14 +893,11 @@ export default function ByoAgentPage() {
 
     const poll = async () => {
       try {
-        const data = await api.getByoOnboardingSession(sessionId);
-        if (cancelled) return;
-        setSession(data);
-        if (data.status === "claimed") {
-          setStep(3);
-        }
+        await loadSession(sessionId);
       } catch {
-        // ignore transient polling failures
+        if (!cancelled) {
+          // Keep polling, but surface the last error to the user.
+        }
       }
     };
 
@@ -557,7 +907,7 @@ export default function ByoAgentPage() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [sessionId]);
+  }, [loadSession, sessionId]);
 
   useEffect(() => {
     if (!session || session.status !== "pending_claim") return;
@@ -571,8 +921,40 @@ export default function ByoAgentPage() {
     return () => window.clearTimeout(timeout);
   }, [copyToast]);
 
+  useEffect(() => {
+    if (!webhookSaveMessage) return;
+    const timeout = window.setTimeout(() => setWebhookSaveMessage(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [webhookSaveMessage]);
+
   const prompt = useMemo(() => buildByoOnboardingPrompt(onboardingUrl ?? ""), [onboardingUrl]);
   const expiresLabel = session?.expires_at ? formatByoTimeRemaining(session.expires_at, nowTick) : null;
+  const webhookValidationError = useMemo(() => validateOptionalPublicHttpsUrl(webhookUrl), [webhookUrl]);
+  const canActivate = useMemo(() => (
+    isByoSessionReady(session?.status ?? null) &&
+    Boolean(session?.wallet_downloaded_at) &&
+    !webhookSaving &&
+    !webhookDirty &&
+    !webhookValidationError
+  ), [session?.status, session?.wallet_downloaded_at, webhookSaving, webhookDirty, webhookValidationError]);
+  const activationMessage = useMemo(() => {
+    if (!session || !isByoSessionReady(session.status)) {
+      return "Waiting for OpenClaw to finish the claim.";
+    }
+    if (!session.wallet_downloaded_at) {
+      return "Download the OpenClaw wallet backup before activation.";
+    }
+    if (webhookValidationError) {
+      return webhookValidationError;
+    }
+    if (webhookSaving) {
+      return "Webhook settings are still saving.";
+    }
+    if (webhookDirty) {
+      return "Save your webhook settings before activation.";
+    }
+    return null;
+  }, [session, webhookValidationError, webhookSaving, webhookDirty]);
 
   const copyText = useCallback((value: string, successMessage: string) => {
     navigator.clipboard.writeText(value)
@@ -584,24 +966,17 @@ export default function ByoAgentPage() {
     setIsCreating(true);
     setCreateError(null);
     setDeployError(null);
+    setPollError(null);
+    setWalletDownloadError(null);
+    setWebhookError(null);
+    setWebhookSaveMessage(null);
+    setWebhookDirty(false);
+    setWebhookUrl("");
+    setWebhookEvents(["*"]);
 
     try {
       const data = await api.createByoOnboardingSession();
-      const nextSession: ByoOnboardingSession = {
-        session_id: data.session_id,
-        status: "pending_claim",
-        expires_at: data.expires_at,
-        claimed_at: null,
-        agent_id: null,
-        identity: null,
-        agent_url: null,
-        endpoint_url: null,
-        webhook_events: ["*"],
-        api_key_prefix: null,
-        wallet_address: null,
-        connection_status: null,
-        last_error: null,
-      };
+      const nextSession: ByoOnboardingSession = createPendingByoSession(data);
       setSession(nextSession);
       setSessionId(data.session_id);
       setOnboardingUrl(data.onboarding_url);
@@ -618,8 +993,113 @@ export default function ByoAgentPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    if (!session?.agent_id || webhookDirty || webhookSaving) return;
+    setWebhookUrl(session.endpoint_url ?? "");
+    setWebhookEvents(session.webhook_events.length > 0 ? session.webhook_events : ["*"]);
+    setWebhookError(null);
+  }, [session?.agent_id, session?.endpoint_url, session?.webhook_events, webhookDirty, webhookSaving]);
+
+  const handleWebhookUrlChange = useCallback((value: string) => {
+    setWebhookUrl(value);
+    setWebhookDirty(true);
+    setWebhookError(null);
+    setWebhookSaveMessage(null);
+  }, []);
+
+  const handleToggleWebhookEvent = useCallback((eventKey: string) => {
+    setWebhookDirty(true);
+    setWebhookError(null);
+    setWebhookSaveMessage(null);
+
+    if (eventKey === "*") {
+      setWebhookEvents((current) => {
+        const isAll = current.length === 1 && current[0] === "*";
+        return isAll ? [] : ["*"];
+      });
+      return;
+    }
+
+    setWebhookEvents((current) => {
+      const isAll = current.length === 1 && current[0] === "*";
+      if (isAll) {
+        return [eventKey];
+      }
+      if (current.includes(eventKey)) {
+        const next = current.filter((item) => item !== eventKey);
+        return next.length === 0 ? [] : next;
+      }
+      const next = [...current, eventKey];
+      return next.length === AVAILABLE_WEBHOOK_EVENTS.length ? ["*"] : next;
+    });
+  }, []);
+
+  const handleSaveWebhookConfig = useCallback(async () => {
+    if (!session?.agent_id || webhookValidationError) return;
+
+    setWebhookSaving(true);
+    setWebhookError(null);
+    setWebhookSaveMessage(null);
+
+    try {
+      const result = await api.updateAgentWebhookConfig(session.agent_id, {
+        endpoint_url: webhookUrl.trim() || null,
+        webhook_events: webhookEvents.length > 0 ? webhookEvents : ["*"],
+      });
+      const nextEndpointUrl = result.data.endpoint_url;
+      const nextWebhookEvents = result.data.webhook_events;
+
+      setSession((current) => current ? {
+        ...current,
+        endpoint_url: nextEndpointUrl,
+        agent_url: result.data.agent_url ?? current.agent_url,
+        webhook_events: nextWebhookEvents,
+      } : current);
+      setWebhookUrl(nextEndpointUrl ?? "");
+      setWebhookEvents(nextWebhookEvents);
+      setWebhookDirty(false);
+      setWebhookSaveMessage("Webhook bridge saved");
+    } catch (err) {
+      setWebhookError(err instanceof Error ? err.message : "Failed to save webhook settings");
+    } finally {
+      setWebhookSaving(false);
+    }
+  }, [session?.agent_id, webhookEvents, webhookUrl, webhookValidationError]);
+
+  const handleDownloadWallet = useCallback(async () => {
+    if (!sessionId || !session?.identity?.name || !session.wallet_download_ready || session.wallet_downloaded_at) return;
+
+    setIsDownloadingWallet(true);
+    setWalletDownloadError(null);
+
+    try {
+      const wallet = await api.downloadByoOnboardingWallet(sessionId);
+      const content = buildWalletDownloadContent(session.identity.name, wallet);
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quantik-openclaw-${session.identity.name.toLowerCase().replace(/\s+/g, "-") || "lobster"}-wallet.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      const downloadedAt = Date.now();
+      setSession((current) => current ? {
+        ...current,
+        wallet_download_ready: false,
+        wallet_downloaded_at: downloadedAt,
+      } : current);
+      await loadSession(sessionId).catch(() => {});
+      setCopyToast("OpenClaw wallet backup downloaded");
+    } catch (err) {
+      setWalletDownloadError(err instanceof Error ? err.message : "Failed to download wallet backup");
+    } finally {
+      setIsDownloadingWallet(false);
+    }
+  }, [loadSession, session?.identity?.name, session?.wallet_download_ready, session?.wallet_downloaded_at, sessionId]);
+
   const handleDeploy = useCallback(async () => {
-    if (!session?.agent_id || !isByoSessionReady(session.status)) return;
+    if (!session?.agent_id || !canActivate) return;
 
     setIsDeploying(true);
     setDeployError(null);
@@ -641,7 +1121,7 @@ export default function ByoAgentPage() {
     } finally {
       setIsDeploying(false);
     }
-  }, [router, session, setMyAgent]);
+  }, [canActivate, router, session, setMyAgent]);
 
   return (
     <>
@@ -783,6 +1263,7 @@ export default function ByoAgentPage() {
                     prompt={prompt}
                     session={session}
                     expiresLabel={expiresLabel}
+                    pollError={pollError}
                     onCopyUrl={() => { if (onboardingUrl) copyText(onboardingUrl, "Onboarding URL copied"); }}
                     onCopyPrompt={() => copyText(prompt, "OpenClaw prompt copied")}
                     onRegenerate={handleGenerate}
@@ -792,6 +1273,21 @@ export default function ByoAgentPage() {
                 {step === 3 && (
                   <StepReview
                     session={session}
+                    webhookUrl={webhookUrl}
+                    webhookEvents={webhookEvents}
+                    webhookDirty={webhookDirty}
+                    webhookSaving={webhookSaving}
+                    webhookSaveMessage={webhookSaveMessage}
+                    webhookError={webhookError}
+                    webhookValidationError={webhookValidationError}
+                    onWebhookUrlChange={handleWebhookUrlChange}
+                    onToggleWebhookEvent={handleToggleWebhookEvent}
+                    onSaveWebhookConfig={handleSaveWebhookConfig}
+                    onDownloadWallet={handleDownloadWallet}
+                    isDownloadingWallet={isDownloadingWallet}
+                    walletDownloadError={walletDownloadError}
+                    canActivate={canActivate}
+                    activationMessage={activationMessage}
                     onDeploy={handleDeploy}
                     isDeploying={isDeploying}
                     deployError={deployError}

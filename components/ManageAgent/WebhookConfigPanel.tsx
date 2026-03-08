@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
+import { AVAILABLE_WEBHOOK_EVENTS } from "@/lib/webhookEvents";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -15,15 +16,6 @@ const panelStyle: React.CSSProperties = {
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
 };
-
-const AVAILABLE_EVENTS = [
-  { key: "trade:executed", label: "Trade Executed" },
-  { key: "trade:closed", label: "Trade Closed" },
-  { key: "agent:alert", label: "Agent Alert" },
-  { key: "pipeline:complete", label: "Pipeline Complete" },
-  { key: "scanner:signal", label: "Scanner Signal" },
-  { key: "risk:circuit_breaker", label: "Circuit Breaker" },
-];
 
 interface WebhookDelivery {
   event: string;
@@ -102,7 +94,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
     } else {
       const next = [...events, eventKey];
       // If all events selected, switch to wildcard
-      if (next.length === AVAILABLE_EVENTS.length) {
+      if (next.length === AVAILABLE_WEBHOOK_EVENTS.length) {
         setEvents(["*"]);
       } else {
         setEvents(next);
@@ -157,7 +149,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
           </button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {AVAILABLE_EVENTS.map(evt => {
+          {AVAILABLE_WEBHOOK_EVENTS.map(evt => {
             const active = isAllEvents || events.includes(evt.key);
             return (
               <button

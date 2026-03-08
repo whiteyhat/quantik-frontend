@@ -600,11 +600,10 @@ function SynthesizedInsight({
 function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResult }) {
   const wallet = useQuantikStore((s) => s.wallet);
   const bankroll = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
-  const BANKROLL = bankroll > 0 ? bankroll : 25000;
-  const sizeUsd = num(sigma.size_usd) || (edge ? BANKROLL * num(edge.recommended_size) / 100 : 0);
+  const sizeUsd = num(sigma.size_usd) || (edge && bankroll > 0 ? bankroll * num(edge.recommended_size) / 100 : 0);
   const ev = num(edge?.net_ev);
   const expectedValue = sizeUsd * (ev / 100);
-  const kellySize = edge ? BANKROLL * num(edge.kelly) : 0;
+  const kellySize = edge && bankroll > 0 ? bankroll * num(edge.kelly) : 0;
 
   return (
     <div className="glass-card" style={{ padding: 16 }}>
@@ -631,7 +630,9 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
         </div>
       </div>
       <div style={{ fontSize: 11, color: "var(--text-tertiary)", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
-        Based on ${(BANKROLL / 1000).toFixed(0)}k bankroll {"•"} 1/4 Kelly Fraction
+        {bankroll > 0
+          ? `Based on $${(bankroll / 1000).toFixed(0)}k live bankroll • 1/4 Kelly Fraction`
+          : "No funded bankroll detected yet. Fund the wallet before sizing live trades."}
       </div>
     </div>
   );

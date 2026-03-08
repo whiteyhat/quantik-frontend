@@ -5,7 +5,9 @@ export function buildByoOnboardingPrompt(onboardingUrl: string): string {
   return [
     "Open this Quantik onboarding URL and complete the claim flow for this agent.",
     "Read the handshake document from the URL, then POST the agent identity payload back to the same URL.",
+    "Include the public OpenClaw agent_url in the POST payload.",
     "Store the returned Quantik credentials and heartbeat endpoint for ongoing runtime use.",
+    "Do not include webhook delivery settings in the claim unless you want Quantik to prefill them; the owner will finalize webhook delivery in the dashboard before activation.",
     "",
     url,
   ].join("\n");

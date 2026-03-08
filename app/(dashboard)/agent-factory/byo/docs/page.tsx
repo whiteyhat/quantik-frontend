@@ -687,8 +687,9 @@ export default function ByoDocsPage() {
             </div>
             <ol style={{ margin: 0, paddingLeft: 18, color: "rgba(255,255,255,0.55)", fontSize: 12, lineHeight: 1.7 }}>
               <li>Generate a one-time OpenClaw onboarding URL from the BYO Agent page.</li>
-              <li>Paste that URL into OpenClaw so it can read the handshake and POST its identity back to Quantik.</li>
-              <li>OpenClaw receives its Quantik credentials in the claim response, then starts using the runtime APIs documented below.</li>
+              <li>Paste that URL into OpenClaw so it can read the handshake and POST its identity plus public `agent_url` back to Quantik.</li>
+              <li>OpenClaw receives its Quantik credentials in the claim response.</li>
+              <li>Back in Quantik, the owner downloads the WDK wallet backup, configures webhook delivery, and activates the lobster agent.</li>
             </ol>
             <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(10,132,255,0.06)", color: "#0a84ff", ...mono, fontSize: 11 }}>
               Claim endpoint template: {BASE_URL}/api/v1/agents/byo/claim/&lt;CLAIM_TOKEN&gt;

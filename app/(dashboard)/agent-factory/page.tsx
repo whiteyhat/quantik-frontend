@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
+import { buildWalletDownloadContent } from "@/lib/agentFactory";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
@@ -23,8 +24,6 @@ const panelStyle: React.CSSProperties = {
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1447,12 +1446,8 @@ export default function AgentFactoryPage() {
     let cancelled = false;
     setIsGeneratingWallet(true);
     setWalletError(null);
-    fetch(`${BASE_URL}/api/wallet/generate`, { method: "POST" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: { address: string; privateKey: string; seedPhrase: string }) => {
+    api.generateWallet()
+      .then((data) => {
         if (cancelled) return;
         setWalletAddress(data.address);
         setWalletPrivateKey(data.privateKey);
@@ -1470,17 +1465,11 @@ export default function AgentFactoryPage() {
 
   const handleSecureKey = useCallback(() => {
     if (!walletAddress || !walletPrivateKey || !walletSeedPhrase) return;
-    const now = new Date().toISOString();
-    const content = [
-      "# Quantik Agent Wallet — KEEP THIS FILE SECURE",
-      `# Agent: ${config.name}`,
-      `# Generated: ${now}`,
-      "# WARNING: This is your only copy. Quantik does NOT store your private key.",
-      "",
-      `Wallet Address: ${walletAddress}`,
-      `Private Key: ${walletPrivateKey}`,
-      `Seed Phrase: ${walletSeedPhrase}`,
-    ].join("\n");
+    const content = buildWalletDownloadContent(config.name, {
+      address: walletAddress,
+      privateKey: walletPrivateKey,
+      seedPhrase: walletSeedPhrase,
+    });
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

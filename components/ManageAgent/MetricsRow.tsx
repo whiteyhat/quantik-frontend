@@ -17,15 +17,16 @@ interface MetricCard {
 }
 
 export function MetricsRow({ wallet, performance, loading }: MetricsRowProps) {
-  const todayPnlPct = wallet?.pnlTodayPct ?? 0;
+  const totalReturnPct = wallet?.pnlPct ?? null;
+  const todayPnlPct = wallet?.pnlTodayPct ?? null;
   const streak = performance?.metrics?.currentStreak ?? 0;
 
   const metrics: MetricCard[] = [
     {
       label: "Total Return",
-      value: wallet ? `${wallet.pnlPct >= 0 ? "+" : ""}${(wallet.pnlPct * 100).toFixed(1)}%` : "--",
-      delta: wallet ? `${todayPnlPct >= 0 ? "+" : ""}${(todayPnlPct * 100).toFixed(1)}% today` : undefined,
-      color: (wallet?.pnlPct ?? 0) >= 0 ? "#30d158" : "#ff453a",
+      value: totalReturnPct != null ? `${totalReturnPct >= 0 ? "+" : ""}${(totalReturnPct * 100).toFixed(1)}%` : "--",
+      delta: todayPnlPct != null ? `${todayPnlPct >= 0 ? "+" : ""}${(todayPnlPct * 100).toFixed(1)}% today` : wallet?.balanceMessage ?? undefined,
+      color: totalReturnPct == null ? "rgba(255,255,255,0.45)" : totalReturnPct >= 0 ? "#30d158" : "#ff453a",
     },
     {
       label: "Win Rate",

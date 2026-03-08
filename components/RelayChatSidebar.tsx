@@ -557,6 +557,9 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         )}
 
         {messages.map((msg) => {
+          // Hide empty streaming placeholder — typing indicator covers this
+          if (msg.role === "agent" && !msg.text) return null;
+
           // Tool call bubble
           if (msg.role === "tool" && msg.toolCall) {
             return (

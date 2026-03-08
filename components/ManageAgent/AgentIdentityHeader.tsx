@@ -66,6 +66,8 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
 
   const badge = statusBadge(myAgent.status);
   const periods: ("7D" | "30D" | "All")[] = ["7D", "30D", "All"];
+  const displayBalance = wallet?.totalValue;
+  const balanceMessage = wallet?.balanceMessage ?? null;
 
   return (
     <div style={panelStyle}>
@@ -180,9 +182,22 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {fmtUSDC(wallet?.totalValue ?? wallet?.usdc ?? 0)}
+                {displayBalance != null ? fmtUSDC(displayBalance) : "--"}
               </span>
             </div>
+            {balanceMessage && (
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.38)",
+                  lineHeight: 1.5,
+                  maxWidth: 420,
+                }}
+              >
+                {balanceMessage}
+              </div>
+            )}
           </div>
         </div>
 

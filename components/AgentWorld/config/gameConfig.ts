@@ -29,6 +29,11 @@ export function createGameConfig(
       },
     },
     scene: scenes,
+    input: {
+      mouse: {
+        preventDefaultWheel: false,
+      },
+    },
     banner: false,
   };
 }

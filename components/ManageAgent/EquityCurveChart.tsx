@@ -48,8 +48,9 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChartProps) {
+  const currentBalance = wallet?.totalValue ?? null;
   const chartData = useMemo(() => {
-    const currentBalance = wallet?.totalValue ?? wallet?.usdc ?? 0;
+    if (currentBalance == null) return [];
     const now = Date.now();
     const periodMs =
       timePeriod === "7D" ? 7 * 86400000 :
@@ -103,7 +104,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
     });
 
     return points;
-  }, [wallet, trades, timePeriod]);
+  }, [currentBalance, trades, timePeriod]);
 
   const periodPnl = useMemo(() => {
     if (chartData.length < 2) return 0;
@@ -128,7 +129,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
               color: "rgba(255,255,255,0.92)",
             }}
           >
-            {fmtUSDC(wallet?.totalValue ?? wallet?.usdc ?? 0)}
+            {currentBalance != null ? fmtUSDC(currentBalance) : "--"}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -143,12 +144,31 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
               color: isPositive ? "#30d158" : "#ff453a",
             }}
           >
-            {isPositive ? "+" : ""}{fmtUSDC(periodPnl)}
+            {currentBalance != null ? `${isPositive ? "+" : ""}${fmtUSDC(periodPnl)}` : "--"}
           </div>
         </div>
       </div>
 
-      {/* Chart */}
+      {currentBalance == null ? (
+        <div
+          style={{
+            height: 240,
+            borderRadius: 12,
+            border: "1px dashed rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.02)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: 24,
+            color: "rgba(255,255,255,0.42)",
+            fontSize: 13,
+            lineHeight: 1.6,
+          }}
+        >
+          {wallet?.balanceMessage ?? "Live portfolio value is not available yet."}
+        </div>
+      ) : (
       <ResponsiveContainer width="100%" height={240}>
         <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
           <defs>
@@ -184,6 +204,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
           />
         </AreaChart>
       </ResponsiveContainer>
+      )}
     </div>
   );
 }

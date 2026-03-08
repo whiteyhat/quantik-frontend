@@ -41,25 +41,28 @@ export interface AgentStatusEntry {
 export interface WalletBalance {
   address: string;
   // Legacy field
-  usdc: number;
+  usdc: number | null;
   // On-chain balances
-  onChainUsdc?: number;
+  onChainUsdc?: number | null;
   onChainUsdcFormatted?: string;
   pol?: number;
   polFormatted?: string;
   pnl: number;
-  pnlPct: number;
+  pnlPct: number | null;
   winRate: number;
   totalTrades: number;
   // New backend fields
   pnlToday: number;
-  pnlTodayPct: number;
-  totalValue: number;
+  pnlTodayPct: number | null;
+  totalValue: number | null;
   // Risk fields
   circuitBreakerStatus?: "ARMED" | "WARNING" | "TRIGGERED";
   kellyUtilization?: number;
   drawdown?: number;
   drawdownLimit?: number;
+  balanceStatus?: "live" | "unfunded" | "unavailable" | "no_wallet";
+  balanceMessage?: string | null;
+  liveBalanceAvailable?: boolean;
 }
 
 export interface Position {
@@ -259,7 +262,15 @@ export interface ByoOnboardingSession {
   api_key_prefix: string | null;
   wallet_address: string | null;
   connection_status: string | null;
+  wallet_download_ready: boolean;
+  wallet_downloaded_at: number | null;
   last_error: string | null;
+}
+
+export interface GeneratedWalletCredentials {
+  address: string;
+  privateKey: string;
+  seedPhrase: string;
 }
 
 export interface PerformanceSummary {
@@ -774,6 +785,10 @@ export const api = {
     });
   },
 
+  generateWallet: async (): Promise<GeneratedWalletCredentials> => {
+    return apiFetch("/api/wallet/generate", { method: "POST" });
+  },
+
   deleteAgent: async (id: string): Promise<void> => {
     await apiFetch(`/api/v1/agents/${id}`, { method: "DELETE" });
   },
@@ -837,6 +852,7 @@ export const api = {
   },
 
   // ── BYO Agent ─────────────────────────────────────────────────────────────
+  // Legacy direct-create endpoint — deprecated in favor of onboarding/claim.
 
   createByoAgent: async (config: {
     agent_url?: string;
@@ -857,6 +873,12 @@ export const api = {
 
   getByoOnboardingSession: async (sessionId: string): Promise<ByoOnboardingSession> => {
     return apiFetch(`/api/v1/agents/byo/onboarding/${sessionId}`);
+  },
+
+  downloadByoOnboardingWallet: async (sessionId: string): Promise<GeneratedWalletCredentials> => {
+    return apiFetch(`/api/v1/agents/byo/onboarding/${sessionId}/wallet-download`, {
+      method: "POST",
+    });
   },
 
   getApiKeys: async (): Promise<{ keys: { id: string; key_prefix: string; active: boolean; scopes: string[]; created_at: number; last_used_at: number | null }[] }> => {
@@ -929,7 +951,14 @@ export const api = {
     endpoint_url?: string | null;
     agent_url?: string | null;
     webhook_events?: string[];
-  }): Promise<{ success: boolean }> => {
+  }): Promise<{
+    success: boolean;
+    data: {
+      agent_url: string | null;
+      endpoint_url: string | null;
+      webhook_events: string[];
+    };
+  }> => {
     return apiFetch(`/api/v1/agents/${agentId}/byo-config`, {
       method: "PATCH",
       body: JSON.stringify(config),
