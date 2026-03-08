@@ -49,11 +49,11 @@ function AuthSync() {
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { label: string; href: string; icon: string; requiresAgent?: boolean }[] = [
   { label: "Dashboard", href: "/dashboard", icon: "🏠" },
+  { label: "My Agent", href: "/manage-agent", icon: "🤖", requiresAgent: true },
   { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
-  { label: "Autopilot", href: "/autopilot", icon: "⚡" },
   { label: "Agent Factory", href: "/agent-factory", icon: "🏭" },
   { label: "Settings", href: "/settings", icon: "⚙️" },
 ];
@@ -125,7 +125,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
 
       {/* Nav links */}
       <nav style={{ flex: 1, padding: "0 10px" }}>
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.requiresAgent || myAgent).map((item) => {
           const isActive =
             item.href === "/dashboard"
               ? pathname === "/dashboard"
@@ -164,7 +164,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer — version text + Relay trigger button (rightmost) */}
+      {/* Footer — version text + Agent chat trigger button (rightmost) */}
       <div
         style={{
           padding: "12px 16px 16px",
@@ -184,8 +184,55 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           v0.1.0 · Quantik
         </span>
 
-        {/* Relay trigger — rightmost in footer */}
+        {/* Agent chat trigger — rightmost in footer */}
         <div className="relative group" style={{ position: "relative" }}>
+          {/* Comic speech bubble — visible until first chat open */}
+          {relayPulsing && myAgent && (
+            <div
+              className="speech-bubble-enter"
+              style={{
+                position: "absolute",
+                bottom: "calc(100% + 14px)",
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "rgba(10,132,255,0.15)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(10,132,255,0.35)",
+                borderRadius: 12,
+                padding: "8px 12px",
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+                zIndex: 10,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.88)",
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Hey! Talk to me 💬
+              </span>
+              {/* Speech bubble tail */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -6,
+                  left: "50%",
+                  transform: "translateX(-50%) rotate(45deg)",
+                  width: 10,
+                  height: 10,
+                  background: "rgba(10,132,255,0.15)",
+                  borderRight: "1px solid rgba(10,132,255,0.35)",
+                  borderBottom: "1px solid rgba(10,132,255,0.35)",
+                }}
+              />
+            </div>
+          )}
           {/* Pulse ring */}
           {relayPulsing && (
             <span
@@ -202,7 +249,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           )}
           <button
             onClick={onToggleRelay}
-            aria-label={relayOpen ? "Close Relay chat" : "Open Relay chat"}
+            aria-label={relayOpen ? `Close ${myAgent?.name ?? "Agent"} chat` : `Chat with ${myAgent?.name ?? "Agent"}`}
             style={{
               position: "relative",
               zIndex: 1,
@@ -230,10 +277,12 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           >
             {relayOpen ? "✕" : (myAgent?.avatar_emoji ?? "🤝")}
           </button>
-          {/* Styled tooltip replacing native title attribute */}
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-            {myAgent ? `CHAT WITH ${myAgent.name.toUpperCase()}` : "CHAT WITH QUANTIK INTELLIGENCE"}
-          </div>
+          {/* Styled tooltip — hidden when speech bubble is showing */}
+          {!(relayPulsing && myAgent) && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              {myAgent ? `CHAT WITH ${myAgent.name.toUpperCase()}` : "CHAT WITH QUANTIK INTELLIGENCE"}
+            </div>
+          )}
         </div>
       </div>
     </aside>
@@ -305,7 +354,10 @@ function MetricItem({
 function TopWalletBar() {
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { paperMode } = usePaperMode();
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     api.getBalance().then(setWallet).catch(() => {});
@@ -466,13 +518,15 @@ function TopWalletBar() {
         >
           ALL SYSTEMS OK
         </span>
-        <UserButton
-          appearance={{
-            elements: {
-              avatarBox: { width: 28, height: 28 },
-            },
-          }}
-        />
+        {mounted && (
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: { width: 28, height: 28 },
+              },
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -497,6 +551,13 @@ export default function DashboardLayout({
     setRelayOpen((prev) => !prev);
   }, []);
 
+  // Listen for custom event to open agent chat from other pages
+  useEffect(() => {
+    const openChat = () => setRelayOpen(true);
+    window.addEventListener("open-agent-chat", openChat);
+    return () => window.removeEventListener("open-agent-chat", openChat);
+  }, []);
+
   const handleRelayFirstOpen = useCallback(() => {
     localStorage.setItem(RELAY_LS_KEY, "true");
     setRelayPulsing(false);
@@ -509,14 +570,14 @@ export default function DashboardLayout({
       {/* Animated gradient background */}
       <div className="crystal-bg" />
 
-      {/* Left sidebar — relay button lives in its footer */}
+      {/* Left sidebar — agent chat button lives in its footer */}
       <Sidebar
         relayOpen={relayOpen}
         relayPulsing={relayPulsing}
         onToggleRelay={handleToggleRelay}
       />
 
-      {/* Relay chat drawer — controlled by layout state */}
+      {/* Agent chat drawer — controlled by layout state */}
       <RelayChatSidebar
         open={relayOpen}
         onToggle={handleToggleRelay}

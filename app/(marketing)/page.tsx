@@ -249,7 +249,7 @@ export default function LandingPage() {
               style={{
                 maxWidth: 680,
                 fontFamily: FONT,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 400,
                 color: "rgba(255,255,255,0.80)",
                 lineHeight: 1.6,
@@ -257,9 +257,7 @@ export default function LandingPage() {
               }}
               className="px-6 md:px-0"
             >
-              Powering seamless experiences and real-time connections, EOS is the
-              base for creators who move with purpose, leveraging resilience,
-              speed, and scale to shape the future.
+              Build your own ruthless AI trading agent with a savage personality and unique trading behaviour in a few clicks. Then unleash it in Polymarket to crush markets and print money with a swarm of 7 sub-agents.
             </p>
 
             {/* CTA Button — opens Clerk sign-in modal */}

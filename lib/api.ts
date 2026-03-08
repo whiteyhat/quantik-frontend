@@ -244,6 +244,24 @@ export interface LiquidationReport {
   status: "complete" | "partial" | "failed";
 }
 
+export type ByoOnboardingStatus = "pending_claim" | "claimed" | "expired" | "failed" | "cancelled";
+
+export interface ByoOnboardingSession {
+  session_id: string;
+  status: ByoOnboardingStatus;
+  expires_at: number;
+  claimed_at: number | null;
+  agent_id: string | null;
+  identity: { name: string; description: string | null; avatar: string } | null;
+  agent_url: string | null;
+  endpoint_url: string | null;
+  webhook_events: string[];
+  api_key_prefix: string | null;
+  wallet_address: string | null;
+  connection_status: string | null;
+  last_error: string | null;
+}
+
 export interface PerformanceSummary {
   winRate: number;
   pnlToday: number;
@@ -258,6 +276,22 @@ export interface PerformanceSummary {
     rollingHitRate: number;
     recommendation: string;
   } | null;
+}
+
+export interface AlertEntry {
+  id: string;
+  slug: string;
+  question: string;
+  confidence: number;
+  signal_state: "TRADE" | "WATCH" | "SKIP" | null;
+  alert_sent: number; // 1=sent, 2=approved, -1=vetoed
+  created_at: number;
+}
+
+export interface AlertStatus {
+  alerts: AlertEntry[];
+  muted: boolean;
+  mutedUntil: number | null;
 }
 
 export interface TradeRequest {
@@ -421,6 +455,115 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ slug, direction, sizeUsdc }),
     }),
+
+  // Execution log (for system log feed)
+  getExecutionLog: async (): Promise<{ slug: string; side: string; amount: number; executed_at: number; status: string; pnl: number | null }[]> => {
+    try {
+      const raw = await apiFetch<{ log: unknown[] }>("/api/execution/log");
+      const log = Array.isArray(raw?.log) ? raw.log : [];
+      return log.map((r) => {
+        const item = r as Record<string, unknown>;
+        return {
+          slug: String(item?.slug ?? ""),
+          side: String(item?.side ?? "buy"),
+          amount: Number(item?.amount ?? 0),
+          executed_at: Number(item?.executed_at ?? 0),
+          status: String(item?.status ?? ""),
+          pnl: item?.pnl != null ? Number(item.pnl) : null,
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  // Scanner status + results (for system log feed)
+  getScannerStatus: async (): Promise<{
+    isRunning: boolean; lastScan: string | null; scannedToday: number;
+    alertsTriggered: number; marketsChecked: number; tradesToday: number;
+    circuitBreakerTriggered: boolean; paperMode: boolean;
+  } | null> => {
+    try {
+      return await apiFetch("/api/scanner/status");
+    } catch {
+      return null;
+    }
+  },
+
+  getScannerResults: async (limit = 30): Promise<{
+    slug: string; scannedAt: number; sigmaConfidence: number;
+    kellyFraction: number; recommendation: string; probability: number;
+  }[]> => {
+    try {
+      const raw = await apiFetch<{ results: unknown[] }>(`/api/scanner/results?limit=${limit}`);
+      const results = Array.isArray(raw?.results) ? raw.results : [];
+      return results.map((r) => {
+        const item = r as Record<string, unknown>;
+        return {
+          slug: String(item?.slug ?? ""),
+          scannedAt: Number(item?.scannedAt ?? item?.scanned_at ?? 0),
+          sigmaConfidence: Number(item?.sigmaConfidence ?? item?.sigma_confidence ?? 0),
+          kellyFraction: Number(item?.kellyFraction ?? item?.kelly_fraction ?? 0),
+          recommendation: String(item?.recommendation ?? ""),
+          probability: Number(item?.probability ?? 0),
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  // Pipeline history (for system log feed)
+  getPipelineHistory: async (): Promise<{
+    id: string; market_slug: string; market_question: string;
+    created_at: number; completed_at: number | null;
+    decision: string | null; confidence: number | null;
+  }[]> => {
+    try {
+      const raw = await apiFetch<unknown[]>("/api/pipeline/history");
+      const arr = Array.isArray(raw) ? raw : [];
+      return arr.map((r) => {
+        const item = r as Record<string, unknown>;
+        return {
+          id: String(item?.id ?? ""),
+          market_slug: String(item?.market_slug ?? ""),
+          market_question: String(item?.market_question ?? ""),
+          created_at: Number(item?.created_at ?? 0),
+          completed_at: item?.completed_at != null ? Number(item.completed_at) : null,
+          decision: item?.decision != null ? String(item.decision) : null,
+          confidence: item?.confidence != null ? Number(item.confidence) : null,
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
+
+  // Trades
+  getTrades: async (): Promise<Trade[]> => {
+    try {
+      const raw = await apiFetch<{ trades: unknown[] }>("/api/trade");
+      const trades = Array.isArray(raw?.trades) ? raw.trades : Array.isArray(raw) ? (raw as unknown[]) : [];
+      return trades.map((t) => {
+        const item = t as Record<string, unknown>;
+        return {
+          id: String(item?.id ?? ""),
+          market: String(item?.market ?? item?.slug ?? ""),
+          slug: String(item?.slug ?? ""),
+          direction: (String(item?.direction ?? "YES").toUpperCase() === "NO" ? "NO" : "YES") as "YES" | "NO",
+          size: Number(item?.size ?? item?.sizeUsdc ?? 0),
+          price: Number(item?.price ?? item?.entryPrice ?? 0),
+          outcome: (["WIN", "LOSS", "OPEN", "PENDING"].includes(String(item?.outcome ?? "").toUpperCase())
+            ? String(item?.outcome).toUpperCase()
+            : "OPEN") as Trade["outcome"],
+          timestamp: Number(item?.timestamp ?? item?.created_at ?? 0),
+          pnl: Number(item?.pnl ?? 0),
+        };
+      });
+    } catch {
+      return [];
+    }
+  },
 
   // Signals
   getSignals: async (): Promise<Signal[]> => {
@@ -608,6 +751,79 @@ export const api = {
     }
   },
 
+  createAgent: async (config: {
+    name: string;
+    avatar: string;
+    animalType?: string;
+    generatedImage?: string | null;
+    wallet_address: string;
+    personality: string;
+    decisionStyle: string;
+    tradingInstinct: string;
+    timePatience: string;
+    profitDream: string;
+    moneyApproach: string;
+    protectionMindset: string;
+    leverageVibe: string;
+    marketSense: string;
+    assetLove: string;
+  }): Promise<Record<string, unknown>> => {
+    return apiFetch<Record<string, unknown>>("/api/v1/agents", {
+      method: "POST",
+      body: JSON.stringify(config),
+    });
+  },
+
+  deleteAgent: async (id: string): Promise<void> => {
+    await apiFetch(`/api/v1/agents/${id}`, { method: "DELETE" });
+  },
+
+  deployAgent: async (id: string): Promise<{ ok: boolean; status: string; deployed_at: number }> => {
+    return apiFetch(`/api/v1/agents/${id}/deploy`, { method: "POST" });
+  },
+
+  updateRiskConfig: async (config: RiskConfig): Promise<void> => {
+    await apiFetch("/api/v1/risk-config", {
+      method: "PUT",
+      body: JSON.stringify(config),
+    });
+  },
+
+  // Alerts
+  getAlertStatus: async (): Promise<AlertStatus> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/alerts/status");
+      return {
+        alerts: Array.isArray(raw?.alerts)
+          ? (raw.alerts as Record<string, unknown>[]).map((a) => ({
+              id: String(a.id ?? ""),
+              slug: String(a.slug ?? ""),
+              question: String(a.question ?? ""),
+              confidence: Number(a.confidence ?? 0),
+              signal_state: (["TRADE", "WATCH", "SKIP"].includes(String(a.signal_state)) ? String(a.signal_state) : null) as AlertEntry["signal_state"],
+              alert_sent: Number(a.alert_sent ?? 0),
+              created_at: Number(a.created_at ?? 0),
+            }))
+          : [],
+        muted: Boolean(raw?.muted),
+        mutedUntil: typeof raw?.mutedUntil === "number" ? raw.mutedUntil : null,
+      };
+    } catch {
+      return { alerts: [], muted: false, mutedUntil: null };
+    }
+  },
+
+  muteAlerts: async (seconds = 3600): Promise<{ mutedUntil: number }> => {
+    return apiFetch("/api/alerts/mute", {
+      method: "POST",
+      body: JSON.stringify({ seconds }),
+    });
+  },
+
+  unmuteAlerts: async (): Promise<void> => {
+    await apiFetch("/api/alerts/mute", { method: "DELETE" });
+  },
+
   // Settings
   getTelegramSettings: async (): Promise<{ chatId: string; botToken: string; hasToken: boolean }> => {
     return apiFetch("/api/v1/settings/telegram");
@@ -618,6 +834,114 @@ export const api = {
       method: "POST",
       body: JSON.stringify(settings),
     });
+  },
+
+  // ── BYO Agent ─────────────────────────────────────────────────────────────
+
+  createByoAgent: async (config: {
+    agent_url?: string;
+    name?: string;
+    avatar?: string;
+    description?: string;
+    endpoint_url?: string;
+  }): Promise<Record<string, unknown>> => {
+    return apiFetch("/api/v1/agents/byo", {
+      method: "POST",
+      body: JSON.stringify(config),
+    });
+  },
+
+  createByoOnboardingSession: async (): Promise<{ session_id: string; onboarding_url: string; expires_at: number }> => {
+    return apiFetch("/api/v1/agents/byo/onboarding", { method: "POST" });
+  },
+
+  getByoOnboardingSession: async (sessionId: string): Promise<ByoOnboardingSession> => {
+    return apiFetch(`/api/v1/agents/byo/onboarding/${sessionId}`);
+  },
+
+  getApiKeys: async (): Promise<{ keys: { id: string; key_prefix: string; active: boolean; scopes: string[]; created_at: number; last_used_at: number | null }[] }> => {
+    return apiFetch("/api/v1/api-keys");
+  },
+
+  rotateApiKey: async (keyId: string): Promise<{ api_key: string; key_prefix: string }> => {
+    return apiFetch(`/api/v1/api-keys/${keyId}/rotate`, { method: "POST" });
+  },
+
+  revokeApiKey: async (keyId: string): Promise<void> => {
+    await apiFetch(`/api/v1/api-keys/${keyId}`, { method: "DELETE" });
+  },
+
+  healthCheck: async (agentId: string): Promise<{ connection_status: string }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/health-check`, { method: "POST" });
+  },
+
+  getAgentActivity: async (agentId: string, limit = 50, offset = 0): Promise<{
+    success: boolean;
+    data: { tool_name: string; method: string; status_code: number; latency_ms: number; created_at: number }[];
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/activity?limit=${limit}&offset=${offset}`);
+  },
+
+  getToolUsage: async (): Promise<{
+    success: boolean;
+    data: {
+      total_requests_24h: number;
+      requests_last_hour: number;
+      error_count_24h: number;
+      error_rate_24h: string;
+      by_tool: { tool: string; requests: number; avg_latency_ms: number; errors: number }[];
+      daily_breakdown: { day: string; count: number; errors: number }[];
+      recent_errors: { tool_name: string; status_code: number; error: string | null; created_at: number }[];
+    };
+  }> => {
+    return apiFetch("/api/v1/tools/usage");
+  },
+
+  // BYO Dashboard — Health Score
+  getHealthScore: async (agentId: string): Promise<{
+    success: boolean;
+    data: {
+      score: number;
+      grade: "A" | "B" | "C" | "D" | "F";
+      components: { uptime: number; error_rate: number; latency: number; connection: number };
+      total_requests_24h: number;
+      error_count_24h: number;
+      avg_latency_ms: number;
+      connection_status: string;
+    };
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/health-score`);
+  },
+
+  // BYO Dashboard — Webhook Log
+  getWebhookLog: async (agentId: string, limit = 20): Promise<{
+    success: boolean;
+    data: {
+      event: string; url: string; status_code: number | null;
+      latency_ms: number; attempt: number; error: string | null; created_at: number;
+    }[];
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/webhook-log?limit=${limit}`);
+  },
+
+  // BYO Dashboard — Update Webhook Config
+  updateAgentWebhookConfig: async (agentId: string, config: {
+    endpoint_url?: string | null;
+    agent_url?: string | null;
+    webhook_events?: string[];
+  }): Promise<{ success: boolean }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/byo-config`, {
+      method: "PATCH",
+      body: JSON.stringify(config),
+    });
+  },
+
+  // BYO Dashboard — Test Webhook
+  testWebhook: async (agentId: string): Promise<{
+    success: boolean;
+    data: { ok: boolean; status_code: number | null; latency_ms: number; error?: string };
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/webhook-test`, { method: "POST" });
   },
 
   // Emergency

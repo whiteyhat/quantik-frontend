@@ -10,7 +10,8 @@
     "test:e2e": "start-server-and-test dev http://localhost:3000 'cypress run'",
     "test:e2e:report": "playwright test --reporter=list",
     "test:unit": "vitest run",
-    "test": "vitest run && playwright test"
+    "test": "vitest run && playwright test",
+    "generate-sprites": "npx tsx scripts/generate-sprites.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.1",
@@ -18,10 +19,12 @@
     "@google/generative-ai": "^0.24.1",
     "@sentry/nextjs": "^10.40.0",
     "@tanstack/react-query": "^5.90.21",
+    "@xyflow/react": "^12.10.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
     "iconoir-react": "^7.11.0",
+    "js-confetti": "^0.13.1",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "phaser": "^3.90.0",

@@ -15,6 +15,33 @@ interface VersionEntry {
 
 const CHANGELOG: VersionEntry[] = [
   {
+    version: "v0.8.0",
+    date: "2026-03-07",
+    highlight: "Clerk authentication, WDK wallet generation, real-time Socket.IO, Railway deployment, and full dashboard restructure.",
+    features: [
+      "🔐 Clerk authentication — sign-in/sign-up pages, JWT sync, UserButton in wallet bar, middleware route protection",
+      "👛 WDK wallet generation — real EVM wallets via Tether WDK in Agent Factory Step 5, private key download as .txt",
+      "⚡ Socket.IO real-time events — trade:executed, agent:alert, autopilot:status, position:updated with per-user rooms",
+      "🔔 Browser trade notifications — push alerts when tab is backgrounded via useTradeNotifications hook",
+      "🏗️ Dashboard layout restructure — all pages moved under app/(dashboard) with shared layout, sidebar, and top bar",
+      "🌐 Marketing landing page — public homepage at app/(marketing)/page.tsx with product showcase",
+      "🤖 Personalized agent chat — agent personality-aware responses, system prompt from wizard, SSE streaming",
+      "🛠️ Agent tool calling — 7 tools (portfolio, risk, history, markets, analysis, trade, signals) via Gemini function calling",
+      "🚂 Railway deployment — PostgreSQL, Redis, BullMQ, full infra provisioning with private networking",
+      "🔒 API key encryption — AES-256-GCM for stored secrets, prompt injection defense in agent chat",
+      "🗄️ PostgreSQL dual-driver — production Postgres with SQLite fallback, 30+ table migration",
+      "📡 Redis + BullMQ job queues — scanner, orchestrator, hot scanner, fill monitor, PnL settler, alert poller",
+    ],
+    fixes: [
+      "🧹 Removed deprecated ActivePositions and PortfolioOverview components",
+      "🔗 Market links now route correctly under (dashboard) group",
+      "📊 Trade history API source updated to use authenticated endpoint",
+      "🧪 All Cypress and Playwright e2e specs updated for new route structure",
+      "🛡️ Clerk middleware protects dashboard routes, public routes remain accessible",
+      "📦 Providers component refactored — ClerkProvider, SocketProvider, QueryClient, PaperMode all unified",
+    ],
+  },
+  {
     version: "v0.7.0",
     date: "2026-03-07",
     highlight: "Agent Factory wizard, skeleton loading system, and Arena prototype.",

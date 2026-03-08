@@ -426,10 +426,65 @@ body {
   animation: relayPulseRing 1.5s ease-out infinite;
 }
 
+/* ─── Comic Speech Bubble ─────────────────────────────────────────────────── */
+@keyframes speechBubblePop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.4); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+  70% { transform: translateX(-50%) scale(0.96); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+@keyframes speechBubbleFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+.speech-bubble-enter {
+  animation: speechBubblePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             speechBubbleFloat 2.5s ease-in-out 0.5s infinite;
+}
+
 /* ─── Agent dot pulse ──────────────────────────────────────────────────────── */
 @keyframes relayPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Agent World Speech Bubbles ──────────────────────────────────────────── */
+.speech-bubble {
+  font: 500 9px "SF Mono", "JetBrains Mono", monospace;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(10, 10, 30, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 4px 8px;
+  border-radius: 8px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  pointer-events: none;
+  animation: speechBubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             speechBubbleFloat 2.5s ease-in-out 0.4s infinite;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(10, 10, 30, 0.92);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -473,4 +528,352 @@ body {
 @keyframes slide-in-top {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── React Flow Overrides (Architecture View) ────────────────────────────── */
+.react-flow__controls {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  fill: rgba(255, 255, 255, 0.50) !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: background 200ms ease;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  fill: rgba(255, 255, 255, 0.80) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button svg {
+  fill: inherit !important;
+}
+
+.react-flow__minimap {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  overflow: hidden;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+/* Node hover effect */
+.agent-main-node:hover {
+  box-shadow:
+    0 0 50px rgba(0, 122, 255, 0.25),
+    0 0 100px rgba(0, 122, 255, 0.12),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Detail panel slide-in animation */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes edge-pulse {
+  0%, 100% { stroke-opacity: 0.25; }
+  50%      { stroke-opacity: 0.55; }
+}
+
+/* Backdrop overlay for detail panel */
+.arch-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 9;
+  animation: fade-in 200ms ease forwards;
+}
+
+.arch-backdrop.closing {
+  animation: fade-out 200ms ease forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .agent-main-node,
+  .react-flow__edge-path,
+  [style*="animation"] {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .arch-backdrop {
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .arch-backdrop.closing {
+    animation: none !important;
+    opacity: 0;
+  }
+}
+
+/* ─── Clerk Component Overrides ───────────────────────────────────────────── */
+
+/* Nuclear override: force ALL elements inside sign-in/sign-up/profile        */
+/* to use white/transparent backgrounds. This catches every internal          */
+/* Clerk container that the dark baseTheme sets to dark colors.               */
+.cl-signIn-root,
+.cl-signIn-root *,
+.cl-signUp-root,
+.cl-signUp-root *,
+.cl-userProfile-root,
+.cl-userProfile-root *,
+.cl-organizationProfile-root,
+.cl-organizationProfile-root *,
+.cl-modalContent,
+.cl-modalContent * {
+  --cl-chassis-bg: #ffffff;
+  --cl-chassis-surface: #ffffff;
+}
+
+.cl-signIn-root [class^="cl-"],
+.cl-signIn-root [class*=" cl-"],
+.cl-signUp-root [class^="cl-"],
+.cl-signUp-root [class*=" cl-"],
+.cl-userProfile-root [class^="cl-"],
+.cl-userProfile-root [class*=" cl-"],
+.cl-modalContent [class^="cl-"],
+.cl-modalContent [class*=" cl-"] {
+  background-color: transparent !important;
+}
+
+/* Root containers get solid white + rounded corners */
+.cl-signIn-root,
+.cl-signUp-root,
+.cl-userProfile-root,
+.cl-organizationProfile-root,
+.cl-modalContent,
+.cl-signIn-root .cl-card,
+.cl-signUp-root .cl-card,
+.cl-userProfile-root .cl-card {
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+}
+
+/* Titles — black */
+.cl-signIn-root .cl-headerTitle,
+.cl-signUp-root .cl-headerTitle,
+.cl-signIn-root .cl-formHeaderTitle,
+.cl-signUp-root .cl-formHeaderTitle,
+.cl-userProfile-root .cl-headerTitle,
+.cl-userProfile-root .cl-formHeaderTitle,
+.cl-userProfile-root .cl-profileSectionTitle,
+.cl-userProfile-root .cl-userPreviewMainIdentifier,
+.cl-userProfile-root .cl-navbarButtonText {
+  color: #000000 !important;
+}
+
+/* Subtitles, labels, secondary text — muted gray */
+.cl-signIn-root .cl-headerSubtitle,
+.cl-signUp-root .cl-headerSubtitle,
+.cl-signIn-root .cl-formHeaderSubtitle,
+.cl-signUp-root .cl-formHeaderSubtitle,
+.cl-signIn-root .cl-formFieldLabel,
+.cl-signUp-root .cl-formFieldLabel,
+.cl-signIn-root .cl-dividerText,
+.cl-signUp-root .cl-dividerText,
+.cl-signIn-root .cl-footerActionText,
+.cl-signUp-root .cl-footerActionText,
+.cl-userProfile-root .cl-headerSubtitle,
+.cl-userProfile-root .cl-formFieldLabel,
+.cl-userProfile-root .cl-userPreviewSecondaryIdentifier {
+  color: #6b7280 !important;
+}
+
+/* Inputs — light bg, dark text */
+.cl-signIn-root .cl-formFieldInput,
+.cl-signUp-root .cl-formFieldInput,
+.cl-signIn-root .cl-otpCodeFieldInput,
+.cl-signUp-root .cl-otpCodeFieldInput,
+.cl-userProfile-root .cl-formFieldInput {
+  color: #000000 !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.cl-signIn-root .cl-formFieldInput:focus,
+.cl-signUp-root .cl-formFieldInput:focus,
+.cl-userProfile-root .cl-formFieldInput:focus {
+  border-color: #0a84ff !important;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.15) !important;
+}
+
+/* Footer links — blue accent */
+.cl-signIn-root .cl-footerActionLink,
+.cl-signUp-root .cl-footerActionLink {
+  color: #0a84ff !important;
+}
+
+/* Social buttons — light gray bg, dark text */
+.cl-signIn-root .cl-socialButtonsBlockButton,
+.cl-signUp-root .cl-socialButtonsBlockButton {
+  background-color: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #000000 !important;
+}
+
+.cl-signIn-root .cl-socialButtonsBlockButton:hover,
+.cl-signUp-root .cl-socialButtonsBlockButton:hover {
+  background-color: #e5e7eb !important;
+}
+
+.cl-signIn-root .cl-socialButtonsBlockButtonText,
+.cl-signUp-root .cl-socialButtonsBlockButtonText {
+  color: #000000 !important;
+}
+
+/* Apple auth button — white bg, black icon/text */
+.cl-signIn-root .cl-socialButtonsBlockButton[data-provider="apple"],
+.cl-signUp-root .cl-socialButtonsBlockButton[data-provider="apple"] {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.cl-signIn-root .cl-socialButtonsBlockButton[data-provider="apple"]:hover,
+.cl-signUp-root .cl-socialButtonsBlockButton[data-provider="apple"]:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.cl-signIn-root .cl-socialButtonsBlockButton[data-provider="apple"] .cl-socialButtonsBlockButtonText,
+.cl-signUp-root .cl-socialButtonsBlockButton[data-provider="apple"] .cl-socialButtonsBlockButtonText {
+  color: #000000 !important;
+}
+
+/* Force Apple icon SVG to black */
+.cl-signIn-root .cl-socialButtonsBlockButton[data-provider="apple"] svg,
+.cl-signIn-root .cl-socialButtonsBlockButton[data-provider="apple"] img,
+.cl-signUp-root .cl-socialButtonsBlockButton[data-provider="apple"] svg,
+.cl-signUp-root .cl-socialButtonsBlockButton[data-provider="apple"] img {
+  filter: brightness(0) !important;
+}
+
+/* Primary button — blue with white text */
+.cl-signIn-root .cl-formButtonPrimary,
+.cl-signUp-root .cl-formButtonPrimary,
+.cl-userProfile-root .cl-formButtonPrimary {
+  background-color: #0a84ff !important;
+  color: #ffffff !important;
+}
+
+/* Divider line — light gray */
+.cl-signIn-root .cl-dividerLine,
+.cl-signUp-root .cl-dividerLine {
+  background-color: #e5e7eb !important;
+}
+
+/* UserButton popover — keep dark (it's in the dashboard) */
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverCard *,
+.cl-userButtonPopoverCard [class^="cl-"],
+.cl-userButtonPopoverCard [class*=" cl-"] {
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.cl-userButtonPopoverCard {
+  background-color: #050508 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+.cl-userButtonPopoverCard .cl-userPreviewMainIdentifier {
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+
+.cl-userButtonPopoverCard .cl-userPreviewSecondaryIdentifier {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Hide "Secured by Clerk" branding in popover (CSS fallback) */
+.cl-userButtonPopoverFooter,
+.cl-userButtonPopoverCard ~ *,
+.cl-userButtonPopoverCard + * {
+  display: none !important;
+}
+
+/* Popover root box — catch the parent wrapper too */
+.cl-userButtonPopoverRootBox,
+.cl-userButtonPopoverRootBox * {
+  background-color: transparent !important;
+}
+
+.cl-userButtonPopoverRootBox {
+  background-color: #050508 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Backdrop — blurred */
+.cl-modalBackdrop {
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }

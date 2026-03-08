@@ -1,0 +1,398 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useQuantikStore } from "@/store/useQuantikStore";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { api, type RiskConfig } from "@/lib/api";
+import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
+import { ScannerFeed } from "@/components/ScannerFeed";
+import { ExecutionLog } from "@/components/ExecutionLog";
+import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
+import {
+  AutopilotOnboardingModal,
+  isAutopilotOnboarded,
+} from "./AutopilotOnboardingModal";
+
+const panelStyle: React.CSSProperties = {
+  background: "rgba(255,255,255,0.06)",
+  backdropFilter: "blur(24px) saturate(180%)",
+  WebkitBackdropFilter: "blur(24px) saturate(180%)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 12,
+  padding: 20,
+};
+
+// ─── Label mappings from agent factory config values ─────────────────────────
+
+const PERSONALITY_LABELS: Record<string, { label: string; icon: string }> = {
+  guardian: { label: "Guardian", icon: "🛡️" },
+  balanced: { label: "Balanced", icon: "⚖️" },
+  adventurer: { label: "Adventurer", icon: "🚀" },
+};
+
+const DECISION_LABELS: Record<string, { label: string; icon: string }> = {
+  gut: { label: "Gut Trader", icon: "🎯" },
+  analyst: { label: "Analyst", icon: "🔬" },
+  observer: { label: "Observer", icon: "👁️" },
+};
+
+const INSTINCT_LABELS: Record<string, { label: string; icon: string }> = {
+  trend_chaser: { label: "Trend Chaser", icon: "📈" },
+  reversal_spotter: { label: "Reversal Spotter", icon: "🔄" },
+  value_hunter: { label: "Value Hunter", icon: "💎" },
+  speed_demon: { label: "Speed Demon", icon: "⚡" },
+};
+
+const TIME_LABELS: Record<string, { label: string; icon: string }> = {
+  lightning: { label: "Lightning", icon: "⚡" },
+  swing: { label: "Swing", icon: "🌊" },
+  longterm: { label: "Long Term", icon: "🏔️" },
+};
+
+const MONEY_LABELS: Record<string, { label: string; icon: string }> = {
+  fixed_safe: { label: "Fixed & Safe", icon: "🔒" },
+  smart_scaling: { label: "Smart Scaling", icon: "📊" },
+  aggressive: { label: "Aggressive", icon: "🔥" },
+};
+
+const ASSET_LABELS: Record<string, { label: string; icon: string }> = {
+  stocks: { label: "Stocks", icon: "📊" },
+  forex: { label: "Forex", icon: "💱" },
+  crypto: { label: "Crypto", icon: "🪙" },
+  all_rounder: { label: "All Rounder", icon: "🌐" },
+};
+
+const chipStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  padding: "4px 10px",
+  borderRadius: 16,
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "rgba(255,255,255,0.65)",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.02em",
+};
+
+const chipAccentStyle: React.CSSProperties = {
+  ...chipStyle,
+  background: "rgba(10,132,255,0.10)",
+  border: "1px solid rgba(10,132,255,0.25)",
+  color: "#0a84ff",
+};
+
+// ─── Risk derivation ─────────────────────────────────────────────────────────
+
+function deriveRiskLevel(protection: string, leverage: string): number {
+  const protectionMap: Record<string, number> = { tight: 2, flexible: 5, hands_off: 8 };
+  const leverageMap: Record<string, number> = { none: 0, moderate: 2, full_throttle: 4 };
+  const base = (protectionMap[protection] ?? 5) + (leverageMap[leverage] ?? 1);
+  return Math.min(10, Math.max(1, Math.round(base / 1.2)));
+}
+
+function riskLevelColor(level: number): string {
+  if (level <= 3) return "#30d158";
+  if (level <= 6) return "#ff9f0a";
+  return "#ff453a";
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+interface AgentConfigPanelProps {
+  riskConfig: RiskConfig | null;
+}
+
+export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
+  const myAgent = useQuantikStore((s) => s.myAgent);
+  const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const [autopilotActive, setAutopilotActive] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+
+  const activateAutopilot = useCallback(() => {
+    setAutopilotActive(true);
+    if (myAgent && myAgent.status !== "active") {
+      api.deployAgent(myAgent.id).then(() => {
+        setMyAgent({ ...myAgent, status: "active" });
+      }).catch(() => {});
+    }
+  }, [myAgent, setMyAgent]);
+
+  const handleAutopilotToggle = useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        if (!isAutopilotOnboarded()) {
+          setShowOnboardingModal(true);
+          return;
+        }
+        activateAutopilot();
+      } else {
+        setAutopilotActive(false);
+      }
+    },
+    [activateAutopilot]
+  );
+
+  const handleOnboardingConfirm = useCallback(() => {
+    setShowOnboardingModal(false);
+    activateAutopilot();
+  }, [activateAutopilot]);
+
+  const handleOnboardingCancel = useCallback(() => {
+    setShowOnboardingModal(false);
+  }, []);
+
+  if (!myAgent) return null;
+
+  const riskLevel = deriveRiskLevel(myAgent.protection_mindset, myAgent.leverage_vibe);
+  const rlColor = riskLevelColor(riskLevel);
+
+  const personalityChip = PERSONALITY_LABELS[myAgent.personality];
+  const decisionChip = DECISION_LABELS[myAgent.decision_style];
+  const instinctChip = INSTINCT_LABELS[myAgent.trading_instinct];
+  const timeChip = TIME_LABELS[myAgent.time_patience];
+  const moneyChip = MONEY_LABELS[myAgent.money_approach];
+  const assetChip = ASSET_LABELS[myAgent.asset_love];
+
+  return (
+    <div style={panelStyle}>
+      <h3
+        style={{
+          margin: "0 0 16px",
+          fontSize: 14,
+          fontWeight: 700,
+          color: "rgba(255,255,255,0.92)",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+        }}
+      >
+        Agent Config
+      </h3>
+
+      {/* Agent trait chips — all from real backend data */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+        {personalityChip && (
+          <span style={chipAccentStyle}>
+            <span>{personalityChip.icon}</span>
+            {personalityChip.label}
+          </span>
+        )}
+        {instinctChip && (
+          <span style={chipStyle}>
+            <span>{instinctChip.icon}</span>
+            {instinctChip.label}
+          </span>
+        )}
+        {decisionChip && (
+          <span style={chipStyle}>
+            <span>{decisionChip.icon}</span>
+            {decisionChip.label}
+          </span>
+        )}
+        {timeChip && (
+          <span style={chipStyle}>
+            <span>{timeChip.icon}</span>
+            {timeChip.label}
+          </span>
+        )}
+        {moneyChip && (
+          <span style={chipStyle}>
+            <span>{moneyChip.icon}</span>
+            {moneyChip.label}
+          </span>
+        )}
+        {assetChip && (
+          <span style={chipStyle}>
+            <span>{assetChip.icon}</span>
+            {assetChip.label}
+          </span>
+        )}
+      </div>
+
+      {/* Risk Level bar — derived from protection_mindset + leverage_vibe */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Risk Level</span>
+          <span
+            style={{
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              fontSize: 14,
+              fontWeight: 700,
+              color: rlColor,
+            }}
+          >
+            {riskLevel <= 3 ? "Low" : riskLevel <= 6 ? "Medium" : "High"} ({riskLevel}/10)
+          </span>
+        </div>
+        <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.07)" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${riskLevel * 10}%`,
+              borderRadius: 3,
+              background: `linear-gradient(90deg, #30d158, ${rlColor})`,
+              transition: "width 300ms ease",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Risk parameters — read-only, derived from agent personality */}
+      {riskConfig ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+          {[
+            { label: "Max Drawdown Limit", hint: "Circuit breaker triggers at this level", value: `${(riskConfig.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: riskConfig.drawdownLimit / 0.50 },
+            { label: "Max Position Size", hint: "Maximum capital per single trade", value: `${(riskConfig.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: riskConfig.maxPositionSize / 0.30 },
+            { label: "Kelly Multiplier", hint: "Fraction of Kelly criterion to apply", value: `${riskConfig.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: riskConfig.kellyMultiplier },
+          ].map((param) => (
+            <div key={param.label} style={{ padding: "8px 0" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>{param.label}</span>
+                <span style={{ fontFamily: '"SF Mono", monospace', fontSize: 13, fontWeight: 700, color: param.color }}>{param.value}</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(param.pct * 100, 100)}%`, borderRadius: 2, background: param.color, opacity: 0.6, transition: "width 300ms ease" }} />
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 3 }}>{param.hint}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            padding: "12px 0",
+            marginBottom: 14,
+            fontSize: 11,
+            color: "rgba(255,255,255,0.25)",
+            fontFamily: '"SF Mono", monospace',
+          }}
+        >
+          Loading risk configuration...
+        </div>
+      )}
+
+      {/* ─── Autopilot toggle ─────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 0",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: autopilotActive ? "#FF9F0A" : "rgba(255,255,255,0.85)",
+              letterSpacing: "0.04em",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            AUTOPILOT
+            {autopilotActive && (
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#FF9F0A",
+                  display: "inline-block",
+                  animation: "pulse 2s infinite",
+                }}
+              />
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 2 }}>
+            {autopilotActive
+              ? "Autonomous execution active — 7-agent consensus trading."
+              : "Enable fully autonomous trade execution."}
+          </div>
+        </div>
+        <ToggleSwitch
+          checked={autopilotActive}
+          onChange={handleAutopilotToggle}
+          disabled={myAgent.status === "terminated"}
+        />
+      </div>
+
+      {/* ─── Inline Autopilot Dashboard ───────────────────────────────── */}
+      {autopilotActive && (
+        <div
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            paddingTop: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <AutopilotStatusBar />
+          </div>
+
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 10,
+              padding: 14,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.50)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                marginBottom: 10,
+              }}
+            >
+              Live Scanner
+            </div>
+            <ScannerFeed />
+          </div>
+
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 10,
+              padding: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.50)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
+              Executions
+            </div>
+            <ExecutionLog />
+            <TelegramWebhookEditor />
+          </div>
+        </div>
+      )}
+
+      {/* Autopilot onboarding modal */}
+      <AutopilotOnboardingModal
+        open={showOnboardingModal}
+        onConfirm={handleOnboardingConfirm}
+        onCancel={handleOnboardingCancel}
+      />
+    </div>
+  );
+}

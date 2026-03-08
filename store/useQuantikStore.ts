@@ -33,6 +33,15 @@ export interface MyAgent {
   created_at: number;
   updated_at: number;
   deployed_at: number | null;
+  // BYO agent fields
+  agent_type?: "created" | "byo";
+  endpoint_url?: string | null;
+  agent_url?: string | null;
+  webhook_events?: string[];
+  api_key_prefix?: string | null;
+  connection_status?: "pending" | "connected" | "disconnected" | "error";
+  last_heartbeat?: number | null;
+  description?: string | null;
 }
 
 // ─── Pipeline State ───────────────────────────────────────────────────────────

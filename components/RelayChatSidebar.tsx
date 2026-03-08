@@ -19,7 +19,7 @@ function getAgentIntro(name: string, personality: string, emoji: string): string
 }
 
 const FALLBACK_INTRO =
-  "Hi, I'm Relay \u{1F91D} \u2014 your interface to the Quantik intelligence network. Ask me anything about your portfolio, active markets, agent decisions, or risk config.";
+  "Hi \u{1F44B} \u2014 I'm the Quantik intelligence network. Create your agent in the Agent Factory to unlock personalized trading insights. Ask me anything about markets or trading.";
 
 const FALLBACK_SUGGESTIONS = [
   ["What's my current PnL?", "Show active positions"],
@@ -466,7 +466,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   }
 
   return (
-    /* Relay drawer */
+    /* Agent chat drawer */
     <div
       className="md:w-[320px] w-screen"
       style={{

@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import JSConfetti from "js-confetti";
+import { api } from "@/lib/api";
+import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -1357,7 +1360,8 @@ const NEXT_LABELS: Record<number, string> = {
 
 export default function AgentFactoryPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const [step, setStep] = useState(0);
   const [config, setConfig] = useState<AgentConfig>(DEFAULT_CONFIG);
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployError, setDeployError] = useState<string | null>(null);
@@ -1371,6 +1375,29 @@ export default function AgentFactoryPage() {
   const [walletSeedPhrase, setWalletSeedPhrase] = useState<string | null>(null);
   const [isGeneratingWallet, setIsGeneratingWallet] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+
+  const [agentLimitToast, setAgentLimitToast] = useState<string | null>(null);
+
+  const jsConfettiRef = useRef<JSConfetti | null>(null);
+  useEffect(() => {
+    jsConfettiRef.current = new JSConfetti();
+    return () => { jsConfettiRef.current = null; };
+  }, []);
+
+  // ── Check if user already has an agent — redirect if so ────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.getMyAgent();
+        if (data && (data as Record<string, unknown>).id && (data as Record<string, unknown>).status !== "terminated" && !cancelled) {
+          setAgentLimitToast("You already have an agent. Delete it first from Manage Agent.");
+          setTimeout(() => { if (!cancelled) router.push("/manage-agent"); }, 2500);
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
 
   const updateConfig = useCallback(
     (updates: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...updates })),
@@ -1493,32 +1520,73 @@ export default function AgentFactoryPage() {
 
   const handleDeploy = useCallback(async () => {
     if (!walletAddress) return;
+    jsConfettiRef.current?.addConfetti({ emojis: [config.avatar], emojiSize: 60, confettiNumber: 40 });
     setIsDeploying(true);
     setDeployError(null);
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/agents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...config,
-          wallet_address: walletAddress,
-          generatedImage,
-          animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
-        }),
+      const agentData = await api.createAgent({
+        name: config.name,
+        avatar: config.avatar,
+        animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
+        generatedImage,
+        wallet_address: walletAddress,
+        personality: config.personality,
+        decisionStyle: config.decisionStyle,
+        tradingInstinct: config.tradingInstinct,
+        timePatience: config.timePatience,
+        profitDream: config.profitDream,
+        moneyApproach: config.moneyApproach,
+        protectionMindset: config.protectionMindset,
+        leverageVibe: config.leverageVibe,
+        marketSense: config.marketSense,
+        assetLove: config.assetLove,
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      router.push("/");
+      setMyAgent(agentData as unknown as MyAgent);
+      router.push("/manage-agent");
     } catch (err) {
-      setDeployError(err instanceof Error ? err.message : "Failed to deploy agent");
+      const msg = err instanceof Error ? err.message : "Failed to deploy agent";
+      if (msg.includes("409")) {
+        setAgentLimitToast("You already have an agent. Delete it first from Manage Agent.");
+        setTimeout(() => router.push("/manage-agent"), 2500);
+        return;
+      }
+      setDeployError(msg);
     } finally {
       setIsDeploying(false);
     }
-  }, [config, walletAddress, generatedImage, router]);
+  }, [config, walletAddress, generatedImage, router, setMyAgent]);
 
   const header = STEP_HEADERS[step];
   const isLaunchStep = step === 5;
 
   return (
+    <>
+    {/* Agent limit toast */}
+    {agentLimitToast && (
+      <div
+        style={{
+          position: "fixed",
+          top: 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          padding: "12px 24px",
+          borderRadius: 12,
+          background: "rgba(255,159,10,0.18)",
+          border: "1px solid rgba(255,159,10,0.35)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          color: "#ff9f0a",
+          fontSize: 13,
+          fontWeight: 600,
+          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+          letterSpacing: "0.03em",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        }}
+      >
+        ⚠ {agentLimitToast}
+      </div>
+    )}
     <div
       style={{
         display: "flex",
@@ -1554,33 +1622,37 @@ export default function AgentFactoryPage() {
         style={{ display: "flex", gap: 24, flex: 1, minHeight: 0 }}
         className="flex-col md:flex-row"
       >
-        {/* Left: Step indicator (desktop) */}
-        <div style={{ width: 260, flexShrink: 0 }} className="hidden md:block">
-          <div style={{ position: "sticky", top: 72 }}>
-            <StepIndicator currentStep={step} onStepClick={setStep} />
+        {/* Left: Step indicator (desktop) — hidden on path selection */}
+        {step > 0 && (
+          <div style={{ width: 260, flexShrink: 0 }} className="hidden md:block">
+            <div style={{ position: "sticky", top: 72 }}>
+              <StepIndicator currentStep={step} onStepClick={setStep} />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Mobile step progress bar */}
-        <div className="flex md:hidden" style={{ gap: 6, marginBottom: 8 }}>
-          {STEPS.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: 3,
-                borderRadius: 2,
-                background: i + 1 <= step ? "#30d158" : "rgba(255,255,255,0.08)",
-                transition: "background 220ms ease",
-              }}
-            />
-          ))}
-        </div>
+        {/* Mobile step progress bar — hidden on path selection */}
+        {step > 0 && (
+          <div className="flex md:hidden" style={{ gap: 6, marginBottom: 8 }}>
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: 3,
+                  borderRadius: 2,
+                  background: i + 1 <= step ? "#30d158" : "rgba(255,255,255,0.08)",
+                  transition: "background 220ms ease",
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Right: Step content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Step title — hidden on step 5 since it has its own header */}
-          {!isLaunchStep && (
+          {/* Step title — hidden on step 0 (path selection) and step 5 (has its own header) */}
+          {step > 0 && !isLaunchStep && (
             <div style={{ marginBottom: 24 }}>
               <h1
                 style={{
@@ -1614,6 +1686,170 @@ export default function AgentFactoryPage() {
               exit={{ opacity: 0, x: -16 }}
               transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
+              {step === 0 && (
+                <div style={{ maxWidth: 720, margin: "0 auto" }}>
+                  <div style={{ textAlign: "center", marginBottom: 40 }}>
+                    <h1
+                      style={{
+                        margin: 0,
+                        fontSize: 28,
+                        fontWeight: 800,
+                        color: "rgba(255,255,255,0.92)",
+                        letterSpacing: "-0.01em",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Choose Your Path
+                    </h1>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: BODY_SIZE,
+                        color: "rgba(255,255,255,0.45)",
+                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      }}
+                    >
+                      Create a new agent from scratch, or connect your own OpenClaw agent.
+                    </p>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="!grid-cols-1 sm:!grid-cols-2">
+                    {/* Create from Scratch */}
+                    <button
+                      onClick={() => setStep(1)}
+                      style={{
+                        ...panelStyle,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 220ms ease",
+                        outline: "none",
+                        minHeight: 220,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 16,
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.border = "1px solid rgba(48,209,88,0.35)";
+                        e.currentTarget.style.boxShadow = "0 8px 32px rgba(48,209,88,0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <div style={{ fontSize: 36 }}>🧪</div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.92)",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Create from Scratch
+                        </div>
+                        <div
+                          style={{
+                            fontSize: META_SIZE,
+                            color: "rgba(255,255,255,0.45)",
+                            lineHeight: 1.5,
+                            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                          }}
+                        >
+                          Configure personality, trading style, and risk tolerance through a guided 5-step wizard
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: "auto",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#30d158",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#30d158" }} />
+                        5-STEP WIZARD
+                      </div>
+                    </button>
+
+                    {/* Bring Your Own Agent */}
+                    <button
+                      onClick={() => router.push("/agent-factory/byo")}
+                      style={{
+                        ...panelStyle,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 220ms ease",
+                        outline: "none",
+                        minHeight: 220,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 16,
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.border = "1px solid rgba(10,132,255,0.35)";
+                        e.currentTarget.style.boxShadow = "0 8px 32px rgba(10,132,255,0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <div style={{ fontSize: 36 }}>🦞</div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.92)",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Bring Your Own OpenClaw Agent
+                        </div>
+                        <div
+                          style={{
+                            fontSize: META_SIZE,
+                            color: "rgba(255,255,255,0.45)",
+                            lineHeight: 1.5,
+                            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                          }}
+                        >
+                          Connect your external AI agent to Quantik&apos;s tools, pipeline, and trading infrastructure via API
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: "auto",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#0a84ff",
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0a84ff" }} />
+                        OPENCLAW COMPATIBLE
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
               {step === 1 && <StepBasicIdentity config={config} onChange={updateConfig} />}
               {step === 2 && <StepTradingStyle config={config} onChange={updateConfig} />}
               {step === 3 && <StepRiskMoney config={config} onChange={updateConfig} />}
@@ -1636,7 +1872,7 @@ export default function AgentFactoryPage() {
       </div>
 
       {/* ── Footer bar ──────────────────────────────────────────────────────── */}
-      {!isLaunchStep && (
+      {step > 0 && !isLaunchStep && (
         <div
           style={{
             display: "flex",
@@ -1733,5 +1969,6 @@ export default function AgentFactoryPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
