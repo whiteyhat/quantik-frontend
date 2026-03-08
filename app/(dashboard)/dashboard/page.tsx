@@ -12,6 +12,7 @@ import {
   type OrchestratorStatus,
   type RiskStatus,
   type RiskConfig,
+  type AgentStatusEntry,
 } from "@/lib/api";
 import { MarketScanner } from "@/components/MarketScanner";
 import { RecentSignals } from "@/components/RecentSignals";
@@ -481,9 +482,16 @@ const AGENTS: AgentDef[] = [
 function SystemStatusPanel() {
   const [latency, setLatency] = useState<number | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
+  const [agentStatus, setAgentStatus] = useState<AgentStatusEntry[]>([]);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    function ping() {
+    const iv = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    const fetchStatus = () => {
       const start = Date.now();
       api.getBalance().then((result) => {
         if (result !== null) {
@@ -497,21 +505,19 @@ function SystemStatusPanel() {
         setLatency(null);
         setApiOk(false);
       });
-    }
-    ping();
-    const iv = setInterval(ping, 30_000);
+      api.getAgentStatus().then(setAgentStatus).catch(() => {});
+    };
+    fetchStatus();
+    const iv = setInterval(fetchStatus, 30_000);
     return () => clearInterval(iv);
   }, []);
-
-  const agentStatus = apiOk === true ? "READY" : apiOk === false ? "DOWN" : "…";
-  const agentStatusColor = apiOk === true ? "#30d158" : apiOk === false ? "#ff453a" : "#ff9f0a";
 
   return (
     <div style={panelStyle}>
       <SectionHeader
         title="System Status"
-        subtitle="Agent config · Layer 1–5"
-        tooltip="Shows API connectivity and the registered agent logic blocks. Individual agent health monitoring requires a backend /api/agents/health endpoint."
+        subtitle="Agent health · Layer 1–5"
+        tooltip="Operational heartbeat of the Quantik network. Monitors API connectivity and the active status of each specialist agent logic block."
       />
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, marginBottom: 14, background: apiOk === true ? "rgba(48,209,88,0.06)" : apiOk === false ? "rgba(255,69,58,0.06)" : "rgba(255,255,255,0.03)", border: `1px solid ${apiOk === true ? "rgba(48,209,88,0.15)" : apiOk === false ? "rgba(255,69,58,0.15)" : "rgba(255,255,255,0.06)"}` }}>
@@ -522,14 +528,42 @@ function SystemStatusPanel() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-        {AGENTS.map((agent) => (
-          <div key={agent.name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: agentStatusColor, boxShadow: apiOk ? "0 0 5px rgba(48,209,88,0.5)" : "none", flexShrink: 0 }} />
-            <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agent.color, fontFamily: "monospace", flexShrink: 0, width: 80 }}>{agent.emoji} {agent.name}</span>
-            <span style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.30)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agent.role}</span>
-            <span style={{ fontFamily: "monospace", fontSize: LABEL_SIZE, color: agentStatusColor, flexShrink: 0 }}>{agentStatus}</span>
-          </div>
-        ))}
+        {AGENTS.map((agentDef) => {
+          const st = agentStatus.find((s) => s.name === agentDef.name);
+          const isError = st?.status === "error";
+          const isIdle = st?.status === "idle";
+          const color = isError ? "#ff453a" : isIdle ? "#ff9f0a" : "#30d158";
+          
+          let timeStr = "just now";
+          if (st?.lastActionAt) {
+            const diff = Math.floor((now - new Date(st.lastActionAt).getTime()) / 60000);
+            if (diff > 0) timeStr = `${diff}m ago`;
+          }
+
+          return (
+            <div key={agentDef.name} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, boxShadow: `0 0 5px ${color}`, flexShrink: 0 }} />
+                <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agentDef.color, fontFamily: "monospace", flexShrink: 0, width: 58 }}>{agentDef.emoji} {agentDef.name}</span>
+                <span style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.30)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agentDef.role}</span>
+                <span style={{ fontFamily: "monospace", fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{st ? timeStr : "…"}</span>
+              </div>
+              {st && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 15 }}>
+                  <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "rgba(255,255,255,0.35)", padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
+                    {st.latencyMs}ms
+                  </span>
+                  <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", fontWeight: 600, color: color, padding: "1px 6px", borderRadius: 4, background: `color-mix(in srgb, ${color} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`, flexShrink: 0 }}>
+                    {Math.round(st.confidence * 100)}%
+                  </span>
+                  <span style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.22)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                    {st.lastAction}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

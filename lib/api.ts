@@ -28,6 +28,16 @@ export interface PricePoint {
   no: number;
 }
 
+export interface AgentStatusEntry {
+  id: string;
+  name: string;
+  latencyMs: number;
+  confidence: number;
+  lastAction: string;
+  lastActionAt: string;
+  status: "active" | "idle" | "error";
+}
+
 export interface WalletBalance {
   address: string;
   // Legacy field
@@ -437,6 +447,14 @@ export const api = {
         status: (validStatuses.has(rawStatus) ? rawStatus : "SKIP") as Signal["status"],
       };
     });
+  },
+
+  getAgentStatus: async (): Promise<AgentStatusEntry[]> => {
+    try {
+      return await apiFetch<AgentStatusEntry[]>("/api/agents/status");
+    } catch {
+      return [];
+    }
   },
 
   // Orchestrator
