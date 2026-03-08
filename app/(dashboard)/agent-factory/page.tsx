@@ -1385,21 +1385,171 @@ export default function AgentFactoryPage() {
     return () => { jsConfettiRef.current = null; };
   }, []);
 
-  // ── Locked state: user already has an agent (1/1) ────
-  if (myAgent && !myAgentLoading) {
-    const handleDelete = async () => {
-      setIsDeleting(true);
-      try {
-        await api.deleteAgent(myAgent.id);
-        setMyAgent(null);
-        setShowDeleteConfirm(false);
-      } catch {
-        /* ignore */
-      } finally {
-        setIsDeleting(false);
-      }
-    };
+  const handleDelete = useCallback(async () => {
+    if (!myAgent) return;
+    setIsDeleting(true);
+    try {
+      await api.deleteAgent(myAgent.id);
+      setMyAgent(null);
+      setShowDeleteConfirm(false);
+    } catch {
+      /* ignore */
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [myAgent, setMyAgent]);
 
+  const updateConfig = useCallback(
+    (updates: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...updates })),
+    []
+  );
+
+  const isStepValid = useMemo(() => {
+    switch (step) {
+      case 1:
+        return config.name.trim().length > 0;
+      default:
+        return true;
+    }
+  }, [step, config.name]);
+
+  const handleNext = useCallback(() => {
+    if (step < 5 && isStepValid) setStep((s) => s + 1);
+  }, [step, isStepValid]);
+
+  const handleBack = useCallback(() => {
+    if (step > 1) setStep((s) => s - 1);
+  }, [step]);
+
+  const handleSkipRandomize = useCallback(() => {
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+    const names = ["Shadow Fang", "Neon Pulse", "Iron Claw", "Volt Runner", "Storm Eye", "Pixel Drift", "Blaze Core", "Frost Bite", "Echo Wave", "Turbo Rex"];
+    setConfig({
+      name: pick(names),
+      avatar: pick(AVATAR_ALL),
+      personality: pick(["guardian", "balanced", "adventurer"] as const),
+      decisionStyle: pick(["gut", "analyst", "observer"] as const),
+      tradingInstinct: pick(["trend_chaser", "reversal_spotter", "value_hunter", "speed_demon"] as const),
+      timePatience: pick(["lightning", "swing", "longterm"] as const),
+      profitDream: pick(["quick_wins", "big_moves", "wealth_builder"] as const),
+      moneyApproach: pick(["fixed_safe", "smart_scaling", "aggressive"] as const),
+      protectionMindset: pick(["tight", "flexible", "hands_off"] as const),
+      leverageVibe: pick(["none", "moderate", "full_throttle"] as const),
+      marketSense: pick(["fixed_rules", "mood_reader"] as const),
+      assetLove: pick(["stocks", "forex", "crypto", "all_rounder"] as const),
+    });
+    setStep(5);
+  }, []);
+
+  // Generate WDK wallet when entering Step 5
+  useEffect(() => {
+    if (step !== 5 || walletAddress) return;
+    let cancelled = false;
+    setIsGeneratingWallet(true);
+    setWalletError(null);
+    api.generateWallet()
+      .then((data) => {
+        if (cancelled) return;
+        setWalletAddress(data.address);
+        setWalletPrivateKey(data.privateKey);
+        setWalletSeedPhrase(data.seedPhrase);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setWalletError(err instanceof Error ? err.message : "Failed to generate wallet");
+      })
+      .finally(() => {
+        if (!cancelled) setIsGeneratingWallet(false);
+      });
+    return () => { cancelled = true; };
+  }, [step, walletAddress]);
+
+  const handleSecureKey = useCallback(() => {
+    if (!walletAddress || !walletPrivateKey || !walletSeedPhrase) return;
+    const content = buildWalletDownloadContent(config.name, {
+      address: walletAddress,
+      privateKey: walletPrivateKey,
+      seedPhrase: walletSeedPhrase,
+    });
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `quantik-agent-${config.name.toLowerCase().replace(/\s+/g, "-") || "unnamed"}-key.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setPrivateKeySecured(true);
+    // Clear sensitive data from memory after download
+    setWalletPrivateKey(null);
+    setWalletSeedPhrase(null);
+  }, [config.name, walletAddress, walletPrivateKey, walletSeedPhrase]);
+
+  const handleGenerate = useCallback(async () => {
+    const animal = EMOJI_TO_ANIMAL[config.avatar] || "fox";
+    setIsGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await fetch("/api/relay/imagine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ animal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      if (data.image) {
+        setGeneratedImage(data.image);
+      }
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Failed to generate image");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [config.avatar]);
+
+  const handleDeploy = useCallback(async () => {
+    if (!walletAddress) return;
+    jsConfettiRef.current?.addConfetti({ emojis: [config.avatar], emojiSize: 60, confettiNumber: 40 });
+    setIsDeploying(true);
+    setDeployError(null);
+    try {
+      const agentData = await api.createAgent({
+        name: config.name,
+        avatar: config.avatar,
+        animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
+        generatedImage,
+        wallet_address: walletAddress,
+        personality: config.personality,
+        decisionStyle: config.decisionStyle,
+        tradingInstinct: config.tradingInstinct,
+        timePatience: config.timePatience,
+        profitDream: config.profitDream,
+        moneyApproach: config.moneyApproach,
+        protectionMindset: config.protectionMindset,
+        leverageVibe: config.leverageVibe,
+        marketSense: config.marketSense,
+        assetLove: config.assetLove,
+      });
+      setMyAgent(agentData as unknown as MyAgent);
+      router.push("/manage-agent");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to deploy agent";
+      if (msg.includes("409")) {
+        router.push("/manage-agent");
+        return;
+      }
+      setDeployError(msg);
+    } finally {
+      setIsDeploying(false);
+    }
+  }, [config, walletAddress, generatedImage, router, setMyAgent]);
+
+  const header = STEP_HEADERS[step];
+  const isLaunchStep = step === 5;
+  const isLocked = !!myAgent && !myAgentLoading;
+
+  if (isLocked) {
     return (
       <div
         style={{
@@ -1693,155 +1843,6 @@ export default function AgentFactoryPage() {
       </div>
     );
   }
-
-  const updateConfig = useCallback(
-    (updates: Partial<AgentConfig>) => setConfig((prev) => ({ ...prev, ...updates })),
-    []
-  );
-
-  const isStepValid = useMemo(() => {
-    switch (step) {
-      case 1:
-        return config.name.trim().length > 0;
-      default:
-        return true;
-    }
-  }, [step, config.name]);
-
-  const handleNext = useCallback(() => {
-    if (step < 5 && isStepValid) setStep((s) => s + 1);
-  }, [step, isStepValid]);
-
-  const handleBack = useCallback(() => {
-    if (step > 1) setStep((s) => s - 1);
-  }, [step]);
-
-  const handleSkipRandomize = useCallback(() => {
-    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    const names = ["Shadow Fang", "Neon Pulse", "Iron Claw", "Volt Runner", "Storm Eye", "Pixel Drift", "Blaze Core", "Frost Bite", "Echo Wave", "Turbo Rex"];
-    setConfig({
-      name: pick(names),
-      avatar: pick(AVATAR_ALL),
-      personality: pick(["guardian", "balanced", "adventurer"] as const),
-      decisionStyle: pick(["gut", "analyst", "observer"] as const),
-      tradingInstinct: pick(["trend_chaser", "reversal_spotter", "value_hunter", "speed_demon"] as const),
-      timePatience: pick(["lightning", "swing", "longterm"] as const),
-      profitDream: pick(["quick_wins", "big_moves", "wealth_builder"] as const),
-      moneyApproach: pick(["fixed_safe", "smart_scaling", "aggressive"] as const),
-      protectionMindset: pick(["tight", "flexible", "hands_off"] as const),
-      leverageVibe: pick(["none", "moderate", "full_throttle"] as const),
-      marketSense: pick(["fixed_rules", "mood_reader"] as const),
-      assetLove: pick(["stocks", "forex", "crypto", "all_rounder"] as const),
-    });
-    setStep(5);
-  }, []);
-
-  // Generate WDK wallet when entering Step 5
-  useEffect(() => {
-    if (step !== 5 || walletAddress) return;
-    let cancelled = false;
-    setIsGeneratingWallet(true);
-    setWalletError(null);
-    api.generateWallet()
-      .then((data) => {
-        if (cancelled) return;
-        setWalletAddress(data.address);
-        setWalletPrivateKey(data.privateKey);
-        setWalletSeedPhrase(data.seedPhrase);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setWalletError(err instanceof Error ? err.message : "Failed to generate wallet");
-      })
-      .finally(() => {
-        if (!cancelled) setIsGeneratingWallet(false);
-      });
-    return () => { cancelled = true; };
-  }, [step, walletAddress]);
-
-  const handleSecureKey = useCallback(() => {
-    if (!walletAddress || !walletPrivateKey || !walletSeedPhrase) return;
-    const content = buildWalletDownloadContent(config.name, {
-      address: walletAddress,
-      privateKey: walletPrivateKey,
-      seedPhrase: walletSeedPhrase,
-    });
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `quantik-agent-${config.name.toLowerCase().replace(/\s+/g, "-") || "unnamed"}-key.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setPrivateKeySecured(true);
-    // Clear sensitive data from memory after download
-    setWalletPrivateKey(null);
-    setWalletSeedPhrase(null);
-  }, [config.name, walletAddress, walletPrivateKey, walletSeedPhrase]);
-
-  const handleGenerate = useCallback(async () => {
-    const animal = EMOJI_TO_ANIMAL[config.avatar] || "fox";
-    setIsGenerating(true);
-    setGenerateError(null);
-    try {
-      const res = await fetch("/api/relay/imagine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ animal }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-      if (data.image) {
-        setGeneratedImage(data.image);
-      }
-    } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : "Failed to generate image");
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [config.avatar]);
-
-  const handleDeploy = useCallback(async () => {
-    if (!walletAddress) return;
-    jsConfettiRef.current?.addConfetti({ emojis: [config.avatar], emojiSize: 60, confettiNumber: 40 });
-    setIsDeploying(true);
-    setDeployError(null);
-    try {
-      const agentData = await api.createAgent({
-        name: config.name,
-        avatar: config.avatar,
-        animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
-        generatedImage,
-        wallet_address: walletAddress,
-        personality: config.personality,
-        decisionStyle: config.decisionStyle,
-        tradingInstinct: config.tradingInstinct,
-        timePatience: config.timePatience,
-        profitDream: config.profitDream,
-        moneyApproach: config.moneyApproach,
-        protectionMindset: config.protectionMindset,
-        leverageVibe: config.leverageVibe,
-        marketSense: config.marketSense,
-        assetLove: config.assetLove,
-      });
-      setMyAgent(agentData as unknown as MyAgent);
-      router.push("/manage-agent");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to deploy agent";
-      if (msg.includes("409")) {
-        router.push("/manage-agent");
-        return;
-      }
-      setDeployError(msg);
-    } finally {
-      setIsDeploying(false);
-    }
-  }, [config, walletAddress, generatedImage, router, setMyAgent]);
-
-  const header = STEP_HEADERS[step];
-  const isLaunchStep = step === 5;
 
   return (
     <>
