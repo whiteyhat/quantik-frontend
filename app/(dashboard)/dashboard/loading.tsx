@@ -18,20 +18,28 @@ export default function DashboardLoading() {
         </div>
       </section>
 
-      <div className="command-center-strip">
+      <section className="mission-rail">
         {Array.from({ length: 4 }).map((_, index) => (
-          <section key={index} className="command-center-strip-item">
-            <Skeleton width={80} height={10} borderRadius={999} />
-            <Skeleton width="60%" height={18} borderRadius={8} style={{ marginTop: 8 }} />
-            <Skeleton width="100%" height={12} borderRadius={6} style={{ marginTop: 8 }} />
-          </section>
+          <article key={index} className="mission-rail-tile mission-rail-tile--neutral">
+            <div className="mission-rail-copy">
+              <Skeleton width={96} height={10} borderRadius={999} />
+              <Skeleton width="70%" height={20} borderRadius={8} style={{ marginTop: 10 }} />
+              <Skeleton width="100%" height={12} borderRadius={6} style={{ marginTop: 10 }} />
+            </div>
+          </article>
         ))}
-      </div>
+        <article className="mission-rail-banner">
+          <div className="mission-rail-banner-copy">
+            <Skeleton width={120} height={12} borderRadius={999} />
+            <Skeleton width="72%" height={14} borderRadius={8} style={{ marginTop: 10 }} />
+          </div>
+        </article>
+      </section>
 
       <div className="command-center-grid">
         {Array.from({ length: 3 }).map((_, columnIndex) => (
           <div key={columnIndex} className={columnIndex === 2 ? "command-center-column command-center-rail" : "command-center-column"}>
-            {Array.from({ length: columnIndex === 1 ? 3 : 2 }).map((_, cardIndex) => (
+            {Array.from({ length: columnIndex === 1 ? 4 : 3 }).map((_, cardIndex) => (
               <section key={`${columnIndex}-${cardIndex}`} className="command-center-card">
                 <div className="space-y-4">
                   <Skeleton width={120} height={12} borderRadius={999} />

@@ -24,7 +24,15 @@ interface SigmaDecisionProps {
 
 export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
+  const wallet = useQuantikStore((s) => s.wallet);
   const { paperMode } = usePaperMode();
+
+  // Wallet funding checks (skip in paper mode)
+  const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
+  const polBalance = wallet?.pol ?? 0;
+  const hasUsdc = paperMode || usdcBalance > 0;
+  const hasGas = paperMode || polBalance > 0.01;
+  const walletFunded = hasUsdc && hasGas;
 
   const effectiveDecision =
     sigma.decision ?? (sigma as any).recommendation ?? "WATCH";
@@ -66,9 +74,10 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
     : market.yesPrice;
   const estReturn = sizeUsd * (ev / 100);
 
-  const canExecute = Boolean(
+  const signalReady = Boolean(
     edge && (edge.ev_grade === "A" || edge.ev_grade === "B") && isExecute
   );
+  const canExecute = signalReady && walletFunded;
 
   return (
     <div
@@ -197,6 +206,32 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           </div>
         </div>
       </div>
+
+      {/* Wallet funding warning */}
+      {signalReady && !walletFunded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            borderRadius: 10,
+            background: "rgba(255,159,10,0.08)",
+            border: "1px solid rgba(255,159,10,0.20)",
+            flexBasis: "100%",
+            order: 10,
+          }}
+        >
+          <span style={{ fontSize: 14, flexShrink: 0 }}>{"⚠"}</span>
+          <span style={{ fontSize: 12, color: "var(--ios-orange)", lineHeight: 1.4 }}>
+            {!hasUsdc && !hasGas
+              ? "Fund your wallet with USDC to place trades and POL to cover gas fees."
+              : !hasUsdc
+                ? "No USDC balance detected. Fund your wallet before placing trades."
+                : "Not enough POL for gas fees. Send POL to your wallet to enable trading."}
+          </span>
+        </div>
+      )}
 
       {/* Execute button */}
       <button

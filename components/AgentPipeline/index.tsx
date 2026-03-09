@@ -357,6 +357,13 @@ function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
           {(data.whale_signals ?? 0) > 0 && (
             <MetricRow label="Whale signals" value={String(data.whale_signals)} valueColor="var(--ios-purple)" />
           )}
+          <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.45, margin: "8px 0 0" }}>
+            {data.liquidity_grade === "A" || data.liquidity_grade === "B"
+              ? `This market is easy to buy and sell in — tight pricing with ${depth > 0.7 ? "plenty of" : "enough"} money available.`
+              : data.liquidity_grade === "C"
+                ? "Trading here costs a bit more — gaps in pricing may eat into your returns."
+                : "This market is thin — buying or selling could move the price against you significantly."}
+          </p>
         </div>
       ) : (
         <IdlePlaceholder status={status} />
@@ -392,9 +399,23 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
   const prob = num(data?.prob_estimate);
   const conf = num(data?.confidence);
   const market = num(data?.market_implied);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const delta = prob - market;
+  const tooltipText =
+    delta > 0.02
+      ? `Our model thinks this is more likely than the market does — a potential buying opportunity.`
+      : delta < -0.02
+        ? `Our model sees this as less likely than what the market prices — caution advised.`
+        : `Our model agrees with the market price — no clear advantage either way right now.`;
 
   return (
-    <div className="glass-card" style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}>
+    <div
+      className="glass-card"
+      style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms", position: "relative" }}
+      onMouseEnter={() => data && setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
       <CardHeader emoji="🔮" name="Oracle" />
       {data ? (
         <>
@@ -408,6 +429,30 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
             {"±"}{conf.toFixed(1)}% Confidence
           </div>
           <ProbabilityRing prob={prob} market={market} />
+          {showTooltip && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: "calc(100% + 8px)",
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "rgba(14,14,22,0.97)",
+                border: "1px solid rgba(191,90,242,0.25)",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 11,
+                color: "rgba(255,255,255,0.85)",
+                lineHeight: 1.5,
+                width: 230,
+                zIndex: 9999,
+                pointerEvents: "none",
+                whiteSpace: "normal",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
+              }}
+            >
+              {tooltipText}
+            </div>
+          )}
         </>
       ) : (
         <IdlePlaceholder status={status} />
@@ -493,6 +538,13 @@ function EdgeCard({ data, status }: { data?: EdgeResult; status: string }) {
             value={`${(kelly * 100).toFixed(1)}%`}
             valueColor="var(--ios-green)"
           />
+          <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.45, margin: "8px 0 0" }}>
+            {ev > 3
+              ? `The price looks off — our math says this bet pays more than it should on average.`
+              : ev > 0
+                ? `There's a small gap in your favor, but the advantage is modest — size carefully.`
+                : `The numbers don't favor this bet right now — the market price looks fair or expensive.`}
+          </p>
         </div>
       ) : (
         <IdlePlaceholder status={status} />

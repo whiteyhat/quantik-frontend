@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   formatRelativeTime,
+  normalizeDashboardHealth,
   normalizeDashboardSummary,
-  selectAgentRows,
+  selectSystemAgentRows,
 } from "../../lib/dashboard";
 
 describe("dashboard normalizers", () => {
@@ -56,23 +57,47 @@ describe("dashboard normalizers", () => {
     expect(summary.alphaDecay).toBeNull();
   });
 
-  it("renders generic agent labels when metadata is missing", () => {
-    const rows = selectAgentRows([
+  it("renders generic agent labels and runtime defaults when telemetry is missing", () => {
+    const rows = selectSystemAgentRows([
       {
-        id: "",
         name: "",
         latencyMs: 85,
-        confidence: 0.71,
-        lastAction: "",
-        lastActionAt: "",
-        status: "idle",
+        errorRate: 0.12,
+        lastActiveAt: 0,
+        status: "down",
       },
     ]);
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.name).toBe("Agent 1");
-    expect(rows[0]?.subtitle).toBe("Live agent runtime");
-    expect(rows[0]?.lastAction).toBe("Waiting for next cycle");
+    expect(rows[0]?.status).toBe("down");
+    expect(rows[0]?.detail).toBe("No recent traffic");
+  });
+
+  it("normalizes structured health services for the mission rail", () => {
+    const health = normalizeDashboardHealth({
+      status: "degraded",
+      message: "Mission control is degraded but still operational",
+      checkedAt: 1_234,
+      services: {
+        backend: {
+          status: "healthy",
+          detail: "API online",
+          checkedAt: 1_230,
+          meta: { uptimeMs: 40_000 },
+        },
+        pipeline_agents: {
+          status: "degraded",
+          detail: "No pipeline activity has been recorded yet",
+        },
+      },
+    });
+
+    expect(health.label).toBe("Degraded");
+    expect(health.services[0]?.name).toBe("Backend");
+    expect(health.services[0]?.status).toBe("healthy");
+    expect(health.services[1]?.name).toBe("Pipeline Agents");
+    expect(health.services[1]?.detail).toContain("No pipeline activity");
   });
 
   it("formats relative times for recent events", () => {

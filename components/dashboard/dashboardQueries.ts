@@ -9,7 +9,7 @@ import {
 import { api } from "@/lib/api";
 import {
   normalizeDashboardHealth,
-  selectAgentRows,
+  selectSystemAgentRows,
 } from "@/lib/dashboard";
 
 export const SCANNER_CATEGORIES = [
@@ -104,13 +104,17 @@ export function useDashboardSignalsQuery() {
   });
 }
 
-export function useDashboardAgentStatusQuery() {
+export function useDashboardSystemAgentsQuery() {
   return useQuery({
     queryKey: dashboardKeys.agents,
-    queryFn: ({ signal }) => api.getAgentStatus(signal),
+    queryFn: async ({ signal }) => {
+      const health = await api.getSystemAgentHealth(signal);
+      if (!health) throw new Error("Failed to load pipeline agent health");
+      return health;
+    },
     staleTime: 20_000,
     refetchInterval: 30_000,
-    select: selectAgentRows,
+    select: (health) => selectSystemAgentRows(health.agents),
   });
 }
 
@@ -160,6 +164,21 @@ export function useTriggerOrchestratorScan() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: dashboardKeys.orchestrator });
     },
+  });
+}
+
+export function useDashboardAgentHealthScoreQuery(agentId?: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["dashboard", "agent-health-score", agentId],
+    enabled: Boolean(agentId) && enabled,
+    queryFn: async () => {
+      if (!agentId) throw new Error("Missing agent id");
+      const response = await api.getHealthScore(agentId);
+      if (!response.success) throw new Error("Failed to load agent health score");
+      return response.data;
+    },
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
 }
 

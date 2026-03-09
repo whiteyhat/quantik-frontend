@@ -4,28 +4,24 @@ describe("Dashboard", () => {
     cy.mockDashboardApis();
   });
 
-  // ─── Page Load & Grid ─────────────────────────────────────────────────────
-
-  it("loads the dashboard and renders the main grid", () => {
+  it("loads the dashboard mission control grid", () => {
     cy.visit("/dashboard");
-    cy.wait(["@summary", "@riskStatus", "@health", "@agentStatus", "@positions", "@signals"]);
+    cy.wait(["@summary", "@riskStatus", "@health", "@agentHealth", "@positions", "@signals"]);
     cy.contains("Mission Control").should("be.visible");
     cy.get("[data-testid='dashboard-grid']").should("be.visible");
   });
 
-  it("renders the command deck strip with 4 items", () => {
+  it("renders the mission rail with live telemetry tiles", () => {
     cy.visit("/dashboard");
-    cy.wait("@summary");
+    cy.wait(["@summary", "@health", "@agentHealth"]);
     cy.get("[data-testid='dashboard-command-strip']").should("be.visible");
-    cy.contains("Refresh").should("be.visible");
-    cy.contains("Funding").should("be.visible");
-    cy.contains("Runtime").should("be.visible");
-    cy.contains("Agents").should("be.visible");
+    cy.contains("Refresh cadence").should("be.visible");
+    cy.contains("Capital posture").should("be.visible");
+    cy.contains("Runtime fabric").should("be.visible");
+    cy.contains("Agent traffic").should("be.visible");
   });
 
-  // ─── API Deduplication ────────────────────────────────────────────────────
-
-  it("fires summary and risk requests exactly once (no duplicates)", () => {
+  it("fires summary and risk requests exactly once per refresh cycle", () => {
     let summaryRequests = 0;
     let riskRequests = 0;
 
@@ -56,304 +52,208 @@ describe("Dashboard", () => {
     });
   });
 
-  // ─── MissionControlHero ───────────────────────────────────────────────────
-
-  it("renders Mission Control hero with status badges", () => {
+  it("renders the hero, portfolio, and risk surfaces", () => {
     cy.visit("/dashboard");
-    cy.wait("@summary");
-    cy.contains("Mission Control").should("be.visible");
+    cy.wait(["@summary", "@riskStatus"]);
     cy.contains("Operate the whole trading stack").should("be.visible");
-  });
-
-  it("shows capital status badge based on funding", () => {
-    cy.visit("/dashboard");
-    cy.wait("@summary");
-    cy.contains(/Capital armed|Funding needed|Telemetry only/).should("be.visible");
-  });
-
-  it("shows API health status badge", () => {
-    cy.visit("/dashboard");
-    cy.wait("@health");
-    cy.contains(/API/i).should("be.visible");
-  });
-
-  it("shows scanner status badge", () => {
-    cy.visit("/dashboard");
-    cy.wait("@orchestratorStatus");
-    cy.contains(/Scanner (running|idle)/).should("be.visible");
-  });
-
-  // ─── SummaryCard (Portfolio) ──────────────────────────────────────────────
-
-  it("renders portfolio card with key metrics", () => {
-    cy.visit("/dashboard");
-    cy.wait("@summary");
     cy.get("[data-testid='dashboard-portfolio-card']").should("be.visible");
     cy.contains("Portfolio").should("be.visible");
-    cy.contains("Capital").should("be.visible");
     cy.contains("Available Cash").should("be.visible");
     cy.contains("Capital in Play").should("be.visible");
-    cy.contains("Kelly utilization").should("be.visible");
+    cy.contains("Risk Posture").should("be.visible");
+    cy.contains("Exposure").should("be.visible");
+    cy.contains("Drawdown").should("be.visible");
   });
 
-  it("displays circuit breaker status", () => {
-    cy.visit("/dashboard");
-    cy.wait("@summary");
-    cy.contains(/ARMED|WARNING|TRIGGERED/i).should("be.visible");
-  });
-
-  // ─── PositionsCard ────────────────────────────────────────────────────────
-
-  it("shows 'No open positions' when positions are empty", () => {
+  it("shows no open positions when the wallet is flat", () => {
     cy.visit("/dashboard");
     cy.wait("@positions");
     cy.contains("No open positions").should("be.visible");
   });
 
-  it("renders position rows when positions exist", () => {
+  it("renders open position rows when positions exist", () => {
     cy.intercept("GET", "**/api/wallet/positions*", { fixture: "positions.json" }).as(
       "positionsLoaded"
     );
+
     cy.visit("/dashboard");
     cy.wait("@positionsLoaded");
     cy.contains("Active Positions").should("be.visible");
     cy.contains("YES").should("be.visible");
   });
 
-  // ─── RiskCard ─────────────────────────────────────────────────────────────
-
-  it("renders risk posture card with exposure metrics", () => {
+  it("renders orchestrator controls and scanner candidates", () => {
     cy.visit("/dashboard");
-    cy.wait("@riskStatus");
-    cy.contains("Risk Posture").should("be.visible");
-    cy.contains("Exposure").should("be.visible");
-    cy.contains("Drawdown").should("be.visible");
+    cy.wait(["@orchestratorStatus", "@orchestratorCandidates"]);
+    cy.get("[data-testid='dashboard-orchestrator-card']").should("be.visible");
+    cy.contains("Orchestrator").should("be.visible");
+    cy.contains("Scan now").should("be.visible");
+    cy.contains("Will Bitcoin reach $100k").should("be.visible");
   });
 
-  it("displays circuit breaker state in risk card", () => {
+  it("scan now triggers an orchestrator scan", () => {
+    cy.intercept("POST", "**/api/orchestrator/scan*", {
+      statusCode: 200,
+      body: { triggered: true, marketsScanned: 25, candidatesFound: 4 },
+    }).as("triggerScan");
+
     cy.visit("/dashboard");
-    cy.wait("@riskStatus");
-    cy.contains("Circuit").should("be.visible");
+    cy.wait("@orchestratorStatus");
+    cy.contains("Scan now").click();
+    cy.wait("@triggerScan");
   });
 
-  // ─── SignalsCard ──────────────────────────────────────────────────────────
+  it("renders the market scanner with explicit trending state", () => {
+    cy.visit("/dashboard");
+    cy.wait("@trendingMarkets");
+    cy.contains("Live Market Scanner").should("be.visible");
+    cy.contains("Trending stays explicit").should("be.visible");
+    cy.contains("button", "Trending 🔥").should("be.visible");
+    cy.get('input[placeholder="Search active markets"]').should("be.visible");
+  });
 
-  it("shows 'No recent signals' when no signals exist", () => {
+  it("shows a CTA when the trending feed is empty", () => {
+    cy.intercept("GET", "**/api/markets/trending*", {
+      body: { markets: [], total: 0, hasMore: false },
+    }).as("emptyTrending");
+
+    cy.visit("/dashboard");
+    cy.wait("@emptyTrending");
+    cy.contains(/No trending markets|No trending matches/).should("be.visible");
+    cy.contains("Browse all markets").should("be.visible");
+  });
+
+  it("renders structured service health and live agent telemetry", () => {
+    cy.visit("/dashboard");
+    cy.wait(["@health", "@agentHealth"]);
+    cy.get("[data-testid='dashboard-system-status-card']").should("be.visible");
+    cy.contains("System Status").should("be.visible");
+    cy.contains("API Health").should("be.visible");
+    cy.contains("Service Map").should("be.visible");
+    cy.contains("Pipeline Agents").should("be.visible");
+    cy.contains("Aura").should("be.visible");
+    cy.contains("Oracle").should("be.visible");
+  });
+
+  it("shows a deliberate empty state when there is no agent traffic yet", () => {
+    cy.intercept("GET", "**/api/agents/health*", {
+      body: {
+        overall: "down",
+        checkedAt: Date.now(),
+        agents: [
+          { name: "aura", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "flux", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "oracle", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "edge", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "sigma", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "clause", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+          { name: "lucifer", status: "down", lastActiveAt: 0, latencyMs: 0, errorRate: 1 },
+        ],
+      },
+    }).as("quietAgents");
+
+    cy.visit("/dashboard");
+    cy.wait("@quietAgents");
+    cy.contains("No agent traffic yet").should("be.visible");
+  });
+
+  it("renders the architecture mini-map and pilot deck", () => {
+    cy.visit("/dashboard");
+    cy.wait(["@summary", "@agentHealth", "@getMyAgent"]);
+    cy.contains("Neural Web Mini-Map").should("be.visible");
+    cy.get("[data-testid='dashboard-pilot-deck-card']").should("be.visible");
+    cy.contains("Pilot Deck").should("be.visible");
+    cy.contains("Created-agent posture").should("be.visible");
+  });
+
+  it("renders BYO pilot deck runtime health when a connected external agent is active", () => {
+    cy.mockAgent({
+      agent_type: "byo",
+      name: "Mercury",
+      agent_code: "BYO-009",
+      connection_status: "connected",
+      autopilot_enabled: true,
+      description: "Connected via external runtime bridge",
+    });
+    cy.intercept("GET", "**/api/v1/agents/*/health-score", {
+      body: {
+        success: true,
+        data: {
+          score: 91,
+          status: "healthy",
+          message: "Runtime is healthy and streaming events.",
+        },
+      },
+    }).as("healthScore");
+
+    cy.visit("/dashboard");
+    cy.wait(["@getMyAgent", "@healthScore"]);
+    cy.get("[data-testid='dashboard-pilot-deck-card']").should("be.visible");
+    cy.contains("Runtime health").should("be.visible");
+    cy.contains("connected").should("be.visible");
+    cy.contains("Runtime is healthy and streaming events.").should("be.visible");
+  });
+
+  it("shows an empty recent-signals state when there are no fresh decisions", () => {
     cy.visit("/dashboard");
     cy.wait("@signals");
     cy.get("[data-testid='recent-signals']").should("be.visible");
     cy.contains("No recent signals").should("be.visible");
   });
 
-  it("renders signal rows when signals exist", () => {
+  it("renders signal rows when the feed returns entries", () => {
     cy.intercept("GET", "**/api/signals*", { fixture: "signals.json" }).as("signalsLoaded");
+
     cy.visit("/dashboard");
     cy.wait("@signalsLoaded");
     cy.contains("Recent Signals").should("be.visible");
     cy.get("[data-testid='signal-row']").should("have.length.at.least", 1);
   });
 
-  // ─── AgentStatusCard ──────────────────────────────────────────────────────
-
-  it("renders system status card with agent telemetry", () => {
-    cy.visit("/dashboard");
-    cy.wait("@agentStatus");
-    cy.get("[data-testid='dashboard-system-status-card']").should("be.visible");
-    cy.contains("System Status").should("be.visible");
-    cy.contains("API Health").should("be.visible");
-  });
-
-  it("shows agent runtime entries with latency", () => {
-    cy.visit("/dashboard");
-    cy.wait("@agentStatus");
-    cy.contains("Aura").should("be.visible");
-  });
-
-  // ─── OrchestratorCard ─────────────────────────────────────────────────────
-
-  it("renders orchestrator card with scan status", () => {
-    cy.visit("/dashboard");
-    cy.wait("@orchestratorStatus");
-    cy.get("[data-testid='dashboard-orchestrator-card']").should("be.visible");
-    cy.contains("Orchestrator").should("be.visible");
-    cy.contains("Scan now").should("be.visible");
-  });
-
-  it("shows orchestrator candidates", () => {
-    cy.visit("/dashboard");
-    cy.wait("@orchestratorCandidates");
-    cy.contains("Will Bitcoin reach $100k").should("be.visible");
-  });
-
-  it("scan now button triggers orchestrator scan", () => {
-    cy.intercept("POST", "**/api/orchestrator/scan*", { statusCode: 200, body: { ok: true } }).as(
-      "triggerScan"
-    );
-    cy.visit("/dashboard");
-    cy.wait("@orchestratorStatus");
-    cy.contains("Scan now").click();
-  });
-
-  // ─── ScannerCard (Trending / Market Discovery) ────────────────────────────
-
-  it("renders market scanner card with trending markets", () => {
-    cy.visit("/dashboard");
-    cy.wait("@trendingMarkets");
-    cy.contains("Live Market Scanner").should("be.visible");
-    cy.contains("Trending 🔥").should("be.visible");
-  });
-
-  it("shows category filter buttons", () => {
-    cy.visit("/dashboard");
-    cy.wait("@trendingMarkets");
-    const categories = ["All", "Crypto", "Politics", "Sports", "Pop Culture"];
-    for (const cat of categories) {
-      cy.contains("button", cat).should("be.visible");
-    }
-  });
-
-  it("search field filters scanner results", () => {
-    cy.visit("/dashboard");
-    cy.wait("@trendingMarkets");
-    cy.get('input[placeholder="Search active markets"]').should("be.visible");
-    cy.get('input[placeholder="Search active markets"]').type("bitcoin");
-  });
-
-  it("shows empty state when no trending markets", () => {
-    cy.intercept("GET", "**/api/markets/trending*", {
-      body: { markets: [], total: 0, hasMore: false },
-    }).as("emptyTrending");
-    cy.visit("/dashboard");
-    cy.wait("@emptyTrending");
-    cy.contains(/No trending markets|No markets found/).should("be.visible");
-  });
-
-  // ─── /api/health Integration ──────────────────────────────────────────────
-
-  it("health status reflects in system status card", () => {
-    cy.visit("/dashboard");
-    cy.wait("@health");
-    cy.get("[data-testid='dashboard-system-status-card']").should("be.visible");
-    cy.contains("API Health").should("be.visible");
-  });
-
-  it("shows health check error when API is down", () => {
+  it("shows health error messaging when /api/health fails", () => {
     cy.intercept("GET", "**/api/health*", { statusCode: 500, body: {} }).as("healthFail");
+
     cy.visit("/dashboard");
     cy.wait("@healthFail");
     cy.contains(/Health checks unavailable|unavailable/i).should("be.visible");
   });
 
-  // ─── Footer Version ───────────────────────────────────────────────────────
-
-  it("displays app version in footer or UI", () => {
-    cy.visit("/dashboard");
-    cy.wait("@summary");
-    // Version may be in footer or sidebar
-    cy.get("body").should("be.visible");
-  });
-
-  // ─── No Hydration Errors ──────────────────────────────────────────────────
-
-  it("page renders without hydration or portal errors", () => {
-    // The global error handler in support/e2e.ts suppresses known React errors.
-    // If there are unexpected errors, they will fail the test.
-    cy.visit("/dashboard");
-    cy.wait(["@summary", "@health"]);
-    cy.get("[data-testid='dashboard-grid']").should("be.visible");
-    // No error messages should be visible at the page level
-    cy.contains("Unhandled Runtime Error").should("not.exist");
-  });
-
-  // ─── Error States ─────────────────────────────────────────────────────────
-
-  it("shows portfolio error when summary API fails", () => {
+  it("shows dashboard card error states when core feeds fail", () => {
     cy.intercept("GET", "**/api/performance/summary*", { statusCode: 500, body: {} }).as(
       "summaryFail"
     );
-    cy.visit("/dashboard");
-    cy.wait("@summaryFail");
-    cy.contains(/Portfolio feed unavailable|unavailable/i).should("be.visible");
-  });
-
-  it("shows positions error when positions API fails", () => {
     cy.intercept("GET", "**/api/wallet/positions*", { statusCode: 500, body: {} }).as(
       "positionsFail"
     );
-    cy.visit("/dashboard");
-    cy.wait("@positionsFail");
-    cy.contains(/Positions unavailable|unavailable/i).should("be.visible");
-  });
-
-  it("shows risk error when risk API fails", () => {
     cy.intercept("GET", "**/api/risk/status*", { statusCode: 500, body: {} }).as("riskFail");
-    cy.visit("/dashboard");
-    cy.wait("@riskFail");
-    cy.contains(/Risk telemetry unavailable|unavailable/i).should("be.visible");
-  });
-
-  it("shows orchestrator error when orchestrator API fails", () => {
     cy.intercept("GET", "**/api/orchestrator/status*", { statusCode: 500, body: {} }).as(
-      "orchFail"
+      "orchestratorFail"
     );
     cy.intercept("GET", "**/api/orchestrator/candidates*", { statusCode: 500, body: {} }).as(
-      "candFail"
+      "candidateFail"
     );
-    cy.visit("/dashboard");
-    cy.wait("@orchFail");
-    cy.contains(/Orchestrator offline|unavailable/i).should("be.visible");
-  });
-
-  it("shows signals error when signals API fails", () => {
     cy.intercept("GET", "**/api/signals*", { statusCode: 500, body: {} }).as("signalsFail");
+
     cy.visit("/dashboard");
-    cy.wait("@signalsFail");
+    cy.wait([
+      "@summaryFail",
+      "@positionsFail",
+      "@riskFail",
+      "@orchestratorFail",
+      "@candidateFail",
+      "@signalsFail",
+    ]);
+    cy.contains(/Portfolio feed unavailable|unavailable/i).should("be.visible");
+    cy.contains(/Positions unavailable|unavailable/i).should("be.visible");
+    cy.contains(/Risk telemetry unavailable|unavailable/i).should("be.visible");
+    cy.contains(/Orchestrator offline|unavailable/i).should("be.visible");
     cy.contains(/Signal feed unavailable|unavailable/i).should("be.visible");
   });
 
-  // ─── Relay Chat ───────────────────────────────────────────────────────────
-
-  it("chat button opens Relay sidebar", () => {
-    cy.intercept("POST", "**/api/relay", {
-      statusCode: 200,
-      body: { reply: "**Hello** from Relay!" },
-    }).as("relayRequest");
-
+  it("renders without hydration or page-level runtime errors", () => {
     cy.visit("/dashboard");
-    cy.wait("@summary");
-
-    // Click the chat button (aria-label matches agent name)
-    cy.get("button[aria-label^='Chat with']", { timeout: 10000 }).click();
-    cy.get("textarea[placeholder='Message Relay…']", { timeout: 8000 }).should("be.visible");
-  });
-
-  it("sends message through Relay chat and receives markdown response", () => {
-    cy.intercept("POST", "**/api/relay", {
-      statusCode: 200,
-      body: { reply: "**Bold** and *italic* response" },
-    }).as("relayRequest");
-
-    cy.visit("/dashboard");
-    cy.wait("@summary");
-
-    cy.get("button[aria-label^='Chat with']", { timeout: 10000 }).click();
-    cy.get("textarea[placeholder='Message Relay…']", { timeout: 8000 })
-      .should("be.visible")
-      .type("Test message{enter}", { force: true });
-
-    cy.contains("Test message").should("be.visible");
-    cy.wait("@relayRequest", { timeout: 15000 }).then(() => {
-      cy.get("strong").contains("Bold").should("be.visible");
-      cy.get("em").contains("italic").should("be.visible");
-    });
-  });
-
-  // ─── Performance Pulse Card ───────────────────────────────────────────────
-
-  it("renders performance pulse card with win rate and streak", () => {
-    cy.visit("/dashboard");
-    cy.wait("@summary");
-    cy.contains("Performance Pulse").should("be.visible");
-    cy.contains("Win Rate").should("be.visible");
+    cy.wait(["@summary", "@health"]);
+    cy.get("[data-testid='dashboard-grid']").should("be.visible");
+    cy.contains("Unhandled Runtime Error").should("not.exist");
   });
 });

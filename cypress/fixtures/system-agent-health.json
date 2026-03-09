@@ -1,0 +1,13 @@
+{
+  "overall": "healthy",
+  "checkedAt": 1773057600000,
+  "agents": [
+    { "name": "aura", "status": "live", "lastActiveAt": 1773057540000, "latencyMs": 82, "errorRate": 0.02 },
+    { "name": "flux", "status": "live", "lastActiveAt": 1773057510000, "latencyMs": 145, "errorRate": 0.03 },
+    { "name": "clause", "status": "live", "lastActiveAt": 1773057480000, "latencyMs": 120, "errorRate": 0.01 },
+    { "name": "oracle", "status": "degraded", "lastActiveAt": 1773057420000, "latencyMs": 32000, "errorRate": 0.08 },
+    { "name": "edge", "status": "live", "lastActiveAt": 1773057450000, "latencyMs": 96, "errorRate": 0.01 },
+    { "name": "lucifer", "status": "live", "lastActiveAt": 1773057400000, "latencyMs": 166, "errorRate": 0.04 },
+    { "name": "sigma", "status": "live", "lastActiveAt": 1773057390000, "latencyMs": 133, "errorRate": 0.02 }
+  ]
+}

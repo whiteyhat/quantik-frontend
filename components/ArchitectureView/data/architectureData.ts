@@ -103,7 +103,7 @@ const AGENT_RADIUS = 300;
 const SERVICE_RADIUS = 220;
 
 // 7 agents arranged clockwise starting from top
-const AGENT_ANGLES: Record<string, number> = {
+export const AGENT_ANGLES: Record<string, number> = {
   aura: -90,       // top
   oracle: -38,     // top-right
   flux: 14,        // right

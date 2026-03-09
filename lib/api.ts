@@ -316,11 +316,32 @@ export interface PerformanceSummary {
   } | null;
 }
 
+export interface HealthServiceSnapshot {
+  status: "healthy" | "degraded" | "down" | string;
+  detail?: string | null;
+  checkedAt?: number | null;
+  meta?: Record<string, unknown>;
+}
+
 export interface HealthStatus {
   status: string;
   message: string | null;
   checkedAt: number | null;
-  services: Record<string, string>;
+  services: Record<string, HealthServiceSnapshot>;
+}
+
+export interface SystemAgentHealthEntry {
+  name: string;
+  status: "live" | "degraded" | "down";
+  lastActiveAt: number;
+  latencyMs: number;
+  errorRate: number;
+}
+
+export interface SystemAgentHealthStatus {
+  agents: SystemAgentHealthEntry[];
+  overall: "healthy" | "degraded" | "down";
+  checkedAt: number;
 }
 
 export interface AlertEntry {
@@ -448,7 +469,7 @@ export const api = {
 
   getOrderBook: async (tokenId: string): Promise<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }> => {
     try {
-      const res = await apiFetch<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }>(`/api/markets/${tokenId}/orderbook`);
+      const res = await apiFetch<{ bids: OrderBookLevel[]; asks: OrderBookLevel[] }>(`/api/markets/${tokenId}/book`);
       if (res && Array.isArray(res.bids) && Array.isArray(res.asks)) return res;
       return { bids: [], asks: [] };
     } catch {
@@ -650,6 +671,37 @@ export const api = {
     }
   },
 
+  getSystemAgentHealth: async (signal?: AbortSignal): Promise<SystemAgentHealthStatus | null> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/agents/health", { signal });
+      const rawAgents = Array.isArray(raw?.agents) ? raw.agents : [];
+
+      return {
+        agents: rawAgents.map((entry) => {
+          const item = entry as Record<string, unknown>;
+          const rawStatus = String(item?.status ?? "down");
+          return {
+            name: String(item?.name ?? ""),
+            status:
+              rawStatus === "live" || rawStatus === "degraded"
+                ? rawStatus
+                : "down",
+            lastActiveAt: Number(item?.lastActiveAt ?? 0),
+            latencyMs: Number(item?.latencyMs ?? 0),
+            errorRate: Number(item?.errorRate ?? 1),
+          };
+        }),
+        overall:
+          raw?.overall === "healthy" || raw?.overall === "degraded"
+            ? raw.overall
+            : "down",
+        checkedAt: Number(raw?.checkedAt ?? 0),
+      };
+    } catch {
+      return null;
+    }
+  },
+
   // Orchestrator
   getOrchestratorStatus: async (signal?: AbortSignal): Promise<OrchestratorStatus | null> => {
     try {
@@ -723,11 +775,27 @@ export const api = {
         services: Object.fromEntries(
           Object.entries(servicesSource).map(([name, value]) => [
             name,
-            typeof value === "string"
-              ? value
-              : value && typeof value === "object" && "status" in value
-                ? String((value as { status?: unknown }).status ?? "unknown")
-                : "unknown",
+            value && typeof value === "object"
+              ? {
+                  status: String((value as { status?: unknown }).status ?? "unknown"),
+                  detail:
+                    typeof (value as { detail?: unknown }).detail === "string"
+                      ? String((value as { detail?: unknown }).detail)
+                      : null,
+                  checkedAt:
+                    Number((value as { checkedAt?: unknown; checked_at?: unknown }).checkedAt ?? (value as { checked_at?: unknown }).checked_at ?? 0) || null,
+                  meta:
+                    "meta" in (value as Record<string, unknown>) &&
+                    (value as { meta?: unknown }).meta &&
+                    typeof (value as { meta?: unknown }).meta === "object"
+                      ? ((value as { meta?: Record<string, unknown> }).meta ?? {})
+                      : undefined,
+                }
+              : {
+                  status: typeof value === "string" ? value : "unknown",
+                  detail: null,
+                  checkedAt: null,
+                },
           ])
         ),
       };

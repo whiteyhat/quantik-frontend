@@ -22,6 +22,9 @@ import {
 import { useNow } from "@/hooks/useNow";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardArchitectureMiniMap } from "@/components/dashboard/DashboardArchitectureMiniMap";
+import { DashboardMissionRail } from "@/components/dashboard/DashboardMissionRail";
+import { DashboardPilotDeck } from "@/components/dashboard/DashboardPilotDeck";
 import {
   CommandCenterCard,
   CommandCenterHeader,
@@ -33,7 +36,7 @@ import {
 import {
   SCANNER_CATEGORIES,
   type ScannerCategory,
-  useDashboardAgentStatusQuery,
+  useDashboardSystemAgentsQuery,
   useDashboardHealthQuery,
   useDashboardOrchestratorQuery,
   useDashboardPositionsQuery,
@@ -44,6 +47,7 @@ import {
   useDashboardSummaryQuery,
   useTriggerOrchestratorScan,
 } from "@/components/dashboard/dashboardQueries";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 function useDebouncedValue<T>(value: T, delay = 250) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -73,6 +77,18 @@ function healthTone(health: DashboardHealthSnapshot | null | undefined) {
     : health.severity === "bad"
       ? "bad"
       : "warn";
+}
+
+function serviceTone(status: DashboardHealthSnapshot["services"][number]["status"]) {
+  if (status === "healthy") return "good" as const;
+  if (status === "degraded") return "warn" as const;
+  return "bad" as const;
+}
+
+function runtimeStatusTone(status: DashboardAgentRow["status"]) {
+  if (status === "live") return "good" as const;
+  if (status === "degraded") return "warn" as const;
+  return "bad" as const;
 }
 
 function signalTone(signal: Signal["status"]) {
@@ -195,72 +211,6 @@ function MissionControlHero({
         </div>
       </div>
     </CommandCenterCard>
-  );
-}
-
-function CommandDeckStrip({
-  summary,
-  health,
-  agents,
-  updatedAt,
-  now,
-}: {
-  summary: DashboardSummarySnapshot | null;
-  health: (ReturnType<typeof useDashboardHealthQuery>["data"] & { latencyMs: number }) | null;
-  agents: DashboardAgentRow[];
-  updatedAt: number;
-  now: number;
-}) {
-  const activeAgents = agents.filter((agent) => agent.status === "active").length;
-
-  return (
-    <section className="command-center-strip" data-testid="dashboard-command-strip">
-      <div className="command-center-strip-item">
-        <div className="command-center-strip-label">Refresh</div>
-        <div className="command-center-strip-value">
-          {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : "Live sync"}
-        </div>
-        <div className="command-center-strip-detail">Shared queries update the dashboard on one cadence.</div>
-      </div>
-
-      <div className="command-center-strip-item">
-        <div className="command-center-strip-label">Funding</div>
-        <div className="command-center-strip-value">
-          {summary?.fundingStatus === "ready"
-            ? "Capital ready"
-            : summary?.fundingStatus === "funding_required"
-              ? "Funding required"
-              : "Telemetry only"}
-        </div>
-        <div className="command-center-strip-detail">
-          {summary?.fundingMessage ?? summary?.balanceMessage ?? "Waiting for wallet state."}
-        </div>
-      </div>
-
-      <div className="command-center-strip-item">
-        <div className="command-center-strip-label">Runtime</div>
-        <div className="command-center-strip-value">
-          {health ? `${health.label} · ${health.latencyMs}ms` : "Heartbeat pending"}
-        </div>
-        <div className="command-center-strip-detail">
-          {health?.services.length
-            ? `${health.services.length} backend checks reporting.`
-            : "No service detail returned from /api/health."}
-        </div>
-      </div>
-
-      <div className="command-center-strip-item">
-        <div className="command-center-strip-label">Agents</div>
-        <div className="command-center-strip-value">
-          {agents.length > 0 ? `${activeAgents}/${agents.length} active` : "No live telemetry"}
-        </div>
-        <div className="command-center-strip-detail">
-          {agents.length > 0
-            ? "Agent runtime data is flowing from the backend."
-            : "Statuses appear once specialist runtimes report activity."}
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -701,6 +651,9 @@ function SystemStatusCard({
   onRetryHealth,
   agents,
   agentsLoading,
+  agentsError,
+  onRetryAgents,
+  now,
 }: {
   health: (ReturnType<typeof useDashboardHealthQuery>["data"] & { latencyMs: number }) | null;
   healthLoading: boolean;
@@ -708,13 +661,18 @@ function SystemStatusCard({
   onRetryHealth: () => void;
   agents: DashboardAgentRow[];
   agentsLoading: boolean;
+  agentsError: boolean;
+  onRetryAgents: () => void;
+  now: number;
 }) {
+  const services = health?.services ?? [];
+
   return (
     <CommandCenterCard accent="neutral" data-testid="dashboard-system-status-card">
       <CommandCenterHeader
         eyebrow="Operations"
         title="System Status"
-        subtitle="Live API heartbeat and agent-runtime telemetry."
+        subtitle="Real backend heartbeat, service-map telemetry, and pipeline agent health."
       />
 
       {healthError ? (
@@ -739,9 +697,33 @@ function SystemStatusCard({
             <MetricBlock
               label="Service Map"
               value={health && isLiveHealth(health.services) ? `${health.services.length} checks` : "—"}
-              hint={health?.message ?? "No detailed service checks"}
+              hint={health?.message ?? "Waiting for detailed service telemetry"}
               tone={health && isLiveHealth(health.services) ? "good" : "neutral"}
             />
+          </div>
+
+          <div className="command-center-service-grid">
+            {services.length > 0 ? (
+              services.map((service) => (
+                <div key={service.name} className="command-center-service-row">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={`command-center-status-dot command-center-status-dot--${service.status}`} />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-white">{service.name}</div>
+                      <div className="truncate text-xs text-[rgba(255,255,255,0.42)]">
+                        {service.detail ?? "No additional detail"}
+                      </div>
+                    </div>
+                  </div>
+                  <StatusBadge tone={serviceTone(service.status)} label={service.status} />
+                </div>
+              ))
+            ) : (
+              <PanelEmptyState
+                title="Service map warming up"
+                detail="Structured service telemetry will appear here as soon as the backend reports it."
+              />
+            )}
           </div>
 
           <div className="space-y-3">
@@ -752,10 +734,16 @@ function SystemStatusCard({
                   <Skeleton width={74} height={14} borderRadius={5} />
                 </div>
               ))
+            ) : agentsError ? (
+              <PanelErrorState
+                title="Pipeline telemetry unavailable"
+                detail="The dashboard could not read `/api/agents/health`. Retry the runtime lane."
+                onRetry={onRetryAgents}
+              />
             ) : agents.length === 0 ? (
               <PanelEmptyState
-                title="No agent telemetry"
-                detail="Agent runtime status will appear here when the backend reports active specialist activity."
+                title="No agent traffic yet"
+                detail="Pipeline agents will appear here after the next live execution cycle."
               />
             ) : (
               agents.map((agent) => (
@@ -764,15 +752,20 @@ function SystemStatusCard({
                     <span className={`command-center-status-dot command-center-status-dot--${agent.status}`} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-white">{agent.name}</div>
-                      <div className="text-xs text-[rgba(255,255,255,0.45)]">{agent.subtitle}</div>
-                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{agent.lastAction}</div>
+                      <div className="text-xs text-[rgba(255,255,255,0.45)]">
+                        {agent.lastActiveAt
+                          ? `Last active ${formatRelativeTime(agent.lastActiveAt, now)}`
+                          : "No recent runtime traffic"}
+                      </div>
+                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{agent.detail}</div>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="font-mono text-xs text-[rgba(255,255,255,0.58)]">{agent.latencyMs}ms</div>
-                    <div className="text-xs text-[rgba(255,255,255,0.42)]">
-                      {Math.round(agent.confidence * 100)}%
-                    </div>
+                    <StatusBadge
+                      tone={runtimeStatusTone(agent.status)}
+                      label={agent.status}
+                    />
                   </div>
                 </div>
               ))
@@ -1035,13 +1028,15 @@ function MarketScannerCard() {
 
 export function DashboardPageClient() {
   const now = useNow(5_000);
+  const myAgent = useQuantikStore((state) => state.myAgent);
+  const myAgentLoading = useQuantikStore((state) => state.myAgentLoading);
   const summaryQuery = useDashboardSummaryQuery();
   const riskStatusQuery = useDashboardRiskStatusQuery();
   const riskConfigQuery = useDashboardRiskConfigQuery();
   const orchestratorQuery = useDashboardOrchestratorQuery();
   const positionsQuery = useDashboardPositionsQuery();
   const healthQuery = useDashboardHealthQuery();
-  const agentsQuery = useDashboardAgentStatusQuery();
+  const agentsQuery = useDashboardSystemAgentsQuery();
   const scanMutation = useTriggerOrchestratorScan();
 
   const lastUpdatedAt = Math.max(
@@ -1062,7 +1057,7 @@ export function DashboardPageClient() {
         now={now}
       />
 
-      <CommandDeckStrip
+      <DashboardMissionRail
         summary={summaryQuery.data ?? null}
         health={healthQuery.data ?? null}
         agents={agentsQuery.data ?? []}
@@ -1112,10 +1107,20 @@ export function DashboardPageClient() {
             error={summaryQuery.isError}
             onRetry={() => void summaryQuery.refetch()}
           />
+          <DashboardArchitectureMiniMap
+            agents={agentsQuery.data ?? []}
+            myAgent={myAgent}
+            loading={agentsQuery.isLoading || myAgentLoading}
+          />
           <MarketScannerCard />
         </div>
 
         <div className="command-center-column command-center-rail">
+          <DashboardPilotDeck
+            agent={myAgent}
+            agentLoading={myAgentLoading}
+            summary={summaryQuery.data ?? null}
+          />
           <SystemStatusCard
             health={healthQuery.data ?? null}
             healthLoading={healthQuery.isLoading}
@@ -1123,6 +1128,9 @@ export function DashboardPageClient() {
             onRetryHealth={() => void healthQuery.refetch()}
             agents={agentsQuery.data ?? []}
             agentsLoading={agentsQuery.isLoading}
+            agentsError={agentsQuery.isError}
+            onRetryAgents={() => void agentsQuery.refetch()}
+            now={now}
           />
           <RecentSignalsCard now={now} />
         </div>

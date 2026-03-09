@@ -68,6 +68,19 @@ export default function ManageAgentPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
+  useEffect(() => {
+    const syncTabFromLocation = () => {
+      const requestedTab = new URLSearchParams(window.location.search).get("tab");
+      if (requestedTab === "dashboard" || requestedTab === "architecture" || requestedTab === "world") {
+        setActiveTab(requestedTab);
+      }
+    };
+
+    syncTabFromLocation();
+    window.addEventListener("popstate", syncTabFromLocation);
+    return () => window.removeEventListener("popstate", syncTabFromLocation);
+  }, []);
+
   // Data state
   const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);

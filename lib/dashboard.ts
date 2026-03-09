@@ -1,10 +1,12 @@
 import type {
-  AgentStatusEntry,
   PerformanceSummary,
+  SystemAgentHealthEntry,
   WalletBalance,
 } from "@/lib/api";
 
 type CircuitBreakerState = "ARMED" | "WARNING" | "TRIGGERED";
+export type DashboardRuntimeStatus = "live" | "degraded" | "down";
+export type DashboardServiceStatus = "healthy" | "degraded" | "down";
 
 export interface DashboardSummarySnapshot {
   totalValue: number | null;
@@ -29,24 +31,31 @@ export interface DashboardSummarySnapshot {
   alphaDecay: PerformanceSummary["alphaDecay"];
 }
 
+export interface DashboardHealthService {
+  name: string;
+  status: DashboardServiceStatus;
+  detail: string | null;
+  checkedAt: number | null;
+  meta: Record<string, unknown> | null;
+}
+
 export interface DashboardHealthSnapshot {
   status: string;
   label: string;
   severity: "good" | "warn" | "bad";
   message: string | null;
   checkedAt: number | null;
-  services: { name: string; status: string }[];
+  services: DashboardHealthService[];
 }
 
 export interface DashboardAgentRow {
   id: string;
   name: string;
-  subtitle: string;
-  status: AgentStatusEntry["status"];
+  status: DashboardRuntimeStatus;
   latencyMs: number;
-  confidence: number;
-  lastAction: string;
-  lastActionAt: string | null;
+  errorRate: number;
+  detail: string;
+  lastActiveAt: number | null;
 }
 
 function coerceNumber(value: unknown, fallback = 0) {
@@ -62,6 +71,20 @@ function coerceNullableNumber(value: unknown) {
 
 function coerceString(value: unknown) {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function humanizeKey(value: string) {
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeServiceStatus(value: unknown): DashboardServiceStatus {
+  const status = String(value ?? "unknown").toLowerCase();
+
+  if (status === "ok" || status === "healthy" || status === "live") return "healthy";
+  if (status === "warning" || status === "warn" || status === "degraded") return "degraded";
+  return "down";
 }
 
 function normalizeCircuitBreakerState(value: unknown): CircuitBreakerState {
@@ -172,7 +195,7 @@ export function normalizeDashboardHealth(raw: {
   checked_at?: unknown;
   timestamp?: unknown;
   updatedAt?: unknown;
-  services?: Record<string, unknown> | Record<string, string>;
+  services?: Record<string, unknown>;
   checks?: Record<string, unknown>;
 } | null | undefined): DashboardHealthSnapshot {
   const status = String(raw?.status ?? "unknown").toLowerCase();
@@ -206,31 +229,47 @@ export function normalizeDashboardHealth(raw: {
     message: coerceString(raw?.message ?? raw?.detail),
     checkedAt,
     services: Object.entries(rawServices).map(([name, value]) => ({
-      name,
-      status: typeof value === "string"
-        ? value
-        : value && typeof value === "object" && "status" in value
-          ? String((value as { status?: unknown }).status ?? "unknown")
-          : "unknown",
+      name: humanizeKey(name),
+      status: normalizeServiceStatus(
+        typeof value === "string"
+          ? value
+          : value && typeof value === "object" && "status" in value
+            ? (value as { status?: unknown }).status
+            : "down"
+      ),
+      detail:
+        value && typeof value === "object" && "detail" in value
+          ? coerceString((value as { detail?: unknown }).detail)
+          : null,
+      checkedAt:
+        value && typeof value === "object"
+          ? coerceNullableNumber((value as { checkedAt?: unknown; checked_at?: unknown }).checkedAt ?? (value as { checked_at?: unknown }).checked_at)
+          : null,
+      meta:
+        value && typeof value === "object" && "meta" in value && (value as { meta?: unknown }).meta && typeof (value as { meta?: unknown }).meta === "object"
+          ? ((value as { meta?: Record<string, unknown> }).meta ?? {})
+          : null,
     })),
   };
 }
 
-export function selectAgentRows(entries: AgentStatusEntry[]) {
+export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
   return [...entries]
     .sort((left, right) => {
-      const order = { active: 0, idle: 1, error: 2 } as const;
+      const order = { live: 0, degraded: 1, down: 2 } as const;
       return order[left.status] - order[right.status];
     })
     .map<DashboardAgentRow>((entry, index) => ({
-      id: entry.id || `${entry.name || "agent"}-${index}`,
-      name: entry.name?.trim() ? entry.name : `Agent ${index + 1}`,
-      subtitle: entry.name?.trim() ? "Specialist agent" : "Live agent runtime",
+      id: entry.name?.trim().toLowerCase() || `agent-${index + 1}`,
+      name: entry.name?.trim() ? humanizeKey(entry.name.trim()) : `Agent ${index + 1}`,
       status: entry.status,
       latencyMs: coerceNumber(entry.latencyMs),
-      confidence: coerceNumber(entry.confidence),
-      lastAction: entry.lastAction?.trim() ? entry.lastAction : "Waiting for next cycle",
-      lastActionAt: entry.lastActionAt || null,
+      errorRate: coerceNumber(entry.errorRate),
+      detail:
+        coerceNumber(entry.lastActiveAt) > 0
+          ? `${Math.round(coerceNumber(entry.errorRate) * 100)}% error rate`
+          : "No recent traffic",
+      lastActiveAt: coerceNumber(entry.lastActiveAt) > 0 ? coerceNumber(entry.lastActiveAt) : null,
     }));
 }
 

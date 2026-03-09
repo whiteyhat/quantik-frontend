@@ -9,10 +9,15 @@ export function TradeConfirmationModal() {
   const open = useQuantikStore((s) => s.tradeModalOpen);
   const pending = useQuantikStore((s) => s.pendingTrade);
   const close = useQuantikStore((s) => s.closeTradeModal);
+  const wallet = useQuantikStore((s) => s.wallet);
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const { paperMode } = usePaperMode();
+
+  const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
+  const polBalance = wallet?.pol ?? 0;
+  const walletFunded = paperMode || (usdcBalance > 0 && polBalance > 0.01);
 
   // Trade execution button color: amber in paper mode, blue in live mode
   const confirmBtnBg = paperMode ? "#FF9F0A" : "var(--ios-blue)";
@@ -175,6 +180,36 @@ export function TradeConfirmationModal() {
               </div>
             </div>
 
+            {/* Wallet funding warning */}
+            {!walletFunded && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  background: "rgba(255,69,58,0.06)",
+                  border: "1px solid rgba(255,69,58,0.18)",
+                  marginBottom: 16,
+                }}
+              >
+                <span style={{ fontSize: 16, flexShrink: 0 }}>{"⚠"}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ios-red)", marginBottom: 2 }}>
+                    Wallet not funded
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                    {usdcBalance <= 0 && polBalance <= 0.01
+                      ? "You need USDC to place trades and POL to cover gas fees. Fund your wallet to continue."
+                      : usdcBalance <= 0
+                        ? "No USDC balance. Deposit USDC to your wallet before trading."
+                        : "Not enough POL for gas. Send POL to your wallet to enable transactions."}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
               <button
@@ -196,28 +231,30 @@ export function TradeConfirmationModal() {
               </button>
               <button
                 onClick={handleConfirm}
-                disabled={loading}
+                disabled={loading || !walletFunded}
                 data-testid="modal-confirm-btn"
                 style={{
                   padding: "10px 24px",
                   borderRadius: 12,
                   border: "none",
-                  background: confirmBtnBg,
-                  color: "#fff",
+                  background: !walletFunded ? "rgba(255,255,255,0.06)" : confirmBtnBg,
+                  color: !walletFunded ? "var(--text-tertiary)" : "#fff",
                   fontSize: "var(--text-subhead)",
                   fontWeight: 600,
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.6 : 1,
+                  cursor: loading || !walletFunded ? "not-allowed" : "pointer",
+                  opacity: loading || !walletFunded ? 0.5 : 1,
                   transition: "all 200ms ease",
                 }}
               >
-                {loading
-                  ? paperMode
-                    ? "Simulating..."
-                    : "Confirming..."
-                  : paperMode
-                  ? "Simulate Trade →"
-                  : "Confirm →"}
+                {!walletFunded
+                  ? "Wallet Not Funded"
+                  : loading
+                    ? paperMode
+                      ? "Simulating..."
+                      : "Confirming..."
+                    : paperMode
+                      ? "Simulate Trade →"
+                      : "Confirm →"}
               </button>
             </div>
 

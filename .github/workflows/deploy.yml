@@ -57,7 +57,7 @@ jobs:
           start: npm run dev
           wait-on: "http://localhost:3000"
           wait-on-timeout: 90
-          spec: "cypress/e2e/manage-agent-architecture.cy.ts,cypress/e2e/manage-agent-world.cy.ts,cypress/e2e/dashboard.cy.ts"
+          spec: "cypress/e2e/manage-agent-architecture.cy.ts,cypress/e2e/manage-agent-world.cy.ts,cypress/e2e/dashboard.cy.ts,cypress/e2e/relay-chat.cy.ts"
         env:
           NEXT_PUBLIC_API_URL: https://quantik-backend-production.up.railway.app
 

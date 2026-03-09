@@ -65,10 +65,21 @@ Cypress.Commands.add("mockDashboardApis", () => {
     },
   }).as("riskStatus");
   cy.intercept("GET", "**/api/v1/risk-config*", { fixture: "risk-config.json" }).as("riskConfig");
-  cy.intercept("GET", "**/api/health*", { body: { status: "ok", message: "nominal" } }).as(
-    "health"
-  );
-  cy.intercept("GET", "**/api/agents/status*", { fixture: "agent-status.json" }).as("agentStatus");
+  cy.intercept("GET", "**/api/health*", {
+    body: {
+      status: "healthy",
+      checkedAt: Date.now(),
+      message: "All mission systems nominal",
+      services: {
+        backend: { status: "healthy", detail: "API online and serving dashboard telemetry" },
+        relay: { status: "healthy", detail: "2 active sessions" },
+        scanner: { status: "healthy", detail: "Last scan 2m ago" },
+        orchestrator: { status: "healthy", detail: "2 candidates, last scan 1m ago" },
+        pipeline_agents: { status: "degraded", detail: "6 live · 1 degraded · 0 down" },
+      },
+    },
+  }).as("health");
+  cy.intercept("GET", "**/api/agents/health*", { fixture: "system-agent-health.json" }).as("agentHealth");
   cy.intercept("GET", "**/api/wallet/positions*", { body: [] }).as("positions");
   cy.intercept("GET", "**/api/signals*", { body: [] }).as("signals");
   cy.intercept("GET", "**/api/orchestrator/status*", {
