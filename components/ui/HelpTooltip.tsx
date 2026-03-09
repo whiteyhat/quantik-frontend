@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useHydrated } from "@/hooks/useHydrated";
 
 interface HelpTooltipProps {
   text: string;
 }
 
 export function HelpTooltip({ text }: HelpTooltipProps) {
+  const hydrated = useHydrated();
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const iconRef = useRef<HTMLDivElement>(null);
   const [flipped, setFlipped] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   function showTooltip() {
     if (!iconRef.current) return;
@@ -43,6 +42,10 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
       style={{ position: "relative", display: "inline-flex", marginLeft: 6, cursor: "help" }}
       onMouseEnter={showTooltip}
       onMouseLeave={() => setVisible(false)}
+      onFocus={showTooltip}
+      onBlur={() => setVisible(false)}
+      tabIndex={0}
+      aria-label={text}
     >
       <svg
         width={14}
@@ -59,7 +62,7 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
         <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
-      {mounted && visible && createPortal(
+      {hydrated && visible && createPortal(
         <div
           style={{
             position: "fixed",

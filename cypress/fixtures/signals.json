@@ -1,0 +1,32 @@
+[
+  {
+    "id": "sig-1",
+    "slug": "btc-100k",
+    "question": "Will Bitcoin reach $100k by year end?",
+    "decision": "YES",
+    "confidence": 0.78,
+    "edge": 0.12,
+    "timestamp": 1741500000000,
+    "status": "TRADE"
+  },
+  {
+    "id": "sig-2",
+    "slug": "eth-upgrade",
+    "question": "Will Ethereum complete the next upgrade?",
+    "decision": "NO",
+    "confidence": 0.65,
+    "edge": 0.08,
+    "timestamp": 1741490000000,
+    "status": "WATCH"
+  },
+  {
+    "id": "sig-3",
+    "slug": "sol-flip",
+    "question": "Will Solana flip Ethereum market cap?",
+    "decision": "PASS",
+    "confidence": 0.42,
+    "edge": 0.02,
+    "timestamp": 1741480000000,
+    "status": "SKIP"
+  }
+]

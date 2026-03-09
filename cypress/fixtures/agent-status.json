@@ -1,0 +1,65 @@
+[
+  {
+    "id": "aura",
+    "name": "Aura",
+    "latencyMs": 82,
+    "confidence": 0.72,
+    "lastAction": "Scanned sentiment queue",
+    "lastActionAt": "2026-03-09T12:00:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "flux",
+    "name": "Flux",
+    "latencyMs": 45,
+    "confidence": 0.68,
+    "lastAction": "Checked liquidity pool",
+    "lastActionAt": "2026-03-09T11:59:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "clause",
+    "name": "Clause",
+    "latencyMs": 120,
+    "confidence": 0.81,
+    "lastAction": "Evaluated resolution risk",
+    "lastActionAt": "2026-03-09T11:58:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "oracle",
+    "name": "Oracle",
+    "latencyMs": 200,
+    "confidence": 0.75,
+    "lastAction": "Computed probability estimate",
+    "lastActionAt": "2026-03-09T11:57:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "edge",
+    "name": "Edge",
+    "latencyMs": 60,
+    "confidence": 0.70,
+    "lastAction": "Calculated position size",
+    "lastActionAt": "2026-03-09T11:56:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "lucifer",
+    "name": "Lucifer",
+    "latencyMs": 150,
+    "confidence": 0.65,
+    "lastAction": "Ran devil's advocate check",
+    "lastActionAt": "2026-03-09T11:55:00.000Z",
+    "status": "active"
+  },
+  {
+    "id": "sigma",
+    "name": "Sigma",
+    "latencyMs": 90,
+    "confidence": 0.88,
+    "lastAction": "Final synthesis complete",
+    "lastActionAt": "2026-03-09T11:54:00.000Z",
+    "status": "active"
+  }
+]

@@ -12,6 +12,9 @@ import { BottomTabBar } from "@/components/BottomTabBar";
 import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { ToastNotification } from "@/components/ToastNotification";
 import { VersionLogButton } from "@/components/VersionLog";
+import { CURRENT_RELEASE } from "@/lib/releases";
+import { useHydrated } from "@/hooks/useHydrated";
+import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 
 // ─── Auth Sync ────────────────────────────────────────────────────────────────
 // Keeps the API client's Bearer token in sync with Clerk's session token
@@ -85,11 +88,9 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const { user } = useUser();
   const { paperMode } = usePaperMode();
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydrated();
   const [profileHovered, setProfileHovered] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const handleProfileClick = useCallback(() => {
     // Find and click the Clerk UserButton's internal button to open the popover
@@ -287,7 +288,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         }}
       >
         {/* Avatar with glow ring */}
-        {mounted && (
+        {hydrated && (
           <div
             style={{
               flexShrink: 0,
@@ -324,7 +325,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               lineHeight: 1.3,
             }}
           >
-            {mounted ? (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User") : "···"}
+            {hydrated ? (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User") : "···"}
           </div>
           <div
             style={{
@@ -376,7 +377,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
             letterSpacing: "0.02em",
           }}
         >
-          v0.1.0 · Quantik
+          {CURRENT_RELEASE.version} · Quantik
         </span>
 
         {/* Agent chat trigger */}
@@ -492,12 +493,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [relayOpen, setRelayOpen] = useState(false);
-  const [relayPulsing, setRelayPulsing] = useState(true);
-  useEffect(() => {
-    if (localStorage.getItem(RELAY_LS_KEY) === "true") {
-      setRelayPulsing(false);
-    }
-  }, []);
+  const relayHasBeenOpened = useLocalStorageFlag(RELAY_LS_KEY, false);
+  const relayPulsing = !relayHasBeenOpened;
 
   const handleToggleRelay = useCallback(() => {
     setRelayOpen((prev) => !prev);
@@ -511,8 +508,7 @@ export default function DashboardLayout({
   }, []);
 
   const handleRelayFirstOpen = useCallback(() => {
-    localStorage.setItem(RELAY_LS_KEY, "true");
-    setRelayPulsing(false);
+    setLocalStorageFlag(RELAY_LS_KEY, true);
   }, []);
 
   return (

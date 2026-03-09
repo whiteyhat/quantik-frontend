@@ -1,244 +1,38 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-
-// ─── Changelog data (derived from git history) ────────────────────────────────
-
-interface VersionEntry {
-  version: string;
-  date: string;
-  highlight: string;
-  features: string[];
-  fixes: string[];
-}
-
-const CHANGELOG: VersionEntry[] = [
-  {
-    version: "v0.9.0",
-    date: "2026-03-09",
-    highlight: "BYO OpenClaw Agent, Agent World pixel environment, Architecture Viewer, onboarding flow, and full Manage Agent dashboard.",
-    features: [
-      "🧩 BYO (Bring Your Own) Agent — full onboarding wizard with webhook config, wallet binding, and MCP server docs page",
-      "🌍 Agent World — pixel-art Phaser 3 virtual environment with 7 NPC sub-agents, pathfinding, speech bubbles, dialogue system, and pipeline visualization",
-      "🗺️ Architecture Viewer — interactive React Flow canvas showing full system topology (agents, services, data edges) with detail panels",
-      "🤖 Manage Agent page — complete agent dashboard with identity header, health score, equity curve chart, live positions, metrics row, risk config, webhook panel, system log, and AI insights",
-      "🏭 Agent Factory refactor — streamlined wizard flow with improved hooks, agent-limit enforcement, and BYO import path",
-      "📡 Live agent status — replaced hardcoded agent badges with real /api/agent/status endpoint polling",
-      "🚀 Autopilot Control Card — rich autopilot management UI with status indicators, quick actions, and webhook editor",
-      "🎓 Onboarding modal — first-run autopilot setup guide with step-by-step activation flow",
-      "📊 Agent limit UI — enforces max agent count with upgrade prompts in factory and sidebar",
-      "🧪 Cypress E2E tests — new specs for BYO onboarding, agent factory wizard, and expanded autopilot coverage",
-    ],
-    fixes: [
-      "🔧 Agent Factory page refactored — extracted hooks, reduced component complexity by ~50%",
-      "🗑️ Removed deprecated Autopilot standalone page (merged into Manage Agent)",
-      "📦 Settings page simplified — agent config moved to dedicated Manage Agent panels",
-      "🔗 BottomTabBar updated with agent factory badge and dynamic nav states",
-      "🧹 normalizeAgentData handles all 7 backend agent field name mappings correctly",
-      "📈 Equity curve chart fixed — handles missing data points gracefully",
-      "🛡️ Webhook config panel validates URLs and shows delivery status",
-    ],
-  },
-  {
-    version: "v0.8.0",
-    date: "2026-03-07",
-    highlight: "Clerk authentication, WDK wallet generation, real-time Socket.IO, Railway deployment, and full dashboard restructure.",
-    features: [
-      "🔐 Clerk authentication — sign-in/sign-up pages, JWT sync, UserButton in sidebar, middleware route protection",
-      "👛 WDK wallet generation — real EVM wallets via Tether WDK in Agent Factory Step 5, private key download as .txt",
-      "⚡ Socket.IO real-time events — trade:executed, agent:alert, autopilot:status, position:updated with per-user rooms",
-      "🔔 Browser trade notifications — push alerts when tab is backgrounded via useTradeNotifications hook",
-      "🏗️ Dashboard layout restructure — all pages moved under app/(dashboard) with shared layout, sidebar, and top bar",
-      "🌐 Marketing landing page — public homepage at app/(marketing)/page.tsx with product showcase",
-      "🤖 Personalized agent chat — agent personality-aware responses, system prompt from wizard, SSE streaming",
-      "🛠️ Agent tool calling — 7 tools (portfolio, risk, history, markets, analysis, trade, signals) via Gemini function calling",
-      "🚂 Railway deployment — PostgreSQL, Redis, BullMQ, full infra provisioning with private networking",
-      "🔒 API key encryption — AES-256-GCM for stored secrets, prompt injection defense in agent chat",
-      "🗄️ PostgreSQL dual-driver — production Postgres with SQLite fallback, 30+ table migration",
-      "📡 Redis + BullMQ job queues — scanner, orchestrator, hot scanner, fill monitor, PnL settler, alert poller",
-    ],
-    fixes: [
-      "🧹 Removed deprecated ActivePositions and PortfolioOverview components",
-      "🔗 Market links now route correctly under (dashboard) group",
-      "📊 Trade history API source updated to use authenticated endpoint",
-      "🧪 All Cypress and Playwright e2e specs updated for new route structure",
-      "🛡️ Clerk middleware protects dashboard routes, public routes remain accessible",
-      "📦 Providers component refactored — ClerkProvider, SocketProvider, QueryClient, PaperMode all unified",
-    ],
-  },
-  {
-    version: "v0.7.0",
-    date: "2026-03-07",
-    highlight: "Agent Factory wizard, skeleton loading system, and Arena prototype.",
-    features: [
-      "🏭 Agent Factory page — multi-step wizard to configure custom trading agents (identity, strategy, risk, preferences)",
-      "💀 Skeleton loading placeholders across all major pages — markets, dashboard, portfolio, trade history, settings, reports",
-      "📦 Skeleton shimmer components added to ExecutionLog, PerformancePanel, PnlTicker, PortfolioOverview, RecentSignals",
-      "🕹️ Arena page prototype — Agent Battle Royale concept with multiplayer evolutionary trading (replaced by Agent Factory in nav)",
-      "🧱 Reusable Skeleton UI primitive component for consistent loading states",
-    ],
-    fixes: [
-      "🧭 Sidebar nav reorganized — Arena removed, Agent Factory added between Autopilot and Settings",
-      "🗑️ Deprecated ActivePositions component cleaned up",
-      "🔄 Resilient polling and loading/error states added to risk, orchestrator, and status panels",
-      "⚡ PnlTicker removed from autopilot page to reduce layout noise",
-    ],
-  },
-  {
-    version: "v0.6.0",
-    date: "2026-03-06",
-    highlight: "Market page & agent pipeline overhaul with animated visualizations and real order book data.",
-    features: [
-      "🎨 Full /market/[slug] redesign — chart + live order book two-column layout",
-      "🤖 Animated agent cards: Aura semicircle gauge, Flux spread bar, Oracle dual-ring, Confidence bar all animate on mount",
-      "⭕ Oracle probability ring — dual concentric rings showing model vs market-implied with edge delta in center",
-      "💬 Synthesized Insight via Relay LLM — plain-English one-sentence summary streamed in real time",
-      "📖 Real order book data from backend — live bids/asks with depth bars, 10s auto-refresh",
-      "⏱️ Pipeline timeline shows real per-agent latency from store",
-      "💰 Alpha Signal bankroll reads from live on-chain USDC wallet balance",
-    ],
-    fixes: [
-      "🐛 Cent sign ¢ was rendering as literal \\u00A2 in SigmaDecision — fixed",
-      "📌 HelpTooltip clipping on right side of screen — now uses createPortal to document.body with viewport clamping",
-      "🔢 Pipeline timeline bars were all 1s — was hardcoded fallback, now uses real latencyMs from store",
-      "📦 iconoir-react package was missing — replaced with inline SVG in HelpTooltip",
-      "🗑️ Removed /market-analysis page and its sidebar nav entry",
-      "📈 Main price chart no longer re-animates on every pipeline run",
-    ],
-  },
-  {
-    version: "v0.5.0",
-    date: "2026-02-20",
-    highlight: "Dashboard real data binding, performance metrics, and tooltip system.",
-    features: [
-      "📊 Dashboard fully wired to real API — PnL, USDC, POL balances, total value",
-      "🏆 Win rate ring visualization in performance panel",
-      "📈 Enriched performance metrics — Brier scores, attribution, drift status",
-      "🔔 Telegram webhook editor in autopilot settings",
-      "❓ HelpTooltip component system across all dashboard section headers",
-      "🛡️ Risk Limits panel with live circuit breaker status and Kelly utilization",
-    ],
-    fixes: [
-      "🔧 WalletBalance interface updated with onChainUsdc and pol fields",
-      "👁️ Active Positions panel was hidden due to empty state logic — fixed",
-      "🔄 normalizeAgentData now maps backend field names to frontend types",
-      "♻️ Risk status duplicated on dashboard — removed duplicate panel",
-      "🛠️ CI build failures fixed for PerformancePanel and HelpTooltip imports",
-      "💡 Scanner feed handles object response from /api/pipeline/results",
-    ],
-  },
-  {
-    version: "v0.4.0",
-    date: "2026-02-05",
-    highlight: "Relay AI chat with SSE streaming, autopilot dashboard, and changelog panel.",
-    features: [
-      "🤝 Relay SSE streaming — word-by-word token delivery, ~250ms TTFT",
-      "💬 Suggested question pills shown after every Relay response",
-      "⌨️ Relay typing indicator with animated dot pulse",
-      "⚡ Autopilot dashboard — scanner feed, execution log, live P&L ticker, status bar",
-      "📋 This changelog panel — version history accessible from sidebar",
-      "📱 Relay chat sidebar with glassmorphism drawer overlay",
-    ],
-    fixes: [
-      "🤖 Relay model name corrected to Gemini 2.5 Flash, badge updated",
-      "📱 Mobile keyboard layout broke Relay input — viewport-fit cover fix applied",
-      "🧭 Suggested questions were disappearing — now always visible after response",
-      "🔄 Relay suggested questions now rotate stably without index drift",
-    ],
-  },
-  {
-    version: "v0.3.0",
-    date: "2026-01-22",
-    highlight: "Full pipeline engine, live agent cards, trade execution, and risk management.",
-    features: [
-      "🚀 Market page rebuilt from scratch — live SSE pipeline log, Terminal-style design",
-      "💸 Execute Trade wired to /api/execution/order with trade confirmation modal",
-      "⚠️ Risk panel — circuit breaker status, live exposure, Kelly utilization limits",
-      "📊 Performance panel — Brier scores, attribution breakdown, drift status",
-      "🔄 Live SSE pipeline feed with per-agent card updates and status transitions",
-      "🧪 Full Cypress E2E test suite for pipeline, signals, and trade flow",
-    ],
-    fixes: [
-      "🛠️ PipelineLog rewritten — no more stale closures, reliable event queue drainer",
-      "📡 SSE event parsing fixed — agent cards now update correctly on pipeline run",
-      "📈 Price chart uses clobTokenIds[0] as tokenId — was using wrong field",
-      "🔒 CircuitBreaker API response normalized — handles object and string shapes",
-      "💥 toFixed crash on pipeline run — Number() coercion added to all numeric fields",
-    ],
-  },
-  {
-    version: "v0.2.0",
-    date: "2026-01-10",
-    highlight: "Signals, orchestrator, trending markets, and CI/CD pipeline.",
-    features: [
-      "📡 Recent Signals panel wired to /api/signals with live updates",
-      "🎛️ Orchestrator panel — candidate market queue, scan status, autopilot toggle",
-      "🔥 Trending markets pill + Polymarket live feed integration",
-      "🚀 GitHub Actions CI/CD with automatic Vercel deploy on push to main",
-      "🌟 Market analysis page with glassmorphism card redesign",
-      "♾️ Infinite scroll on markets browser with pagination sentinel",
-    ],
-    fixes: [
-      "🐛 toFixed crash prevented — Number() coercion on spread/sentiment/ev fields",
-      "⟳ Infinite scroll sentinel wasn't triggering on short viewports — fixed",
-      "🧪 All Cypress E2E specs now pass including crash guard scenarios",
-      "📊 Circuit breaker badge border-radius and scanner column layout fixes",
-    ],
-  },
-  {
-    version: "v0.1.0",
-    date: "2025-12-20",
-    highlight: "Initial release — Quantik Ultimate AI Trading terminal.",
-    features: [
-      "🏠 Dashboard with live wallet balance, positions, and P&L",
-      "📊 Markets browser with search, filters, and liquidity grades",
-      "💼 Portfolio view with open positions and trade history",
-      "🔮 Market pipeline — 7-agent AI analysis (Aura, Flux, Oracle, Edge, Clause, Lucifer, Sigma)",
-      "🎨 Glassmorphism dark UI with iOS-inspired design tokens and color system",
-      "📱 Responsive layout with sidebar nav and mobile bottom tab bar",
-      "⚠️ Emergency panic button — close all positions with one click",
-      "📄 Paper mode — simulate trades without real execution",
-    ],
-    fixes: [],
-  },
-];
-
-// ─── VersionLog Panel ─────────────────────────────────────────────────────────
+import { CURRENT_RELEASE, RELEASES } from "@/lib/releases";
+import { useHydrated } from "@/hooks/useHydrated";
 
 function VersionLogPanel({ onClose }: { onClose: () => void }) {
   const [visible, setVisible] = useState(false);
 
-  // Trigger slide-in after mount
   useEffect(() => {
-    const t = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(t);
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
     }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
   return (
     <>
-      {/* Transparent click-away overlay (no dim) */}
-      <div
-        onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 38 }}
-      />
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 38 }} />
 
-      {/* Second sidebar — same size/style as nav sidebar, slides in from left */}
       <div
         style={{
           position: "fixed",
           top: 0,
           bottom: 0,
           left: 220,
-          width: 260,
+          width: 280,
           zIndex: 39,
           display: "flex",
           flexDirection: "column",
@@ -252,7 +46,6 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
           overflowY: "auto",
         }}
       >
-        {/* Header — mirrors sidebar header style */}
         <div
           style={{
             padding: "24px 16px 14px",
@@ -287,7 +80,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                 color: "#0a84ff",
               }}
             >
-              {CHANGELOG.length}
+              {RELEASES.length}
             </span>
           </div>
           <button
@@ -311,34 +104,32 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Version list */}
         <div style={{ flex: 1, padding: "6px 0 24px" }}>
-          {CHANGELOG.map((v, i) => (
+          {RELEASES.map((entry, index) => (
             <div
-              key={v.version}
+              key={entry.version}
               style={{
                 padding: "14px 16px",
-                borderBottom: i < CHANGELOG.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                borderBottom: index < RELEASES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
               }}
             >
-              {/* Version + date row */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                 <span
                   style={{
                     padding: "2px 9px",
                     borderRadius: 100,
-                    background: i === 0 ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.06)",
-                    border: `1px solid ${i === 0 ? "rgba(10,132,255,0.35)" : "rgba(255,255,255,0.08)"}`,
+                    background: index === 0 ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.06)",
+                    border: `1px solid ${index === 0 ? "rgba(10,132,255,0.35)" : "rgba(255,255,255,0.08)"}`,
                     fontFamily: '"SF Mono","JetBrains Mono",monospace',
                     fontSize: 11,
                     fontWeight: 700,
-                    color: i === 0 ? "#0a84ff" : "rgba(255,255,255,0.55)",
+                    color: index === 0 ? "#0a84ff" : "rgba(255,255,255,0.55)",
                     letterSpacing: "0.05em",
                   }}
                 >
-                  {v.version}
+                  {entry.version}
                 </span>
-                {i === 0 && (
+                {index === 0 ? (
                   <span
                     style={{
                       padding: "1px 7px",
@@ -351,22 +142,20 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                       letterSpacing: "0.06em",
                     }}
                   >
-                    LATEST
+                    CURRENT
                   </span>
-                )}
+                ) : null}
                 <span style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>
-                  {v.date}
+                  {entry.date}
                 </span>
               </div>
 
-              {/* Highlight */}
               <p style={{ margin: "0 0 10px", fontSize: 11, fontStyle: "italic", color: "rgba(255,255,255,0.38)", lineHeight: 1.5 }}>
-                {v.highlight}
+                {entry.highlight}
               </p>
 
-              {/* New Features */}
-              {v.features.length > 0 && (
-                <div style={{ marginBottom: v.fixes.length > 0 ? 10 : 0 }}>
+              {entry.features.length > 0 ? (
+                <div style={{ marginBottom: entry.fixes.length > 0 ? 10 : 0 }}>
                   <div
                     style={{
                       fontSize: 9,
@@ -380,9 +169,9 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                   >
                     New Features
                   </div>
-                  {v.features.map((f, fi) => (
+                  {entry.features.map((feature) => (
                     <div
-                      key={fi}
+                      key={feature}
                       style={{
                         marginBottom: 4,
                         fontSize: 11,
@@ -390,14 +179,13 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                         lineHeight: 1.45,
                       }}
                     >
-                      {f}
+                      {feature}
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
 
-              {/* Bug Fixes */}
-              {v.fixes.length > 0 && (
+              {entry.fixes.length > 0 ? (
                 <div>
                   <div
                     style={{
@@ -412,9 +200,9 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                   >
                     Bug Fixes
                   </div>
-                  {v.fixes.map((fix, fi) => (
+                  {entry.fixes.map((fix) => (
                     <div
-                      key={fi}
+                      key={fix}
                       style={{
                         marginBottom: 4,
                         fontSize: 11,
@@ -426,7 +214,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
@@ -435,19 +223,15 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── VersionLogButton ─────────────────────────────────────────────────────────
-
 export function VersionLogButton() {
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   return (
     <>
       <button
-        onClick={() => setOpen((p) => !p)}
-        title="View changelog"
+        onClick={() => setOpen((previous) => !previous)}
+        title={`View changelog (${CURRENT_RELEASE.version})`}
         aria-label="Open changelog"
         style={{
           background: open ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.05)",
@@ -468,10 +252,7 @@ export function VersionLogButton() {
         📋
       </button>
 
-      {mounted && open && createPortal(
-        <VersionLogPanel onClose={() => setOpen(false)} />,
-        document.body
-      )}
+      {hydrated && open ? createPortal(<VersionLogPanel onClose={() => setOpen(false)} />, document.body) : null}
     </>
   );
 }

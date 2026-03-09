@@ -117,7 +117,7 @@ function defaultAgents(): Record<string, AgentCardState> {
 
 export const useQuantikStore = create<QuantikStore>((set) => ({
   myAgent: null,
-  myAgentLoading: false,
+  myAgentLoading: true,
   setMyAgent: (myAgent) => set({ myAgent }),
   setMyAgentLoading: (myAgentLoading) => set({ myAgentLoading }),
 

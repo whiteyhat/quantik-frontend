@@ -1,0 +1,10 @@
+{
+  "address": "0x1111111111111111111111111111111111111111",
+  "onChainUsdc": 850.42,
+  "pol": 12.5,
+  "totalValue": 862.92,
+  "fundingStatus": "ready",
+  "fundingMessage": "Wallet funded and ready",
+  "balanceStatus": "live",
+  "liveBalanceAvailable": true
+}

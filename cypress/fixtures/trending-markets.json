@@ -1,0 +1,17 @@
+{
+  "markets": [
+    {
+      "slug": "btc-100k",
+      "tokenId": "btc-100k",
+      "question": "Will Bitcoin reach $100k by year end?",
+      "resolutionDate": "2026-12-31T00:00:00.000Z",
+      "yesPrice": 0.61,
+      "noPrice": 0.39,
+      "volume": 1200000,
+      "liquidity": 500000,
+      "liquidityGrade": "A"
+    }
+  ],
+  "total": 1,
+  "hasMore": false
+}

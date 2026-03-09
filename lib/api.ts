@@ -1,3 +1,9 @@
+import {
+  normalizeDashboardSummary,
+  toPerformanceSummary,
+  toWalletBalance,
+} from "@/lib/dashboard";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // ─── Auth Token ───────────────────────────────────────────────────────────────
@@ -310,6 +316,13 @@ export interface PerformanceSummary {
   } | null;
 }
 
+export interface HealthStatus {
+  status: string;
+  message: string | null;
+  checkedAt: number | null;
+  services: Record<string, string>;
+}
+
 export interface AlertEntry {
   id: string;
   slug: string;
@@ -381,41 +394,44 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(`API error ${res.status}: ${await res.text()}`);
   }
 
-  return res.json();
+  if (res.status === 204) {
+    return null as T;
+  }
+
+  const text = await res.text();
+  if (!text) {
+    return null as T;
+  }
+
+  return JSON.parse(text) as T;
 }
 
 export const api = {
   // Markets
-  getMarkets: async (search?: string, category?: string, limit?: number, offset?: number): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
-    try {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      if (category) params.append("category", category);
-      if (limit !== undefined) params.append("limit", limit.toString());
-      if (offset !== undefined) params.append("offset", offset.toString());
-      
-      const query = params.toString();
-      const res = await apiFetch<Market[] | { markets: Market[]; total: number; hasMore: boolean }>(
-        `/api/markets${query ? `?${query}` : ""}`
-      );
-      if (Array.isArray(res)) return { markets: res, total: res.length, hasMore: false };
-      if (res && Array.isArray((res as any).markets)) return res as { markets: Market[]; total: number; hasMore: boolean };
-      return { markets: [], total: 0, hasMore: false };
-    } catch {
-      return { markets: [], total: 0, hasMore: false };
-    }
+  getMarkets: async (search?: string, category?: string, limit?: number, offset?: number, signal?: AbortSignal): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (category) params.append("category", category);
+    if (limit !== undefined) params.append("limit", limit.toString());
+    if (offset !== undefined) params.append("offset", offset.toString());
+
+    const query = params.toString();
+    const res = await apiFetch<Market[] | { markets: Market[]; total: number; hasMore: boolean }>(
+      `/api/markets${query ? `?${query}` : ""}`,
+      { signal }
+    );
+    if (Array.isArray(res)) return { markets: res, total: res.length, hasMore: false };
+    if (res && Array.isArray((res as { markets?: Market[] }).markets)) return res as { markets: Market[]; total: number; hasMore: boolean };
+    return { markets: [], total: 0, hasMore: false };
   },
 
-  getTrendingMarkets: async (): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
-    try {
-      const res = await apiFetch<{ markets: Market[]; total: number; hasMore: boolean }>(
-        `/api/markets/trending`
-      );
-      if (res && Array.isArray(res.markets)) return res;
-      return { markets: [], total: 0, hasMore: false };
-    } catch {
-      return { markets: [], total: 0, hasMore: false };
-    }
+  getTrendingMarkets: async (signal?: AbortSignal): Promise<{ markets: Market[]; total: number; hasMore: boolean }> => {
+    const res = await apiFetch<{ markets: Market[]; total: number; hasMore: boolean }>(
+      `/api/markets/trending`,
+      { signal }
+    );
+    if (res && Array.isArray(res.markets)) return res;
+    return { markets: [], total: 0, hasMore: false };
   },
 
   getMarket: (slug: string) =>
@@ -441,33 +457,26 @@ export const api = {
   },
 
   // Wallet
-  getBalance: async (): Promise<WalletBalance | null> => {
+  getDashboardSummary: async (signal?: AbortSignal) => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/performance/summary");
-      if (!raw) return null;
-      // Backend may return circuitBreakerStatus as an object {state, ...}
-      const cbs = raw.circuitBreakerStatus;
-      const cbStr =
-        typeof cbs === "string" ? cbs :
-        cbs && typeof cbs === "object" && "state" in (cbs as Record<string, unknown>) ? (cbs as { state: string }).state :
-        undefined;
-      return {
-        ...raw,
-        circuitBreakerStatus: cbStr,
-        fundingStatus: String(raw?.fundingStatus ?? raw?.funding_status ?? "") as WalletBalance["fundingStatus"],
-        fundingMessage: typeof raw?.fundingMessage === "string"
-          ? raw.fundingMessage
-          : typeof raw?.funding_message === "string"
-            ? raw.funding_message
-            : null,
-      } as unknown as WalletBalance;
+      const raw = await apiFetch<Record<string, unknown>>("/api/performance/summary", { signal });
+      return normalizeDashboardSummary(raw);
     } catch {
       return null;
     }
   },
 
-  getPositions: async (): Promise<Position[]> => {
-    const res = await apiFetch<Position[]>("/api/wallet/positions");
+  getBalance: async (signal?: AbortSignal): Promise<WalletBalance | null> => {
+    try {
+      const summary = await api.getDashboardSummary(signal);
+      return summary ? toWalletBalance(summary) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  getPositions: async (signal?: AbortSignal): Promise<Position[]> => {
+    const res = await apiFetch<Position[]>("/api/wallet/positions", { signal });
     return Array.isArray(res) ? res : [];
   },
 
@@ -607,13 +616,13 @@ export const api = {
   },
 
   // Signals
-  getSignals: async (): Promise<Signal[]> => {
+  getSignals: async (signal?: AbortSignal): Promise<Signal[]> => {
     let raw: unknown[];
     try {
-      const res = await apiFetch<unknown[]>("/api/signals");
+      const res = await apiFetch<unknown[]>("/api/signals", { signal });
       raw = Array.isArray(res) ? res : [];
     } catch {
-      const res = await apiFetch<unknown[]>("/api/pipeline/results");
+      const res = await apiFetch<unknown[]>("/api/pipeline/results", { signal });
       raw = Array.isArray(res) ? res : [];
     }
     const validStatuses = new Set(["TRADE", "WATCH", "SKIP"]);
@@ -633,18 +642,18 @@ export const api = {
     });
   },
 
-  getAgentStatus: async (): Promise<AgentStatusEntry[]> => {
+  getAgentStatus: async (signal?: AbortSignal): Promise<AgentStatusEntry[]> => {
     try {
-      return await apiFetch<AgentStatusEntry[]>("/api/agents/status");
+      return await apiFetch<AgentStatusEntry[]>("/api/agents/status", { signal });
     } catch {
       return [];
     }
   },
 
   // Orchestrator
-  getOrchestratorStatus: async (): Promise<OrchestratorStatus | null> => {
+  getOrchestratorStatus: async (signal?: AbortSignal): Promise<OrchestratorStatus | null> => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/status");
+      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/status", { signal });
       return {
         lastScanAt: Number(raw?.lastScanAt ?? 0),
         nextScanAt: Number(raw?.nextScanAt ?? 0),
@@ -658,9 +667,9 @@ export const api = {
     }
   },
 
-  getOrchestratorCandidates: async (): Promise<OrchestratorCandidatesResponse> => {
+  getOrchestratorCandidates: async (signal?: AbortSignal): Promise<OrchestratorCandidatesResponse> => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/candidates");
+      const raw = await apiFetch<Record<string, unknown>>("/api/orchestrator/candidates", { signal });
       const rawCandidates = Array.isArray(raw?.candidates) ? raw.candidates : [];
       return {
         candidates: rawCandidates.map((c: Record<string, unknown>) => {
@@ -692,10 +701,45 @@ export const api = {
     return apiFetch("/api/orchestrator/scan", { method: "POST" });
   },
 
-  // Risk
-  getRiskStatus: async (): Promise<RiskStatus | null> => {
+  getHealth: async (signal?: AbortSignal): Promise<HealthStatus | null> => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/risk/status");
+      const raw = await apiFetch<Record<string, unknown>>("/api/health", { signal });
+      const servicesSource =
+        raw?.services && typeof raw.services === "object"
+          ? (raw.services as Record<string, unknown>)
+          : raw?.checks && typeof raw.checks === "object"
+            ? (raw.checks as Record<string, unknown>)
+            : {};
+
+      return {
+        status: String(raw?.status ?? "unknown"),
+        message:
+          typeof raw?.message === "string"
+            ? raw.message
+            : typeof raw?.detail === "string"
+              ? raw.detail
+              : null,
+        checkedAt: Number(raw?.checkedAt ?? raw?.checked_at ?? raw?.timestamp ?? 0) || null,
+        services: Object.fromEntries(
+          Object.entries(servicesSource).map(([name, value]) => [
+            name,
+            typeof value === "string"
+              ? value
+              : value && typeof value === "object" && "status" in value
+                ? String((value as { status?: unknown }).status ?? "unknown")
+                : "unknown",
+          ])
+        ),
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  // Risk
+  getRiskStatus: async (signal?: AbortSignal): Promise<RiskStatus | null> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/risk/status", { signal });
       // Backend may return circuitBreaker as an object {state, drawdownPct, ...}
       const cb = raw?.circuitBreaker;
       const cbStr: RiskStatus["circuitBreaker"] =
@@ -714,9 +758,9 @@ export const api = {
     }
   },
 
-  getRiskConfig: async (): Promise<RiskConfig | null> => {
+  getRiskConfig: async (signal?: AbortSignal): Promise<RiskConfig | null> => {
     try {
-      const raw = await apiFetch<Record<string, unknown>>("/api/v1/risk-config");
+      const raw = await apiFetch<Record<string, unknown>>("/api/v1/risk-config", { signal });
       return {
         maxPositionSize: Number(raw?.maxPositionSize ?? 0.10),
         kellyMultiplier: Number(raw?.kellyMultiplier ?? 0.25),
@@ -729,23 +773,9 @@ export const api = {
   },
 
   // Monitoring (L5)
-  getPerformanceSummary: async (): Promise<PerformanceSummary> => {
-    const raw = await apiFetch<Record<string, unknown>>("/api/performance/summary");
-    return {
-      winRate: Number(raw?.winRate ?? 0),
-      pnlToday: Number(raw?.pnlToday ?? 0),
-      metrics: {
-        currentStreak: Number((raw?.metrics as Record<string, unknown>)?.currentStreak ?? 0),
-        bestTrade: String((raw?.metrics as Record<string, unknown>)?.bestTrade ?? ""),
-        bestPnl: Number((raw?.metrics as Record<string, unknown>)?.bestPnl ?? 0),
-        totalVolume: Number((raw?.metrics as Record<string, unknown>)?.totalVolume ?? 0),
-      },
-      alphaDecay: raw?.alphaDecay ? {
-        detected: Boolean((raw.alphaDecay as Record<string, unknown>).detected),
-        rollingHitRate: Number((raw.alphaDecay as Record<string, unknown>).rollingHitRate ?? 0),
-        recommendation: String((raw.alphaDecay as Record<string, unknown>).recommendation ?? ""),
-      } : null,
-    };
+  getPerformanceSummary: async (signal?: AbortSignal): Promise<PerformanceSummary> => {
+    const summary = await api.getDashboardSummary(signal);
+    return toPerformanceSummary(summary ?? normalizeDashboardSummary(null));
   },
 
   getBrierScores: async (): Promise<BrierEntry[]> => {
@@ -907,6 +937,12 @@ export const api = {
   },
 
   // Settings
+  setPaperMode: async (enabled: boolean): Promise<{ paperMode: boolean }> =>
+    apiFetch("/api/v1/settings/paper-mode", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    }),
+
   getTelegramSettings: async (): Promise<{ chatId: string; botToken: string; hasToken: boolean }> => {
     return apiFetch("/api/v1/settings/telegram");
   },

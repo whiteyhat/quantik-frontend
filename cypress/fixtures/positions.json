@@ -1,0 +1,26 @@
+[
+  {
+    "id": "pos-1",
+    "slug": "btc-100k",
+    "market": "Will Bitcoin reach $100k by year end?",
+    "direction": "YES",
+    "size": 150,
+    "entryPrice": 0.55,
+    "currentPrice": 0.61,
+    "pnl": 13.64,
+    "pnlPct": 10.91,
+    "timestamp": 1741400000000
+  },
+  {
+    "id": "pos-2",
+    "slug": "eth-upgrade",
+    "market": "Will Ethereum complete the next upgrade?",
+    "direction": "NO",
+    "size": 80,
+    "entryPrice": 0.42,
+    "currentPrice": 0.38,
+    "pnl": 7.62,
+    "pnlPct": 9.52,
+    "timestamp": 1741450000000
+  }
+]

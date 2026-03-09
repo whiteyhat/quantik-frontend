@@ -5,9 +5,9 @@ on:
     branches: [main]
 
 jobs:
-  # ─── Tier 1: Fully mocked, no SSE, fast-fail gate ──────────────────────────
+  # ─── Tier 1: Core feature pages — fast-fail gate ─────────────────────────
   cypress-tier1:
-    name: Cypress E2E — Tier 1 (stable)
+    name: Cypress E2E — Tier 1 (Core)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +30,13 @@ jobs:
           start: npm run dev
           wait-on: "http://localhost:3000"
           wait-on-timeout: 90
-          spec: "cypress/e2e/autopilot.cy.ts,cypress/e2e/market-chart.cy.ts,cypress/e2e/market-scanner.cy.ts,cypress/e2e/mobile.cy.ts,cypress/e2e/orchestrator.cy.ts,cypress/e2e/settings.cy.ts,cypress/e2e/execute-trade.cy.ts,cypress/e2e/infinite-scroll.cy.ts"
+          spec: "cypress/e2e/agent-factory-create.cy.ts,cypress/e2e/agent-factory-byo.cy.ts,cypress/e2e/manage-agent-dashboard.cy.ts,cypress/e2e/trade-history.cy.ts"
         env:
           NEXT_PUBLIC_API_URL: https://quantik-backend-production.up.railway.app
 
-  # ─── Tier 2: SSE-stubbed via fetch intercept ───────────────────────────────
+  # ─── Tier 2: Rich UI — Architecture, Agent World, Dashboard ──────────────
   cypress-tier2:
-    name: Cypress E2E — Tier 2 (SSE mocked)
+    name: Cypress E2E — Tier 2 (Rich UI)
     runs-on: ubuntu-latest
     needs: cypress-tier1
     steps:
@@ -57,11 +57,11 @@ jobs:
           start: npm run dev
           wait-on: "http://localhost:3000"
           wait-on-timeout: 90
-          spec: "cypress/e2e/market-pipeline.cy.ts,cypress/e2e/pipeline-flow.cy.ts,cypress/e2e/pipeline-log.cy.ts,cypress/e2e/trading.cy.ts,cypress/e2e/signal-validator.cy.ts,cypress/e2e/market-page-layout.cy.ts"
+          spec: "cypress/e2e/manage-agent-architecture.cy.ts,cypress/e2e/manage-agent-world.cy.ts,cypress/e2e/dashboard.cy.ts"
         env:
           NEXT_PUBLIC_API_URL: https://quantik-backend-production.up.railway.app
 
-  # ─── Deploy: only after both test tiers pass ───────────────────────────────
+  # ─── Deploy: only after both test tiers pass ─────────────────────────────
   deploy:
     name: Deploy to Vercel
     runs-on: ubuntu-latest

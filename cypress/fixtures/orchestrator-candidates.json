@@ -1,0 +1,24 @@
+{
+  "candidates": [
+    {
+      "slug": "btc-100k-eoy",
+      "tokenId": "tok-1",
+      "question": "Will Bitcoin reach $100k by year end?",
+      "opportunityScore": 85.2,
+      "components": { "volume": 90, "priceMove": 80, "liquidity": 70, "recency": 100 },
+      "triggers": ["volume_spike"],
+      "scoredAt": 1741500000000
+    },
+    {
+      "slug": "eth-merge-success",
+      "tokenId": "tok-2",
+      "question": "Will Ethereum successfully complete the next upgrade?",
+      "opportunityScore": 72.1,
+      "components": { "volume": 65, "priceMove": 75, "liquidity": 80, "recency": 68 },
+      "triggers": ["price_movement"],
+      "scoredAt": 1741499000000
+    }
+  ],
+  "total": 2,
+  "scanCycle": 1
+}
