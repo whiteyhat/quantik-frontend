@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Bot, Shield, Wallet } from "lucide-react";
+import { ArrowRight, Bot, MessageSquare } from "lucide-react";
 import { useDashboardAgentHealthScoreQuery } from "@/components/dashboard/dashboardQueries";
 import {
   CommandCenterCard,
@@ -81,10 +81,15 @@ export function DashboardPilotDeck({
         title="Pilot Deck"
         subtitle="Your agent cockpit, folded into mission control."
         action={
-          <Link href="/manage-agent" className="mission-rail-link">
-            Open My Agent
-            <ArrowRight className="size-3.5" />
-          </Link>
+          <button
+            type="button"
+            className="mission-rail-link pilot-deck-chat-cta"
+            aria-label={`Chat with ${agent.name || "Agent"}`}
+            title={`Chat with ${agent.name || "Agent"}`}
+            onClick={() => window.dispatchEvent(new CustomEvent("open-agent-chat"))}
+          >
+            <MessageSquare className="size-3.5 shrink-0" />
+          </button>
         }
       />
 
@@ -162,17 +167,10 @@ export function DashboardPilotDeck({
       </div>
 
       <div className="pilot-deck-actions">
-        <Link href="/manage-agent" className="pilot-deck-action">
+        <Link href="/manage-agent?tab=world" className="pilot-deck-action">
           <Bot className="size-4" />
-          Open control room
-        </Link>
-        <Link href="/manage-agent?tab=architecture" className="pilot-deck-action">
-          <Shield className="size-4" />
-          Open architecture
-        </Link>
-        <Link href="/manage-agent" className="pilot-deck-action">
-          <Wallet className="size-4" />
-          Review wallet state
+          View Agents World
+          <ArrowRight className="ml-auto size-4" />
         </Link>
       </div>
     </CommandCenterCard>

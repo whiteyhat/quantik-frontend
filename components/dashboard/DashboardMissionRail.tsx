@@ -46,8 +46,10 @@ export function DashboardMissionRail({
   now: number;
 }) {
   const liveAgents = agents.filter((agent) => agent.status === "live").length;
+  const idleAgents = agents.filter((agent) => agent.status === "idle").length;
   const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
   const downAgents = agents.filter((agent) => agent.status === "down").length;
+  const hasTraffic = agents.some((agent) => agent.lastActiveAt);
   const fundingTone =
     summary?.fundingStatus === "ready"
       ? "ready"
@@ -128,7 +130,11 @@ export function DashboardMissionRail({
         <div className="mission-rail-copy">
           <div className="mission-rail-label">Agent traffic</div>
           <div className="mission-rail-value">
-            {agents.length > 0 ? `${liveAgents} live / ${agents.length}` : "No telemetry"}
+            {agents.length === 0
+              ? "No telemetry"
+              : liveAgents > 0
+                ? `${liveAgents} live / ${agents.length}`
+                : "All agents idle"}
           </div>
           <div className="mission-rail-dots" aria-hidden="true">
             {agents.slice(0, 7).map((agent) => (
@@ -139,9 +145,11 @@ export function DashboardMissionRail({
             ))}
           </div>
           <div className="mission-rail-subtle">
-            {agents.length > 0
-              ? `${degradedAgents} degraded · ${downAgents} down`
-              : "Pipeline agents will light up after live runs"}
+            {agents.length === 0
+              ? "Pipeline agents will light up after live runs"
+              : !hasTraffic
+                ? "Awaiting first live run"
+                : `${idleAgents} idle · ${degradedAgents} degraded · ${downAgents} down`}
           </div>
         </div>
       </article>

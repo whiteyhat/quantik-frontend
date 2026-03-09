@@ -1,0 +1,311 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - link "🏠 Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e12]: 🏠
+        - generic [ref=e13]: Dashboard
+      - link "🤖 My Agent" [ref=e14] [cursor=pointer]:
+        - /url: /manage-agent
+        - generic [ref=e15]: 🤖
+        - generic [ref=e16]: My Agent
+      - link "📈 Trade History" [ref=e17] [cursor=pointer]:
+        - /url: /trade-history
+        - generic [ref=e18]: 📈
+        - generic [ref=e19]: Trade History
+      - link "🏭 Agent Factory 1/1" [ref=e20] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e21]: 🏭
+        - generic [ref=e22]: Agent Factory
+        - generic [ref=e23]: 1/1
+      - link "⚙️ Settings" [ref=e24] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e25]: ⚙️
+        - generic [ref=e26]: Settings
+    - generic [ref=e28] [cursor=pointer]:
+      - generic [ref=e29]: Carlos
+      - generic [ref=e32]: Online
+    - generic [ref=e33]:
+      - generic [ref=e34]: v0.9.0 · Quantik
+      - generic [ref=e35]:
+        - generic: Hey! Talk to me 💬
+        - button "Chat with Signal Scout" [ref=e36] [cursor=pointer]: 🦊
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: 🦊
+        - generic [ref=e41]:
+          - generic [ref=e42]: Signal Scout
+          - generic [ref=e43]: Quantik Command Drawer
+        - button "×" [ref=e44] [cursor=pointer]
+      - generic [ref=e45]:
+        - generic [ref=e46]: Active
+        - generic [ref=e48]: Autopilot Off
+        - generic [ref=e49]: No sync yet
+    - generic [ref=e51]:
+      - generic [ref=e52]: 🦊
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e53]:
+      - button "What's my portfolio status?" [ref=e54] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e55] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - textbox "Message Signal Scout..." [ref=e58]
+      - button "↑" [disabled] [ref=e59]
+  - button "🚨" [ref=e60] [cursor=pointer]:
+    - generic [ref=e61]: 🚨
+  - main [ref=e63]:
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "My Agent" [level=1] [ref=e67]
+          - paragraph [ref=e68]: Monitor performance, configure settings, and manage your trading agent.
+        - generic [ref=e69]:
+          - button "Dashboard" [ref=e70] [cursor=pointer]
+          - button "Architecture" [ref=e71] [cursor=pointer]
+          - button "Agent World" [ref=e72] [cursor=pointer]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]: 🦊
+              - generic [ref=e80]:
+                - generic [ref=e81]:
+                  - generic [ref=e82]: Signal Scout
+                  - generic [ref=e83]: LIVE
+                - generic [ref=e85]:
+                  - generic [ref=e86]: "WDK Wallet: 0x1111...1111"
+                  - button "📋" [ref=e87] [cursor=pointer]
+                - generic [ref=e88]:
+                  - generic [ref=e89]: "Balance:"
+                  - generic [ref=e90]: $10,000.00
+            - generic [ref=e91]:
+              - generic [ref=e92]:
+                - button "7D" [ref=e93] [cursor=pointer]
+                - button "30D" [ref=e94] [cursor=pointer]
+                - button "All" [ref=e95] [cursor=pointer]
+              - button "🦊 CHAT WITH SIGNAL SCOUT" [ref=e96] [cursor=pointer]:
+                - generic [ref=e97]: 🦊
+                - text: CHAT WITH SIGNAL SCOUT
+              - button "🗑" [ref=e98] [cursor=pointer]
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]: Equity Curve
+                - generic [ref=e103]: $10,000.00
+              - generic [ref=e104]:
+                - generic [ref=e105]: 7D P&L
+                - generic [ref=e106]: +$0.00
+            - application [ref=e109]:
+              - generic [ref=e120]:
+                - generic [ref=e121]:
+                  - generic [ref=e123]: Tue
+                  - generic [ref=e125]: Wed
+                  - generic [ref=e127]: Thu
+                  - generic [ref=e129]: Fri
+                  - generic [ref=e131]: Sat
+                  - generic [ref=e133]: Sun
+                  - generic [ref=e135]: Mon
+                - generic [ref=e136]:
+                  - generic [ref=e138]: $0
+                  - generic [ref=e140]: $3k
+                  - generic [ref=e142]: $5k
+                  - generic [ref=e144]: $8k
+                  - generic [ref=e146]: $10k
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: Total Return
+              - generic [ref=e150]: +1000.0%
+              - generic [ref=e151]: +200.0% today
+            - generic [ref=e152]:
+              - generic [ref=e153]: Win Rate
+              - generic [ref=e154]: 65%
+              - generic [ref=e155]: 42 trades
+            - generic [ref=e156]:
+              - generic [ref=e157]: Max Drawdown
+              - generic [ref=e158]: "--"
+            - generic [ref=e159]:
+              - generic [ref=e160]: Streak
+              - generic [ref=e161]: "3"
+              - generic [ref=e162]: winning
+            - generic [ref=e163]:
+              - generic [ref=e164]: Trades
+              - generic [ref=e165]: "42"
+              - generic [ref=e166]: $12,500 vol
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - heading "Live Positions" [level=2] [ref=e169]
+              - generic [ref=e170]: 2 Active
+            - table [ref=e172]:
+              - rowgroup [ref=e173]:
+                - row "Market Title Outcome Shares Avg Entry Price Current Price Current Value P&L ($/%) Resolution Date" [ref=e174]:
+                  - columnheader "Market Title" [ref=e175]
+                  - columnheader "Outcome" [ref=e176]
+                  - columnheader "Shares" [ref=e177]
+                  - columnheader "Avg Entry Price" [ref=e178]
+                  - columnheader "Current Price" [ref=e179]
+                  - columnheader "Current Value" [ref=e180]
+                  - columnheader "P&L ($/%)" [ref=e181]
+                  - columnheader "Resolution Date" [ref=e182]
+              - rowgroup [ref=e183]:
+                - row "Will Bitcoin reach $100k by year end? YES 150.0 55¢ 61¢ $91.50 +$13.64 / +1091.0% —" [ref=e184]:
+                  - cell "Will Bitcoin reach $100k by year end?" [ref=e185]
+                  - cell "YES" [ref=e186]
+                  - cell "150.0" [ref=e187]
+                  - cell "55¢" [ref=e188]
+                  - cell "61¢" [ref=e189]
+                  - cell "$91.50" [ref=e190]
+                  - cell "+$13.64 / +1091.0%" [ref=e191]
+                  - cell "—" [ref=e192]
+                - row "Will Ethereum complete the next upgrade? NO 80.0 42¢ 38¢ $30.40 +$7.62 / +952.0% —" [ref=e193]:
+                  - cell "Will Ethereum complete the next upgrade?" [ref=e194]
+                  - cell "NO" [ref=e195]
+                  - cell "80.0" [ref=e196]
+                  - cell "42¢" [ref=e197]
+                  - cell "38¢" [ref=e198]
+                  - cell "$30.40" [ref=e199]
+                  - cell "+$7.62 / +952.0%" [ref=e200]
+                  - cell "—" [ref=e201]
+        - generic [ref=e202]:
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - generic [ref=e206]:
+                  - generic [ref=e207]: ⚡
+                  - generic [ref=e208]:
+                    - generic [ref=e209]: Autonomous Trading
+                    - generic [ref=e210]: Autopilot Control
+                - generic [ref=e211]: This switch controls real autonomous trade execution. Quantik will not arm autopilot until this wallet has both POL for fees and USDC.e for live Polymarket orders.
+                - generic [ref=e212]:
+                  - generic [ref=e213]: Autopilot off
+                  - generic [ref=e214]: Funding required
+                  - generic [ref=e215]: Agent active
+              - button "Toggle" [ref=e216] [cursor=pointer]
+            - generic [ref=e218]:
+              - generic [ref=e219]:
+                - generic [ref=e220]: POL
+                - generic [ref=e221]: 0.0000 POL
+                - generic [ref=e222]: Fee token
+              - generic [ref=e223]:
+                - generic [ref=e224]: USDC.e
+                - generic [ref=e225]: $5400.00
+                - generic [ref=e226]: Trading capital
+              - generic [ref=e227]:
+                - generic [ref=e228]: Status
+                - generic [ref=e229]: FUNDED
+                - generic [ref=e230]: Fund this wallet with POL and USDC.e before enabling autopilot.
+          - generic [ref=e231]:
+            - generic [ref=e232]:
+              - generic [ref=e233]:
+                - generic [ref=e234]: ✨
+                - generic [ref=e235]: AI Insights
+              - generic [ref=e236]: 3 signals
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - generic [ref=e239]: TRADE
+                - generic [ref=e240]: "YES"
+                - generic [ref=e241]: +0.1% edge
+                - generic [ref=e242]: 365d ago
+              - generic [ref=e243]: “Will Bitcoin reach $100k by year end?”
+              - generic [ref=e244]:
+                - generic [ref=e245]: Confidence
+                - generic [ref=e246]: 1%
+            - generic [ref=e249]:
+              - generic [ref=e250]:
+                - generic [ref=e251]: WATCH
+                - generic [ref=e252]: "NO"
+                - generic [ref=e253]: Will Ethereum complete the next upgrade?
+                - generic [ref=e254]: 1%
+              - generic [ref=e255]:
+                - generic [ref=e256]: SKIP
+                - generic [ref=e257]: PASS
+                - generic [ref=e258]: Will Solana flip Ethereum market cap?
+                - generic [ref=e259]: 0%
+          - generic [ref=e260]:
+            - heading "Agent Config" [level=3] [ref=e261]
+            - generic [ref=e262]:
+              - generic [ref=e263]:
+                - generic [ref=e264]: ⚖️
+                - text: Balanced
+              - generic [ref=e265]:
+                - generic [ref=e266]: 💎
+                - text: Value Hunter
+              - generic [ref=e267]:
+                - generic [ref=e268]: 🔬
+                - text: Analyst
+              - generic [ref=e269]:
+                - generic [ref=e270]: 🌊
+                - text: Swing
+              - generic [ref=e271]:
+                - generic [ref=e272]: 📊
+                - text: Smart Scaling
+              - generic [ref=e273]:
+                - generic [ref=e274]: 🪙
+                - text: Crypto
+            - generic [ref=e276]:
+              - generic [ref=e277]: Risk Level
+              - generic [ref=e278]: Medium (5/10)
+            - generic [ref=e281]:
+              - generic [ref=e282]:
+                - generic [ref=e283]:
+                  - generic [ref=e284]: Max Drawdown Limit
+                  - generic [ref=e285]: 15%
+                - generic [ref=e288]: Circuit breaker triggers at this level
+              - generic [ref=e289]:
+                - generic [ref=e290]:
+                  - generic [ref=e291]: Max Position Size
+                  - generic [ref=e292]: 10%
+                - generic [ref=e295]: Maximum capital per single trade
+              - generic [ref=e296]:
+                - generic [ref=e297]:
+                  - generic [ref=e298]: Kelly Multiplier
+                  - generic [ref=e299]: 0.25x
+                - generic [ref=e302]: Fraction of Kelly criterion to apply
+          - generic [ref=e303]:
+            - generic [ref=e304]:
+              - heading "Active Alerts" [level=3] [ref=e305]
+              - generic [ref=e306]: 5 alerts
+            - generic [ref=e307]:
+              - generic [ref=e308]:
+                - generic [ref=e309]: Alerts Active
+                - generic [ref=e310]: Telegram notifications enabled
+              - button "Toggle" [ref=e311] [cursor=pointer]
+            - generic [ref=e313]:
+              - generic [ref=e314]: DD 15%
+              - generic [ref=e315]: Max Pos 10%
+              - generic [ref=e316]: Kelly 0.25x
+            - generic [ref=e317]:
+              - generic [ref=e318]:
+                - generic [ref=e319]: PENDING
+                - generic [ref=e320]: Will OpenAI IPO in 2026?
+                - generic [ref=e321]: 80%
+                - generic [ref=e322]: 2d ago
+              - generic [ref=e323]:
+                - generic [ref=e324]: PENDING
+                - generic [ref=e325]: Will Trump win the popular vote in 2028?
+                - generic [ref=e326]: 92%
+                - generic [ref=e327]: 2d ago
+              - generic [ref=e328]:
+                - generic [ref=e329]: PENDING
+                - generic [ref=e330]: Will the Fed cut rates in March 2026?
+                - generic [ref=e331]: 95%
+                - generic [ref=e332]: 2d ago
+          - button "System Log 6 ›" [ref=e334] [cursor=pointer]:
+            - generic [ref=e335]:
+              - heading "System Log" [level=3] [ref=e336]
+              - generic [ref=e338]: "6"
+            - generic [ref=e339]: ›
+  - button "Open Next.js Dev Tools" [ref=e345] [cursor=pointer]:
+    - img [ref=e346]
+  - alert [ref=e349]
+  - generic [ref=e350]: $0
+```

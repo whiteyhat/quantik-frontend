@@ -1,0 +1,108 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - generic "Create an agent first":
+        - generic: 🏠
+        - generic: Dashboard
+      - generic "Create an agent first":
+        - generic: 🤖
+        - generic: My Agent
+      - generic "Create an agent first":
+        - generic: 📈
+        - generic: Trade History
+      - link "🏭 Agent Factory 0/1" [ref=e11] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e12]: 🏭
+        - generic [ref=e13]: Agent Factory
+        - generic [ref=e14]: 0/1
+      - generic "Create an agent first":
+        - generic: ⚙️
+        - generic: Settings
+    - generic [ref=e15] [cursor=pointer]:
+      - button "Open user menu" [ref=e18]:
+        - img "Carlos Roldan's logo" [ref=e21]
+      - generic [ref=e23]:
+        - generic [ref=e24]: Carlos
+        - generic [ref=e27]: Online
+    - generic [ref=e28]:
+      - generic [ref=e29]: v0.9.0 · Quantik
+      - generic [ref=e30]:
+        - button "Chat with Agent" [ref=e31] [cursor=pointer]: 🤝
+        - generic: CHAT WITH QUANTIK INTELLIGENCE
+  - generic [ref=e32]:
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: 🤝
+        - generic [ref=e36]:
+          - generic [ref=e37]: Relay
+          - generic [ref=e38]: Quantik Command Drawer
+        - button "×" [ref=e39] [cursor=pointer]
+      - generic [ref=e40]:
+        - generic [ref=e41]: Standby
+        - generic [ref=e43]: Autopilot Off
+        - generic [ref=e44]: No sync yet
+    - generic [ref=e46]:
+      - generic [ref=e47]: 🤝
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e48]:
+      - button "What's my portfolio status?" [ref=e49] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e50] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e51] [cursor=pointer]
+    - generic [ref=e52]:
+      - textbox "Message Relay..." [ref=e53]
+      - button "↑" [disabled] [ref=e54]
+  - button "🚨" [ref=e55] [cursor=pointer]:
+    - generic [ref=e56]: 🚨
+  - main [ref=e58]:
+    - generic [ref=e59]:
+      - generic [ref=e61]:
+        - button "← Back" [ref=e62] [cursor=pointer]
+        - generic [ref=e63]: BYO AGENT
+      - generic [ref=e64]:
+        - generic [ref=e67]:
+          - button "1 Generate Link Create a one-time OpenClaw claim URL" [disabled] [ref=e68]:
+            - generic [ref=e69]: "1"
+            - generic [ref=e70]:
+              - generic [ref=e71]: Generate Link
+              - generic [ref=e72]: Create a one-time OpenClaw claim URL
+          - button "2 Send to OpenClaw Paste the prompt into OpenClaw and wait for claim" [disabled] [ref=e73]:
+            - generic [ref=e74]: "2"
+            - generic [ref=e75]:
+              - generic [ref=e76]: Send to OpenClaw
+              - generic [ref=e77]: Paste the prompt into OpenClaw and wait for claim
+          - button "3 Review & Activate Verify the claimed identity and activate the agent" [disabled] [ref=e78]:
+            - generic [ref=e79]: "3"
+            - generic [ref=e80]:
+              - generic [ref=e81]: Review & Activate
+              - generic [ref=e82]: Verify the claimed identity and activate the agent
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - heading "Generate Link" [level=1] [ref=e85]
+            - paragraph [ref=e86]: Create a one-time OpenClaw claim URL
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - generic [ref=e92]: 🦞
+                - generic [ref=e93]: OpenClaw Claim Link
+              - generic "Quantik generates a one-time URL for OpenClaw to complete the BYO claim flow." [ref=e94]:
+                - img [ref=e95]
+            - paragraph [ref=e98]: This flow is agent-first. Generate a one-time onboarding URL, paste it into OpenClaw, and let OpenClaw push its identity back to Quantik.
+            - button "Generate Onboarding Link" [ref=e100] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e107] [cursor=pointer]:
+    - generic [ref=e110]:
+      - text: Compiling
+      - generic [ref=e111]:
+        - generic [ref=e112]: .
+        - generic [ref=e113]: .
+        - generic [ref=e114]: .
+  - alert [ref=e115]
+```

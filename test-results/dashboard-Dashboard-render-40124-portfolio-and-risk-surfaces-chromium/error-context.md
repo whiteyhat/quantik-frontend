@@ -1,0 +1,417 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - link "🏠 Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e12]: 🏠
+        - generic [ref=e13]: Dashboard
+      - link "🤖 My Agent" [ref=e14] [cursor=pointer]:
+        - /url: /manage-agent
+        - generic [ref=e15]: 🤖
+        - generic [ref=e16]: My Agent
+      - link "📈 Trade History" [ref=e17] [cursor=pointer]:
+        - /url: /trade-history
+        - generic [ref=e18]: 📈
+        - generic [ref=e19]: Trade History
+      - link "🏭 Agent Factory 0/1" [ref=e20] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e21]: 🏭
+        - generic [ref=e22]: Agent Factory
+        - generic [ref=e23]: 0/1
+      - link "⚙️ Settings" [ref=e24] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e25]: ⚙️
+        - generic [ref=e26]: Settings
+    - generic [ref=e28] [cursor=pointer]:
+      - generic [ref=e29]: User
+      - generic [ref=e32]: Online
+    - generic [ref=e33]:
+      - generic [ref=e34]: v0.9.0 · Quantik
+      - generic [ref=e35]:
+        - button "Chat with Agent" [ref=e36] [cursor=pointer]: 🤝
+        - generic: CHAT WITH QUANTIK INTELLIGENCE
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: 🤝
+        - generic [ref=e41]:
+          - generic [ref=e42]: Relay
+          - generic [ref=e43]: Quantik Command Drawer
+        - button "×" [ref=e44] [cursor=pointer]
+      - generic [ref=e45]:
+        - generic [ref=e46]: Standby
+        - generic [ref=e48]: Autopilot Off
+        - generic [ref=e49]: No sync yet
+    - generic [ref=e51]:
+      - generic [ref=e52]: 🤝
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e53]:
+      - button "What's my portfolio status?" [ref=e54] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e55] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - textbox "Message Relay..." [ref=e58]
+      - button "↑" [disabled] [ref=e59]
+  - button "🚨" [ref=e60] [cursor=pointer]:
+    - generic [ref=e61]: 🚨
+  - main [ref=e63]:
+    - generic [ref=e64]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e69]: Capital armed
+            - generic [ref=e70]: API Healthy
+            - generic [ref=e71]: Scanner idle
+          - generic [ref=e72]:
+            - generic [ref=e73]: Mission Control
+            - heading "Operate the whole trading stack from one live surface." [level=1] [ref=e74]
+            - paragraph [ref=e75]: Shared telemetry now drives portfolio, risk, orchestration, and market discovery from the same refresh cycle.
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - img [ref=e78]
+              - generic [ref=e81]: Live balance synced
+            - generic [ref=e82]:
+              - img [ref=e83]
+              - generic [ref=e85]: Circuit ARMED
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - generic [ref=e92]: Updated Just now
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - generic [ref=e95]: Total Value
+            - generic [ref=e96]: $10,000.00
+            - generic [ref=e97]: $5,400.00 liquid
+          - generic [ref=e98]:
+            - generic [ref=e99]: Daily P&L
+            - generic [ref=e100]: +$200.00
+            - generic [ref=e101]: 2.0% today
+          - generic [ref=e102]:
+            - generic [ref=e103]: Exposure
+            - generic [ref=e104]: 24.3%
+            - generic [ref=e105]: $5,400.00 deployable
+          - generic [ref=e106]:
+            - generic [ref=e107]: Candidates
+            - generic [ref=e108]: "2"
+            - generic [ref=e109]: Scanned 59s ago
+      - generic [ref=e110]:
+        - article [ref=e111]:
+          - img [ref=e113]
+          - generic [ref=e118]:
+            - generic [ref=e119]: Refresh cadence
+            - generic [ref=e120]: Just now
+            - generic [ref=e121]: Health snapshot Just now
+        - article [ref=e122]:
+          - img [ref=e124]
+          - generic [ref=e127]:
+            - generic [ref=e128]: Capital posture
+            - generic [ref=e129]: Autopilot armed
+            - generic [ref=e130]: $5,400.00 ready to deploy
+        - article [ref=e131]:
+          - img [ref=e133]
+          - generic [ref=e136]:
+            - generic [ref=e137]: Runtime fabric
+            - generic [ref=e138]: Healthy · 55ms
+            - generic [ref=e139]:
+              - generic [ref=e140]: Backend
+              - generic [ref=e141]: Relay
+              - generic [ref=e142]: Scanner
+              - generic [ref=e143]: Orchestrator
+              - generic [ref=e144]: Pipeline Agents
+        - article [ref=e145]:
+          - img [ref=e147]
+          - generic [ref=e150]:
+            - generic [ref=e151]: Agent traffic
+            - generic [ref=e152]: 6 live / 7
+            - generic [ref=e161]: 0 idle · 1 degraded · 0 down
+        - article [ref=e162]:
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - img [ref=e165]
+              - text: Mission control
+            - generic [ref=e167]: Real backend telemetry now powers funding, runtime, and pipeline status across the whole surface.
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - generic [ref=e170]:
+            - generic [ref=e172]:
+              - generic [ref=e173]: Capital
+              - heading "Portfolio" [level=2] [ref=e174]
+              - paragraph [ref=e175]: One bankroll snapshot reused across every summary widget.
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - generic [ref=e178]: Net liquidation value
+                - generic [ref=e179]: $10,000.00
+                - generic [ref=e180]:
+                  - generic [ref=e181]: +$200.00 today
+                  - generic [ref=e182]: Circuit ARMED
+              - generic [ref=e183]:
+                - generic [ref=e184]:
+                  - generic [ref=e185]: Available Cash
+                  - generic [ref=e186]: $5,400.00
+                  - generic [ref=e187]: Ready for next deployment
+                - generic [ref=e188]:
+                  - generic [ref=e189]: Capital in Play
+                  - generic [ref=e190]: $4,600.00
+                  - generic [ref=e191]: 34% Kelly utilization
+              - generic [ref=e193]:
+                - generic [ref=e194]: Kelly utilization
+                - generic [ref=e195]: 34%
+          - generic [ref=e198]:
+            - generic [ref=e200]:
+              - generic [ref=e201]: Execution
+              - heading "Active Positions" [level=2] [ref=e202]
+              - paragraph [ref=e203]: Open exposure ranked by deployed capital.
+            - generic [ref=e204]:
+              - generic [ref=e205]: No open positions
+              - generic [ref=e206]: The wallet is flat right now. Fresh opportunities will surface in the scanner and orchestrator panels.
+          - generic [ref=e207]:
+            - generic [ref=e209]:
+              - generic [ref=e210]: Guardrails
+              - heading "Risk Posture" [level=2] [ref=e211]
+              - paragraph [ref=e212]: Live utilization and hard limits from the shared risk engine.
+            - generic [ref=e213]:
+              - generic [ref=e214]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]: Exposure
+                  - generic [ref=e217]: 24.3%
+                  - generic [ref=e218]: $5,400.00 available
+                - generic [ref=e219]:
+                  - generic [ref=e220]: Drawdown
+                  - generic [ref=e221]: 2.0%
+                  - generic [ref=e222]: Limit 15%
+              - generic [ref=e223]:
+                - generic [ref=e224]:
+                  - generic [ref=e225]: Circuit
+                  - generic [ref=e226]: ARMED
+                - generic [ref=e227]:
+                  - generic [ref=e228]: Max Position
+                  - generic [ref=e229]: 10%
+                - generic [ref=e230]:
+                  - generic [ref=e231]: Kelly
+                  - generic [ref=e232]: 0.25×
+        - generic [ref=e233]:
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - generic [ref=e236]:
+                - generic [ref=e237]: Scanner Control
+                - heading "Orchestrator" [level=2] [ref=e238]
+                - paragraph [ref=e239]: Tier 0 scanner routing high-conviction markets into the review lane.
+              - button "Scan now" [ref=e241] [cursor=pointer]:
+                - img
+                - text: Scan now
+            - generic [ref=e242]:
+              - generic [ref=e243]:
+                - generic [ref=e244]:
+                  - generic [ref=e245]: Last Scan
+                  - generic [ref=e246]: 59s ago
+                - generic [ref=e247]:
+                  - generic [ref=e248]: Markets Scanned
+                  - generic [ref=e249]: 5,000
+                - generic [ref=e250]:
+                  - generic [ref=e251]: Candidates
+                  - generic [ref=e252]: "2"
+              - generic [ref=e253]:
+                - link "85 Will Bitcoin reach $100k by year end? volume spike" [ref=e254] [cursor=pointer]:
+                  - /url: /market/btc-100k-eoy
+                  - generic [ref=e255]:
+                    - generic [ref=e256]: "85"
+                    - generic [ref=e257]:
+                      - generic [ref=e258]: Will Bitcoin reach $100k by year end?
+                      - generic [ref=e260]: volume spike
+                    - img [ref=e261]
+                - link "72 Will Ethereum successfully complete the next upgrade? price movement" [ref=e263] [cursor=pointer]:
+                  - /url: /market/eth-merge-success
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: "72"
+                    - generic [ref=e266]:
+                      - generic [ref=e267]: Will Ethereum successfully complete the next upgrade?
+                      - generic [ref=e269]: price movement
+                    - img [ref=e270]
+          - generic [ref=e272]:
+            - generic [ref=e274]:
+              - generic [ref=e275]: Signal Quality
+              - heading "Performance Pulse" [level=2] [ref=e276]
+              - paragraph [ref=e277]: The same summary snapshot drives win rate, streak, and decay messaging.
+            - generic [ref=e278]:
+              - generic [ref=e279]:
+                - generic [ref=e280]:
+                  - generic [ref=e281]: Win Rate
+                  - generic [ref=e282]: 65.0%
+                  - generic [ref=e283]: 42 total trades
+                - generic [ref=e284]:
+                  - generic [ref=e285]: Current Streak
+                  - generic [ref=e286]: "+3"
+                  - generic [ref=e287]: Best btc-breakout
+              - generic [ref=e288]:
+                - generic [ref=e289]:
+                  - generic [ref=e290]: Best P&L
+                  - generic [ref=e291]: $180.00
+                - generic [ref=e292]:
+                  - generic [ref=e293]: Total Volume
+                  - generic [ref=e294]: $12,500.00
+                - generic [ref=e295]:
+                  - generic [ref=e296]: Alpha Decay
+                  - generic [ref=e297]: Clear
+              - generic [ref=e298]:
+                - generic [ref=e299]: Alpha Decay Recommendation
+                - generic [ref=e300]: Maintain current sizing
+          - generic [ref=e302]:
+            - generic [ref=e303]:
+              - generic [ref=e304]: Architecture
+              - heading "Neural Web Mini-Map" [level=2] [ref=e305]
+              - paragraph [ref=e306]: A compact live view of the full Quantik topology.
+            - link "Open full map" [ref=e308] [cursor=pointer]:
+              - /url: /manage-agent?tab=architecture
+              - text: Open full map
+              - img [ref=e309]
+          - generic [ref=e317]:
+            - generic [ref=e319]:
+              - generic [ref=e320]: Market Discovery
+              - heading "Live Market Scanner" [level=2] [ref=e321]
+              - paragraph [ref=e322]: Trending stays explicit. Search and category browsing share one cancellable query path.
+            - generic [ref=e323]:
+              - generic [ref=e324]:
+                - img [ref=e325]
+                - textbox [ref=e328]:
+                  - /placeholder: Search active markets
+              - generic [ref=e329]:
+                - button "Trending 🔥" [ref=e330] [cursor=pointer]
+                - button "All" [ref=e331] [cursor=pointer]
+                - button "Crypto" [ref=e332] [cursor=pointer]
+                - button "Politics" [ref=e333] [cursor=pointer]
+                - button "Sports" [ref=e334] [cursor=pointer]
+                - button "Pop Culture" [ref=e335] [cursor=pointer]
+                - button "Science" [ref=e336] [cursor=pointer]
+                - button "World Events" [ref=e337] [cursor=pointer]
+                - button "Business" [ref=e338] [cursor=pointer]
+              - link "Will Bitcoin reach $100k by year end? A YES 61¢ 39¢ NO Vol $1,200,000.00 Dec 31" [ref=e340] [cursor=pointer]:
+                - /url: /market/btc-100k
+                - generic [ref=e341]:
+                  - generic:
+                    - generic: Will Bitcoin reach $100k by year end?
+                  - generic [ref=e342]: A
+                - generic [ref=e343]:
+                  - generic [ref=e344]: YES 61¢
+                  - generic [ref=e345]: 39¢ NO
+                - generic [ref=e346]:
+                  - generic [ref=e347]: Vol $1,200,000.00
+                  - generic [ref=e348]: Dec 31
+        - generic [ref=e349]:
+          - generic [ref=e355]:
+            - generic [ref=e357]:
+              - generic [ref=e358]: Operations
+              - heading "System Status" [level=2] [ref=e359]
+              - paragraph [ref=e360]: Real backend heartbeat, service-map telemetry, and pipeline agent health.
+            - generic [ref=e361]:
+              - generic [ref=e362]:
+                - generic [ref=e363]:
+                  - generic [ref=e364]: API Health
+                  - generic [ref=e365]: Healthy
+                  - generic [ref=e366]: 55ms latency
+                - generic [ref=e367]:
+                  - generic [ref=e368]: Service Map
+                  - generic [ref=e369]: 5 checks
+                  - generic [ref=e370]: All mission systems nominal
+              - generic [ref=e371]:
+                - generic [ref=e372]:
+                  - generic [ref=e375]:
+                    - generic [ref=e376]: Backend
+                    - generic [ref=e377]: API online and serving dashboard telemetry
+                  - generic [ref=e379]: healthy
+                - generic [ref=e380]:
+                  - generic [ref=e383]:
+                    - generic [ref=e384]: Relay
+                    - generic [ref=e385]: 2 active sessions
+                  - generic [ref=e387]: healthy
+                - generic [ref=e388]:
+                  - generic [ref=e391]:
+                    - generic [ref=e392]: Scanner
+                    - generic [ref=e393]: Last scan 2m ago
+                  - generic [ref=e395]: healthy
+                - generic [ref=e396]:
+                  - generic [ref=e399]:
+                    - generic [ref=e400]: Orchestrator
+                    - generic [ref=e401]: 2 candidates, last scan 1m ago
+                  - generic [ref=e403]: healthy
+                - generic [ref=e404]:
+                  - generic [ref=e407]:
+                    - generic [ref=e408]: Pipeline Agents
+                    - generic [ref=e409]: 6 live · 1 degraded · 0 down
+                  - generic [ref=e411]: degraded
+              - generic [ref=e412]:
+                - generic [ref=e413]:
+                  - generic [ref=e416]:
+                    - generic [ref=e417]: Aura
+                    - generic [ref=e418]: Last active 6h ago
+                    - generic [ref=e419]: 2% error rate
+                  - generic [ref=e420]:
+                    - generic [ref=e421]: 82ms
+                    - generic [ref=e422]: live
+                - generic [ref=e423]:
+                  - generic [ref=e426]:
+                    - generic [ref=e427]: Flux
+                    - generic [ref=e428]: Last active 6h ago
+                    - generic [ref=e429]: 3% error rate
+                  - generic [ref=e430]:
+                    - generic [ref=e431]: 145ms
+                    - generic [ref=e432]: live
+                - generic [ref=e433]:
+                  - generic [ref=e436]:
+                    - generic [ref=e437]: Clause
+                    - generic [ref=e438]: Last active 6h ago
+                    - generic [ref=e439]: 1% error rate
+                  - generic [ref=e440]:
+                    - generic [ref=e441]: 120ms
+                    - generic [ref=e442]: live
+                - generic [ref=e443]:
+                  - generic [ref=e446]:
+                    - generic [ref=e447]: Edge
+                    - generic [ref=e448]: Last active 6h ago
+                    - generic [ref=e449]: 1% error rate
+                  - generic [ref=e450]:
+                    - generic [ref=e451]: 96ms
+                    - generic [ref=e452]: live
+                - generic [ref=e453]:
+                  - generic [ref=e456]:
+                    - generic [ref=e457]: Lucifer
+                    - generic [ref=e458]: Last active 6h ago
+                    - generic [ref=e459]: 4% error rate
+                  - generic [ref=e460]:
+                    - generic [ref=e461]: 166ms
+                    - generic [ref=e462]: live
+                - generic [ref=e463]:
+                  - generic [ref=e466]:
+                    - generic [ref=e467]: Sigma
+                    - generic [ref=e468]: Last active 6h ago
+                    - generic [ref=e469]: 2% error rate
+                  - generic [ref=e470]:
+                    - generic [ref=e471]: 133ms
+                    - generic [ref=e472]: live
+                - generic [ref=e473]:
+                  - generic [ref=e476]:
+                    - generic [ref=e477]: Oracle
+                    - generic [ref=e478]: Last active 6h ago
+                    - generic [ref=e479]: 8% error rate
+                  - generic [ref=e480]:
+                    - generic [ref=e481]: 32000ms
+                    - generic [ref=e482]: degraded
+          - generic [ref=e483]:
+            - generic [ref=e485]:
+              - generic [ref=e486]: Decision Feed
+              - heading "Recent Signals" [level=2] [ref=e487]
+              - paragraph [ref=e488]: The latest trade/watch/skip decisions with confidence and edge.
+            - generic [ref=e490]:
+              - generic [ref=e491]: No recent signals
+              - generic [ref=e492]: Once the pipeline makes decisions, they will stack here in order of recency.
+  - button "Open Next.js Dev Tools" [ref=e498] [cursor=pointer]:
+    - img [ref=e499]
+  - alert [ref=e502]
+```

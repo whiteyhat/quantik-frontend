@@ -57,21 +57,37 @@ describe("dashboard normalizers", () => {
     expect(summary.alphaDecay).toBeNull();
   });
 
-  it("renders generic agent labels and runtime defaults when telemetry is missing", () => {
+  it("renders generic agent labels and idle defaults when telemetry is missing", () => {
     const rows = selectSystemAgentRows([
       {
         name: "",
         latencyMs: 85,
-        errorRate: 0.12,
+        errorRate: 0,
         lastActiveAt: 0,
-        status: "down",
+        status: "idle",
       },
     ]);
 
     expect(rows).toHaveLength(1);
     expect(rows[0]?.name).toBe("Agent 1");
-    expect(rows[0]?.status).toBe("down");
-    expect(rows[0]?.detail).toBe("No recent traffic");
+    expect(rows[0]?.status).toBe("idle");
+    expect(rows[0]?.detail).toBe("Awaiting first pipeline run");
+  });
+
+  it("keeps stale agents idle instead of forcing them down", () => {
+    const rows = selectSystemAgentRows([
+      {
+        name: "oracle",
+        latencyMs: 120,
+        errorRate: 0,
+        lastActiveAt: 1_700_000_000_000,
+        status: "idle",
+      },
+    ]);
+
+    expect(rows[0]?.name).toBe("Oracle");
+    expect(rows[0]?.status).toBe("idle");
+    expect(rows[0]?.detail).toBe("Standing by for the next pipeline cycle");
   });
 
   it("normalizes structured health services for the mission rail", () => {

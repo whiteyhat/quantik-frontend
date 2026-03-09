@@ -1,0 +1,350 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - link "🏠 Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e12]: 🏠
+        - generic [ref=e13]: Dashboard
+      - link "🤖 My Agent" [ref=e14] [cursor=pointer]:
+        - /url: /manage-agent
+        - generic [ref=e15]: 🤖
+        - generic [ref=e16]: My Agent
+      - link "📈 Trade History" [ref=e17] [cursor=pointer]:
+        - /url: /trade-history
+        - generic [ref=e18]: 📈
+        - generic [ref=e19]: Trade History
+      - link "🏭 Agent Factory 1/1" [ref=e20] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e21]: 🏭
+        - generic [ref=e22]: Agent Factory
+        - generic [ref=e23]: 1/1
+      - link "⚙️ Settings" [ref=e24] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e25]: ⚙️
+        - generic [ref=e26]: Settings
+    - generic [ref=e28] [cursor=pointer]:
+      - generic [ref=e29]: Carlos
+      - generic [ref=e32]: Online
+    - generic [ref=e33]:
+      - generic [ref=e34]: v0.9.0 · Quantik
+      - generic [ref=e35]:
+        - generic: Hey! Talk to me 💬
+        - button "Chat with Signal Scout" [ref=e36] [cursor=pointer]: 🦊
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: 🦊
+        - generic [ref=e41]:
+          - generic [ref=e42]: Signal Scout
+          - generic [ref=e43]: Quantik Command Drawer
+        - button "×" [ref=e44] [cursor=pointer]
+      - generic [ref=e45]:
+        - generic [ref=e46]: Active
+        - generic [ref=e48]: Autopilot Off
+        - generic [ref=e49]: No sync yet
+    - generic [ref=e51]:
+      - generic [ref=e52]: 🦊
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e53]:
+      - button "What's my portfolio status?" [ref=e54] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e55] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - textbox "Message Signal Scout..." [ref=e58]
+      - button "↑" [disabled] [ref=e59]
+  - button "🚨" [ref=e60] [cursor=pointer]:
+    - generic [ref=e61]: 🚨
+  - main [ref=e63]:
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "My Agent" [level=1] [ref=e67]
+          - paragraph [ref=e68]: Monitor performance, configure settings, and manage your trading agent.
+        - generic [ref=e69]:
+          - button "Dashboard" [ref=e70] [cursor=pointer]
+          - button "Architecture" [active] [ref=e71] [cursor=pointer]
+          - button "Agent World" [ref=e72] [cursor=pointer]
+      - generic [ref=e74]:
+        - img
+        - application [ref=e75]:
+          - generic [ref=e77]:
+            - generic:
+              - generic:
+                - img:
+                  - group "Edge from fenrir to aura" [ref=e78] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to oracle" [ref=e83] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to flux" [ref=e88] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to sigma" [ref=e93] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to clause" [ref=e98] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to lucifer" [ref=e103] [cursor=pointer]
+                - img:
+                  - group "Edge from fenrir to edge" [ref=e108] [cursor=pointer]
+                - img:
+                  - group "Edge from aura to aura-sentiment" [ref=e113] [cursor=pointer]
+                - img:
+                  - group "Edge from aura to aura-news" [ref=e117] [cursor=pointer]
+                - img:
+                  - group "Edge from aura to aura-bloomberg" [ref=e121] [cursor=pointer]
+                - img:
+                  - group "Edge from aura to aura-reuters" [ref=e125] [cursor=pointer]
+                - img:
+                  - group "Edge from aura to aura-twitter" [ref=e129] [cursor=pointer]
+                - img:
+                  - group "Edge from edge to edge-ingestion" [ref=e133] [cursor=pointer]
+                - img:
+                  - group "Edge from edge to edge-onchain" [ref=e137] [cursor=pointer]
+                - img:
+                  - group "Edge from edge to edge-websockets" [ref=e141] [cursor=pointer]
+                - img:
+                  - group "Edge from edge to edge-rpc" [ref=e145] [cursor=pointer]
+                - img:
+                  - group "Edge from oracle to oracle-ensemble" [ref=e149] [cursor=pointer]
+                - img:
+                  - group "Edge from oracle to oracle-pattern" [ref=e153] [cursor=pointer]
+                - img:
+                  - group "Edge from oracle to oracle-llm" [ref=e157] [cursor=pointer]
+                - img:
+                  - group "Edge from oracle to oracle-vectordb" [ref=e161] [cursor=pointer]
+                - img:
+                  - group "Edge from oracle to oracle-historical" [ref=e165] [cursor=pointer]
+                - img:
+                  - group "Edge from lucifer to lucifer-veto" [ref=e169] [cursor=pointer]
+                - img:
+                  - group "Edge from lucifer to lucifer-slippage" [ref=e173] [cursor=pointer]
+                - img:
+                  - group "Edge from lucifer to lucifer-wallet" [ref=e177] [cursor=pointer]
+                - img:
+                  - group "Edge from lucifer to lucifer-bankroll" [ref=e181] [cursor=pointer]
+                - img:
+                  - group "Edge from lucifer to lucifer-exposure" [ref=e185] [cursor=pointer]
+                - img:
+                  - group "Edge from flux to flux-router" [ref=e189] [cursor=pointer]
+                - img:
+                  - group "Edge from flux to flux-uniswap" [ref=e193] [cursor=pointer]
+                - img:
+                  - group "Edge from flux to flux-curve" [ref=e197] [cursor=pointer]
+                - img:
+                  - group "Edge from flux to flux-1inch" [ref=e201] [cursor=pointer]
+                - img:
+                  - group "Edge from clause to clause-contracts" [ref=e205] [cursor=pointer]
+                - img:
+                  - group "Edge from clause to clause-solidity" [ref=e209] [cursor=pointer]
+                - img:
+                  - group "Edge from clause to clause-gas" [ref=e213] [cursor=pointer]
+                - img:
+                  - group "Edge from sigma to sigma-statarb" [ref=e217] [cursor=pointer]
+                - img:
+                  - group "Edge from sigma to sigma-meanrev" [ref=e221] [cursor=pointer]
+                - img:
+                  - group "Edge from sigma to sigma-pairs" [ref=e225] [cursor=pointer]
+                - img:
+                  - group "Edge from sigma to sigma-zscore" [ref=e229] [cursor=pointer]
+                - img:
+                  - group "Edge from polymarket to edge" [ref=e233] [cursor=pointer]
+                - img:
+                  - group "Edge from polymarket to oracle" [ref=e237] [cursor=pointer]
+                - img:
+                  - group "Edge from polymarket to sigma" [ref=e241] [cursor=pointer]
+              - generic:
+                - group [ref=e245]:
+                  - generic [ref=e246] [cursor=pointer]:
+                    - generic [ref=e247]: 🦊
+                    - generic [ref=e248]: Signal Scout
+                    - generic [ref=e249]: MAIN
+                - group [ref=e254]:
+                  - generic [ref=e256] [cursor=pointer]:
+                    - generic [ref=e257]: 🟣
+                    - generic [ref=e258]: Polymarket CLOB
+                - group [ref=e267]:
+                  - generic [ref=e268] [cursor=pointer]:
+                    - generic [ref=e269]:
+                      - generic [ref=e270]: 🔮
+                      - generic [ref=e271]: Aura
+                    - generic [ref=e273]: Sentiment Analysis
+                - group [ref=e282]:
+                  - generic [ref=e284] [cursor=pointer]:
+                    - generic [ref=e285]: 📊
+                    - generic [ref=e286]: Sentiment Analyzer
+                - group [ref=e292]:
+                  - generic [ref=e294] [cursor=pointer]:
+                    - generic [ref=e295]: 📰
+                    - generic [ref=e296]: News Scraper
+                - group [ref=e302]:
+                  - generic [ref=e304] [cursor=pointer]:
+                    - generic [ref=e305]: 💹
+                    - generic [ref=e306]: Bloomberg Feed
+                - group [ref=e312]:
+                  - generic [ref=e314] [cursor=pointer]:
+                    - generic [ref=e315]: 🗞️
+                    - generic [ref=e316]: Reuters API
+                - group [ref=e322]:
+                  - generic [ref=e324] [cursor=pointer]:
+                    - generic [ref=e325]: 🐦
+                    - generic [ref=e326]: Twitter Firehose
+                - group [ref=e332]:
+                  - generic [ref=e333] [cursor=pointer]:
+                    - generic [ref=e334]:
+                      - generic [ref=e335]: 🧿
+                      - generic [ref=e336]: Oracle
+                    - generic [ref=e338]: Probability Engine
+                - group [ref=e347]:
+                  - generic [ref=e349] [cursor=pointer]:
+                    - generic [ref=e350]: 🧠
+                    - generic [ref=e351]: Ensemble Engine
+                - group [ref=e357]:
+                  - generic [ref=e359] [cursor=pointer]:
+                    - generic [ref=e360]: 🔍
+                    - generic [ref=e361]: Pattern Matcher
+                - group [ref=e367]:
+                  - generic [ref=e369] [cursor=pointer]:
+                    - generic [ref=e370]: 🤖
+                    - generic [ref=e371]: LLM Engine
+                - group [ref=e377]:
+                  - generic [ref=e379] [cursor=pointer]:
+                    - generic [ref=e380]: 💾
+                    - generic [ref=e381]: Vector DB
+                - group [ref=e387]:
+                  - generic [ref=e389] [cursor=pointer]:
+                    - generic [ref=e390]: 📈
+                    - generic [ref=e391]: Historical Models
+                - group [ref=e397]:
+                  - generic [ref=e398] [cursor=pointer]:
+                    - generic [ref=e399]:
+                      - generic [ref=e400]: 🌊
+                      - generic [ref=e401]: Flux
+                    - generic [ref=e403]: Liquidity Router
+                - group [ref=e412]:
+                  - generic [ref=e414] [cursor=pointer]:
+                    - generic [ref=e415]: 🔀
+                    - generic [ref=e416]: Liquidity Router
+                - group [ref=e422]:
+                  - generic [ref=e424] [cursor=pointer]:
+                    - generic [ref=e425]: 🦄
+                    - generic [ref=e426]: Uniswap V3
+                - group [ref=e432]:
+                  - generic [ref=e434] [cursor=pointer]:
+                    - generic [ref=e435]: 〰️
+                    - generic [ref=e436]: Curve Pools
+                - group [ref=e442]:
+                  - generic [ref=e444] [cursor=pointer]:
+                    - generic [ref=e445]: 🔗
+                    - generic [ref=e446]: 1inch Agg
+                - group [ref=e452]:
+                  - generic [ref=e453] [cursor=pointer]:
+                    - generic [ref=e454]:
+                      - generic [ref=e455]: 🎯
+                      - generic [ref=e456]: Sigma
+                    - generic [ref=e458]: Final Decision
+                - group [ref=e467]:
+                  - generic [ref=e469] [cursor=pointer]:
+                    - generic [ref=e470]: 📐
+                    - generic [ref=e471]: StatArb Core
+                - group [ref=e477]:
+                  - generic [ref=e479] [cursor=pointer]:
+                    - generic [ref=e480]: ↩️
+                    - generic [ref=e481]: Mean Reversion
+                - group [ref=e487]:
+                  - generic [ref=e489] [cursor=pointer]:
+                    - generic [ref=e490]: 🔢
+                    - generic [ref=e491]: Pairs Matrix
+                - group [ref=e497]:
+                  - generic [ref=e499] [cursor=pointer]:
+                    - generic [ref=e500]: 📏
+                    - generic [ref=e501]: Z-Score Calc
+                - group [ref=e507]:
+                  - generic [ref=e508] [cursor=pointer]:
+                    - generic [ref=e509]:
+                      - generic [ref=e510]: 📜
+                      - generic [ref=e511]: Clause
+                    - generic [ref=e513]: Smart Contracts
+                - group [ref=e522]:
+                  - generic [ref=e524] [cursor=pointer]:
+                    - generic [ref=e525]: 📝
+                    - generic [ref=e526]: Smart Contracts
+                - group [ref=e532]:
+                  - generic [ref=e534] [cursor=pointer]:
+                    - generic [ref=e535]: ✅
+                    - generic [ref=e536]: Solidity Verifier
+                - group [ref=e542]:
+                  - generic [ref=e544] [cursor=pointer]:
+                    - generic [ref=e545]: ⛽
+                    - generic [ref=e546]: Gas Optimizer
+                - group [ref=e552]:
+                  - generic [ref=e553] [cursor=pointer]:
+                    - generic [ref=e554]:
+                      - generic [ref=e555]: 😈
+                      - generic [ref=e556]: Lucifer
+                    - generic [ref=e558]: Risk Veto Protocol
+                - group [ref=e567]:
+                  - generic [ref=e569] [cursor=pointer]:
+                    - generic [ref=e570]: 🛡️
+                    - generic [ref=e571]: Risk Veto Protocol
+                - group [ref=e577]:
+                  - generic [ref=e579] [cursor=pointer]:
+                    - generic [ref=e580]: 📉
+                    - generic [ref=e581]: Slippage Monitor
+                - group [ref=e587]:
+                  - generic [ref=e589] [cursor=pointer]:
+                    - generic [ref=e590]: 👛
+                    - generic [ref=e591]: WDK Wallet
+                - group [ref=e597]:
+                  - generic [ref=e599] [cursor=pointer]:
+                    - generic [ref=e600]: 🏦
+                    - generic [ref=e601]: Bankroll Guardian
+                - group [ref=e607]:
+                  - generic [ref=e609] [cursor=pointer]:
+                    - generic [ref=e610]: ⚠️
+                    - generic [ref=e611]: Exposure Limits
+                - group [ref=e617]:
+                  - generic [ref=e618] [cursor=pointer]:
+                    - generic [ref=e619]:
+                      - generic [ref=e620]: ⚡
+                      - generic [ref=e621]: Edge
+                    - generic [ref=e623]: Data Ingestion
+                - group [ref=e632]:
+                  - generic [ref=e634] [cursor=pointer]:
+                    - generic [ref=e635]: 📥
+                    - generic [ref=e636]: Data Ingestion
+                - group [ref=e642]:
+                  - generic [ref=e644] [cursor=pointer]:
+                    - generic [ref=e645]: ⛓️
+                    - generic [ref=e646]: On-chain Indexer
+                - group [ref=e652]:
+                  - generic [ref=e654] [cursor=pointer]:
+                    - generic [ref=e655]: 🔌
+                    - generic [ref=e656]: WebSockets
+                - group [ref=e662]:
+                  - generic [ref=e664] [cursor=pointer]:
+                    - generic [ref=e665]: 🖧
+                    - generic [ref=e666]: RPC Nodes
+          - img
+          - generic "Control Panel" [ref=e672]:
+            - button "Zoom In" [ref=e673] [cursor=pointer]:
+              - img [ref=e674]
+            - button "Zoom Out" [ref=e676] [cursor=pointer]:
+              - img [ref=e677]
+            - button "Fit View" [ref=e679] [cursor=pointer]:
+              - img [ref=e680]
+          - img "Mini Map" [ref=e683]
+        - generic:
+          - generic: "Enterprise Architecture: Neural Web"
+          - generic: System operational. 7 sub-agents connected. 30+ service layers active.
+  - button "Open Next.js Dev Tools" [ref=e729] [cursor=pointer]:
+    - img [ref=e730]
+  - alert [ref=e733]
+  - generic [ref=e734]: $0
+```

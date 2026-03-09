@@ -34,9 +34,11 @@ export function DashboardArchitectureMiniMap({
   );
 
   const liveAgents = agents.filter((agent) => agent.status === "live").length;
+  const idleAgents = agents.filter((agent) => agent.status === "idle").length;
   const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
   const downAgents = agents.filter((agent) => agent.status === "down").length;
   const hasTraffic = agents.some((agent) => agent.lastActiveAt);
+  const hasRecentRuntime = agents.some((agent) => agent.status !== "idle" && agent.lastActiveAt);
 
   return (
     <CommandCenterCard accent="blue">
@@ -65,8 +67,16 @@ export function DashboardArchitectureMiniMap({
         <>
           <div className="dashboard-mini-map">
             <div className="dashboard-mini-map-grid" />
+            <div className="dashboard-mini-map-ambient" />
             <div className="dashboard-mini-map-ring dashboard-mini-map-ring--outer" />
             <div className="dashboard-mini-map-ring dashboard-mini-map-ring--inner" />
+            {hasTraffic ? (
+              <>
+                <div className="dashboard-mini-map-pulse dashboard-mini-map-pulse--outer" />
+                <div className="dashboard-mini-map-pulse dashboard-mini-map-pulse--inner" />
+                <div className="dashboard-mini-map-sweep" />
+              </>
+            ) : null}
 
             <div className="dashboard-mini-map-core">
               <div className="dashboard-mini-map-core-emoji">{myAgent?.avatar_emoji ?? "◆"}</div>
@@ -109,10 +119,14 @@ export function DashboardArchitectureMiniMap({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">Live</div>
               <div className="dashboard-mini-map-stat-value">{liveAgents}</div>
+            </div>
+            <div className="dashboard-mini-map-stat">
+              <div className="dashboard-mini-map-stat-label">Idle</div>
+              <div className="dashboard-mini-map-stat-value">{idleAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">Degraded</div>
@@ -126,7 +140,14 @@ export function DashboardArchitectureMiniMap({
 
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="info" label="7 specialist agents" />
-            <StatusBadge tone={hasTraffic ? "good" : "warn"} label={hasTraffic ? "Live runtime traffic" : "Awaiting runtime traffic"} />
+            <StatusBadge
+              tone={hasTraffic ? (hasRecentRuntime ? "good" : "neutral") : "warn"}
+              label={
+                hasTraffic
+                  ? (hasRecentRuntime ? "Runtime telemetry live" : "Agents currently idle")
+                  : "Awaiting runtime traffic"
+              }
+            />
             <StatusBadge tone="neutral" label="Tap through for full architecture" />
           </div>
         </>

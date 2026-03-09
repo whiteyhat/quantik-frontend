@@ -1,0 +1,174 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - generic "Create an agent first":
+        - generic: 🏠
+        - generic: Dashboard
+      - generic "Create an agent first":
+        - generic: 🤖
+        - generic: My Agent
+      - generic "Create an agent first":
+        - generic: 📈
+        - generic: Trade History
+      - link "🏭 Agent Factory 0/1" [ref=e11] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e12]: 🏭
+        - generic [ref=e13]: Agent Factory
+        - generic [ref=e14]: 0/1
+      - generic "Create an agent first":
+        - generic: ⚙️
+        - generic: Settings
+    - generic [ref=e16] [cursor=pointer]:
+      - generic [ref=e17]: Carlos
+      - generic [ref=e20]: Online
+    - generic [ref=e21]:
+      - generic [ref=e22]: v0.9.0 · Quantik
+      - generic [ref=e23]:
+        - button "Chat with Agent" [ref=e24] [cursor=pointer]: 🤝
+        - generic: CHAT WITH QUANTIK INTELLIGENCE
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - generic [ref=e27]:
+        - generic [ref=e28]: 🤝
+        - generic [ref=e29]:
+          - generic [ref=e30]: Relay
+          - generic [ref=e31]: Quantik Command Drawer
+        - button "×" [ref=e32] [cursor=pointer]
+      - generic [ref=e33]:
+        - generic [ref=e34]: Standby
+        - generic [ref=e36]: Autopilot Off
+        - generic [ref=e37]: No sync yet
+    - generic [ref=e39]:
+      - generic [ref=e40]: 🤝
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e41]:
+      - button "What's my portfolio status?" [ref=e42] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e43] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e44] [cursor=pointer]
+    - generic [ref=e45]:
+      - textbox "Message Relay..." [ref=e46]
+      - button "↑" [disabled] [ref=e47]
+  - button "🚨" [ref=e48] [cursor=pointer]:
+    - generic [ref=e49]: 🚨
+  - main [ref=e51]:
+    - generic [ref=e52]:
+      - generic [ref=e54]: AGENT FACTORY
+      - generic [ref=e55]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Creation Progress
+          - generic [ref=e60]:
+            - button "✓ Basic Identity Who your agent is" [ref=e62] [cursor=pointer]:
+              - generic [ref=e63]: ✓
+              - generic [ref=e64]:
+                - generic [ref=e65]: Basic Identity
+                - generic [ref=e66]: Who your agent is
+            - button "2 Trading Style How it buys and sells" [ref=e69]:
+              - generic [ref=e70]: "2"
+              - generic [ref=e71]:
+                - generic [ref=e72]: Trading Style
+                - generic [ref=e73]: How it buys and sells
+            - button "3 Risk & Money How careful with cash" [disabled] [ref=e76]:
+              - generic [ref=e77]: "3"
+              - generic [ref=e78]:
+                - generic [ref=e79]: Risk & Money
+                - generic [ref=e80]: How careful with cash
+            - button "4 Preferences Favorite markets and rules" [disabled] [ref=e83]:
+              - generic [ref=e84]: "4"
+              - generic [ref=e85]:
+                - generic [ref=e86]: Preferences
+                - generic [ref=e87]: Favorite markets and rules
+            - button "5 Launch your agent Review and go live" [disabled] [ref=e90]:
+              - generic [ref=e91]: "5"
+              - generic [ref=e92]:
+                - generic [ref=e93]: Launch your agent
+                - generic [ref=e94]: Review and go live
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - heading "Trading Style" [level=1] [ref=e97]
+            - paragraph [ref=e98]: Define how your agent identifies and captures market opportunities.
+          - generic [ref=e100]:
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - generic [ref=e103]:
+                  - generic [ref=e104]: ✨
+                  - generic [ref=e105]: Trading Instinct
+                - generic "What kind of money-making opportunities does Alpha Wolf chase?" [ref=e106]:
+                  - img [ref=e107]
+              - generic [ref=e110]:
+                - button "Trend Chaser Follows momentum and established market directions." [ref=e111] [cursor=pointer]:
+                  - generic [ref=e113]:
+                    - generic [ref=e114]: Trend Chaser
+                    - generic [ref=e115]: Follows momentum and established market directions.
+                - button "Reversal Spotter Identifies exhaustion points and counter-trend opportunities." [ref=e116] [cursor=pointer]:
+                  - generic [ref=e119]:
+                    - generic [ref=e120]: Reversal Spotter
+                    - generic [ref=e121]: Identifies exhaustion points and counter-trend opportunities.
+                - button "Value Hunter Looks for mispriced assets based on fundamental data." [ref=e122] [cursor=pointer]:
+                  - generic [ref=e124]:
+                    - generic [ref=e125]: Value Hunter
+                    - generic [ref=e126]: Looks for mispriced assets based on fundamental data.
+                - button "Speed Demon High-frequency scalping on micro-movements." [ref=e127] [cursor=pointer]:
+                  - generic [ref=e129]:
+                    - generic [ref=e130]: Speed Demon
+                    - generic [ref=e131]: High-frequency scalping on micro-movements.
+            - generic [ref=e132]:
+              - generic [ref=e133]:
+                - generic [ref=e134]:
+                  - generic [ref=e135]:
+                    - generic [ref=e136]: ⏱️
+                    - generic [ref=e137]: Time Patience
+                  - generic "Does Alpha Wolf make quick moves or wait days for the right moment?" [ref=e138]:
+                    - img [ref=e139]
+                - generic [ref=e142]:
+                  - button "Lightning Day Trader seconds to minutes" [ref=e143] [cursor=pointer]:
+                    - generic [ref=e145]:
+                      - generic [ref=e146]: Lightning Day Trader
+                      - generic [ref=e147]: seconds to minutes
+                  - button "Swing Rider hours to days" [ref=e148] [cursor=pointer]:
+                    - generic [ref=e151]:
+                      - generic [ref=e152]: Swing Rider
+                      - generic [ref=e153]: hours to days
+                  - button "Long-term Visionary days to weeks" [ref=e154] [cursor=pointer]:
+                    - generic [ref=e156]:
+                      - generic [ref=e157]: Long-term Visionary
+                      - generic [ref=e158]: days to weeks
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]:
+                    - generic [ref=e162]: 📈
+                    - generic [ref=e163]: Profit Dream
+                  - generic "Do you prefer earning a little often or going for bigger but riskier wins?" [ref=e164]:
+                    - img [ref=e165]
+                - generic [ref=e168]:
+                  - button "Quick Wins consistent small gains" [ref=e169] [cursor=pointer]:
+                    - generic [ref=e171]:
+                      - generic [ref=e172]: Quick Wins
+                      - generic [ref=e173]: consistent small gains
+                  - button "Big Moves higher risk for major breakouts" [ref=e174] [cursor=pointer]:
+                    - generic [ref=e176]:
+                      - generic [ref=e177]: Big Moves
+                      - generic [ref=e178]: higher risk for major breakouts
+                  - button "Wealth Builder steady compounding growth" [ref=e179] [cursor=pointer]:
+                    - generic [ref=e182]:
+                      - generic [ref=e183]: Wealth Builder
+                      - generic [ref=e184]: steady compounding growth
+      - generic [ref=e185]:
+        - button "← Back" [ref=e187] [cursor=pointer]
+        - generic [ref=e188]:
+          - button "Skip (Randomize)" [ref=e189] [cursor=pointer]
+          - button "Continue to Risk & Money →" [active] [ref=e190] [cursor=pointer]:
+            - text: Continue to Risk & Money
+            - generic [ref=e191]: →
+  - button "Open Next.js Dev Tools" [ref=e197] [cursor=pointer]:
+    - img [ref=e198]
+  - alert [ref=e201]
+```

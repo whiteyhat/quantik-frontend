@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "◆ QUANTIK" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+        - generic [ref=e7]: ULTIMATE AI TRADING
+      - button "Open changelog" [ref=e8] [cursor=pointer]: 📋
+    - navigation [ref=e10]:
+      - link "🏠 Dashboard" [ref=e11] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e12]: 🏠
+        - generic [ref=e13]: Dashboard
+      - link "🤖 My Agent" [ref=e14] [cursor=pointer]:
+        - /url: /manage-agent
+        - generic [ref=e15]: 🤖
+        - generic [ref=e16]: My Agent
+      - link "📈 Trade History" [ref=e17] [cursor=pointer]:
+        - /url: /trade-history
+        - generic [ref=e18]: 📈
+        - generic [ref=e19]: Trade History
+      - link "🏭 Agent Factory 0/1" [ref=e20] [cursor=pointer]:
+        - /url: /agent-factory
+        - generic [ref=e21]: 🏭
+        - generic [ref=e22]: Agent Factory
+        - generic [ref=e23]: 0/1
+      - link "⚙️ Settings" [ref=e24] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e25]: ⚙️
+        - generic [ref=e26]: Settings
+    - generic [ref=e28] [cursor=pointer]:
+      - generic [ref=e29]: ···
+      - generic [ref=e32]: Online
+    - generic [ref=e33]:
+      - generic [ref=e34]: v0.9.0 · Quantik
+      - generic [ref=e35]:
+        - button "Chat with Agent" [ref=e36] [cursor=pointer]: 🤝
+        - generic: CHAT WITH QUANTIK INTELLIGENCE
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: 🤝
+        - generic [ref=e41]:
+          - generic [ref=e42]: Relay
+          - generic [ref=e43]: Quantik Command Drawer
+        - button "×" [ref=e44] [cursor=pointer]
+      - generic [ref=e45]:
+        - generic [ref=e46]: Standby
+        - generic [ref=e48]: Autopilot Off
+        - generic [ref=e49]: No sync yet
+    - generic [ref=e51]:
+      - generic [ref=e52]: 🤝
+      - text: Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+    - generic [ref=e53]:
+      - button "What's my portfolio status?" [ref=e54] [cursor=pointer]
+      - button "Any new scanner signals?" [ref=e55] [cursor=pointer]
+      - button "What's my current risk status?" [ref=e56] [cursor=pointer]
+    - generic [ref=e57]:
+      - textbox "Message Relay..." [ref=e58]
+      - button "↑" [disabled] [ref=e59]
+  - button "🚨" [ref=e60] [cursor=pointer]:
+    - generic [ref=e61]: 🚨
+  - main [ref=e63]:
+    - generic [ref=e64]:
+      - generic [ref=e66]: AGENT FACTORY
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - heading "Choose Your Path" [level=1] [ref=e72]
+          - paragraph [ref=e73]: Create a new agent from scratch, or connect your own OpenClaw agent.
+        - generic [ref=e74]:
+          - button "🧪 Create from Scratch Configure personality, trading style, and risk tolerance through a guided 5-step wizard 5-STEP WIZARD" [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]: 🧪
+            - generic [ref=e77]:
+              - generic [ref=e78]: Create from Scratch
+              - generic [ref=e79]: Configure personality, trading style, and risk tolerance through a guided 5-step wizard
+            - generic [ref=e80]: 5-STEP WIZARD
+          - button "🦞 Bring Your Own OpenClaw Agent Connect your external AI agent to Quantik's tools, pipeline, and trading infrastructure via API OPENCLAW COMPATIBLE" [ref=e82] [cursor=pointer]:
+            - generic [ref=e83]: 🦞
+            - generic [ref=e84]:
+              - generic [ref=e85]: Bring Your Own OpenClaw Agent
+              - generic [ref=e86]: Connect your external AI agent to Quantik's tools, pipeline, and trading infrastructure via API
+            - generic [ref=e87]: OPENCLAW COMPATIBLE
+  - button "Open Next.js Dev Tools" [ref=e94] [cursor=pointer]:
+    - img [ref=e95]
+```

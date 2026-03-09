@@ -88,6 +88,7 @@ function serviceTone(status: DashboardHealthSnapshot["services"][number]["status
 function runtimeStatusTone(status: DashboardAgentRow["status"]) {
   if (status === "live") return "good" as const;
   if (status === "degraded") return "warn" as const;
+  if (status === "idle") return "neutral" as const;
   return "bad" as const;
 }
 
@@ -706,16 +707,18 @@ function SystemStatusCard({
             {services.length > 0 ? (
               services.map((service) => (
                 <div key={service.name} className="command-center-service-row">
-                  <div className="flex min-w-0 items-center gap-3">
+                  <div className="command-center-service-main">
                     <span className={`command-center-status-dot command-center-status-dot--${service.status}`} />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-white">{service.name}</div>
-                      <div className="truncate text-xs text-[rgba(255,255,255,0.42)]">
+                    <div className="command-center-service-copy">
+                      <div className="command-center-service-name">{service.name}</div>
+                      <div className="command-center-service-detail">
                         {service.detail ?? "No additional detail"}
                       </div>
                     </div>
                   </div>
-                  <StatusBadge tone={serviceTone(service.status)} label={service.status} />
+                  <div className="command-center-service-badge">
+                    <StatusBadge tone={serviceTone(service.status)} label={service.status} />
+                  </div>
                 </div>
               ))
             ) : (

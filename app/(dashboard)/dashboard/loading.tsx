@@ -38,7 +38,10 @@ export default function DashboardLoading() {
 
       <div className="command-center-grid">
         {Array.from({ length: 3 }).map((_, columnIndex) => (
-          <div key={columnIndex} className={columnIndex === 2 ? "command-center-column command-center-rail" : "command-center-column"}>
+          <div
+            key={columnIndex}
+            className={columnIndex === 2 ? "command-center-column command-center-rail" : "command-center-column"}
+          >
             {Array.from({ length: columnIndex === 1 ? 4 : 3 }).map((_, cardIndex) => (
               <section key={`${columnIndex}-${cardIndex}`} className="command-center-card">
                 <div className="space-y-4">

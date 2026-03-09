@@ -12,6 +12,8 @@ import {
   AutopilotOnboardingModal,
   isAutopilotOnboarded,
 } from "./AutopilotOnboardingModal";
+
+const AUTOPILOT_PULSE_KEY = "autopilot_pulse_dismissed";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +77,10 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
   const [showFundingDialog, setShowFundingDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showPulse, setShowPulse] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(AUTOPILOT_PULSE_KEY) !== "true";
+  });
   const [fundingState, setFundingState] = useState<FundingState>({
     address: wallet?.address ?? agentWallet,
     pol: wallet?.pol ?? 0,
@@ -156,6 +162,10 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
   };
 
   const handleToggle = (enabled: boolean) => {
+    if (showPulse) {
+      setShowPulse(false);
+      localStorage.setItem(AUTOPILOT_PULSE_KEY, "true");
+    }
     void (async () => {
       setIsSaving(true);
       try {
@@ -295,6 +305,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
             checked={autopilotEnabled}
             onChange={handleToggle}
             disabled={isSaving || myAgent.status === "terminated"}
+            pulse={showPulse && !autopilotEnabled}
           />
         </div>
 

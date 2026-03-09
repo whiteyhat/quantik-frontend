@@ -5,7 +5,7 @@ import type {
 } from "@/lib/api";
 
 type CircuitBreakerState = "ARMED" | "WARNING" | "TRIGGERED";
-export type DashboardRuntimeStatus = "live" | "degraded" | "down";
+export type DashboardRuntimeStatus = "live" | "idle" | "degraded" | "down";
 export type DashboardServiceStatus = "healthy" | "degraded" | "down";
 
 export interface DashboardSummarySnapshot {
@@ -256,7 +256,7 @@ export function normalizeDashboardHealth(raw: {
 export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
   return [...entries]
     .sort((left, right) => {
-      const order = { live: 0, degraded: 1, down: 2 } as const;
+      const order = { live: 0, degraded: 1, idle: 2, down: 3 } as const;
       return order[left.status] - order[right.status];
     })
     .map<DashboardAgentRow>((entry, index) => ({
@@ -266,9 +266,11 @@ export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
       latencyMs: coerceNumber(entry.latencyMs),
       errorRate: coerceNumber(entry.errorRate),
       detail:
-        coerceNumber(entry.lastActiveAt) > 0
-          ? `${Math.round(coerceNumber(entry.errorRate) * 100)}% error rate`
-          : "No recent traffic",
+        coerceNumber(entry.lastActiveAt) <= 0
+          ? "Awaiting first pipeline run"
+          : entry.status === "idle"
+            ? "Standing by for the next pipeline cycle"
+            : `${Math.round(coerceNumber(entry.errorRate) * 100)}% error rate`,
       lastActiveAt: coerceNumber(entry.lastActiveAt) > 0 ? coerceNumber(entry.lastActiveAt) : null,
     }));
 }

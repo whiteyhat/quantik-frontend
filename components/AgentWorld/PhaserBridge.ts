@@ -12,7 +12,7 @@ export interface AgentWorldEvent {
 
 export interface HealthStatus {
   agentId: string;
-  status: "live" | "degraded" | "down";
+  status: "live" | "idle" | "degraded" | "down";
   latencyMs: number;
 }
 

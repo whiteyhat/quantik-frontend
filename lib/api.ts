@@ -332,7 +332,7 @@ export interface HealthStatus {
 
 export interface SystemAgentHealthEntry {
   name: string;
-  status: "live" | "degraded" | "down";
+  status: "live" | "idle" | "degraded" | "down";
   lastActiveAt: number;
   latencyMs: number;
   errorRate: number;
@@ -679,16 +679,16 @@ export const api = {
       return {
         agents: rawAgents.map((entry) => {
           const item = entry as Record<string, unknown>;
-          const rawStatus = String(item?.status ?? "down");
+          const rawStatus = String(item?.status ?? "idle");
           return {
             name: String(item?.name ?? ""),
             status:
-              rawStatus === "live" || rawStatus === "degraded"
+              rawStatus === "live" || rawStatus === "idle" || rawStatus === "degraded"
                 ? rawStatus
                 : "down",
             lastActiveAt: Number(item?.lastActiveAt ?? 0),
             latencyMs: Number(item?.latencyMs ?? 0),
-            errorRate: Number(item?.errorRate ?? 1),
+            errorRate: Number(item?.errorRate ?? 0),
           };
         }),
         overall:

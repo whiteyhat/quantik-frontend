@@ -1,14 +1,35 @@
 "use client";
 
+const pulseKeyframes = `
+@keyframes togglePulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(255,159,10,0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(255,159,10,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,159,10,0); }
+}
+`;
+
+let pulseStyleInjected = false;
+function ensurePulseStyle() {
+  if (pulseStyleInjected || typeof document === "undefined") return;
+  const style = document.createElement("style");
+  style.textContent = pulseKeyframes;
+  document.head.appendChild(style);
+  pulseStyleInjected = true;
+}
+
 export function ToggleSwitch({
   checked,
   onChange,
   disabled,
+  pulse,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  pulse?: boolean;
 }) {
+  if (pulse) ensurePulseStyle();
+
   return (
     <button
       onClick={() => !disabled && onChange(!checked)}
@@ -24,6 +45,9 @@ export function ToggleSwitch({
         flexShrink: 0,
         opacity: disabled ? 0.5 : 1,
         outline: "none",
+        ...(pulse
+          ? { animation: "togglePulseRing 1.8s cubic-bezier(0.4,0,0.6,1) infinite" }
+          : {}),
       }}
       aria-label="Toggle"
     >
