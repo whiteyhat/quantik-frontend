@@ -8,7 +8,6 @@ import { useQuantikStore } from "@/store/useQuantikStore";
 const NAV_ITEMS: { label: string; href: string; icon: string; isFactory?: boolean }[] = [
   { label: "Dashboard", href: "/dashboard", icon: "🏠" },
   { label: "My Agent", href: "/manage-agent", icon: "🤖" },
-  { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Factory", href: "/agent-factory", icon: "🏭", isFactory: true },
   { label: "Trades", href: "/trade-history", icon: "📈" },
 ];

@@ -55,19 +55,31 @@ function formatAmount(value: number | null | undefined, digits = 2): string {
   return value.toFixed(digits);
 }
 
+function statusLabel(status: string): string {
+  switch (status) {
+    case "ready": return "FUNDED";
+    case "funding_required": return "UNFUNDED";
+    case "unavailable": return "UNAVAILABLE";
+    case "no_wallet": return "NO_WALLET";
+    default: return status.toUpperCase();
+  }
+}
+
 export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotControlCardProps) {
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const agentWallet = myAgent?.wallet_address ?? null;
+  const defaultFundingStatus = agentWallet ? "funding_required" : "no_wallet";
   const [isSaving, setIsSaving] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showFundingDialog, setShowFundingDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [fundingState, setFundingState] = useState<FundingState>({
-    address: wallet?.address ?? null,
+    address: wallet?.address ?? agentWallet,
     pol: wallet?.pol ?? 0,
     onChainUsdc: wallet?.onChainUsdc ?? wallet?.usdc ?? 0,
-    fundingStatus: wallet?.fundingStatus ?? "no_wallet",
+    fundingStatus: wallet?.fundingStatus ?? defaultFundingStatus,
     fundingMessage: wallet?.fundingMessage ?? "Fund this wallet with POL and USDC.e before enabling autopilot.",
   });
 
@@ -82,22 +94,22 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
   useEffect(() => {
     if (!wallet) return;
     setFundingState((prev) => ({
-      address: wallet.address ?? prev.address,
+      address: wallet.address ?? prev.address ?? agentWallet,
       pol: wallet.pol ?? prev.pol,
       onChainUsdc: wallet.onChainUsdc ?? wallet.usdc ?? prev.onChainUsdc,
       fundingStatus: wallet.fundingStatus ?? prev.fundingStatus,
       fundingMessage: wallet.fundingMessage ?? prev.fundingMessage,
     }));
-  }, [wallet]);
+  }, [wallet, agentWallet]);
 
   if (!myAgent) return null;
 
   const updateFundingState = (nextWallet: WalletBalance | null, fallbackMessage?: string) => {
     setFundingState({
-      address: nextWallet?.address ?? fundingState.address ?? null,
+      address: nextWallet?.address ?? fundingState.address ?? agentWallet,
       pol: nextWallet?.pol ?? fundingState.pol ?? 0,
       onChainUsdc: nextWallet?.onChainUsdc ?? nextWallet?.usdc ?? fundingState.onChainUsdc ?? 0,
-      fundingStatus: nextWallet?.fundingStatus ?? fundingState.fundingStatus ?? "no_wallet",
+      fundingStatus: nextWallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus,
       fundingMessage: nextWallet?.fundingMessage ?? fallbackMessage ?? fundingState.fundingMessage,
     });
   };
@@ -129,7 +141,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
     updateFundingState(refreshed);
     const nextPol = refreshed?.pol ?? 0;
     const nextUsdc = refreshed?.onChainUsdc ?? refreshed?.usdc ?? 0;
-    const nextStatus = refreshed?.fundingStatus ?? "no_wallet";
+    const nextStatus = refreshed?.fundingStatus ?? defaultFundingStatus;
     if (nextStatus !== "ready" || nextPol <= 0 || nextUsdc <= 0) {
       setShowFundingDialog(true);
       return;
@@ -159,7 +171,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
         };
         if (typedError.code === "AUTOPILOT_FUNDING_REQUIRED") {
           setFundingState({
-            address: typeof typedError.data?.wallet_address === "string" ? typedError.data.wallet_address : wallet?.address ?? null,
+            address: typeof typedError.data?.wallet_address === "string" ? typedError.data.wallet_address : wallet?.address ?? agentWallet,
             pol: Number(typedError.data?.pol ?? wallet?.pol ?? 0),
             onChainUsdc: Number(typedError.data?.on_chain_usdc ?? wallet?.onChainUsdc ?? wallet?.usdc ?? 0),
             fundingStatus: "funding_required",
@@ -191,10 +203,12 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
     })();
   };
 
+  const resolvedAddress = fundingState.address ?? agentWallet;
+
   const copyWalletAddress = async () => {
-    if (!fundingState.address) return;
+    if (!resolvedAddress) return;
     try {
-      await navigator.clipboard.writeText(fundingState.address);
+      await navigator.clipboard.writeText(resolvedAddress);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -299,7 +313,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
           {[
             { label: "POL", value: `${formatAmount(wallet?.pol ?? fundingState.pol, 4)} POL`, hint: "Fee token" },
             { label: "USDC.e", value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc ?? fundingState.onChainUsdc)}`, hint: "Trading capital" },
-            { label: "Status", value: wallet?.fundingStatus ?? fundingState.fundingStatus ?? "no_wallet", hint: wallet?.fundingMessage ?? fundingState.fundingMessage },
+            { label: "Status", value: statusLabel(wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus), hint: wallet?.fundingMessage ?? fundingState.fundingMessage },
           ].map((item) => (
             <div key={item.label}>
               <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", marginBottom: 4 }}>
@@ -413,7 +427,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
               Deposit Address
             </div>
             <div style={{ ...mono, fontSize: 13, color: "rgba(255,255,255,0.84)", wordBreak: "break-all" }}>
-              {fundingState.address ?? "No wallet address available"}
+              {resolvedAddress ?? "No wallet address available"}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", marginTop: 8, lineHeight: 1.5 }}>
               {wallet?.fundingMessage ?? fundingState.fundingMessage}
@@ -439,15 +453,15 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
             <button
               type="button"
               onClick={copyWalletAddress}
-              disabled={!fundingState.address}
+              disabled={!resolvedAddress}
               style={{
                 padding: "10px 14px",
                 borderRadius: 10,
                 border: "1px solid rgba(10,132,255,0.30)",
                 background: "rgba(10,132,255,0.14)",
                 color: "#0a84ff",
-                cursor: fundingState.address ? "pointer" : "not-allowed",
-                opacity: fundingState.address ? 1 : 0.5,
+                cursor: resolvedAddress ? "pointer" : "not-allowed",
+                opacity: resolvedAddress ? 1 : 0.5,
                 ...mono,
               }}
             >

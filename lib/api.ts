@@ -805,7 +805,6 @@ export const api = {
     profitDream: string;
     moneyApproach: string;
     protectionMindset: string;
-    leverageVibe: string;
     marketSense: string;
     assetLove: string;
   }): Promise<Record<string, unknown>> => {

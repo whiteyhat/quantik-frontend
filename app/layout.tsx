@@ -11,7 +11,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Quantik | Mission Control</title>
+        <title>Quantik | Ultimate AI Trading</title>
         <meta
           name="description"
           content="AI-powered prediction market trading terminal"

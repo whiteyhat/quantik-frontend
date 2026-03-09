@@ -15,11 +15,37 @@ interface VersionEntry {
 
 const CHANGELOG: VersionEntry[] = [
   {
+    version: "v0.9.0",
+    date: "2026-03-09",
+    highlight: "BYO OpenClaw Agent, Agent World pixel environment, Architecture Viewer, onboarding flow, and full Manage Agent dashboard.",
+    features: [
+      "🧩 BYO (Bring Your Own) Agent — full onboarding wizard with webhook config, wallet binding, and MCP server docs page",
+      "🌍 Agent World — pixel-art Phaser 3 virtual environment with 7 NPC sub-agents, pathfinding, speech bubbles, dialogue system, and pipeline visualization",
+      "🗺️ Architecture Viewer — interactive React Flow canvas showing full system topology (agents, services, data edges) with detail panels",
+      "🤖 Manage Agent page — complete agent dashboard with identity header, health score, equity curve chart, live positions, metrics row, risk config, webhook panel, system log, and AI insights",
+      "🏭 Agent Factory refactor — streamlined wizard flow with improved hooks, agent-limit enforcement, and BYO import path",
+      "📡 Live agent status — replaced hardcoded agent badges with real /api/agent/status endpoint polling",
+      "🚀 Autopilot Control Card — rich autopilot management UI with status indicators, quick actions, and webhook editor",
+      "🎓 Onboarding modal — first-run autopilot setup guide with step-by-step activation flow",
+      "📊 Agent limit UI — enforces max agent count with upgrade prompts in factory and sidebar",
+      "🧪 Cypress E2E tests — new specs for BYO onboarding, agent factory wizard, and expanded autopilot coverage",
+    ],
+    fixes: [
+      "🔧 Agent Factory page refactored — extracted hooks, reduced component complexity by ~50%",
+      "🗑️ Removed deprecated Autopilot standalone page (merged into Manage Agent)",
+      "📦 Settings page simplified — agent config moved to dedicated Manage Agent panels",
+      "🔗 BottomTabBar updated with agent factory badge and dynamic nav states",
+      "🧹 normalizeAgentData handles all 7 backend agent field name mappings correctly",
+      "📈 Equity curve chart fixed — handles missing data points gracefully",
+      "🛡️ Webhook config panel validates URLs and shows delivery status",
+    ],
+  },
+  {
     version: "v0.8.0",
     date: "2026-03-07",
     highlight: "Clerk authentication, WDK wallet generation, real-time Socket.IO, Railway deployment, and full dashboard restructure.",
     features: [
-      "🔐 Clerk authentication — sign-in/sign-up pages, JWT sync, UserButton in wallet bar, middleware route protection",
+      "🔐 Clerk authentication — sign-in/sign-up pages, JWT sync, UserButton in sidebar, middleware route protection",
       "👛 WDK wallet generation — real EVM wallets via Tether WDK in Agent Factory Step 5, private key download as .txt",
       "⚡ Socket.IO real-time events — trade:executed, agent:alert, autopilot:status, position:updated with per-user rooms",
       "🔔 Browser trade notifications — push alerts when tab is backgrounded via useTradeNotifications hook",
@@ -163,7 +189,7 @@ const CHANGELOG: VersionEntry[] = [
   {
     version: "v0.1.0",
     date: "2025-12-20",
-    highlight: "Initial release — Quantik Mission Control trading terminal.",
+    highlight: "Initial release — Quantik Ultimate AI Trading terminal.",
     features: [
       "🏠 Dashboard with live wallet balance, positions, and P&L",
       "📊 Markets browser with search, filters, and liquidity grades",

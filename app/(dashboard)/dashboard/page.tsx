@@ -544,7 +544,7 @@ function SystemStatusPanel() {
             <div key={agentDef.name} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, boxShadow: `0 0 5px ${color}`, flexShrink: 0 }} />
-                <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agentDef.color, fontFamily: "monospace", flexShrink: 0, width: 58 }}>{agentDef.emoji} {agentDef.name}</span>
+                <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: agentDef.color, fontFamily: "monospace", flexShrink: 0, width: 82 }}>{agentDef.emoji} {agentDef.name}</span>
                 <span style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.30)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{agentDef.role}</span>
                 <span style={{ fontFamily: "monospace", fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{st ? timeStr : "…"}</span>
               </div>

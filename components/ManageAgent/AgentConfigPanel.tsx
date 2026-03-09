@@ -75,11 +75,9 @@ const chipAccentStyle: React.CSSProperties = {
 
 // ─── Risk derivation ─────────────────────────────────────────────────────────
 
-function deriveRiskLevel(protection: string, leverage: string): number {
+function deriveRiskLevel(protection: string): number {
   const protectionMap: Record<string, number> = { tight: 2, flexible: 5, hands_off: 8 };
-  const leverageMap: Record<string, number> = { none: 0, moderate: 2, full_throttle: 4 };
-  const base = (protectionMap[protection] ?? 5) + (leverageMap[leverage] ?? 1);
-  return Math.min(10, Math.max(1, Math.round(base / 1.2)));
+  return Math.min(10, Math.max(1, protectionMap[protection] ?? 5));
 }
 
 function riskLevelColor(level: number): string {
@@ -99,7 +97,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
 
   if (!myAgent) return null;
 
-  const riskLevel = deriveRiskLevel(myAgent.protection_mindset, myAgent.leverage_vibe);
+  const riskLevel = deriveRiskLevel(myAgent.protection_mindset);
   const rlColor = riskLevelColor(riskLevel);
 
   const personalityChip = PERSONALITY_LABELS[myAgent.personality];
@@ -164,7 +162,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
         )}
       </div>
 
-      {/* Risk Level bar — derived from protection_mindset + leverage_vibe */}
+      {/* Risk Level bar — derived from protection_mindset */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Risk Level</span>

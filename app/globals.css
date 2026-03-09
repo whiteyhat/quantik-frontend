@@ -881,6 +881,11 @@ body {
   overflow: hidden !important;
 }
 
+/* Popover opens upward from sidebar bottom */
+.cl-userButtonPopoverCard {
+  transform-origin: bottom left !important;
+}
+
 /* Backdrop — blurred */
 .cl-modalBackdrop {
   backdrop-filter: blur(16px) !important;

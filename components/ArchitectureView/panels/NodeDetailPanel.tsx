@@ -198,7 +198,6 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                 <AttributePill label="Approach" value={myAgent.money_approach} color="#FF453A" />
                 <AttributePill label="Protection" value={myAgent.protection_mindset} color="#64D2FF" />
-                <AttributePill label="Leverage" value={myAgent.leverage_vibe} color="#FF9F0A" />
               </div>
             </div>
           </StaggerSection>

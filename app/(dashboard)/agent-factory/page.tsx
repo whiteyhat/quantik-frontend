@@ -40,7 +40,7 @@ interface AgentConfig {
   // Step 3: Risk & Money
   moneyApproach: "fixed_safe" | "smart_scaling" | "aggressive";
   protectionMindset: "tight" | "flexible" | "hands_off";
-  leverageVibe: "none" | "moderate" | "full_throttle";
+  leverageVibe: "none";
   // Step 4: Preferences
   marketSense: "fixed_rules" | "mood_reader";
   assetLove: "stocks" | "forex" | "crypto" | "all_rounder";
@@ -56,7 +56,7 @@ const DEFAULT_CONFIG: AgentConfig = {
   profitDream: "wealth_builder",
   moneyApproach: "smart_scaling",
   protectionMindset: "flexible",
-  leverageVibe: "moderate",
+  leverageVibe: "none",
   marketSense: "fixed_rules",
   assetLove: "crypto",
 };
@@ -600,7 +600,7 @@ function StepBasicIdentity({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={panelStyle}>
-          <SectionHeader icon="🧬" title="Agent Personality" tooltip="Is your AI Agent a careful player or a bold risk-taker with your money?" />
+          <SectionHeader icon="🧬" title="Agent Personality" tooltip={`Is ${config.name.trim() || "your AI Agent"} a careful player or a bold risk-taker with your money?`} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.personality === "guardian"}
@@ -624,7 +624,7 @@ function StepBasicIdentity({
         </div>
 
         <div style={panelStyle}>
-          <SectionHeader icon="✨" title="Decision Style" tooltip="Does your AI Agent act on gut feeling, deep research, or patience?" />
+          <SectionHeader icon="✨" title="Decision Style" tooltip={`Does ${config.name.trim() || "your AI Agent"} act on gut feeling, deep research, or patience?`} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.decisionStyle === "gut"}
@@ -664,7 +664,7 @@ function StepTradingStyle({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Trading Instinct — 2x2 grid */}
       <div style={panelStyle}>
-        <SectionHeader icon="✨" title="Trading Instinct" tooltip="What kind of money-making opportunities does your AI Agent chase?" />
+        <SectionHeader icon="✨" title="Trading Instinct" tooltip={`What kind of money-making opportunities does ${config.name.trim() || "your AI Agent"} chase?`} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.tradingInstinct === "trend_chaser"}
@@ -696,7 +696,7 @@ function StepTradingStyle({
       {/* Time Patience + Profit Dream — side by side */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={panelStyle}>
-          <SectionHeader icon="⏱️" title="Time Patience" tooltip="Does your AI Agent make quick moves or wait days for the right moment?" />
+          <SectionHeader icon="⏱️" title="Time Patience" tooltip={`Does ${config.name.trim() || "your AI Agent"} make quick moves or wait days for the right moment?`} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
               selected={config.timePatience === "lightning"}
@@ -783,54 +783,28 @@ function StepRiskMoney({
         </div>
       </div>
 
-      {/* Protection Mindset + Leverage Vibe — side by side */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={panelStyle}>
-          <SectionHeader icon="🔵" title="Protection Mindset" tooltip="How quickly your AI Agent stops a losing trade to protect your money" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <RadioCard
-              selected={config.protectionMindset === "tight"}
-              title="Tight Guardian"
-              description="strict stops, low risk per trade"
-              onClick={() => onChange({ protectionMindset: "tight" })}
-            />
-            <RadioCard
-              selected={config.protectionMindset === "flexible"}
-              title="Flexible"
-              description="dynamic exits based on market volatility"
-              onClick={() => onChange({ protectionMindset: "flexible" })}
-            />
-            <RadioCard
-              selected={config.protectionMindset === "hands_off"}
-              title="Hands-off"
-              description="prioritizes profit-taking over defensive stops"
-              onClick={() => onChange({ protectionMindset: "hands_off" })}
-            />
-          </div>
-        </div>
-
-        <div style={panelStyle}>
-          <SectionHeader icon="⚡" title="Leverage Vibe" tooltip="Should your AI Agent borrow extra money to make bigger trades? More reward but more risk" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <RadioCard
-              selected={config.leverageVibe === "none"}
-              title="None"
-              description="1x spot only"
-              onClick={() => onChange({ leverageVibe: "none" })}
-            />
-            <RadioCard
-              selected={config.leverageVibe === "moderate"}
-              title="Moderate Power"
-              description="2x - 5x controlled leverage"
-              onClick={() => onChange({ leverageVibe: "moderate" })}
-            />
-            <RadioCard
-              selected={config.leverageVibe === "full_throttle"}
-              title="Full Throttle"
-              description="high leverage for maximum potential"
-              onClick={() => onChange({ leverageVibe: "full_throttle" })}
-            />
-          </div>
+      {/* Protection Mindset */}
+      <div style={panelStyle}>
+        <SectionHeader icon="🔵" title="Protection Mindset" tooltip={`How quickly ${config.name.trim() || "your AI Agent"} stops a losing trade to protect your money`} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <RadioCard
+            selected={config.protectionMindset === "tight"}
+            title="Tight Guardian"
+            description="strict stops, low risk per trade"
+            onClick={() => onChange({ protectionMindset: "tight" })}
+          />
+          <RadioCard
+            selected={config.protectionMindset === "flexible"}
+            title="Flexible"
+            description="dynamic exits based on market volatility"
+            onClick={() => onChange({ protectionMindset: "flexible" })}
+          />
+          <RadioCard
+            selected={config.protectionMindset === "hands_off"}
+            title="Hands-off"
+            description="prioritizes profit-taking over defensive stops"
+            onClick={() => onChange({ protectionMindset: "hands_off" })}
+          />
         </div>
       </div>
     </div>
@@ -850,7 +824,7 @@ function StepPreferences({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Market Sense — 2 in a row */}
       <div style={panelStyle}>
-        <SectionHeader icon="🟢" title="Market Sense" tooltip="Does your AI Agent follow strict math rules or also read news and social buzz?" />
+        <SectionHeader icon="🟢" title="Market Sense" tooltip={`Does ${config.name.trim() || "your AI Agent"} follow strict math rules or also read news and social buzz?`} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.marketSense === "fixed_rules"}
@@ -869,7 +843,7 @@ function StepPreferences({
 
       {/* Asset Love — 2x2 grid */}
       <div style={panelStyle}>
-        <SectionHeader icon="💎" title="Asset Love" tooltip="Pick what your AI Agent trades — stocks, currencies, crypto, or everything" />
+        <SectionHeader icon="💎" title="Asset Love" tooltip={`Pick what ${config.name.trim() || "your AI Agent"} trades — stocks, currencies, crypto, or everything`} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
             selected={config.assetLove === "stocks"}
@@ -1434,7 +1408,7 @@ export default function AgentFactoryPage() {
       profitDream: pick(["quick_wins", "big_moves", "wealth_builder"] as const),
       moneyApproach: pick(["fixed_safe", "smart_scaling", "aggressive"] as const),
       protectionMindset: pick(["tight", "flexible", "hands_off"] as const),
-      leverageVibe: pick(["none", "moderate", "full_throttle"] as const),
+      leverageVibe: "none",
       marketSense: pick(["fixed_rules", "mood_reader"] as const),
       assetLove: pick(["stocks", "forex", "crypto", "all_rounder"] as const),
     });
@@ -1527,7 +1501,6 @@ export default function AgentFactoryPage() {
         profitDream: config.profitDream,
         moneyApproach: config.moneyApproach,
         protectionMindset: config.protectionMindset,
-        leverageVibe: config.leverageVibe,
         marketSense: config.marketSense,
         assetLove: config.assetLove,
       });

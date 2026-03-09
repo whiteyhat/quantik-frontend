@@ -1,15 +1,15 @@
 "use client";
 
 import { GlobalPanicButton } from "@/components/GlobalPanicButton";
-import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { usePaperMode } from "@/context/PaperModeContext";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
-import { useAuth, UserButton } from "@clerk/nextjs";
-import { api, fmtUSDC, setAuthToken, type WalletBalance } from "@/lib/api";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth, useUser, UserButton } from "@clerk/nextjs";
+import { api, setAuthToken } from "@/lib/api";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 import { BottomTabBar } from "@/components/BottomTabBar";
+import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { ToastNotification } from "@/components/ToastNotification";
 import { VersionLogButton } from "@/components/VersionLog";
 
@@ -63,7 +63,6 @@ function AuthSync() {
 const NAV_ITEMS: { label: string; href: string; icon: string; isFactory?: boolean }[] = [
   { label: "Dashboard", href: "/dashboard", icon: "🏠" },
   { label: "My Agent", href: "/manage-agent", icon: "🤖" },
-  { label: "Markets", href: "/markets", icon: "📊" },
   { label: "Trade History", href: "/trade-history", icon: "📈" },
   { label: "Agent Factory", href: "/agent-factory", icon: "🏭", isFactory: true },
   { label: "Settings", href: "/settings", icon: "⚙️" },
@@ -84,6 +83,19 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const pathname = usePathname();
   const myAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  const { user } = useUser();
+  const { paperMode } = usePaperMode();
+  const [mounted, setMounted] = useState(false);
+  const [profileHovered, setProfileHovered] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const handleProfileClick = useCallback(() => {
+    // Find and click the Clerk UserButton's internal button to open the popover
+    const clerkBtn = profileRef.current?.querySelector<HTMLButtonElement>(".cl-userButtonTrigger, .cl-avatarBox, button");
+    clerkBtn?.click();
+  }, []);
 
   return (
     <aside
@@ -120,8 +132,46 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               letterSpacing: "0.05em",
             }}
           >
-            MISSION CONTROL
+            ULTIMATE AI TRADING
           </div>
+          {/* Paper mode compact badge */}
+          {paperMode && (
+            <div
+              style={{
+                marginTop: 6,
+                padding: "2px 8px",
+                borderRadius: 100,
+                background: "rgba(255,159,10,0.12)",
+                border: "1px solid rgba(255,159,10,0.25)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                width: "fit-content",
+              }}
+            >
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "#FF9F0A",
+                  display: "inline-block",
+                  boxShadow: "0 0 5px rgba(255,159,10,0.5)",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  color: "#FF9F0A",
+                  letterSpacing: "0.06em",
+                  fontFamily: "monospace",
+                }}
+              >
+                PAPER
+              </span>
+            </div>
+          )}
         </div>
         <VersionLogButton />
       </div>
@@ -217,11 +267,102 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         })}
       </nav>
 
-      {/* Footer — version text + Agent chat trigger button (rightmost) */}
+      {/* ─── User Profile Section ─────────────────────────────────────── */}
+      <div
+        ref={profileRef}
+        onClick={handleProfileClick}
+        onMouseEnter={() => setProfileHovered(true)}
+        onMouseLeave={() => setProfileHovered(false)}
+        style={{
+          margin: "0 10px",
+          padding: "10px 10px",
+          borderRadius: 12,
+          background: profileHovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
+          border: `1px solid ${profileHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"}`,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          transition: "all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          cursor: "pointer",
+        }}
+      >
+        {/* Avatar with glow ring */}
+        {mounted && (
+          <div
+            style={{
+              flexShrink: 0,
+              borderRadius: "50%",
+              boxShadow: profileHovered
+                ? "0 0 0 0px rgba(10,132,255,0.35), 0 0 12px rgba(10,132,255,0.15)"
+                : "0 0 0 0px transparent",
+              transition: "box-shadow 250ms ease",
+            }}
+          >
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: {
+                    width: 34,
+                    height: 34,
+                  },
+                },
+              }}
+            />
+          </div>
+        )}
+
+        {/* User info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.85)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
+            }}
+          >
+            {mounted ? (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User") : "···"}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 2,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "#30d158",
+                display: "inline-block",
+                boxShadow: "0 0 6px rgba(48,209,88,0.5)",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                color: "rgba(255,255,255,0.30)",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                letterSpacing: "0.04em",
+              }}
+            >
+              Online
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Footer — version + agent chat trigger ────────────────────── */}
       <div
         style={{
-          padding: "12px 16px 16px",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
+          padding: "10px 16px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -229,15 +370,16 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
       >
         <span
           style={{
-            fontSize: 11,
-            color: "rgba(255,255,255,0.20)",
+            fontSize: 10,
+            color: "rgba(255,255,255,0.16)",
             fontFamily: "monospace",
+            letterSpacing: "0.02em",
           }}
         >
           v0.1.0 · Quantik
         </span>
 
-        {/* Agent chat trigger — rightmost in footer */}
+        {/* Agent chat trigger */}
         <div className="relative group" style={{ position: "relative" }}>
           {/* Comic speech bubble — visible until first chat open */}
           {relayPulsing && myAgent && (
@@ -342,249 +484,6 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   );
 }
 
-// ─── Top Wallet Bar ───────────────────────────────────────────────────────────
-
-function Separator() {
-  return (
-    <span
-      style={{
-        margin: "0 16px",
-        color: "rgba(255,255,255,0.15)",
-        fontSize: 16,
-        userSelect: "none",
-      }}
-    >
-      ·
-    </span>
-  );
-}
-
-function MetricItem({
-  label,
-  value,
-  valueColor = "rgba(255,255,255,0.92)",
-}: {
-  label: string;
-  value: string;
-  valueColor?: string;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: 1,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 500,
-          color: "rgba(255,255,255,0.30)",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          lineHeight: 1,
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          fontSize: 13,
-          fontWeight: 600,
-          color: valueColor,
-          lineHeight: 1.2,
-        }}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function TopWalletBar() {
-  const [wallet, setWallet] = useState<WalletBalance | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { paperMode } = usePaperMode();
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    api.getBalance().then(setWallet).catch(() => {});
-    const iv = setInterval(() => {
-      api.getBalance().then(setWallet).catch(() => {});
-    }, 30_000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const copyAddress = useCallback(() => {
-    const addr = wallet?.address ?? "";
-    if (!addr) return;
-    navigator.clipboard.writeText(addr).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }, [wallet?.address]);
-
-  const truncAddr = (addr: string) =>
-    addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr;
-
-  const pnl = wallet?.pnlToday ?? 0;
-  const pnlPct = wallet?.pnlTodayPct ?? 0;
-  const pnlColor = pnl >= 0 ? "#30d158" : "#ff453a";
-  const pnlSign = pnl >= 0 ? "+" : "";
-
-  const usdcDisplay = wallet ? fmtUSDC(wallet.usdc) : "···";
-  const polDisplay = wallet ? (wallet.polFormatted ?? wallet.pol?.toFixed(2) ?? "0.00") : "···";
-  const totalDisplay = wallet ? fmtUSDC(wallet.totalValue) : "···";
-
-  return (
-    <div
-      className="sticky top-0 z-30 h-[52px] flex items-center px-4 md:px-[20px] bg-[rgba(5,5,8,0.88)] border-b border-[rgba(255,255,255,0.06)] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide"
-      style={{
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-      }}
-    >
-      {/* Paper mode badge */}
-      {paperMode && (
-        <div
-          style={{
-            marginRight: 12,
-            padding: "3px 10px",
-            borderRadius: 100,
-            background: "rgba(255,159,10,0.15)",
-            border: "1px solid rgba(255,159,10,0.35)",
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "#FF9F0A",
-              display: "inline-block",
-              boxShadow: "0 0 6px rgba(255,159,10,0.6)",
-            }}
-          />
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#FF9F0A",
-              letterSpacing: "0.08em",
-              fontFamily: "monospace",
-            }}
-          >
-            PAPER MODE
-          </span>
-        </div>
-      )}
-
-      {/* Wallet address — copy on click */}
-      <button
-        onClick={copyAddress}
-        title="Click to copy"
-        style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: 6,
-          cursor: "pointer",
-          padding: "4px 10px",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-            fontSize: 12,
-            color: "rgba(255,255,255,0.60)",
-          }}
-        >
-          {wallet?.address ? truncAddr(wallet.address) : "0x7EE9…4b53"}
-        </span>
-        {copied ? (
-          <span style={{ fontSize: 11, color: "#30d158" }}>✓</span>
-        ) : (
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>⎘</span>
-        )}
-      </button>
-
-      <Separator />
-
-      <MetricItem label="USDC" value={usdcDisplay} />
-
-      <Separator />
-
-      <MetricItem label="POL" value={polDisplay} />
-
-      <Separator />
-
-      <MetricItem
-        label="DAILY P&L"
-        value={
-          wallet
-            ? `${pnlSign}${fmtUSDC(pnl)} (${pnlSign}${(pnlPct).toFixed(1)}%)`
-            : "···"
-        }
-        valueColor={pnlColor}
-      />
-
-      <Separator />
-
-      <MetricItem label="TOTAL VALUE" value={totalDisplay} />
-
-      {/* User profile — pushed to right */}
-      <div
-        style={{
-          marginLeft: "auto",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <span
-          style={{
-            position: "relative",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#30d158",
-            display: "inline-block",
-            boxShadow: "0 0 8px rgba(48,209,88,0.6)",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 11,
-            color: "rgba(255,255,255,0.35)",
-            fontFamily: "monospace",
-            letterSpacing: "0.05em",
-          }}
-        >
-          ALL SYSTEMS OK
-        </span>
-        {mounted && (
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: { width: 28, height: 28 },
-              },
-            }}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Dashboard Layout ─────────────────────────────────────────────────────────
 
 export default function DashboardLayout({
@@ -630,7 +529,6 @@ export default function DashboardLayout({
         onToggleRelay={handleToggleRelay}
       />
 
-      {/* Agent chat drawer — controlled by layout state */}
       <RelayChatSidebar
         open={relayOpen}
         onToggle={handleToggleRelay}
@@ -653,9 +551,6 @@ export default function DashboardLayout({
       <div
         className="md:ml-[220px] min-h-[100vh] flex flex-col relative z-10 pb-[68px] md:pb-0"
       >
-        {/* Persistent top wallet bar */}
-        <TopWalletBar />
-
         {/* Page content */}
         <main
           style={{

@@ -246,8 +246,8 @@ export default function ManageAgentPage() {
           {(
             [
               { id: "dashboard" as TabId, label: "Dashboard" },
-              { id: "world" as TabId, label: "Agent World" },
               { id: "architecture" as TabId, label: "Architecture" },
+              { id: "world" as TabId, label: "Agent World" },
             ] as const
           ).map((tab) => (
             <button
