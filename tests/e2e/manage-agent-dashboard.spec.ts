@@ -17,8 +17,8 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('displays wallet address (truncated) with copy button', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('WDK Wallet')).toBeVisible();
-    await expect(page.getByText('0x1111')).toBeVisible();
+    await expect(page.getByText(/WDK Wallet/)).toBeVisible();
+    await expect(page.getByText(/0x1111/)).toBeVisible();
     await expect(page.getByText('📋')).toBeVisible();
   });
 
@@ -45,39 +45,85 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('shows funding amounts for POL and USDC.e', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('POL')).toBeVisible();
-    await expect(page.getByText('USDC.e')).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card')).toBeVisible();
+    // The funding grid inside autopilot card shows POL and USDC.e labels
+    await expect(page.getByTestId('autopilot-control-card').getByText('POL').first()).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card').getByText('USDC.e')).toBeVisible();
   });
 
   test('toggles autopilot on when funding is ready', async ({ page }) => {
+    // Mock the autopilot PATCH endpoint
     await page.route('**/api/v1/agents/*/autopilot', async (route) => {
-      const body = route.request().postDataJSON();
-      expect(body.enabled).toBe(true);
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ enabled: true }) });
+      if (route.request().method() === 'PATCH') {
+        const body = route.request().postDataJSON();
+        expect(body.enabled).toBe(true);
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            agent_id: 'agent-std-1',
+            autopilot_enabled: true,
+            autopilot_updated_at: Date.now(),
+          }),
+        });
+      } else {
+        await route.fallback();
+      }
     });
 
-    await page.goto('/manage-agent');
-    await page.getByTestId('autopilot-control-card').locator('input[type="checkbox"], [role="switch"]').first().click({ force: true });
-  });
-
-  test('shows funding dialog when wallet is not funded', async ({ page }) => {
-    await page.route('**/api/wallet/balance*', async (route) => {
+    // Mock performance/summary to report wallet as funded so handleEnable doesn't open funding dialog
+    await page.route('**/api/performance/summary*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          address: '0x1111111111111111111111111111111111111111',
-          onChainUsdc: 0,
-          pol: 0,
-          totalValue: 0,
-          fundingStatus: 'funding_required',
-          fundingMessage: 'Wallet needs funding',
+          ...loadFixture('performance-summary.json'),
+          pol: 12.5,
+          onChainUsdc: 850,
+          fundingStatus: 'ready',
+          fundingMessage: 'Wallet funded and ready',
         }),
       });
     });
 
     await page.goto('/manage-agent');
-    await expect(page.getByText(/funding required|funding needed/i)).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card')).toBeVisible();
+    // ToggleSwitch is a <button aria-label="Toggle">
+    await page.getByTestId('autopilot-control-card').getByLabel('Toggle').click({ force: true });
+  });
+
+  test('shows funding dialog when wallet is not funded', async ({ page }) => {
+    // getBalance() calls /api/performance/summary, not /api/wallet/balance
+    await page.route('**/api/performance/summary*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          totalValue: 0,
+          cashBalance: 0,
+          positionsValue: 0,
+          pnl: 0,
+          pnlPct: 0,
+          pnlToday: 0,
+          pnlTodayPct: 0,
+          winRate: 0,
+          totalTrades: 0,
+          kellyUtilization: 0,
+          circuitBreakerStatus: 'ARMED',
+          balanceStatus: 'live',
+          liveBalanceAvailable: true,
+          fundingStatus: 'funding_required',
+          fundingMessage: 'Wallet needs funding',
+          pol: 0,
+          onChainUsdc: 0,
+        }),
+      });
+    });
+
+    await page.goto('/manage-agent');
+    // The chip in AutopilotControlCard shows "Funding required" when not funded
+    await expect(page.getByText(/funding required/i)).toBeVisible();
   });
 
   test('renders AI insights with signals', async ({ page }) => {
@@ -87,6 +133,7 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('displays signal decision badges (TRADE/WATCH/SKIP)', async ({ page }) => {
     await page.goto('/manage-agent');
+    await expect(page.getByText('AI Insights')).toBeVisible();
     await expect(page.getByText('TRADE')).toBeVisible();
     await expect(page.getByText('WATCH')).toBeVisible();
     await expect(page.getByText('SKIP')).toBeVisible();
@@ -112,8 +159,10 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('renders open positions with direction badges', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('YES')).toBeVisible();
-    await expect(page.getByText('NO')).toBeVisible();
+    // Wait for the positions table to load
+    await expect(page.getByText('Live Positions')).toBeVisible();
+    await expect(page.getByText('YES').first()).toBeVisible();
+    await expect(page.getByText('NO').first()).toBeVisible();
   });
 
   test('shows empty state when no positions', async ({ page }) => {
@@ -121,7 +170,11 @@ test.describe('Manage Agent — Dashboard', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     });
     await page.goto('/manage-agent');
-    await expect(page.getByText(/no.*position/i)).toBeVisible();
+    // When positions are empty and loading is false, the table section is hidden entirely
+    // (the page renders positions only if loading || positions.length > 0)
+    // So we verify the page loaded and no positions table is shown
+    await expect(page.getByText('Signal Scout')).toBeVisible();
+    await expect(page.getByText('Live Positions')).not.toBeVisible();
   });
 
   test('time period buttons (7D/30D/All) are clickable', async ({ page }) => {
@@ -150,8 +203,9 @@ test.describe('Manage Agent — Dashboard', () => {
     });
 
     await page.goto('/manage-agent');
+    await expect(page.getByText('Signal Scout')).toBeVisible();
     await page.locator('[title="Delete Agent"]').click();
-    await expect(page.getByText('permanently delete')).toBeVisible();
+    await expect(page.getByText(/permanently delete/i)).toBeVisible();
     await page.getByText('CONTINUE').click();
     await page.getByPlaceholder('Type DELETE').fill('DELETE');
     await page.getByText('DELETE FOREVER').click();

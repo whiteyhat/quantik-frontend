@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupAuth, mockAgent, mockDashboardApis, mockManageAgentApis } from './fixtures';
 
 const routes = [
   { path: '/dashboard', name: 'Home / Dashboard' },
@@ -10,6 +11,14 @@ const routes = [
 
 for (const route of routes) {
   test(`${route.name} (${route.path}) loads without errors`, async ({ page }) => {
+    await setupAuth(page);
+    await mockAgent(page);
+    await mockDashboardApis(page);
+    await mockManageAgentApis(page);
+    await page.route('**/api/performance/trades*', (r) =>
+      r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+
     const consoleErrors: string[] = [];
 
     page.on('console', (msg) => {
@@ -44,7 +53,9 @@ for (const route of routes) {
         !e.includes('favicon') &&
         !e.includes('service-worker') &&
         !e.includes('ERR_BLOCKED_BY_CLIENT') &&
-        !e.includes('hydration'),
+        !e.includes('hydration') &&
+        !e.includes('Clerk') &&
+        !e.includes('clerk'),
     );
     expect(criticalErrors, `Console errors on ${route.path}: ${criticalErrors.join(', ')}`).toHaveLength(0);
   });

@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  globalSetup: './tests/e2e/global-setup.ts',
+  globalSetup: './tests/global-setup.ts',
   use: {
     baseURL: 'http://localhost:3000',
     screenshot: 'only-on-failure',
