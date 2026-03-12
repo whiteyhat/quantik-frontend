@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useSocketEvent, type AgentAlertEvent } from "@/context/SocketContext";
 import type { Signal } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,36 +22,26 @@ function confidenceColor(c: number): string {
   return "#ff453a";
 }
 
-function statusBadge(status: Signal["status"]): { label: string; bg: string; color: string } {
+function statusBadge(status: Signal["status"]): { labelKey: string; bg: string; color: string } {
   switch (status) {
     case "TRADE":
-      return { label: "TRADE", bg: "rgba(48,209,88,0.15)", color: "#30d158" };
+      return { labelKey: "trade", bg: "rgba(48,209,88,0.15)", color: "#30d158" };
     case "WATCH":
-      return { label: "WATCH", bg: "rgba(255,159,10,0.15)", color: "#ff9f0a" };
+      return { labelKey: "watch", bg: "rgba(255,159,10,0.15)", color: "#ff9f0a" };
     default:
-      return { label: "SKIP", bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.35)" };
+      return { labelKey: "skip", bg: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.35)" };
   }
 }
 
-function decisionLabel(decision: string): { text: string; color: string } {
+function decisionLabel(decision: string): { textKey: string | null; fallback: string; color: string } {
   const d = decision.toUpperCase();
-  if (d === "BET_YES" || d === "BUY_YES") return { text: "YES", color: "#30d158" };
-  if (d === "BET_NO" || d === "BUY_NO") return { text: "NO", color: "#ff453a" };
-  if (d === "PASS" || d === "SKIP") return { text: "PASS", color: "rgba(255,255,255,0.40)" };
-  return { text: d || "—", color: "rgba(255,255,255,0.40)" };
+  if (d === "BET_YES" || d === "BUY_YES") return { textKey: "yes", fallback: "", color: "#30d158" };
+  if (d === "BET_NO" || d === "BUY_NO") return { textKey: "no", fallback: "", color: "#ff453a" };
+  if (d === "PASS" || d === "SKIP") return { textKey: "pass", fallback: "", color: "rgba(255,255,255,0.40)" };
+  return { textKey: null, fallback: d || "—", color: "rgba(255,255,255,0.40)" };
 }
 
-function timeAgo(ts: number): string {
-  if (!ts) return "";
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
+// timeAgo is now handled inline with t() inside the component
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -60,8 +51,21 @@ interface AiInsightCardProps {
 }
 
 export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
+  const t = useTranslations("insights");
   // Listen for real-time insight events (log-only for now, signals refresh via polling)
   useSocketEvent<AgentAlertEvent>("agent:alert", () => {});
+
+  const timeAgo = (ts: number): string => {
+    if (!ts) return "";
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t("justNow");
+    if (mins < 60) return t("mAgo", { m: mins });
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("hAgo", { h: hrs });
+    const days = Math.floor(hrs / 24);
+    return t("dAgo", { d: days });
+  };
 
   const latestSignal = signals.length > 0 ? signals[0] : null;
   const confidence = latestSignal?.confidence ?? 0;
@@ -83,12 +87,12 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
               letterSpacing: "0.08em",
             }}
           >
-            AI Insights
+            {t("title")}
           </span>
         </div>
         {signals.length > 0 && (
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: '"SF Mono", monospace' }}>
-            {signals.length} signal{signals.length !== 1 ? "s" : ""}
+            {signals.length} {signals.length !== 1 ? t("signals") : t("signal")}
           </span>
         )}
       </div>
@@ -118,7 +122,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                       letterSpacing: "0.06em",
                     }}
                   >
-                    {badge.label}
+                    {t(badge.labelKey as any)}
                   </span>
                 );
               })()}
@@ -133,7 +137,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                       color: dec.color,
                     }}
                   >
-                    {dec.text}
+                    {dec.textKey ? t(dec.textKey as any) : dec.fallback}
                   </span>
                 );
               })()}
@@ -145,7 +149,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                     color: latestSignal.edge > 0 ? "#30d158" : "#ff453a",
                   }}
                 >
-                  {latestSignal.edge > 0 ? "+" : ""}{latestSignal.edge.toFixed(1)}% edge
+                  {latestSignal.edge > 0 ? "+" : ""}{latestSignal.edge.toFixed(1)}% {t("edge")}
                 </span>
               )}
               <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: '"SF Mono", monospace' }}>
@@ -168,7 +172,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
             {/* Confidence bar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.40)", letterSpacing: "0.04em" }}>
-                Confidence
+                {t("confidence")}
               </span>
               <span
                 style={{
@@ -238,7 +242,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                         flexShrink: 0,
                       }}
                     >
-                      {badge.label}
+                      {t(badge.labelKey as any)}
                     </span>
                     <span
                       style={{
@@ -250,7 +254,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                         width: 28,
                       }}
                     >
-                      {dec.text}
+                      {dec.textKey ? t(dec.textKey as any) : dec.fallback}
                     </span>
                     <span
                       style={{
@@ -283,7 +287,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
         </>
       ) : (
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}>
-          No insights yet — run a pipeline analysis to generate insights.
+          {t("noInsights")}
         </div>
       )}
     </div>

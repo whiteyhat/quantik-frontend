@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -61,6 +62,7 @@ function latencyColor(ms: number | null): string {
 }
 
 export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
+  const t = useTranslations("apiUsage");
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,9 +93,9 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          API Usage
+          {t("title")}
         </span>
-        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>Loading...</div>
+        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>{t("title")}...</div>
       </div>
     );
   }
@@ -102,10 +104,10 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          API Usage
+          {t("title")}
         </span>
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>Failed to load usage data</div>
+          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>{t("failedToLoad")}</div>
           <button
             onClick={() => { setLoading(true); fetchUsage(); }}
             style={{
@@ -115,7 +117,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
               cursor: "pointer", outline: "none", ...mono,
             }}
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       </div>
@@ -127,15 +129,15 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
   return (
     <div style={panelStyle}>
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-        API Usage
+        {t("title")}
       </span>
 
       {/* Summary stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14 }}>
         {[
-          { label: "24H Requests", value: data.total_requests_24h.toLocaleString(), color: "#0a84ff" },
-          { label: "Last Hour", value: data.requests_last_hour.toLocaleString(), color: "#30d158" },
-          { label: "Error Rate", value: data.error_rate_24h, color: data.error_count_24h > 0 ? "#ff453a" : "rgba(255,255,255,0.55)" },
+          { label: t("requests24h"), value: data.total_requests_24h.toLocaleString(), color: "#0a84ff" },
+          { label: t("lastHour"), value: data.requests_last_hour.toLocaleString(), color: "#30d158" },
+          { label: t("errorRate"), value: data.error_rate_24h, color: data.error_count_24h > 0 ? "#ff453a" : "rgba(255,255,255,0.55)" },
         ].map((stat) => (
           <div key={stat.label} style={{ textAlign: "center" }}>
             <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: stat.color }}>{stat.value}</div>
@@ -148,7 +150,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
       {data.daily_breakdown.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.30)", marginBottom: 6, textTransform: "uppercase" }}>
-            7-Day Activity
+            {t("activity7d")}
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 40 }}>
             {data.daily_breakdown.map((d) => {
@@ -180,7 +182,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
       {data.by_tool.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.30)", marginBottom: 6, textTransform: "uppercase" }}>
-            By Tool (24h)
+            {t("byTool")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {data.by_tool.slice(0, 8).map((t) => (
@@ -206,7 +208,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
       {data.recent_errors.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.30)", marginBottom: 6, textTransform: "uppercase" }}>
-            Recent Errors
+            {t("recentErrors")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {data.recent_errors.slice(0, 10).map((e, i) => (

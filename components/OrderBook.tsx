@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api, type OrderBookLevel } from "@/lib/api";
 
 interface OrderBookProps {
@@ -21,6 +22,7 @@ function fmtDollar(n: number): string {
 }
 
 export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
+  const t = useTranslations("orderBook");
   const { data, isLoading } = useQuery({
     queryKey: ["orderbook", tokenId],
     queryFn: () => api.getOrderBook(tokenId),
@@ -49,11 +51,11 @@ export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
-          Order Book
+          {t("title")}
         </span>
         {spreadCents && (
           <span className="font-mono-data" style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-            Spread:{" "}
+            {t("spread")}
             <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{spreadCents}¢</span>
           </span>
         )}
@@ -67,19 +69,19 @@ export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
         <>
           {/* Column headers */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, marginBottom: 6, padding: "0 10px" }}>
-            {["PRICE", "SIZE", "TOTAL"].map((h) => (
+            {(["price", "size", "total"] as const).map((key, i) => (
               <span
-                key={h}
+                key={key}
                 className="font-mono-data"
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
                   color: "var(--text-tertiary)",
                   letterSpacing: "0.08em",
-                  textAlign: h === "TOTAL" ? "right" : "left",
+                  textAlign: i === 2 ? "right" : "left",
                 }}
               >
-                {h}
+                {t(key)}
               </span>
             ))}
           </div>
@@ -115,7 +117,7 @@ export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
             }}
           >
             <span className="font-mono-data" style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
-              {midPrice.toFixed(1)}¢ USD
+              {midPrice.toFixed(1)}¢ {t("usd")}
             </span>
           </div>
 
@@ -206,9 +208,10 @@ function OrderBookSkeleton() {
 }
 
 function EmptyState() {
+  const t = useTranslations("orderBook");
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", fontSize: 12 }}>
-      No order book data available
+      {t("noData")}
     </div>
   );
 }

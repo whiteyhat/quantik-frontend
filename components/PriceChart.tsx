@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import {
   AreaChart,
@@ -13,11 +14,11 @@ import {
 } from "recharts";
 
 const INTERVALS = ["1h", "1d", "1w", "all"] as const;
-const INTERVAL_LABELS: Record<string, string> = {
-  "1h": "1H",
-  "1d": "1D",
-  "1w": "1W",
-  "all": "All",
+const INTERVAL_KEYS: Record<string, string> = {
+  "1h": "1h",
+  "1d": "1d",
+  "1w": "1w",
+  "all": "all",
 };
 
 interface NormalizedPoint {
@@ -74,6 +75,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
+  const t = useTranslations("priceChart");
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<NormalizedPoint[]>([]);
   const [isFallback, setIsFallback] = useState(false);
@@ -98,7 +100,7 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <h2 className="text-headline" style={{ color: "var(--text-primary)", margin: 0 }}>
-            Price History
+            {t("title")}
           </h2>
           {isFallback && data.length > 0 && (
             <span
@@ -114,7 +116,7 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
                 textTransform: "uppercase",
               }}
             >
-              Estimated data
+              {t("estimatedData")}
             </span>
           )}
         </div>
@@ -126,7 +128,7 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
               className={interval === iv ? "active" : ""}
               onClick={() => setInterval(iv)}
             >
-              {INTERVAL_LABELS[iv]}
+              {t(INTERVAL_KEYS[iv] as any)}
             </button>
           ))}
         </div>
@@ -187,7 +189,7 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
           </ResponsiveContainer>
         ) : (
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>No price data available</span>
+            <span style={{ color: "var(--text-tertiary)", fontSize: 13 }}>{t("noData")}</span>
           </div>
         )}
       </div>

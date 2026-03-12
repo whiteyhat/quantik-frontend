@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { api, streamPrices, fmtUSDC, type Market } from "@/lib/api";
 import { useInView } from "react-intersection-observer";
 
@@ -21,7 +22,7 @@ const SCANNER_CATEGORIES = [
 
 type ScannerCategory = (typeof SCANNER_CATEGORIES)[number];
 
-function LiqGradeChip({ grade }: { grade: string }) {
+function LiqGradeChip({ grade, liqLabel }: { grade: string; liqLabel: string }) {
   const colors: Record<string, string> = {
     A: "var(--ios-green)",
     B: "var(--ios-blue)",
@@ -40,12 +41,13 @@ function LiqGradeChip({ grade }: { grade: string }) {
         color: c,
       }}
     >
-      Liq: {grade}
+      {liqLabel} {grade}
     </span>
   );
 }
 
-function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: number; no: number } }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MarketCard({ market, livePrice, t }: { market: Market; livePrice?: { yes: number; no: number }; t: any }) {
   const yes = livePrice?.yes ?? market.yesPrice ?? 0;
   const yesPct = Math.round(yes * 100);
   const noPct = 100 - yesPct;
@@ -121,9 +123,9 @@ function MarketCard({ market, livePrice }: { market: Market; livePrice?: { yes: 
               background: "rgba(255,255,255,0.04)",
             }}
           >
-            Vol: {fmtUSDC(market.volume)}
+            {t("vol")} {fmtUSDC(market.volume)}
           </span>
-          <LiqGradeChip grade={market.liquidityGrade} />
+          <LiqGradeChip grade={market.liquidityGrade} liqLabel={t("liq")} />
         </div>
 
         <div
@@ -164,6 +166,7 @@ interface MarketScannerProps {
 }
 
 export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = false, visibleLimit }: MarketScannerProps) {
+  const t = useTranslations("markets");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending \u{1F525}");
@@ -264,7 +267,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
       <input
         className="glass-input"
         type="text"
-        placeholder="Search markets..."
+        placeholder={t("searchPlaceholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={{
@@ -278,7 +281,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
       {/* Trending micro-label */}
       {isTrending && (
         <div style={{ fontSize: 11, color: "var(--text-tertiary)", letterSpacing: "0.03em", textAlign: "center" }}>
-          {"\u{1F4E1}"} Live · Polymarket
+          {"\u{1F4E1}"} {t("liveBadge")}
         </div>
       )}
 
@@ -318,7 +321,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
       <div>
         <div className={gridCols}>
           {visible.map((m) => (
-            <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
+            <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} t={t} />
           ))}
         </div>
 
@@ -346,7 +349,7 @@ export function MarketScanner({ showFilterPills = false, maxCols = 3, compact = 
         {!loading && filtered.length === 0 && (
           <div className="glass-card" style={{ padding: 40, textAlign: "center" }}>
             <span className="text-body" style={{ color: "var(--text-tertiary)" }}>
-              {activeCategory !== "All" && !isTrending ? `No markets in "${activeCategory}"` : "No markets found"}
+              {activeCategory !== "All" && !isTrending ? t("noMarketsIn", { category: activeCategory }) : t("noMarkets")}
             </span>
           </div>
         )}

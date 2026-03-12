@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   api,
   type BrierEntry,
@@ -54,6 +55,7 @@ function driftBadge(status: "clear" | "detected") {
 // ─── PerformancePanel ────────────────────────────────────────────────────────
 
 export function PerformancePanel() {
+  const t = useTranslations("performance");
   const [brier, setBrier] = useState<BrierEntry[]>([]);
   const [attribution, setAttribution] = useState<AttributionEntry[]>([]);
   const [drift, setDrift] = useState<DriftStatus | null>(null);
@@ -93,9 +95,9 @@ export function PerformancePanel() {
               textTransform: "uppercase",
             }}
           >
-            Performance
+            {t("title")}
           </h2>
-          <HelpTooltip text="Advanced performance metrics and signal attribution. Tracks the accuracy of agent predictions over time." />
+          <HelpTooltip text={t("desc")} />
         </div>
         <span
           style={{
@@ -106,7 +108,7 @@ export function PerformancePanel() {
             letterSpacing: "0.03em",
           }}
         >
-          Layer 5 — Monitoring &amp; calibration
+          {t("layer5")}
         </span>
       </div>
 
@@ -121,9 +123,9 @@ export function PerformancePanel() {
               textTransform: "uppercase",
             }}
           >
-            BRIER SCORES (LAST 5)
+            {t("brierScores")}
           </span>
-          <HelpTooltip text="A measure of prediction accuracy. Score ranges from 0 to 1, where 0 is a perfect prediction and 1 is a total miss." />
+          <HelpTooltip text={t("brierDesc")} />
         </div>
         <div
           style={{
@@ -144,7 +146,7 @@ export function PerformancePanel() {
             </div>
           ) : brier.length === 0 ? (
             <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
-              No scores yet
+              {t("noScoresYet")}
             </span>
           ) : (
             brier.slice(0, 5).map((entry, i) => (
@@ -205,9 +207,9 @@ export function PerformancePanel() {
               textTransform: "uppercase",
             }}
           >
-            TOP SIGNAL ATTRIBUTION
+            {t("topSignalAttribution")}
           </span>
-          <HelpTooltip text="Identifies which logic branch (Oracle, Aura, Flux, etc.) is contributing most to successful trades." />
+          <HelpTooltip text={t("signalAttrDesc")} />
         </div>
         <div
           style={{
@@ -301,9 +303,9 @@ export function PerformancePanel() {
               textTransform: "uppercase",
             }}
           >
-            DRIFT DETECTION
+            {t("driftDetection")}
           </span>
-          <HelpTooltip text="Automatic detection of market regime shifts. Concept drift flags when market behavior deviates from training logic." />
+          <HelpTooltip text={t("driftDesc")} />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {drift === null ? (
@@ -370,7 +372,7 @@ export function PerformancePanel() {
         }}
       >
         <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)" }}>
-          Top Agent
+          {t("topAgent")}
         </span>
         {topAgent ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -410,6 +412,7 @@ export function PerformancePanel() {
 // ─── Compact summary for dashboard ───────────────────────────────────────────
 
 export function PerformanceSummaryWidget() {
+  const t = useTranslations("performance");
   const [summary, setSummary] = useState<PerformanceSummary | null>(null);
   const [error, setError] = useState(false);
 
@@ -470,9 +473,9 @@ export function PerformanceSummaryWidget() {
               textTransform: "uppercase",
             }}
           >
-            Performance Summary
+            {t("performanceSummary")}
           </h2>
-          <HelpTooltip text="Unified performance tracking. Real-time Win Rate, P&L, and logic-branch attribution from the Layer 5 monitoring engine." />
+          <HelpTooltip text={t("summaryDesc")} />
         </div>
         <span
           style={{
@@ -483,18 +486,18 @@ export function PerformanceSummaryWidget() {
             letterSpacing: "0.03em",
           }}
         >
-          Layer 5 Unified Dashboard
+          {t("layer5Dashboard")}
         </span>
       </div>
 
       {/* Primary Metrics */}
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>WIN RATE</div>
+          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>{t("winRateLabel")}</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: winRateColor, fontFamily: "monospace" }}>{winRate}%</div>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>DAILY P&L</div>
+          <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>{t("dailyPnl")}</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: pnlColor, fontFamily: "monospace" }}>
             {summary.pnlToday >= 0 ? "+" : ""}{fmtUSDC(summary.pnlToday)}
           </div>
@@ -504,19 +507,19 @@ export function PerformanceSummaryWidget() {
       {/* Rich Details */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
-          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Active Streak</span>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>{t("activeStreak")}</span>
           <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: streak >= 0 ? "#30d158" : "#ff453a", fontFamily: "monospace" }}>
             {streak > 0 ? `+${streak}` : streak}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
-          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Best Trade</span>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>{t("bestTrade")}</span>
           <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: "#30d158", fontFamily: "monospace" }}>
             {summary.metrics.bestTrade ? `${summary.metrics.bestTrade.split("-")[0].toUpperCase()} (+${fmtUSDC(summary.metrics.bestPnl)})` : "N/A"}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
-          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>Cumulative Vol</span>
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)" }}>{t("cumulativeVol")}</span>
           <span style={{ fontSize: BODY_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.85)", fontFamily: "monospace" }}>
             {fmtUSDC(summary.metrics?.totalVolume)}
           </span>
@@ -534,10 +537,10 @@ export function PerformanceSummaryWidget() {
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
             <span style={{ fontSize: LABEL_SIZE, fontWeight: 700, color: summary.alphaDecay.detected ? "#ff453a" : "#30d158" }}>
-              ALPHA HEALTH
+              {t("alphaHealth")}
             </span>
             <span style={{ fontSize: LABEL_SIZE, fontFamily: "monospace", color: "rgba(255,255,255,0.40)" }}>
-              {Math.round(summary.alphaDecay.rollingHitRate * 100)}% ROLLING
+              {Math.round(summary.alphaDecay.rollingHitRate * 100)}% {t("rolling")}
             </span>
           </div>
           <p style={{ margin: 0, fontSize: 10, lineHeight: 1.3, color: "rgba(255,255,255,0.50)" }}>

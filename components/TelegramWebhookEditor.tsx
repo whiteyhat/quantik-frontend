@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -13,11 +14,13 @@ const panelStyle: React.CSSProperties = {
 };
 
 export function TelegramWebhookEditor() {
+  const t = useTranslations("telegram");
   const [chatId, setChatId] = useState("");
   const [botToken, setBotToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     api.getTelegramSettings()
@@ -31,34 +34,36 @@ export function TelegramWebhookEditor() {
   const handleSave = async () => {
     setSaving(true);
     setMessage("");
+    setIsError(false);
     try {
       await api.updateTelegramSettings({ chatId, botToken });
-      setMessage("Settings saved successfully");
+      setMessage(t("saved"));
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
-      setMessage("Error saving settings");
+      setMessage(t("saveError"));
+      setIsError(true);
     }
     setSaving(false);
   };
 
-  if (loading) return <div style={panelStyle}>Loading settings...</div>;
+  if (loading) return <div style={panelStyle}>{t("loadingSettings")}</div>;
 
   return (
     <div style={panelStyle}>
       <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-        Telegram Notifications
+        {t("title")}
       </h3>
       
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
-            Chat ID
+            {t("chatId")}
           </label>
           <input
             type="text"
             value={chatId}
             onChange={(e) => setChatId(e.target.value)}
-            placeholder="-100..."
+            placeholder={t("chatIdPlaceholder")}
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -74,13 +79,13 @@ export function TelegramWebhookEditor() {
 
         <div>
           <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
-            Bot Token
+            {t("botToken")}
           </label>
           <input
             type="text"
             value={botToken}
             onChange={(e) => setBotToken(e.target.value)}
-            placeholder="123456:ABC..."
+            placeholder={t("botTokenPlaceholder")}
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -95,7 +100,7 @@ export function TelegramWebhookEditor() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ fontSize: 12, color: message.includes("Error") ? "#ff453a" : "#30d158" }}>
+          <span style={{ fontSize: 12, color: isError ? "#ff453a" : "#30d158" }}>
             {message}
           </span>
           <button
@@ -112,7 +117,7 @@ export function TelegramWebhookEditor() {
               cursor: saving ? "wait" : "pointer"
             }}
           >
-            {saving ? "Saving..." : "Save Settings"}
+            {saving ? t("saving") : t("saveSettings")}
           </button>
         </div>
       </div>

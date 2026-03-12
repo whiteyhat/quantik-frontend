@@ -8,6 +8,7 @@ import {
   type PositionUpdateEvent,
 } from "@/context/SocketContext";
 import { api } from "@/lib/api";
+import { useTranslations } from "next-intl";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -80,6 +81,7 @@ export function SystemLogFeed() {
   const [seeded, setSeeded] = useState(false);
   const [filter, setFilter] = useState<"all" | "scan" | "agent" | "trade">("all");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("systemLog");
 
   const addEntry = useCallback((entry: Omit<LogEntry, "id">) => {
     setEntries((prev) => {
@@ -114,11 +116,11 @@ export function SystemLogFeed() {
           level: s.isRunning ? "scan" : "info",
           source: "scanner",
           message: s.isRunning
-            ? `Scanner active — ${s.marketsChecked} markets monitored, ${s.scannedToday} scanned today`
-            : `Scanner idle — last scan: ${s.lastScan ?? "never"}`,
+            ? t("scannerActive", { markets: s.marketsChecked, scans: s.scannedToday })
+            : t("scannerIdle", { lastScan: s.lastScan ?? "never" }),
           detail: s.circuitBreakerTriggered
-            ? "Circuit breaker TRIGGERED — trading halted"
-            : `${s.alertsTriggered} alerts triggered, ${s.tradesToday} trades today${s.paperMode ? " [PAPER]" : ""}`,
+            ? t("circuitBreakerTriggered")
+            : `${s.alertsTriggered} alerts, ${s.tradesToday} trades${s.paperMode ? " [PAPER]" : ""}`,
           timestamp: Date.now(),
         });
       }
@@ -134,8 +136,8 @@ export function SystemLogFeed() {
             id: `scan-${scan.scannedAt}-${scan.slug}`,
             level: "scan",
             source: "scanner",
-            message: `Scanned ${label}`,
-            detail: `Sigma: ${conf} | Kelly: ${kelly}% | Rec: ${rec} | Prob: ${(scan.probability * 100).toFixed(0)}%`,
+            message: t("scanned", { market: label }),
+            detail: t("scanDetail", { sigma: conf, kelly, rec, prob: (scan.probability * 100).toFixed(0) }),
             timestamp: scan.scannedAt,
           });
         }
@@ -149,14 +151,14 @@ export function SystemLogFeed() {
           const dec = run.decision?.toUpperCase() ?? "PENDING";
           const duration = run.completed_at && run.created_at
             ? `${((run.completed_at - run.created_at) / 1000).toFixed(1)}s`
-            : "in progress";
+            : t("inProgress");
 
           historical.push({
             id: `pipeline-${run.id}`,
             level: "agent",
             source: "pipeline",
-            message: `Pipeline: ${label}`,
-            detail: `Decision: ${dec} | Confidence: ${conf} | Duration: ${duration}`,
+            message: t("pipeline", { market: label }),
+            detail: t("pipelineDetail", { decision: dec, confidence: conf, duration }),
             timestamp: run.created_at,
           });
         }
@@ -173,8 +175,8 @@ export function SystemLogFeed() {
             id: `exec-${exec.executed_at}-${exec.slug}`,
             level: exec.pnl != null && exec.pnl >= 0 ? "success" : exec.pnl != null ? "error" : "info",
             source: "execution",
-            message: `Executed ${dir} $${exec.amount.toFixed(2)} on ${label}${mode}`,
-            detail: `Status: ${exec.status.toUpperCase()}${pnlStr}`,
+            message: t("executed", { direction: dir, amount: exec.amount.toFixed(2), market: `${label}${mode}` }),
+            detail: t("execDetail", { status: exec.status.toUpperCase(), pnl: pnlStr }),
             timestamp: exec.executed_at,
           });
         }
@@ -183,14 +185,14 @@ export function SystemLogFeed() {
       // ── Alert events
       if (alertData.status === "fulfilled") {
         for (const alert of alertData.value.alerts.slice(0, 8)) {
-          const status = alert.alert_sent === 2 ? "APPROVED" : alert.alert_sent === -1 ? "VETOED" : "PENDING";
+          const status = alert.alert_sent === 2 ? t("approved") : alert.alert_sent === -1 ? t("vetoed") : t("pending");
           const conf = confLabel(alert.confidence);
           historical.push({
             id: `alert-${alert.id}`,
             level: alert.alert_sent === 2 ? "success" : alert.alert_sent === -1 ? "warning" : "info",
             source: "alerts",
-            message: `Alert ${status}: ${alert.question || slugToLabel(alert.slug)}`,
-            detail: `Confidence: ${conf} | State: ${alert.signal_state ?? "—"}`,
+            message: t("alertStatus", { status, question: alert.question || slugToLabel(alert.slug) }),
+            detail: t("alertDetail", { confidence: conf, state: alert.signal_state ?? "—" }),
             timestamp: alert.created_at,
           });
         }
@@ -219,7 +221,7 @@ export function SystemLogFeed() {
           fresh.push({
             level: "scan",
             source: "scanner",
-            message: `Scanner heartbeat — ${s.marketsChecked} markets, ${s.scannedToday} scans today`,
+            message: t("scannerHeartbeat", { markets: s.marketsChecked, scans: s.scannedToday }),
             timestamp: Date.now(),
           });
         }
@@ -229,8 +231,8 @@ export function SystemLogFeed() {
             fresh.push({
               level: "scan",
               source: "scanner",
-              message: `Scanned ${slugToLabel(scan.slug)}`,
-              detail: `Sigma: ${confLabel(scan.sigmaConfidence)} | Kelly: ${(scan.kellyFraction * 100).toFixed(1)}% | Rec: ${scan.recommendation?.toUpperCase() ?? "—"}`,
+              message: t("scanned", { market: slugToLabel(scan.slug) }),
+              detail: t("scanDetail", { sigma: confLabel(scan.sigmaConfidence), kelly: (scan.kellyFraction * 100).toFixed(1), rec: scan.recommendation?.toUpperCase() ?? "—", prob: (scan.probability * 100).toFixed(0) }),
               timestamp: scan.scannedAt,
             });
           }
@@ -250,8 +252,8 @@ export function SystemLogFeed() {
       addEntry({
         level: "success",
         source: "execution",
-        message: `Executed ${data.direction} on ${slugToLabel(data.slug)}`,
-        detail: data.paper ? "Paper trade" : "Live trade",
+        message: t("executed", { direction: data.direction, amount: "", market: slugToLabel(data.slug) }),
+        detail: data.paper ? t("paperTrade") : t("liveTrade"),
         timestamp: data.timestamp,
       });
     },
@@ -276,8 +278,8 @@ export function SystemLogFeed() {
       addEntry({
         level: data.pnl >= 0 ? "success" : "warning",
         source: "positions",
-        message: `Position ${slugToLabel(data.slug)} updated`,
-        detail: `P&L: ${data.pnl >= 0 ? "+" : ""}$${data.pnl.toFixed(2)}`,
+        message: t("positionUpdated", { market: slugToLabel(data.slug) }),
+        detail: t("pnlDetail", { pnl: `${data.pnl >= 0 ? "+" : ""}$${data.pnl.toFixed(2)}` }),
         timestamp: data.timestamp,
       });
     },
@@ -324,7 +326,7 @@ export function SystemLogFeed() {
               textTransform: "uppercase",
             }}
           >
-            System Log
+            {t("title")}
           </h3>
           {seeded && (
             <span
@@ -379,7 +381,7 @@ export function SystemLogFeed() {
                   letterSpacing: "0.04em",
                 }}
               >
-                {f}
+                {f === "all" ? t("filterAll") : f === "scan" ? t("filterScan") : f === "agent" ? t("filterAgent") : t("filterTrade")}
               </button>
             ))}
           </div>
@@ -399,11 +401,11 @@ export function SystemLogFeed() {
           >
             {!seeded ? (
               <div style={{ padding: "20px 0", textAlign: "center", color: "rgba(255,255,255,0.25)", fontSize: 11 }}>
-                Loading system activity...
+                {t("loadingActivity")}
               </div>
             ) : filtered.length === 0 ? (
               <div style={{ padding: "20px 0", textAlign: "center", color: "rgba(255,255,255,0.20)", fontSize: 11 }}>
-                No {filter === "all" ? "" : filter + " "}events recorded
+                {t("noEvents", { filter: filter === "all" ? "" : filter + " " })}
               </div>
             ) : (
               filtered.map((entry) => {

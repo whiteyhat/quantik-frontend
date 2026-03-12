@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api, type HealthScoreResponse } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -65,6 +66,7 @@ interface HealthScoreBadgeProps {
 }
 
 export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
+  const t = useTranslations("healthScore");
   const [data, setData] = useState<HealthScoreResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,9 +93,9 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Health Score
+          {t("title")}
         </span>
-        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>Loading...</div>
+        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>{t("loading")}</div>
       </div>
     );
   }
@@ -102,10 +104,10 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Health Score
+          {t("title")}
         </span>
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>Failed to load</div>
+          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>{t("failedToLoad")}</div>
           <button
             onClick={() => { setLoading(true); fetchScore(); }}
             style={{
@@ -115,7 +117,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
               cursor: "pointer", outline: "none", ...mono,
             }}
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       </div>
@@ -123,10 +125,10 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
   }
 
   const components = [
-    { label: "Uptime", value: data.components.uptime, weight: "40%" },
-    { label: "Error Rate", value: data.components.error_rate, weight: "30%" },
-    { label: "Latency", value: data.components.latency, weight: "20%" },
-    { label: "Connection", value: data.components.connection, weight: "10%" },
+    { label: t("uptime"), value: data.components.uptime, weight: "40%" },
+    { label: t("errorRate"), value: data.components.error_rate, weight: "30%" },
+    { label: t("latency"), value: data.components.latency, weight: "20%" },
+    { label: t("connection"), value: data.components.connection, weight: "10%" },
   ];
   const noData = data.status === "insufficient_data" || data.score == null || data.grade == null;
 
@@ -134,10 +136,10 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
     <div style={panelStyle}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Health Score
+          {t("title")}
         </span>
         <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.25)", textTransform: "uppercase" }}>
-          24H Window
+          {t("window24h")}
         </div>
       </div>
 
@@ -159,7 +161,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
               lineHeight: 1.3,
             }}
           >
-            NO DATA
+            {t("noData")}
           </div>
         ) : (
           <ScoreRing score={data.score!} grade={data.grade!} />
@@ -169,7 +171,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
           {noData ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ ...mono, fontSize: 11, color: "#ff9f0a", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Insufficient Data
+                {t("insufficientData")}
               </div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.60)", lineHeight: 1.6 }}>
                 {data.message}
@@ -202,9 +204,9 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
       {/* Quick stats */}
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         {[
-          { label: "Requests", value: data.total_requests_24h.toLocaleString() },
-          { label: "Errors", value: String(data.error_count_24h), color: data.error_count_24h > 0 ? "#ff453a" : undefined },
-          { label: "Avg Latency", value: data.avg_latency_ms == null ? "—" : `${data.avg_latency_ms}ms` },
+          { label: t("requests"), value: data.total_requests_24h.toLocaleString() },
+          { label: t("errors"), value: String(data.error_count_24h), color: data.error_count_24h > 0 ? "#ff453a" : undefined },
+          { label: t("avgLatency"), value: data.avg_latency_ms == null ? "—" : `${data.avg_latency_ms}ms` },
         ].map(s => (
           <div key={s.label} style={{ textAlign: "center" }}>
             <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: s.color ?? "rgba(255,255,255,0.65)" }}>{s.value}</div>

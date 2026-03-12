@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { HelpTooltip } from "./ui/HelpTooltip";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -17,11 +18,11 @@ export interface ScannerResult {
   scannedAt?: string;
 }
 
-const REC_CONFIG: Record<Recommendation, { label: string; color: string; bg: string }> = {
-  BET_YES: { label: "BET YES", color: "#30d158", bg: "rgba(48,209,88,0.15)"   },
-  BET_NO:  { label: "BET NO",  color: "#ff453a", bg: "rgba(255,69,58,0.15)"   },
-  VETO:    { label: "VETO",    color: "#FF9F0A", bg: "rgba(255,159,10,0.12)"  },
-  SKIP:    { label: "SKIP",    color: "rgba(255,255,255,0.25)", bg: "rgba(255,255,255,0.05)" },
+const REC_CONFIG: Record<Recommendation, { labelKey: string; color: string; bg: string }> = {
+  BET_YES: { labelKey: "betYes", color: "#30d158", bg: "rgba(48,209,88,0.15)"   },
+  BET_NO:  { labelKey: "betNo",  color: "#ff453a", bg: "rgba(255,69,58,0.15)"   },
+  VETO:    { labelKey: "veto",    color: "#FF9F0A", bg: "rgba(255,159,10,0.12)"  },
+  SKIP:    { labelKey: "skip",    color: "rgba(255,255,255,0.25)", bg: "rgba(255,255,255,0.05)" },
 };
 
 function timeAgo(iso?: string): string {
@@ -33,7 +34,7 @@ function timeAgo(iso?: string): string {
   return `${Math.floor(min / 60)}h ago`;
 }
 
-function RadarPulse() {
+function RadarPulse({ scanningText }: { scanningText: string }) {
   return (
     <div
       data-testid="scanner-radar-pulse"
@@ -69,13 +70,14 @@ function RadarPulse() {
           letterSpacing: "0.06em",
         }}
       >
-        Quantik is scanning markets…
+        {scanningText}
       </span>
     </div>
   );
 }
 
 export function ScannerFeed() {
+  const t = useTranslations("scannerFeed");
   const [results, setResults] = useState<ScannerResult[]>([]);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const prevIdsRef = useRef<Set<string>>(new Set());
@@ -135,17 +137,17 @@ export function ScannerFeed() {
               fontFamily: "\"SF Mono\", monospace",
             }}
           >
-            Scanner Feed
+            {t("title")}
           </span>
-          <HelpTooltip text="Real-time surveillance of prediction markets. Only liquid markets with high trading activity are tracked here." />
+          <HelpTooltip text={t("desc")} />
         </div>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace" }}>
-          {results.length} signals
+          {results.length} {t("signals")}
         </span>
       </div>
 
       {results.length === 0 ? (
-        <RadarPulse />
+        <RadarPulse scanningText={t("scanning")} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {results.map((r, i) => {
@@ -186,7 +188,7 @@ export function ScannerFeed() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {cfg.label}
+                  {t(cfg.labelKey as any)}
                 </span>
 
                 {/* Question */}
@@ -206,10 +208,10 @@ export function ScannerFeed() {
                 {/* Confidence + Kelly */}
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "monospace" }}>
-                    {Math.round(r.confidence * 100)}% conf
+                    {Math.round(r.confidence * 100)}% {t("conf")}
                   </span>
                   <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "monospace" }}>
-                    {(r.kellyFraction * 100).toFixed(1)}% kelly
+                    {(r.kellyFraction * 100).toFixed(1)}% {t("kelly")}
                   </span>
                   {r.scannedAt && (
                     <span style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "monospace" }}>

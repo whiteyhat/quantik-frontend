@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { CURRENT_RELEASE, RELEASES } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 
 function VersionLogPanel({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("changelog");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -67,7 +69,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                 letterSpacing: "0.10em",
               }}
             >
-              CHANGELOG
+              {t("title")}
             </span>
             <span
               style={{
@@ -142,7 +144,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                       letterSpacing: "0.06em",
                     }}
                   >
-                    CURRENT
+                    {t("current")}
                   </span>
                 ) : null}
                 <span style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>
@@ -167,7 +169,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                       fontFamily: "monospace",
                     }}
                   >
-                    New Features
+                    {t("newFeatures")}
                   </div>
                   {entry.features.map((feature) => (
                     <div
@@ -198,7 +200,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
                       fontFamily: "monospace",
                     }}
                   >
-                    Bug Fixes
+                    {t("bugFixes")}
                   </div>
                   {entry.fixes.map((fix) => (
                     <div
@@ -224,6 +226,7 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function VersionLogButton() {
+  const t = useTranslations("changelog");
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
@@ -231,8 +234,8 @@ export function VersionLogButton() {
     <>
       <button
         onClick={() => setOpen((previous) => !previous)}
-        title={`View changelog (${CURRENT_RELEASE.version})`}
-        aria-label="Open changelog"
+        title={t("viewChangelog", { version: CURRENT_RELEASE.version })}
+        aria-label={t("openChangelog")}
         style={{
           background: open ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.05)",
           border: `1px solid ${open ? "rgba(10,132,255,0.3)" : "rgba(255,255,255,0.08)"}`,

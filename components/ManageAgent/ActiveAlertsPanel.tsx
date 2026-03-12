@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useSocketEvent, type AgentAlertEvent } from "@/context/SocketContext";
 import { api, type AlertEntry, type AlertStatus, type RiskConfig } from "@/lib/api";
@@ -17,38 +18,18 @@ const panelStyle: React.CSSProperties = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function alertStatusInfo(alertSent: number): { label: string; color: string; bg: string } {
+function alertStatusInfo(alertSent: number): { labelKey: string; color: string; bg: string } {
   switch (alertSent) {
     case 2:
-      return { label: "APPROVED", color: "#30d158", bg: "rgba(48,209,88,0.12)" };
+      return { labelKey: "approved", color: "#30d158", bg: "rgba(48,209,88,0.12)" };
     case -1:
-      return { label: "VETOED", color: "#ff453a", bg: "rgba(255,69,58,0.12)" };
+      return { labelKey: "vetoed", color: "#ff453a", bg: "rgba(255,69,58,0.12)" };
     default:
-      return { label: "PENDING", color: "#ff9f0a", bg: "rgba(255,159,10,0.12)" };
+      return { labelKey: "pending", color: "#ff9f0a", bg: "rgba(255,159,10,0.12)" };
   }
 }
 
-function timeAgo(ts: number): string {
-  if (!ts) return "";
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
-function muteTimeRemaining(mutedUntil: number | null): string {
-  if (!mutedUntil) return "";
-  const remaining = mutedUntil - Date.now();
-  if (remaining <= 0) return "";
-  const mins = Math.ceil(remaining / 60_000);
-  if (mins < 60) return `${mins}m remaining`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m remaining`;
-}
+// timeAgo and muteTimeRemaining are now inline with t() inside the component
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -57,6 +38,30 @@ interface ActiveAlertsPanelProps {
 }
 
 export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
+  const t = useTranslations("alerts");
+
+  const timeAgo = (ts: number): string => {
+    if (!ts) return "";
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t("justNow");
+    if (mins < 60) return t("mAgo", { m: mins });
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return t("hAgo", { h: hrs });
+    const days = Math.floor(hrs / 24);
+    return t("dAgo", { d: days });
+  };
+
+  const muteTimeRemaining = (mutedUntil: number | null): string => {
+    if (!mutedUntil) return "";
+    const remaining = mutedUntil - Date.now();
+    if (remaining <= 0) return "";
+    const mins = Math.ceil(remaining / 60_000);
+    if (mins < 60) return t("mRemaining", { m: mins });
+    const hrs = Math.floor(mins / 60);
+    return t("hmRemaining", { h: hrs, m: mins % 60 });
+  };
+
   const [alertData, setAlertData] = useState<AlertStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [muteLoading, setMuteLoading] = useState(false);
@@ -118,11 +123,11 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
             textTransform: "uppercase",
           }}
         >
-          Active Alerts
+          {t("title")}
         </h3>
         {alerts.length > 0 && (
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: '"SF Mono", monospace' }}>
-            {alerts.length} alert{alerts.length !== 1 ? "s" : ""}
+            {alerts.length} {alerts.length !== 1 ? t("alerts") : t("alert")}
           </span>
         )}
       </div>
@@ -140,12 +145,12 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
       >
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.80)" }}>
-            {isMuted ? "Alerts Muted" : "Alerts Active"}
+            {isMuted ? t("muted") : t("active")}
           </div>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.30)", marginTop: 2 }}>
             {isMuted
-              ? muteTimeRemaining(alertData?.mutedUntil ?? null) || "Muted"
-              : "Telegram notifications enabled"}
+              ? muteTimeRemaining(alertData?.mutedUntil ?? null) || t("muted")
+              : t("telegramEnabled")}
           </div>
         </div>
         <ToggleSwitch
@@ -173,7 +178,7 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
               fontFamily: '"SF Mono", monospace',
             }}
           >
-            DD {(riskConfig.drawdownLimit * 100).toFixed(0)}%
+            {t("dd")} {(riskConfig.drawdownLimit * 100).toFixed(0)}%
           </span>
           <span
             style={{
@@ -190,7 +195,7 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
               fontFamily: '"SF Mono", monospace',
             }}
           >
-            Max Pos {(riskConfig.maxPositionSize * 100).toFixed(0)}%
+            {t("maxPos")} {(riskConfig.maxPositionSize * 100).toFixed(0)}%
           </span>
           <span
             style={{
@@ -207,7 +212,7 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
               fontFamily: '"SF Mono", monospace',
             }}
           >
-            Kelly {riskConfig.kellyMultiplier.toFixed(2)}x
+            {t("kelly")} {riskConfig.kellyMultiplier.toFixed(2)}x
           </span>
         </div>
       )}
@@ -251,7 +256,7 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
                     flexShrink: 0,
                   }}
                 >
-                  {status.label}
+                  {t(status.labelKey as any)}
                 </span>
 
                 {/* Question */}
@@ -298,7 +303,7 @@ export function ActiveAlertsPanel({ riskConfig }: ActiveAlertsPanelProps) {
         </div>
       ) : (
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.30)", fontFamily: "monospace" }}>
-          No alerts fired yet — alerts trigger when the pipeline generates high-confidence signals.
+          {t("noAlerts")}
         </div>
       )}
     </div>

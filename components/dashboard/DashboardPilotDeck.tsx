@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Bot, MessageSquare } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDashboardAgentHealthScoreQuery } from "@/components/dashboard/dashboardQueries";
 import {
   CommandCenterCard,
@@ -29,6 +30,7 @@ export function DashboardPilotDeck({
   agentLoading: boolean;
   summary: DashboardSummarySnapshot | null;
 }) {
+  const t = useTranslations("dashboard.pilotDeck");
   const isByo = agent?.agent_type === "byo";
   const healthScoreQuery = useDashboardAgentHealthScoreQuery(agent?.id, isByo);
 
@@ -48,16 +50,16 @@ export function DashboardPilotDeck({
     return (
       <CommandCenterCard accent="neutral">
         <CommandCenterHeader
-          eyebrow="Pilot"
-          title="Pilot Deck"
-          subtitle="Create or connect an agent to unlock personalized control."
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          subtitle={t("subtitleEmpty")}
         />
         <PanelEmptyState
-          title="No agent configured"
-          detail="Mission control is live, but your personal cockpit is still empty."
+          title={t("emptyTitle")}
+          detail={t("emptyDetail")}
           action={
             <Link href="/agent-factory" className="mission-rail-link">
-              Open Agent Factory
+              {t("openAgentFactory")}
               <ArrowRight className="size-3.5" />
             </Link>
           }
@@ -77,15 +79,15 @@ export function DashboardPilotDeck({
   return (
     <CommandCenterCard accent="neutral" data-testid="dashboard-pilot-deck-card">
       <CommandCenterHeader
-        eyebrow="Pilot"
-        title="Pilot Deck"
-        subtitle="Your agent cockpit, folded into mission control."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <button
             type="button"
             className="mission-rail-link pilot-deck-chat-cta"
-            aria-label={`Chat with ${agent.name || "Agent"}`}
-            title={`Chat with ${agent.name || "Agent"}`}
+            aria-label={t("chatWith", { name: agent.name || "Agent" })}
+            title={t("chatWith", { name: agent.name || "Agent" })}
             onClick={() => window.dispatchEvent(new CustomEvent("open-agent-chat"))}
           >
             <MessageSquare className="size-3.5 shrink-0" />
@@ -103,26 +105,26 @@ export function DashboardPilotDeck({
 
       <div className="grid grid-cols-2 gap-3">
         <MetricBlock
-          label="Autopilot"
-          value={agent.autopilot_enabled ? "Engaged" : "Manual"}
-          hint={agent.autopilot_enabled ? "Automation can deploy capital" : "Trades require manual action"}
+          label={t("autopilot")}
+          value={agent.autopilot_enabled ? t("engaged") : t("manual")}
+          hint={agent.autopilot_enabled ? t("automationCanDeployCapital") : t("tradesRequireManualAction")}
           tone={agent.autopilot_enabled ? "good" : "neutral"}
         />
         <MetricBlock
-          label={isByo ? "Connection" : "Funding"}
+          label={isByo ? t("connection") : t("funding")}
           value={
             isByo
-              ? (agent.connection_status ?? "pending")
+              ? (agent.connection_status ?? t("pending"))
               : summary?.fundingStatus === "ready"
-                ? "Ready"
+                ? t("ready")
                 : summary?.fundingStatus === "funding_required"
-                  ? "Needs funds"
-                  : "Pending"
+                  ? t("needsFunds")
+                  : t("pending")
           }
           hint={
             isByo
               ? (agent.description ?? "External runtime linked into Quantik.")
-              : (summary?.fundingMessage ?? summary?.balanceMessage ?? "Wallet telemetry pending")
+              : (summary?.fundingMessage ?? summary?.balanceMessage ?? t("walletTelemetryPending"))
           }
           tone={isByo ? statusTone(agent.connection_status) : fundingTone}
         />
@@ -136,40 +138,40 @@ export function DashboardPilotDeck({
                 {healthScoreQuery.isLoading ? "..." : healthScore?.score ?? "ND"}
               </div>
               <div>
-                <div className="pilot-deck-panel-title">Runtime health</div>
+                <div className="pilot-deck-panel-title">{t("runtimeHealth")}</div>
                 <div className="pilot-deck-panel-copy">
-                  {healthScore?.message ?? "Waiting for BYO telemetry to accumulate."}
+                  {healthScore?.message ?? t("waitingForByoTelemetry")}
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <StatusBadge tone={statusTone(agent.connection_status)} label={agent.connection_status ?? "pending"} />
-              <StatusBadge tone={healthScore?.status === "healthy" ? "good" : healthScore?.status === "degraded" ? "warn" : "bad"} label={healthScore?.status?.replace(/_/g, " ") ?? "health pending"} />
+              <StatusBadge tone={statusTone(agent.connection_status)} label={agent.connection_status ?? t("pending")} />
+              <StatusBadge tone={healthScore?.status === "healthy" ? "good" : healthScore?.status === "degraded" ? "warn" : "bad"} label={healthScore?.status?.replace(/_/g, " ") ?? t("healthPending")} />
             </div>
           </>
         ) : (
           <>
-            <div className="pilot-deck-panel-title">Created-agent posture</div>
+            <div className="pilot-deck-panel-title">{t("createdAgentPosture")}</div>
             <div className="pilot-deck-panel-copy">
-              Your in-house agent inherits the live market, risk, and architecture telemetry from mission control.
+              {t("createdAgentCopy")}
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusBadge tone="info" label={agent.status || "active"} />
-              <StatusBadge tone="neutral" label="Architecture-linked" />
+              <StatusBadge tone="neutral" label={t("architectureLinked")} />
             </div>
           </>
         )}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <StatusBadge tone={agent.autopilot_enabled ? "good" : "neutral"} label={agent.autopilot_enabled ? "Autopilot engaged" : "Autopilot idle"} />
-        <StatusBadge tone={fundingTone} label={summary?.fundingStatus?.replace(/_/g, " ") ?? "funding pending"} />
+        <StatusBadge tone={agent.autopilot_enabled ? "good" : "neutral"} label={agent.autopilot_enabled ? t("autopilotEngaged") : t("autopilotIdle")} />
+        <StatusBadge tone={fundingTone} label={summary?.fundingStatus?.replace(/_/g, " ") ?? t("fundingPending")} />
       </div>
 
       <div className="pilot-deck-actions">
         <Link href="/manage-agent?tab=world" className="pilot-deck-action">
           <Bot className="size-4" />
-          View Agents World
+          {t("viewAgentsWorld")}
           <ArrowRight className="ml-auto size-4" />
         </Link>
       </div>

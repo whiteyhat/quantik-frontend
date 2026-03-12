@@ -44,6 +44,9 @@ export interface MyAgent {
   description?: string | null;
   autopilot_enabled?: boolean;
   autopilot_updated_at?: number | null;
+  // Polymarket wallet preparation
+  polymarket_ready?: boolean;
+  polymarket_status?: "pending_funding" | "funding_detected" | "approving" | "approval_failed" | "ready";
 }
 
 // ─── Pipeline State ───────────────────────────────────────────────────────────

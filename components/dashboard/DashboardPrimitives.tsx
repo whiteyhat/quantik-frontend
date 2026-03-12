@@ -2,6 +2,7 @@
 
 import type { ComponentProps, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,7 @@ export function PanelErrorState({
   detail: string;
   onRetry?: () => void;
 }) {
+  const t = useTranslations("dashboard.primitives");
   return (
     <div className="command-center-state command-center-state--error">
       <div className="flex items-center gap-2 text-sm font-medium text-[#ffb4ac]">
@@ -113,7 +115,7 @@ export function PanelErrorState({
       {onRetry ? (
         <Button variant="secondary" size="sm" onClick={onRetry}>
           <RefreshCw className="size-4" />
-          Retry
+          {t("retry")}
         </Button>
       ) : null}
     </div>

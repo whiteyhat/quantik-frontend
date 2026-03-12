@@ -178,14 +178,22 @@ export function extractLatestSignalTimestamp(scannerContext: unknown): number | 
   return latestSignal;
 }
 
-export function formatRelayRelativeTime(timestamp: number | null, now = Date.now()): string {
-  if (!timestamp) return "No sync yet";
+export interface RelayTimeFormats {
+  noSync?: string;
+  justNow?: string;
+  mAgo?: (m: number) => string;
+  hAgo?: (h: number) => string;
+  dAgo?: (d: number) => string;
+}
+
+export function formatRelayRelativeTime(timestamp: number | null, now = Date.now(), formats?: RelayTimeFormats): string {
+  if (!timestamp) return formats?.noSync ?? "No sync yet";
   const diff = Math.max(0, now - timestamp);
   const minutes = Math.round(diff / 60_000);
-  if (minutes < 1) return "Synced just now";
-  if (minutes < 60) return `Synced ${minutes}m ago`;
+  if (minutes < 1) return formats?.justNow ?? "Synced just now";
+  if (minutes < 60) return formats?.mAgo ? formats.mAgo(minutes) : `Synced ${minutes}m ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Synced ${hours}h ago`;
+  if (hours < 24) return formats?.hAgo ? formats.hAgo(hours) : `Synced ${hours}h ago`;
   const days = Math.round(hours / 24);
-  return `Synced ${days}d ago`;
+  return formats?.dAgo ? formats.dAgo(days) : `Synced ${days}d ago`;
 }

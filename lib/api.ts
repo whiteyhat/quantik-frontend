@@ -895,7 +895,9 @@ export const api = {
     avatar: string;
     animalType?: string;
     generatedImage?: string | null;
-    wallet_address: string;
+    wallet_address?: string;
+    private_key?: string;
+    seed_phrase?: string;
     personality: string;
     decisionStyle: string;
     tradingInstinct: string;
@@ -914,6 +916,18 @@ export const api = {
 
   generateWallet: async (): Promise<GeneratedWalletCredentials> => {
     return apiFetch("/api/wallet/generate", { method: "POST" });
+  },
+
+  verifyPolymarket: async (agentId: string): Promise<{
+    status: string;
+    polymarketReady: boolean;
+    address: string;
+    balances: { pol: number; usdc: number; polSufficient: boolean; usdcSufficient: boolean };
+    approvals?: { allPassed: boolean; details: unknown };
+    missingItems?: string[];
+    error?: string;
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/verify-polymarket`, { method: "POST" });
   },
 
   deleteAgent: async (id: string): Promise<void> => {

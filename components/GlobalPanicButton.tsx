@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 // ─── Font sizes — L003 compliant ──────────────────────────────────────────────
@@ -249,6 +250,7 @@ function PanicCheckbox({
 type PanicStatus = "idle" | "activating" | "activated" | "error";
 
 function PanicModal({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("panic");
   const [cancelOrders, setCancelOrders] = useState(true);
   const [liquidatePositions, setLiquidatePositions] = useState(false);
   const [panicStatus, setPanicStatus] = useState<PanicStatus>("idle");
@@ -327,12 +329,12 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               marginBottom: 10,
             }}
           >
-            EMERGENCY PROTOCOL ACTIVATED
+            {t("title")}
           </div>
           <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
             {cancelOrders && "All open orders are being cancelled. "}
             {liquidatePositions && "All positions are being liquidated. "}
-            Closing in 4 seconds…
+            {t("closingIn")}
           </div>
         </div>
       </div>
@@ -392,7 +394,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                   lineHeight: 1,
                 }}
               >
-                EMERGENCY PROTOCOL
+                {t("emergencyProtocol")}
               </div>
               <div
                 style={{
@@ -405,7 +407,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                   textTransform: "uppercase",
                 }}
               >
-                ⚠ IRREVERSIBLE — CANNOT BE UNDONE ⚠
+                ⚠ {t("irreversible")} ⚠
               </div>
             </div>
             {/* Close button */}
@@ -428,8 +430,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
           <p style={{ margin: 0, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
-            This will immediately halt trading activity. Actions taken cannot be reversed.
-            Confirm only in a genuine emergency.
+            {t("confirmDesc")}
           </p>
         </div>
 
@@ -454,20 +455,20 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               marginBottom: 14,
             }}
           >
-            Select Actions
+            {t("selectActions")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <PanicCheckbox
               checked={cancelOrders}
-              label="Cancel All Open Orders"
-              sublabel="Immediately cancels every pending limit and market order across all venues."
+              label={t("cancelOrders")}
+              sublabel={t("cancelOrdersDesc")}
               onChange={setCancelOrders}
               disabled={isDisabled}
             />
             <PanicCheckbox
               checked={liquidatePositions}
-              label="Liquidate All Positions"
-              sublabel="Market-sells all current positions at best available price. Expect slippage."
+              label={t("liquidatePositions")}
+              sublabel={t("liquidateDesc")}
               onChange={setLiquidatePositions}
               disabled={isDisabled}
             />
@@ -486,7 +487,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 letterSpacing: "0.06em",
               }}
             >
-              Select at least one action before confirming.
+              {t("selectAtLeastOne")}
             </div>
           )}
         </div>
@@ -512,11 +513,11 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               marginBottom: 14,
             }}
           >
-            Slide to Confirm Emergency Protocol
+            {t("slideToConfirm")}
           </div>
           <SlideToConfirm
             key={slideKey}
-            label="SLIDE TO ACTIVATE →"
+            label={`${t("slideToActivate")} →`}
             onConfirmed={handleConfirmed}
             disabled={neitherSelected || isDisabled}
           />
@@ -531,7 +532,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 textAlign: "center",
               }}
             >
-              ⏳ ACTIVATING EMERGENCY PROTOCOL…
+              ⏳ {t("activating")}
             </div>
           )}
           {panicStatus === "error" && (
@@ -548,7 +549,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 letterSpacing: "0.06em",
               }}
             >
-              ❌ ACTIVATION FAILED: {errorMsg ?? "Unknown error"}. Slide again to retry.
+              ❌ {t("activationFailed", { error: errorMsg ?? "Unknown error" })}
             </div>
           )}
         </div>
@@ -560,6 +561,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
 // ─── GlobalPanicButton ────────────────────────────────────────────────────────
 
 export function GlobalPanicButton() {
+  const t = useTranslations("panic");
   const [isOpen, setIsOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -573,7 +575,7 @@ export function GlobalPanicButton() {
         onClick={open}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        title="Emergency Panic Mode"
+        title={t("panicMode")}
         className="fixed z-[1000] right-5 bottom-24 md:right-7 md:bottom-7"
         style={{
           width: hovered ? "auto" : 52,
@@ -606,7 +608,7 @@ export function GlobalPanicButton() {
               textTransform: "uppercase",
             }}
           >
-            PANIC
+            {t("panicButton")}
           </span>
         )}
       </button>

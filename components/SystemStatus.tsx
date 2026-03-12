@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api, fmtUSDC } from "@/lib/api";
 
 interface SystemStatusProps {
@@ -8,6 +9,7 @@ interface SystemStatusProps {
 }
 
 export function SystemStatus({ onClose }: SystemStatusProps) {
+  const t = useTranslations("systemStatus");
   const [latency, setLatency] = useState<number | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
@@ -55,7 +57,7 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <span className="text-headline" style={{ color: "var(--text-primary)" }}>
-          System Status
+          {t("title")}
         </span>
         <button
           onClick={onClose}
@@ -74,7 +76,7 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Backend */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Backend</span>
+          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("backend")}</span>
           <span
             className="font-mono-data"
             style={{
@@ -86,13 +88,13 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
               color: latencyColor,
             }}
           >
-            {latency !== null ? `${latency}ms` : "Offline"}
+            {latency !== null ? `${latency}ms` : t("offline")}
           </span>
         </div>
 
         {/* CLI */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>CLI</span>
+          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("cli")}</span>
           <span className="font-mono-data text-caption" style={{ color: "var(--text-tertiary)" }}>
             v0.1.0
           </span>
@@ -100,20 +102,20 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
 
         {/* Wallet */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Wallet</span>
+          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("wallet")}</span>
           <div style={{ textAlign: "right" }}>
             <span className="font-mono-data text-subhead" style={{ color: "var(--text-primary)" }}>
               {balance !== null ? fmtUSDC(balance) : "—"}
             </span>
             <div className="text-caption" style={{ color: "var(--text-tertiary)" }}>
-              last synced {syncAgo < 1 ? "just now" : `${syncAgo}m ago`}
+              {t("lastSynced")}{syncAgo < 1 ? "just now" : `${syncAgo}m ago`}
             </div>
           </div>
         </div>
 
         {/* Markets API */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Markets API</span>
+          <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("marketsApi")}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
@@ -124,7 +126,7 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
               }}
             />
             <span className="text-caption" style={{ color: apiOk ? "var(--ios-green)" : "var(--ios-red)" }}>
-              {apiOk ? "OK" : apiOk === false ? "Degraded" : "Checking..."}
+              {apiOk ? t("ok") : apiOk === false ? t("degraded") : t("checking")}
             </span>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { type RiskConfig } from "@/lib/api";
 
@@ -14,42 +15,42 @@ const panelStyle: React.CSSProperties = {
 
 // ─── Label mappings from agent factory config values ─────────────────────────
 
-const PERSONALITY_LABELS: Record<string, { label: string; icon: string }> = {
-  guardian: { label: "Guardian", icon: "🛡️" },
-  balanced: { label: "Balanced", icon: "⚖️" },
-  adventurer: { label: "Adventurer", icon: "🚀" },
+const PERSONALITY_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  guardian: { labelKey: "riskProfiles.guardian", icon: "🛡️" },
+  balanced: { labelKey: "riskProfiles.balanced", icon: "⚖️" },
+  adventurer: { labelKey: "riskProfiles.adventurer", icon: "🚀" },
 };
 
-const DECISION_LABELS: Record<string, { label: string; icon: string }> = {
-  gut: { label: "Gut Trader", icon: "🎯" },
-  analyst: { label: "Analyst", icon: "🔬" },
-  observer: { label: "Observer", icon: "👁️" },
+const DECISION_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  gut: { labelKey: "tradingStyles.gutTrader", icon: "🎯" },
+  analyst: { labelKey: "tradingStyles.analyst", icon: "🔬" },
+  observer: { labelKey: "tradingStyles.observer", icon: "👁️" },
 };
 
-const INSTINCT_LABELS: Record<string, { label: string; icon: string }> = {
-  trend_chaser: { label: "Trend Chaser", icon: "📈" },
-  reversal_spotter: { label: "Reversal Spotter", icon: "🔄" },
-  value_hunter: { label: "Value Hunter", icon: "💎" },
-  speed_demon: { label: "Speed Demon", icon: "⚡" },
+const INSTINCT_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  trend_chaser: { labelKey: "strategies.trendChaser", icon: "📈" },
+  reversal_spotter: { labelKey: "strategies.reversalSpotter", icon: "🔄" },
+  value_hunter: { labelKey: "strategies.valueHunter", icon: "💎" },
+  speed_demon: { labelKey: "strategies.speedDemon", icon: "⚡" },
 };
 
-const TIME_LABELS: Record<string, { label: string; icon: string }> = {
-  lightning: { label: "Lightning", icon: "⚡" },
-  swing: { label: "Swing", icon: "🌊" },
-  longterm: { label: "Long Term", icon: "🏔️" },
+const TIME_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  lightning: { labelKey: "timeframes.lightning", icon: "⚡" },
+  swing: { labelKey: "timeframes.swing", icon: "🌊" },
+  longterm: { labelKey: "timeframes.longTerm", icon: "🏔️" },
 };
 
-const MONEY_LABELS: Record<string, { label: string; icon: string }> = {
-  fixed_safe: { label: "Fixed & Safe", icon: "🔒" },
-  smart_scaling: { label: "Smart Scaling", icon: "📊" },
-  aggressive: { label: "Aggressive", icon: "🔥" },
+const MONEY_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  fixed_safe: { labelKey: "sizingModes.fixedSafe", icon: "🔒" },
+  smart_scaling: { labelKey: "sizingModes.smartScaling", icon: "📊" },
+  aggressive: { labelKey: "sizingModes.aggressive", icon: "🔥" },
 };
 
-const ASSET_LABELS: Record<string, { label: string; icon: string }> = {
-  stocks: { label: "Stocks", icon: "📊" },
-  forex: { label: "Forex", icon: "💱" },
-  crypto: { label: "Crypto", icon: "🪙" },
-  all_rounder: { label: "All Rounder", icon: "🌐" },
+const ASSET_LABELS: Record<string, { labelKey: string; icon: string }> = {
+  stocks: { labelKey: "focusAreas.stocks", icon: "📊" },
+  forex: { labelKey: "focusAreas.forex", icon: "💱" },
+  crypto: { labelKey: "focusAreas.crypto", icon: "🪙" },
+  all_rounder: { labelKey: "focusAreas.allRounder", icon: "🌐" },
 };
 
 const chipStyle: React.CSSProperties = {
@@ -93,6 +94,7 @@ interface AgentConfigPanelProps {
 }
 
 export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
+  const t = useTranslations("agentConfig");
   const myAgent = useQuantikStore((s) => s.myAgent);
 
   if (!myAgent) return null;
@@ -119,7 +121,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
           textTransform: "uppercase",
         }}
       >
-        Agent Config
+        {t("title")}
       </h3>
 
       {/* Agent trait chips — all from real backend data */}
@@ -127,37 +129,37 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
         {personalityChip && (
           <span style={chipAccentStyle}>
             <span>{personalityChip.icon}</span>
-            {personalityChip.label}
+            {t(personalityChip.labelKey as any)}
           </span>
         )}
         {instinctChip && (
           <span style={chipStyle}>
             <span>{instinctChip.icon}</span>
-            {instinctChip.label}
+            {t(instinctChip.labelKey as any)}
           </span>
         )}
         {decisionChip && (
           <span style={chipStyle}>
             <span>{decisionChip.icon}</span>
-            {decisionChip.label}
+            {t(decisionChip.labelKey as any)}
           </span>
         )}
         {timeChip && (
           <span style={chipStyle}>
             <span>{timeChip.icon}</span>
-            {timeChip.label}
+            {t(timeChip.labelKey as any)}
           </span>
         )}
         {moneyChip && (
           <span style={chipStyle}>
             <span>{moneyChip.icon}</span>
-            {moneyChip.label}
+            {t(moneyChip.labelKey as any)}
           </span>
         )}
         {assetChip && (
           <span style={chipStyle}>
             <span>{assetChip.icon}</span>
-            {assetChip.label}
+            {t(assetChip.labelKey as any)}
           </span>
         )}
       </div>
@@ -165,7 +167,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
       {/* Risk Level bar — derived from protection_mindset */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>Risk Level</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{t("riskLevel")}</span>
           <span
             style={{
               fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -174,7 +176,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
               color: rlColor,
             }}
           >
-            {riskLevel <= 3 ? "Low" : riskLevel <= 6 ? "Medium" : "High"} ({riskLevel}/10)
+            {riskLevel <= 3 ? t("low") : riskLevel <= 6 ? t("medium") : t("high")} ({riskLevel}/10)
           </span>
         </div>
         <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.07)" }}>
@@ -194,9 +196,9 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
       {riskConfig ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
           {[
-            { label: "Max Drawdown Limit", hint: "Circuit breaker triggers at this level", value: `${(riskConfig.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: riskConfig.drawdownLimit / 0.50 },
-            { label: "Max Position Size", hint: "Maximum capital per single trade", value: `${(riskConfig.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: riskConfig.maxPositionSize / 0.30 },
-            { label: "Kelly Multiplier", hint: "Fraction of Kelly criterion to apply", value: `${riskConfig.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: riskConfig.kellyMultiplier },
+            { label: t("maxDrawdownLimit"), hint: t("maxDrawdownDesc"), value: `${(riskConfig.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: riskConfig.drawdownLimit / 0.50 },
+            { label: t("maxPositionSize"), hint: t("maxPositionDesc"), value: `${(riskConfig.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: riskConfig.maxPositionSize / 0.30 },
+            { label: t("kellyMultiplier"), hint: t("kellyDesc"), value: `${riskConfig.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: riskConfig.kellyMultiplier },
           ].map((param) => (
             <div key={param.label} style={{ padding: "8px 0" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
@@ -220,7 +222,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
             fontFamily: '"SF Mono", monospace',
           }}
         >
-          Loading risk configuration...
+          {t("loadingRisk")}
         </div>
       )}
 

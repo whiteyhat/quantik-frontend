@@ -1,9 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api, fmtUSDC } from "@/lib/api";
 
 export function MarketHeader({ slug }: { slug: string }) {
+  const t = useTranslations("marketDetail");
   const { data: market } = useQuery({
     queryKey: ["market", slug],
     queryFn: () => api.getMarket(slug),
@@ -65,7 +67,7 @@ export function MarketHeader({ slug }: { slug: string }) {
                 letterSpacing: "0.04em",
               }}
             >
-              ID: {slugDisplay}
+              {t("id")}{slugDisplay}
             </span>
             <span
               style={{
@@ -122,8 +124,8 @@ export function MarketHeader({ slug }: { slug: string }) {
 
         {/* RIGHT: YES / NO price boxes */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-          <PriceBox side="YES" cents={yesPct} color="var(--ios-green)" bg="rgba(48,209,88,0.08)" border="rgba(48,209,88,0.25)" />
-          <PriceBox side="NO" cents={noPct} color="var(--ios-red)" bg="rgba(255,69,58,0.08)" border="rgba(255,69,58,0.25)" />
+          <PriceBox side="YES" cents={yesPct} color="var(--ios-green)" bg="rgba(48,209,88,0.08)" border="rgba(48,209,88,0.25)" betLabel={t("bet")} />
+          <PriceBox side="NO" cents={noPct} color="var(--ios-red)" bg="rgba(255,69,58,0.08)" border="rgba(255,69,58,0.25)" betLabel={t("bet")} />
         </div>
       </div>
     </div>
@@ -160,12 +162,14 @@ function PriceBox({
   color,
   bg,
   border,
+  betLabel,
 }: {
   side: "YES" | "NO";
   cents: number;
   color: string;
   bg: string;
   border: string;
+  betLabel: string;
 }) {
   return (
     <div
@@ -188,7 +192,7 @@ function PriceBox({
           textTransform: "uppercase",
         }}
       >
-        BET {side}
+        {betLabel} {side}
       </div>
       <div
         className="font-mono-data"

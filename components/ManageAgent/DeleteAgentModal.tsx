@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import type { MyAgent } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
@@ -24,6 +25,8 @@ interface DeleteAgentModalProps {
 }
 
 export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgentModalProps) {
+  const tc = useTranslations("common");
+  const td = useTranslations("deleteAgent");
   const [confirmStep, setConfirmStep] = useState<1 | 2>(1);
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -45,7 +48,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
       await api.deleteAgent(agent.id);
       onDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete agent");
+      setError(err instanceof Error ? err.message : td("failedToDelete"));
     } finally {
       setIsDeleting(false);
     }
@@ -102,7 +105,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                 letterSpacing: "0.03em",
               }}
             >
-              Delete {agent.name}
+              {td("title", { name: agent.name })}
             </div>
             <div
               style={{
@@ -128,8 +131,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                 margin: "0 0 24px 0",
               }}
             >
-              Are you sure you want to permanently delete this agent? All configuration, trading history, and wallet
-              association will be removed. This action cannot be undone.
+              {td("warningText")}
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button
@@ -147,7 +149,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                   letterSpacing: "0.04em",
                 }}
               >
-                CANCEL
+                {tc("cancel")}
               </button>
               <button
                 onClick={() => setConfirmStep(2)}
@@ -164,7 +166,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                   letterSpacing: "0.04em",
                 }}
               >
-                CONTINUE
+                {td("continue")}
               </button>
             </div>
           </>
@@ -181,7 +183,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                 margin: "0 0 16px 0",
               }}
             >
-              This action is irreversible. Type <strong style={{ color: "#ff453a" }}>DELETE</strong> to confirm.
+              {td("irreversibleText", { keyword: "DELETE" })}
             </p>
             <input
               type="text"
@@ -192,7 +194,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                   handleDelete();
                 }
               }}
-              placeholder="Type DELETE"
+              placeholder={td("typePlaceholder")}
               autoFocus
               style={{
                 width: "100%",
@@ -245,7 +247,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                   letterSpacing: "0.04em",
                 }}
               >
-                CANCEL
+                {tc("cancel")}
               </button>
               <button
                 onClick={handleDelete}
@@ -265,7 +267,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                   transition: "all 150ms ease",
                 }}
               >
-                {isDeleting ? "DELETING..." : "DELETE FOREVER"}
+                {isDeleting ? td("deleting") : td("deleteForever")}
               </button>
             </div>
           </>

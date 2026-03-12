@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const SCAN_INTERVAL_SECONDS = 5 * 60;
@@ -33,6 +34,7 @@ const STATUS_CONFIG: Record<AutopilotStatus, { label: string; color: string; bg:
 };
 
 export function AutopilotStatusBar() {
+  const t = useTranslations("autopilot");
   const [status, setStatus] = useState<AutopilotStatus>("HUNTING");
   const [scannerData, setScannerData] = useState<ScannerStatus>({});
   const [countdown, setCountdown] = useState(SCAN_INTERVAL_SECONDS);
@@ -51,7 +53,7 @@ export function AutopilotStatusBar() {
       if (data.lastScan) {
         const diffMs = Date.now() - new Date(data.lastScan).getTime();
         const diffMin = Math.floor(diffMs / 60000);
-        setLastScanLabel(diffMin < 1 ? "< 1 min ago" : `${diffMin} min ago`);
+        setLastScanLabel(diffMin < 1 ? t("lessThanMinAgo") : t("minAgo", { m: diffMin }));
       }
     } catch {
       // silently fail
@@ -129,19 +131,19 @@ export function AutopilotStatusBar() {
           }}
         />
         <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color, letterSpacing: "0.08em" }}>
-          {cfg.label}
+          {status === "HUNTING" ? t("hunting") : status === "TRADING" ? t("trading") : status === "PAUSED" ? t("paused") : t("circuitBreaker")}
         </span>
       </div>
 
       {/* Last scan info */}
       <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.04em" }}>
-        Last scan: {lastScanLabel}
-        {scannerData.marketsChecked != null && ` · ${scannerData.marketsChecked} markets checked`}
+        {t("lastScan")}{lastScanLabel}
+        {scannerData.marketsChecked != null && ` · ${scannerData.marketsChecked} ${t("marketsChecked")}`}
       </span>
 
       {/* Next scan countdown */}
       <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
-        Next scan in{" "}
+        {t("nextScanIn")}{" "}
         <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 600 }}>
           {fmtCountdown(countdown)}
         </span>

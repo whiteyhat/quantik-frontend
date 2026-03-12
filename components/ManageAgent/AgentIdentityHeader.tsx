@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { fmtUSDC, type WalletBalance } from "@/lib/api";
@@ -19,13 +20,13 @@ const panelStyle: React.CSSProperties = {
 function statusBadge(status: string) {
   switch (status) {
     case "active":
-      return { label: "LIVE", bg: "rgba(48,209,88,0.15)", border: "rgba(48,209,88,0.35)", color: "#30d158", dot: "#30d158" };
+      return { label: "statusLive", bg: "rgba(48,209,88,0.15)", border: "rgba(48,209,88,0.35)", color: "#30d158", dot: "#30d158" };
     case "paused":
-      return { label: "PAUSED", bg: "rgba(255,159,10,0.15)", border: "rgba(255,159,10,0.35)", color: "#ff9f0a", dot: "#ff9f0a" };
+      return { label: "statusPaused", bg: "rgba(255,159,10,0.15)", border: "rgba(255,159,10,0.35)", color: "#ff9f0a", dot: "#ff9f0a" };
     case "terminated":
-      return { label: "TERMINATED", bg: "rgba(255,69,58,0.15)", border: "rgba(255,69,58,0.35)", color: "#ff453a", dot: "#ff453a" };
+      return { label: "statusTerminated", bg: "rgba(255,69,58,0.15)", border: "rgba(255,69,58,0.35)", color: "#ff453a", dot: "#ff453a" };
     default:
-      return { label: "INACTIVE", bg: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", dot: "rgba(255,255,255,0.3)" };
+      return { label: "statusInactive", bg: "rgba(255,255,255,0.08)", border: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", dot: "rgba(255,255,255,0.3)" };
   }
 }
 
@@ -41,6 +42,8 @@ interface AgentIdentityHeaderProps {
 }
 
 export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: AgentIdentityHeaderProps) {
+  const t = useTranslations("manageAgent");
+  const td = useTranslations("deleteAgent");
   const router = useRouter();
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
@@ -51,7 +54,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const handleDeleted = useCallback(() => {
     setDeleteModalOpen(false);
     setMyAgent(null);
-    setDeleteToast("Agent deleted successfully");
+    setDeleteToast(td("deletedSuccess"));
     setTimeout(() => router.push("/agent-factory"), 1500);
   }, [setMyAgent, router]);
 
@@ -145,14 +148,14 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
                 }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: badge.dot }} />
-                {badge.label}
+                {t(badge.label as any)}
               </span>
             </div>
 
             {/* Wallet address */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
-                WDK Wallet: {truncAddr(myAgent.wallet_address || "")}
+                {t("wdkWallet")}{truncAddr(myAgent.wallet_address || "")}
               </span>
               <button
                 onClick={copyAddress}
@@ -172,7 +175,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             {/* Balance */}
             <div style={{ marginTop: 6, display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Balance:
+                {t("balance")}
               </span>
               <span
                 style={{
@@ -246,13 +249,13 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             }}
           >
             <span style={{ fontSize: 13 }}>{myAgent.avatar_emoji || "💬"}</span>
-            CHAT WITH {myAgent.name?.toUpperCase() || "AGENT"}
+            {t("chatWithAgent", { name: myAgent.name?.toUpperCase() || "AGENT" })}
           </button>
 
           {/* Delete agent button */}
           <button
             onClick={() => setDeleteModalOpen(true)}
-            title="Delete Agent"
+            title={td("deleteAgentTitle")}
             style={{
               padding: "7px 12px",
               borderRadius: 8,

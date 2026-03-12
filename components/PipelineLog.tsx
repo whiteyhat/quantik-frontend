@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
 const AGENT_META: Record<string, { emoji: string; name: string }> = {
@@ -27,23 +28,25 @@ function ts(): string {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-function getAgentSummary(key: string, data: unknown): string {
-  if (!data) return "Complete";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getAgentSummary(key: string, data: unknown, t: any): string {
+  if (!data) return t("complete");
   const d = data as Record<string, unknown>;
   const num = (v: unknown) => { const n = Number(v); return isNaN(n) ? 0 : n; };
   switch (key) {
-    case "aura":    return `Sentiment ${num(d.sentiment_score) >= 0 ? "+" : ""}${num(d.sentiment_score).toFixed(2)}  Confidence ${Math.round(num(d.confidence)*100)}%`;
-    case "flux":    return `Liquidity ${d.liquidity_grade ?? "C"}  Spread ${num(d.spread).toFixed(3)}  Whale signals: ${d.whale_signals ?? 0}`;
-    case "oracle":  return `Est. ${Math.round(num(d.prob_estimate)*100)}%  Market ${Math.round(num(d.market_implied)*100)}%  Conf ${Math.round(num(d.confidence)*100)}%`;
-    case "edge":    return `Grade ${d.ev_grade}  Net EV +${num(d.net_ev).toFixed(1)}%  Kelly ${num(d.kelly ?? d.kelly_fraction)*100 > 1 ? num(d.kelly ?? d.kelly_fraction).toFixed(0) : (num(d.kelly ?? d.kelly_fraction)*100).toFixed(0)}%`;
-    case "clause":  return `Risk ${d.resolution_risk}  Issues: ${(d.technicality_risks as string[] ?? []).length}  ${d.recommendation ?? ""}`;
-    case "lucifer": return `DA Score ${num(d.devils_advocate_score).toFixed(2)}  Flags: ${(d.bias_flags as string[] ?? []).length}  ${(d.pass) ? "✓ PASS" : "✗ FAIL"}`;
-    case "sigma":   return `${String(d.decision ?? "").replace("_"," ")}  Confidence ${num(d.confidence).toFixed(1)}%  EV +${num(d.net_ev).toFixed(1)}%`;
-    default:        return "Complete";
+    case "aura":    return `${t("sentiment")} ${num(d.sentiment_score) >= 0 ? "+" : ""}${num(d.sentiment_score).toFixed(2)}  ${t("conf")} ${Math.round(num(d.confidence)*100)}%`;
+    case "flux":    return `${t("liquidityLabel")} ${d.liquidity_grade ?? "C"}  ${t("spread")} ${num(d.spread).toFixed(3)}  ${t("whaleSignals")} ${d.whale_signals ?? 0}`;
+    case "oracle":  return `${t("est")} ${Math.round(num(d.prob_estimate)*100)}%  ${t("market")} ${Math.round(num(d.market_implied)*100)}%  ${t("conf")} ${Math.round(num(d.confidence)*100)}%`;
+    case "edge":    return `${t("grade")} ${d.ev_grade}  ${t("netEv")} +${num(d.net_ev).toFixed(1)}%  ${t("kelly")} ${num(d.kelly ?? d.kelly_fraction)*100 > 1 ? num(d.kelly ?? d.kelly_fraction).toFixed(0) : (num(d.kelly ?? d.kelly_fraction)*100).toFixed(0)}%`;
+    case "clause":  return `${t("risk")} ${d.resolution_risk}  ${t("issues")} ${(d.technicality_risks as string[] ?? []).length}  ${d.recommendation ?? ""}`;
+    case "lucifer": return `${t("daScore")} ${num(d.devils_advocate_score).toFixed(2)}  ${t("flags")} ${(d.bias_flags as string[] ?? []).length}  ${(d.pass) ? `✓ ${t("pass")}` : `✗ ${t("fail")}`}`;
+    case "sigma":   return `${String(d.decision ?? "").replace("_"," ")}  ${t("conf")} ${num(d.confidence).toFixed(1)}%  ${t("netEv")} +${num(d.net_ev).toFixed(1)}%`;
+    default:        return t("complete");
   }
 }
 
 export function PipelineLog() {
+  const t = useTranslations("pipelineLog");
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [expanded, setExpanded] = useState(false);
   const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>([]);
@@ -94,7 +97,7 @@ export function PipelineLog() {
         agentName: "Pipeline",
         emoji: "✅",
         status: "complete",
-        summary: `Pipeline complete — ${elapsed}s total`,
+        summary: t("pipelineComplete", { seconds: elapsed }),
       });
       startTime.current = null;
     }
@@ -116,7 +119,7 @@ export function PipelineLog() {
           agentName: meta.name,
           emoji: meta.emoji,
           status: "running",
-          summary: "Analyzing...",
+          summary: t("analyzing"),
         });
       } else if (state.status === "done" && prev !== "done") {
         enqueue({
@@ -126,7 +129,7 @@ export function PipelineLog() {
           agentName: meta.name,
           emoji: meta.emoji,
           status: "complete",
-          summary: getAgentSummary(key, state.data),
+          summary: getAgentSummary(key, state.data, t),
         });
       } else if (state.status === "error" && prev !== "error") {
         enqueue({
@@ -136,7 +139,7 @@ export function PipelineLog() {
           agentName: meta.name,
           emoji: meta.emoji,
           status: "error",
-          summary: state.error ?? "Failed",
+          summary: state.error ?? t("fail"),
         });
       }
 
@@ -197,10 +200,10 @@ export function PipelineLog() {
           </>
         )}
         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
-          {"\u26A1"} Live Pipeline Feed
+          {"\u26A1"} {t("liveFeed")}
         </span>
         <span className="font-mono-data" style={{ fontSize: 11, color: "var(--text-tertiary)", marginLeft: "auto" }}>
-          {visibleLogs.length} events
+          {visibleLogs.length} {t("events")}
         </span>
         <span style={{
           color: "var(--text-tertiary)", fontSize: 12,
@@ -254,7 +257,7 @@ export function PipelineLog() {
           ))}
           {pipeline.running && pendingQueue.current.length === 0 && visibleLogs.length > 0 && (
             <div style={{ fontSize: 11, color: "var(--text-tertiary)", padding: "6px 0", fontStyle: "italic" }}>
-              Waiting for next agent...
+              {t("waitingForAgent")}
             </div>
           )}
         </div>

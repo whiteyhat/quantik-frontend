@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -27,6 +28,7 @@ interface RiskConfigPanelByoProps {
 }
 
 export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
+  const t = useTranslations("riskPolicy");
   const [config, setConfig] = useState<RiskConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -82,7 +84,7 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
         kellyMultiplier: editKelly / 100,
       });
       setEditing(false);
-      setSaveMsg("Saved");
+      setSaveMsg(t("saved"));
       setTimeout(() => setSaveMsg(null), 3000);
     } catch (err) {
       setSaveMsg(err instanceof Error ? err.message : "Save failed");
@@ -95,9 +97,9 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Global Risk Policy
+          {t("title")}
         </span>
-        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>Loading...</div>
+        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>{t("loading")}</div>
       </div>
     );
   }
@@ -106,10 +108,10 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     return (
       <div style={panelStyle}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Global Risk Policy
+          {t("title")}
         </span>
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>Failed to load</div>
+          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>{t("failedToLoad")}</div>
           <button
             onClick={() => { setLoading(true); fetchConfig(); }}
             style={{
@@ -119,7 +121,7 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
               cursor: "pointer", outline: "none", ...mono,
             }}
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       </div>
@@ -128,28 +130,28 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
 
   const riskBars = editing
     ? [
-        { label: "Max Drawdown Limit", hint: "Circuit breaker triggers at this level", value: `${editDrawdown}%`, color: "#ff453a", pct: editDrawdown / 50 },
-        { label: "Max Position Size", hint: "Maximum capital per single trade", value: `${editMaxPos}%`, color: "#0a84ff", pct: editMaxPos / 30 },
-        { label: "Kelly Multiplier", hint: "Fraction of Kelly criterion to apply", value: `${(editKelly / 100).toFixed(2)}x`, color: "#bf5af2", pct: editKelly / 100 },
+        { label: t("maxDrawdownLimit"), hint: t("maxDrawdownHint"), value: `${editDrawdown}%`, color: "#ff453a", pct: editDrawdown / 50 },
+        { label: t("maxPositionSize"), hint: t("maxPositionHint"), value: `${editMaxPos}%`, color: "#0a84ff", pct: editMaxPos / 30 },
+        { label: t("kellyMultiplier"), hint: t("kellyHint"), value: `${(editKelly / 100).toFixed(2)}x`, color: "#bf5af2", pct: editKelly / 100 },
       ]
     : [
-        { label: "Max Drawdown Limit", hint: "Circuit breaker triggers at this level", value: `${(config.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: config.drawdownLimit / 0.50 },
-        { label: "Max Position Size", hint: "Maximum capital per single trade", value: `${(config.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: config.maxPositionSize / 0.30 },
-        { label: "Kelly Multiplier", hint: "Fraction of Kelly criterion to apply", value: `${config.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: config.kellyMultiplier },
+        { label: t("maxDrawdownLimit"), hint: t("maxDrawdownHint"), value: `${(config.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: config.drawdownLimit / 0.50 },
+        { label: t("maxPositionSize"), hint: t("maxPositionHint"), value: `${(config.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: config.maxPositionSize / 0.30 },
+        { label: t("kellyMultiplier"), hint: t("kellyHint"), value: `${config.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: config.kellyMultiplier },
       ];
 
   return (
     <div style={panelStyle}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          Global Risk Policy
+          {t("title")}
         </span>
         {!editing ? (
           <button
             onClick={() => setEditing(true)}
             style={{ ...mono, fontSize: 9, color: "#0a84ff", background: "none", border: "none", cursor: "pointer", padding: 0, outline: "none" }}
           >
-            Edit
+            {t("edit")}
           </button>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
@@ -162,14 +164,14 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
               }}
               style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.40)", background: "none", border: "none", cursor: "pointer", padding: 0, outline: "none" }}
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               style={{ ...mono, fontSize: 9, color: "#30d158", background: "none", border: "none", cursor: saving ? "not-allowed" : "pointer", padding: 0, outline: "none" }}
             >
-              {saving ? "Saving..." : saveMsg ?? "Save"}
+              {saving ? t("saving") : saveMsg ?? t("save")}
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
 interface Toast {
@@ -13,6 +14,7 @@ interface Toast {
 let toastId = 0;
 
 export function ToastNotification() {
+  const t = useTranslations("toast");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const pipeline = useQuantikStore((s) => s.pipeline);
 
@@ -42,10 +44,10 @@ export function ToastNotification() {
       const sigma = pipeline.result.sigma;
       if (sigma) {
         if (sigma.decision === "PASS") {
-          addToast(`Pipeline complete: PASS — ${sigma.thesis.slice(0, 60)}...`, "pass");
+          addToast(`${t("pipelineCompletePass")}${sigma.thesis.slice(0, 60)}...`, "pass");
         } else {
           addToast(
-            `Pipeline complete: ${sigma.decision.replace("_", " ")} — ${sigma.confidence}% confidence`,
+            t("pipelineComplete", { decision: sigma.decision.replace("_", " "), confidence: sigma.confidence }),
             "bet"
           );
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { AVAILABLE_WEBHOOK_EVENTS } from "@/lib/webhookEvents";
 
@@ -34,6 +35,7 @@ interface WebhookConfigPanelProps {
 }
 
 export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: WebhookConfigPanelProps) {
+  const t = useTranslations("webhook");
   const [url, setUrl] = useState(endpointUrl ?? "");
   const [events, setEvents] = useState<string[]>(webhookEvents ?? ["*"]);
   const [saving, setSaving] = useState(false);
@@ -60,10 +62,10 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
     setSaveMsg(null);
     try {
       await api.updateAgentWebhookConfig(agentId, { endpoint_url: url || null, webhook_events: events });
-      setSaveMsg("Saved");
+      setSaveMsg(t("saved"));
       setTimeout(() => setSaveMsg(null), 3000);
     } catch (err) {
-      setSaveMsg(err instanceof Error ? err.message : "Save failed");
+      setSaveMsg(err instanceof Error ? err.message : t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -78,7 +80,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
       // Refresh delivery log
       fetchDeliveries();
     } catch (err) {
-      setTestResult({ ok: false, status_code: null, latency_ms: 0, error: err instanceof Error ? err.message : "Test failed" });
+      setTestResult({ ok: false, status_code: null, latency_ms: 0, error: err instanceof Error ? err.message : t("saveFailed") });
     } finally {
       setTesting(false);
     }
@@ -105,19 +107,19 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
   return (
     <div style={panelStyle}>
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-        Webhook Config
+        {t("title")}
       </span>
 
       {/* Endpoint URL */}
       <div style={{ marginTop: 14 }}>
         <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.30)", textTransform: "uppercase", marginBottom: 4 }}>
-          Endpoint URL
+          {t("endpointUrl")}
         </div>
         <input
           type="url"
           value={url}
           onChange={e => setUrl(e.target.value)}
-          placeholder="https://your-server.com/webhook"
+          placeholder={t("placeholder")}
           style={{
             width: "100%", padding: "8px 12px", borderRadius: 8,
             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)",
@@ -127,7 +129,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
         />
         {url && !url.startsWith("https://") && (
           <div style={{ ...mono, fontSize: 9, color: "#ff9f0a", marginTop: 3 }}>
-            Must use HTTPS
+            {t("httpsRequired")}
           </div>
         )}
       </div>
@@ -136,7 +138,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
       <div style={{ marginTop: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.30)", textTransform: "uppercase" }}>
-            Events
+            {t("events")}
           </div>
           <button
             onClick={() => setEvents(isAllEvents ? [] : ["*"])}
@@ -145,7 +147,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
               cursor: "pointer", padding: 0, outline: "none",
             }}
           >
-            {isAllEvents ? "Customize" : "Select All"}
+            {isAllEvents ? t("customize") : t("selectAll")}
           </button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -182,7 +184,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
             cursor: saving ? "not-allowed" : "pointer", outline: "none", ...mono,
           }}
         >
-          {saving ? "Saving..." : saveMsg ?? "Save"}
+          {saving ? t("saving") : saveMsg ?? t("save")}
         </button>
         <button
           onClick={handleTest}
@@ -195,7 +197,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
             opacity: !url ? 0.4 : 1,
           }}
         >
-          {testing ? "Testing..." : "Test Webhook"}
+          {testing ? t("testing") : t("testWebhook")}
         </button>
       </div>
 
@@ -218,7 +220,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
       {!loadingLog && deliveries.length > 0 && (
         <div style={{ marginTop: 14 }}>
           <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.30)", textTransform: "uppercase", marginBottom: 6 }}>
-            Recent Deliveries
+            {t("recentDeliveries")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {deliveries.slice(0, 5).map((d, i) => (

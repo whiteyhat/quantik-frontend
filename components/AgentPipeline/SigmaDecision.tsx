@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { type SigmaResult, type EdgeResult, fmtUSDC } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { usePaperMode } from "@/context/PaperModeContext";
@@ -23,6 +24,7 @@ interface SigmaDecisionProps {
 }
 
 export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
+  const t = useTranslations("agentPipeline");
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
   const wallet = useQuantikStore((s) => s.wallet);
   const { paperMode } = usePaperMode();
@@ -113,7 +115,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
             marginBottom: 3,
           }}
         >
-          DECISION
+          {t("sigma.decision")}
         </div>
         <div
           className="font-mono-data"
@@ -134,7 +136,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           }}
         >
           <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
-            Confidence Level
+            {t("sigma.confidenceLevel")}
           </span>
           <span
             className="font-mono-data"
@@ -173,7 +175,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
       >
         <div>
           <div style={{ fontSize: 10, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
-            Entry
+            {t("sigma.entry")}
           </div>
           <div className="font-mono-data" style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
             {(entryPrice * 100).toFixed(1)}{"¢"}
@@ -181,7 +183,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
         </div>
         <div>
           <div style={{ fontSize: 10, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
-            Size
+            {t("sigma.size")}
           </div>
           <div className="font-mono-data" style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
             {fmtUSDC(sizeUsd)}
@@ -189,7 +191,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
         </div>
         <div>
           <div style={{ fontSize: 10, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
-            Est. Return
+            {t("sigma.estReturn")}
           </div>
           <div
             className="font-mono-data"
@@ -225,10 +227,10 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           <span style={{ fontSize: 14, flexShrink: 0 }}>{"⚠"}</span>
           <span style={{ fontSize: 12, color: "var(--ios-orange)", lineHeight: 1.4 }}>
             {!hasUsdc && !hasGas
-              ? "Fund your wallet with USDC to place trades and POL to cover gas fees."
+              ? t("sigma.fundWalletFull")
               : !hasUsdc
-                ? "No USDC balance detected. Fund your wallet before placing trades."
-                : "Not enough POL for gas fees. Send POL to your wallet to enable trading."}
+                ? t("sigma.noUsdc")
+                : t("sigma.noPol")}
           </span>
         </div>
       )}
@@ -276,7 +278,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           letterSpacing: "0.02em",
         }}
       >
-        <span>{paperMode ? "Simulate Trade" : "Execute Trade"}</span>
+        <span>{paperMode ? t("sigma.simulateTrade") : t("sigma.executeTrade")}</span>
         <span>{"\u2192"}</span>
       </button>
     </div>

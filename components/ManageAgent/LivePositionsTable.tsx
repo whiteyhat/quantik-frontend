@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { fmtUSDC, fmtPrice, type Position } from "@/lib/api";
 import {
   useSocketEvent,
@@ -24,6 +25,8 @@ interface LivePositionsTableProps {
 }
 
 export function LivePositionsTable({ positions, loading, onPositionUpdate }: LivePositionsTableProps) {
+  const t = useTranslations("manageAgent");
+  const tc = useTranslations("common");
   const handleUpdate = useCallback(
     (data: PositionUpdateEvent) => {
       onPositionUpdate(data.slug, data.currentPrice, data.pnl, data.pnlPct);
@@ -48,7 +51,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
             letterSpacing: "0.03em",
           }}
         >
-          Live Positions
+          {t("livePositions")}
         </h2>
         <span
           style={{
@@ -61,7 +64,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
             fontFamily: '"SF Mono", monospace',
           }}
         >
-          {activeCount} Active
+          {activeCount} {tc("active")}
         </span>
       </div>
 
@@ -81,14 +84,14 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
             fontFamily: "monospace",
           }}
         >
-          No open positions
+          {t("noOpenPositions")}
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["Market Title", "Outcome", "Shares", "Avg Entry Price", "Current Price", "Current Value", "P&L ($/%)", "Resolution Date"].map(
+                {[t("marketTitle"), t("outcome"), t("shares"), t("avgEntryPrice"), t("currentPrice"), t("currentValue"), t("pnlPercent"), t("resolutionDate")].map(
                   (h) => (
                     <th
                       key={h}

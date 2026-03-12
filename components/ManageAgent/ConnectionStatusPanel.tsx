@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -20,6 +21,7 @@ interface ConnectionStatusPanelProps {
 }
 
 export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat, description }: ConnectionStatusPanelProps) {
+  const t = useTranslations("connectionStatus");
   const [status, setStatus] = useState(connectionStatus ?? "pending");
   const [isTesting, setIsTesting] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
@@ -34,19 +36,19 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
       setStatus(data.connection_status ?? "error");
     } catch (err) {
       setStatus("error");
-      setTestError(err instanceof Error ? err.message : "Connection test failed");
+      setTestError(err instanceof Error ? err.message : t("connectionTestFailed"));
     } finally {
       setIsTesting(false);
     }
   }, [agentId]);
 
   const formatRelativeTime = (ts: number | null | undefined) => {
-    if (!ts) return "Never";
+    if (!ts) return t("never");
     const diff = Date.now() - ts;
-    if (diff < 60_000) return "Just now";
-    if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
-    if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}h ago`;
-    return `${Math.floor(diff / 86400_000)}d ago`;
+    if (diff < 60_000) return t("justNow");
+    if (diff < 3600_000) return t("mAgo", { m: Math.floor(diff / 60_000) });
+    if (diff < 86400_000) return t("hAgo", { h: Math.floor(diff / 3600_000) });
+    return t("dAgo", { d: Math.floor(diff / 86400_000) });
   };
 
   return (
@@ -59,7 +61,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
           }}
         >
-          Connection Status
+          {t("title")}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span
@@ -93,7 +95,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
           }}
         >
-          BYO AGENT
+          {t("byoAgent")}
         </div>
       </div>
 
@@ -101,7 +103,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
       {description && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-            DESCRIPTION
+            {t("description")}
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
             {description}
@@ -112,7 +114,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
       {/* Last Heartbeat */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-          LAST HEARTBEAT
+          {t("lastHeartbeat")}
         </div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.70)", fontWeight: 600 }}>
           {formatRelativeTime(lastHeartbeat)}
@@ -139,7 +141,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
           transition: "all 180ms ease",
         }}
       >
-        {isTesting ? "Testing..." : "Test Connection"}
+        {isTesting ? t("testing") : t("testConnection")}
       </button>
 
       <style jsx>{`

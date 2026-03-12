@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { api, type Signal } from "@/lib/api";
 import { SkeletonRow } from "./ui/skeleton";
 
@@ -56,6 +57,7 @@ function statusStyle(status: Signal["status"]): StatusStyle {
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export function RecentSignals() {
+  const t = useTranslations("recentSignals");
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +120,7 @@ export function RecentSignals() {
           }}
           data-testid="signals-empty"
         >
-          No recent signals
+          {t("noSignals")}
         </div>
       ) : (
         signals.map((signal) => {

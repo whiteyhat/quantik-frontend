@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   AreaChart,
   Area,
@@ -48,6 +49,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChartProps) {
+  const t = useTranslations("equityCurve");
   const currentBalance = wallet?.totalValue ?? null;
   const chartData = useMemo(() => {
     if (currentBalance == null) return [];
@@ -99,7 +101,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
 
     // Add current point
     points.push({
-      date: "Now",
+      date: t("now"),
       value: currentBalance,
     });
 
@@ -119,7 +121,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.40)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-            Equity Curve
+            {t("title")}
           </div>
           <div
             style={{
@@ -166,7 +168,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
             lineHeight: 1.6,
           }}
         >
-          {wallet?.balanceMessage ?? "Live portfolio value is not available yet."}
+          {wallet?.balanceMessage ?? t("noDataYet")}
         </div>
       ) : (
       <ResponsiveContainer width="100%" height={240}>

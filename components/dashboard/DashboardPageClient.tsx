@@ -12,6 +12,7 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { fmtPrice, fmtUSDC, streamPrices, type Position, type Signal } from "@/lib/api";
 import {
   formatRelativeTime,
@@ -123,11 +124,13 @@ function MissionControlHero({
   updatedAt: number;
   now: number;
 }) {
+  const t = useTranslations("dashboard.hero");
+
   const statusText = summary?.fundingStatus === "ready"
-    ? "Capital armed"
+    ? t("capitalArmed")
     : summary?.fundingStatus === "funding_required"
-      ? "Funding needed"
-      : "Telemetry only";
+      ? t("fundingNeeded")
+      : t("telemetryOnly");
 
   return (
     <CommandCenterCard accent="blue" className="command-center-hero overflow-hidden">
@@ -140,37 +143,37 @@ function MissionControlHero({
             />
             <StatusBadge
               tone={healthTone(health)}
-              label={health ? `API ${health.label}` : "API checking"}
+              label={health ? `API ${health.label}` : t("apiChecking")}
             />
             <StatusBadge
               tone={orchestrator?.status.status === "scanning" ? "info" : "neutral"}
-              label={orchestrator?.status.status === "scanning" ? "Scanner running" : "Scanner idle"}
+              label={orchestrator?.status.status === "scanning" ? t("scannerRunning") : t("scannerIdle")}
             />
           </div>
 
           <div className="space-y-3">
-            <div className="command-center-eyebrow">Mission Control</div>
-            <h1 className="command-center-hero-title">Operate the whole trading stack from one live surface.</h1>
+            <div className="command-center-eyebrow">{t("eyebrow")}</div>
+            <h1 className="command-center-hero-title">{t("title")}</h1>
             <p className="command-center-hero-copy">
-              Shared telemetry now drives portfolio, risk, orchestration, and market discovery from the same refresh cycle.
+              {t("copy")}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-5 text-sm text-[rgba(255,255,255,0.58)]">
             <div className="flex items-center gap-2">
               <Wallet className="size-4 text-[#7dd3fc]" />
-              <span>{summary?.liveBalanceAvailable ? "Live balance synced" : "Balance feed warming up"}</span>
+              <span>{summary?.liveBalanceAvailable ? t("liveBalanceSynced") : t("balanceFeedWarmingUp")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Shield className="size-4 text-[#facc15]" />
               <span>
-                Circuit {summary?.circuitBreakerStatus ?? riskStatus?.circuitBreaker ?? "ARMED"}
+                {t("circuit", { status: summary?.circuitBreakerStatus ?? riskStatus?.circuitBreaker ?? "ARMED" })}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <RefreshCw className="size-4 text-[rgba(255,255,255,0.35)]" />
               <span>
-                Updated {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : "syncing"}
+                {t("updated", { time: updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : t("syncing") })}
               </span>
             </div>
           </div>
@@ -178,34 +181,34 @@ function MissionControlHero({
 
         <div className="command-center-kpi-grid">
           <MetricBlock
-            label="Total Value"
+            label={t("totalValue")}
             value={summary?.totalValue != null ? fmtUSDC(summary.totalValue) : "—"}
-            hint={summary?.cashBalance != null ? `${fmtUSDC(summary.cashBalance)} liquid` : "Waiting for balance"}
+            hint={summary?.cashBalance != null ? t("cashLiquid", { amount: fmtUSDC(summary.cashBalance) }) : t("waitingForBalance")}
             tone="info"
           />
           <MetricBlock
-            label="Daily P&L"
+            label={t("dailyPnl")}
             value={
               summary
                 ? `${summary.pnlToday >= 0 ? "+" : ""}${fmtUSDC(summary.pnlToday)}`
                 : "—"
             }
-            hint={summary?.pnlTodayPct != null ? `${summary.pnlTodayPct.toFixed(1)}% today` : "No daily delta"}
+            hint={summary?.pnlTodayPct != null ? t("pnlToday", { pct: summary.pnlTodayPct.toFixed(1) }) : t("noDailyDelta")}
             tone={summary ? pnlTone(summary.pnlToday) : "neutral"}
           />
           <MetricBlock
-            label="Exposure"
+            label={t("exposure")}
             value={riskStatus ? `${riskStatus.exposurePct.toFixed(1)}%` : "—"}
-            hint={riskStatus ? `${fmtUSDC(riskStatus.availableCapital)} deployable` : "Risk feed offline"}
+            hint={riskStatus ? t("deployable", { amount: fmtUSDC(riskStatus.availableCapital) }) : t("riskFeedOffline")}
             tone={riskStatus ? numberTone(riskStatus.exposurePct, 45, 75) : "neutral"}
           />
           <MetricBlock
-            label="Candidates"
+            label={t("candidates")}
             value={orchestrator ? orchestrator.candidates.length : "—"}
             hint={
               orchestrator?.status.lastScanAt
-                ? `Scanned ${formatRelativeTime(orchestrator.status.lastScanAt, now)}`
-                : "No recent scan"
+                ? t("scanned", { time: formatRelativeTime(orchestrator.status.lastScanAt, now) })
+                : t("noRecentScan")
             }
             tone={orchestrator && orchestrator.candidates.length > 0 ? "good" : "neutral"}
           />
@@ -226,12 +229,14 @@ function SummaryCard({
   error: boolean;
   onRetry: () => void;
 }) {
+  const t = useTranslations("dashboard.portfolio");
+
   if (error) {
     return (
       <CommandCenterCard accent="blue">
         <PanelErrorState
-          title="Portfolio feed unavailable"
-          detail="The balance and P&L summary did not arrive. Retry the portfolio snapshot."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetry}
         />
       </CommandCenterCard>
@@ -241,9 +246,9 @@ function SummaryCard({
   return (
     <CommandCenterCard accent="blue" data-testid="dashboard-portfolio-card">
       <CommandCenterHeader
-        eyebrow="Capital"
-        title="Portfolio"
-        subtitle="One bankroll snapshot reused across every summary widget."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       {loading || !summary ? (
@@ -258,40 +263,40 @@ function SummaryCard({
       ) : (
         <div className="space-y-5">
           <div className="space-y-2">
-            <div className="command-center-metric-label">Net liquidation value</div>
+            <div className="command-center-metric-label">{t("netLiquidationValue")}</div>
             <div className="text-[2rem] font-semibold tracking-[-0.04em] text-white">
               {summary.totalValue != null ? fmtUSDC(summary.totalValue) : "—"}
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusBadge
                 tone={summary.pnlToday >= 0 ? "good" : "bad"}
-                label={`${summary.pnlToday >= 0 ? "+" : ""}${fmtUSDC(summary.pnlToday)} today`}
+                label={t("todayPnl", { pnl: `${summary.pnlToday >= 0 ? "+" : ""}${fmtUSDC(summary.pnlToday)}` })}
               />
               <StatusBadge
                 tone={summary.circuitBreakerStatus === "ARMED" ? "good" : summary.circuitBreakerStatus === "WARNING" ? "warn" : "bad"}
-                label={`Circuit ${summary.circuitBreakerStatus}`}
+                label={t("circuit", { status: summary.circuitBreakerStatus })}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
-              label="Available Cash"
+              label={t("availableCash")}
               value={summary.cashBalance != null ? fmtUSDC(summary.cashBalance) : "—"}
-              hint={summary.balanceMessage ?? "Ready for next deployment"}
+              hint={summary.balanceMessage ?? t("readyForNextDeployment")}
               tone="neutral"
             />
             <MetricBlock
-              label="Capital in Play"
+              label={t("capitalInPlay")}
               value={summary.positionsValue != null ? fmtUSDC(summary.positionsValue) : "—"}
-              hint={`${Math.round(summary.kellyUtilization * 100)}% Kelly utilization`}
+              hint={t("kellyUtilizationPct", { pct: Math.round(summary.kellyUtilization * 100) })}
               tone={numberTone(summary.kellyUtilization * 100, 60, 85)}
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-[rgba(255,255,255,0.45)]">
-              <span>Kelly utilization</span>
+              <span>{t("kellyUtilization")}</span>
               <span>{Math.round(summary.kellyUtilization * 100)}%</span>
             </div>
             <div className="command-center-progress">
@@ -318,18 +323,20 @@ function PositionsCard({
   error: boolean;
   onRetry: () => void;
 }) {
+  const t = useTranslations("dashboard.positions");
+
   return (
     <CommandCenterCard accent="neutral">
       <CommandCenterHeader
-        eyebrow="Execution"
-        title="Active Positions"
-        subtitle="Open exposure ranked by deployed capital."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       {error ? (
         <PanelErrorState
-          title="Positions unavailable"
-          detail="Open exposure could not be loaded from the wallet service."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetry}
         />
       ) : loading ? (
@@ -343,8 +350,8 @@ function PositionsCard({
         </div>
       ) : positions.length === 0 ? (
         <PanelEmptyState
-          title="No open positions"
-          detail="The wallet is flat right now. Fresh opportunities will surface in the scanner and orchestrator panels."
+          title={t("emptyTitle")}
+          detail={t("emptyDetail")}
         />
       ) : (
         <div className="space-y-3">
@@ -394,12 +401,14 @@ function RiskPostureCard({
   error: boolean;
   onRetry: () => void;
 }) {
+  const t = useTranslations("dashboard.riskPosture");
+
   if (error) {
     return (
       <CommandCenterCard accent="orange">
         <PanelErrorState
-          title="Risk telemetry unavailable"
-          detail="Risk status or guardrails failed to load. Retry the shared risk feed."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetry}
         />
       </CommandCenterCard>
@@ -409,9 +418,9 @@ function RiskPostureCard({
   return (
     <CommandCenterCard accent="orange">
       <CommandCenterHeader
-        eyebrow="Guardrails"
-        title="Risk Posture"
-        subtitle="Live utilization and hard limits from the shared risk engine."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       {loading || !riskStatus || !riskConfig ? (
@@ -423,30 +432,30 @@ function RiskPostureCard({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
-              label="Exposure"
+              label={t("exposure")}
               value={`${riskStatus.exposurePct.toFixed(1)}%`}
-              hint={`${fmtUSDC(riskStatus.availableCapital)} available`}
+              hint={t("available", { amount: fmtUSDC(riskStatus.availableCapital) })}
               tone={numberTone(riskStatus.exposurePct, 45, 75)}
             />
             <MetricBlock
-              label="Drawdown"
+              label={t("drawdown")}
               value={`${riskStatus.dailyPnlPct.toFixed(1)}%`}
-              hint={`Limit ${Math.round(riskConfig.drawdownLimit * 100)}%`}
+              hint={t("drawdownLimit", { pct: Math.round(riskConfig.drawdownLimit * 100) })}
               tone={numberTone(Math.abs(riskStatus.dailyPnlPct), riskConfig.drawdownLimit * 50, riskConfig.drawdownLimit * 100)}
             />
           </div>
 
           <div className="command-center-stat-strip">
             <div>
-              <div className="command-center-stat-label">Circuit</div>
+              <div className="command-center-stat-label">{t("circuit")}</div>
               <div className="command-center-stat-value">{riskStatus.circuitBreaker}</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Max Position</div>
+              <div className="command-center-stat-label">{t("maxPosition")}</div>
               <div className="command-center-stat-value">{Math.round(riskConfig.maxPositionSize * 100)}%</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Kelly</div>
+              <div className="command-center-stat-label">{t("kelly")}</div>
               <div className="command-center-stat-value">{riskConfig.kellyMultiplier}×</div>
             </div>
           </div>
@@ -467,18 +476,20 @@ function PerformanceCard({
   error: boolean;
   onRetry: () => void;
 }) {
+  const t = useTranslations("dashboard.performance");
+
   return (
     <CommandCenterCard accent="green">
       <CommandCenterHeader
-        eyebrow="Signal Quality"
-        title="Performance Pulse"
-        subtitle="The same summary snapshot drives win rate, streak, and decay messaging."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       {error ? (
         <PanelErrorState
-          title="Performance summary unavailable"
-          detail="P&L and hit-rate telemetry could not be refreshed."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetry}
         />
       ) : loading || !summary ? (
@@ -493,39 +504,39 @@ function PerformanceCard({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
-              label="Win Rate"
+              label={t("winRate")}
               value={`${(summary.winRate * 100).toFixed(1)}%`}
-              hint={`${summary.totalTrades} total trades`}
+              hint={t("totalTrades", { count: summary.totalTrades })}
               tone={numberTone(summary.winRate * 100, 45, 60)}
             />
             <MetricBlock
-              label="Current Streak"
+              label={t("currentStreak")}
               value={summary.metrics.currentStreak > 0 ? `+${summary.metrics.currentStreak}` : summary.metrics.currentStreak}
-              hint={summary.metrics.bestTrade ? `Best ${summary.metrics.bestTrade}` : "No standout trade yet"}
+              hint={summary.metrics.bestTrade ? t("bestTrade", { trade: summary.metrics.bestTrade }) : t("noStandoutTrade")}
               tone={summary.metrics.currentStreak >= 0 ? "good" : "bad"}
             />
           </div>
 
           <div className="command-center-stat-strip">
             <div>
-              <div className="command-center-stat-label">Best P&L</div>
+              <div className="command-center-stat-label">{t("bestPnl")}</div>
               <div className="command-center-stat-value">{fmtUSDC(summary.metrics.bestPnl)}</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Total Volume</div>
+              <div className="command-center-stat-label">{t("totalVolume")}</div>
               <div className="command-center-stat-value">{fmtUSDC(summary.metrics.totalVolume)}</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Alpha Decay</div>
+              <div className="command-center-stat-label">{t("alphaDecay")}</div>
               <div className="command-center-stat-value">
-                {summary.alphaDecay?.detected ? "Detected" : "Clear"}
+                {summary.alphaDecay?.detected ? t("detected") : t("clear")}
               </div>
             </div>
           </div>
 
           {summary.alphaDecay ? (
             <div className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-[rgba(255,255,255,0.68)]">
-              <div className="mb-1 text-xs uppercase tracking-[0.14em] text-[rgba(255,255,255,0.38)]">Alpha Decay Recommendation</div>
+              <div className="mb-1 text-xs uppercase tracking-[0.14em] text-[rgba(255,255,255,0.38)]">{t("alphaDecayRecommendation")}</div>
               <div>{summary.alphaDecay.recommendation || "No recommendation yet."}</div>
             </div>
           ) : null}
@@ -552,24 +563,26 @@ function OrchestratorCard({
   isScanning: boolean;
   now: number;
 }) {
+  const t = useTranslations("dashboard.orchestrator");
+
   return (
     <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card">
       <CommandCenterHeader
-        eyebrow="Scanner Control"
-        title="Orchestrator"
-        subtitle="Tier 0 scanner routing high-conviction markets into the review lane."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Button size="sm" onClick={onScan} disabled={isScanning}>
             <Radar className="size-4" />
-            {isScanning ? "Scanning…" : "Scan now"}
+            {isScanning ? t("scanning") : t("scanNow")}
           </Button>
         }
       />
 
       {error ? (
         <PanelErrorState
-          title="Orchestrator offline"
-          detail="Scanner status and candidates could not be refreshed."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetry}
         />
       ) : loading || !orchestrator ? (
@@ -582,27 +595,27 @@ function OrchestratorCard({
         <div className="space-y-4">
           <div className="command-center-stat-strip">
             <div>
-              <div className="command-center-stat-label">Last Scan</div>
+              <div className="command-center-stat-label">{t("lastScan")}</div>
               <div className="command-center-stat-value">{formatRelativeTime(orchestrator.status.lastScanAt, now)}</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Markets Scanned</div>
+              <div className="command-center-stat-label">{t("marketsScanned")}</div>
               <div className="command-center-stat-value">{orchestrator.status.marketsScanned.toLocaleString()}</div>
             </div>
             <div>
-              <div className="command-center-stat-label">Candidates</div>
+              <div className="command-center-stat-label">{t("candidates")}</div>
               <div className="command-center-stat-value">{orchestrator.status.candidatesFound}</div>
             </div>
           </div>
 
           {orchestrator.candidates.length === 0 ? (
             <PanelEmptyState
-              title="No fresh candidates"
-              detail="Run a manual scan to repopulate the queue or wait for the next orchestrator cycle."
+              title={t("emptyTitle")}
+              detail={t("emptyDetail")}
               action={
                 <Button size="sm" variant="secondary" onClick={onScan} disabled={isScanning}>
                   <Sparkles className="size-4" />
-                  Force scan
+                  {t("forceScan")}
                 </Button>
               }
             />
@@ -629,7 +642,7 @@ function OrchestratorCard({
                             </span>
                           ))
                         ) : (
-                          <span className="command-center-tag">queued</span>
+                          <span className="command-center-tag">{t("queued")}</span>
                         )}
                       </div>
                     </div>
@@ -666,39 +679,40 @@ function SystemStatusCard({
   onRetryAgents: () => void;
   now: number;
 }) {
+  const t = useTranslations("dashboard.systemStatus");
   const services = health?.services ?? [];
 
   return (
     <CommandCenterCard accent="neutral" data-testid="dashboard-system-status-card">
       <CommandCenterHeader
-        eyebrow="Operations"
-        title="System Status"
-        subtitle="Real backend heartbeat, service-map telemetry, and pipeline agent health."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       {healthError ? (
         <PanelErrorState
-          title="Health checks unavailable"
-          detail="The dashboard could not read `/api/health`. Retry the runtime heartbeat."
+          title={t("errorTitle")}
+          detail={t("errorDetail")}
           onRetry={onRetryHealth}
         />
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
-              label="API Health"
-              value={health ? health.label : healthLoading ? "Checking" : "Unknown"}
+              label={t("apiHealth")}
+              value={health ? health.label : healthLoading ? t("checking") : t("unknown")}
               hint={
                 health
-                  ? `${health.latencyMs}ms latency`
-                  : "Awaiting service heartbeat"
+                  ? t("latency", { ms: health.latencyMs })
+                  : t("awaitingServiceHeartbeat")
               }
               tone={healthTone(health)}
             />
             <MetricBlock
-              label="Service Map"
-              value={health && isLiveHealth(health.services) ? `${health.services.length} checks` : "—"}
-              hint={health?.message ?? "Waiting for detailed service telemetry"}
+              label={t("serviceMap")}
+              value={health && isLiveHealth(health.services) ? t("serviceChecks", { count: health.services.length }) : "—"}
+              hint={health?.message ?? t("waitingForServiceTelemetry")}
               tone={health && isLiveHealth(health.services) ? "good" : "neutral"}
             />
           </div>
@@ -712,7 +726,7 @@ function SystemStatusCard({
                     <div className="command-center-service-copy">
                       <div className="command-center-service-name">{service.name}</div>
                       <div className="command-center-service-detail">
-                        {service.detail ?? "No additional detail"}
+                        {service.detail ?? t("noAdditionalDetail")}
                       </div>
                     </div>
                   </div>
@@ -723,8 +737,8 @@ function SystemStatusCard({
               ))
             ) : (
               <PanelEmptyState
-                title="Service map warming up"
-                detail="Structured service telemetry will appear here as soon as the backend reports it."
+                title={t("serviceMapWarmingUp")}
+                detail={t("serviceMapDetail")}
               />
             )}
           </div>
@@ -739,14 +753,14 @@ function SystemStatusCard({
               ))
             ) : agentsError ? (
               <PanelErrorState
-                title="Pipeline telemetry unavailable"
-                detail="The dashboard could not read `/api/agents/health`. Retry the runtime lane."
+                title={t("pipelineTelemetryUnavailable")}
+                detail={t("pipelineTelemetryDetail")}
                 onRetry={onRetryAgents}
               />
             ) : agents.length === 0 ? (
               <PanelEmptyState
-                title="No agent traffic yet"
-                detail="Pipeline agents will appear here after the next live execution cycle."
+                title={t("noAgentTrafficTitle")}
+                detail={t("noAgentTrafficDetail")}
               />
             ) : (
               agents.map((agent) => (
@@ -757,8 +771,8 @@ function SystemStatusCard({
                       <div className="truncate text-sm font-medium text-white">{agent.name}</div>
                       <div className="text-xs text-[rgba(255,255,255,0.45)]">
                         {agent.lastActiveAt
-                          ? `Last active ${formatRelativeTime(agent.lastActiveAt, now)}`
-                          : "No recent runtime traffic"}
+                          ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now) })
+                          : t("noRecentTraffic")}
                       </div>
                       <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{agent.detail}</div>
                     </div>
@@ -785,21 +799,22 @@ function RecentSignalsCard({
 }: {
   now: number;
 }) {
+  const t = useTranslations("dashboard.recentSignals");
   const signalsQuery = useDashboardSignalsQuery();
 
   return (
     <CommandCenterCard accent="neutral">
       <CommandCenterHeader
-        eyebrow="Decision Feed"
-        title="Recent Signals"
-        subtitle="The latest trade/watch/skip decisions with confidence and edge."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid="recent-signals">
         {signalsQuery.isError ? (
           <PanelErrorState
-            title="Signal feed unavailable"
-            detail="The dashboard could not refresh the latest decisions."
+            title={t("errorTitle")}
+            detail={t("errorDetail")}
             onRetry={() => void signalsQuery.refetch()}
           />
         ) : signalsQuery.isLoading ? (
@@ -812,8 +827,8 @@ function RecentSignalsCard({
           ))
         ) : !signalsQuery.data || signalsQuery.data.length === 0 ? (
           <PanelEmptyState
-            title="No recent signals"
-            detail="Once the pipeline makes decisions, they will stack here in order of recency."
+            title={t("emptyTitle")}
+            detail={t("emptyDetail")}
           />
         ) : (
           signalsQuery.data.map((signal) => (
@@ -826,7 +841,7 @@ function RecentSignalsCard({
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <StatusBadge tone={signalTone(signal.status)} label={signal.status} />
                 <div className="min-w-0 flex-1 truncate text-sm text-[rgba(255,255,255,0.74)]">
-                  {signal.question || signal.slug || "Unknown market"}
+                  {signal.question || signal.slug || t("unknownMarket")}
                 </div>
                 <div className="hidden font-mono text-xs text-[rgba(255,255,255,0.52)] md:block">
                   {Math.round((signal.confidence ?? 0) * 100)}%
@@ -850,6 +865,7 @@ function RecentSignalsCard({
 }
 
 function MarketScannerCard() {
+  const t = useTranslations("dashboard.marketScanner");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 250);
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending 🔥");
@@ -899,9 +915,9 @@ function MarketScannerCard() {
   return (
     <CommandCenterCard accent="blue">
       <CommandCenterHeader
-        eyebrow="Market Discovery"
-        title="Live Market Scanner"
-        subtitle="Trending stays explicit. Search and category browsing share one cancellable query path."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
 
       <div className="space-y-4">
@@ -913,7 +929,7 @@ function MarketScannerCard() {
               const nextValue = event.target.value;
               startTransition(() => setSearch(nextValue));
             }}
-            placeholder="Search active markets"
+            placeholder={t("searchPlaceholder")}
           />
           {(isFetching || isPending) && <RefreshCw className="size-4 animate-spin text-[rgba(255,255,255,0.35)]" />}
         </label>
@@ -935,8 +951,8 @@ function MarketScannerCard() {
 
         {isError ? (
           <PanelErrorState
-            title="Scanner unavailable"
-            detail="Market discovery failed to load. Retry the scanner feed."
+            title={t("errorTitle")}
+            detail={t("errorDetail")}
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
@@ -951,11 +967,11 @@ function MarketScannerCard() {
           </div>
         ) : showTrendingCta ? (
           <PanelEmptyState
-            title={debouncedSearch ? "No trending matches" : "No trending markets"}
+            title={debouncedSearch ? t("noTrendingMatchesTitle") : t("noTrendingMarketsTitle")}
             detail={
               debouncedSearch
-                ? `Nothing in the trending feed matches "${debouncedSearch}".`
-                : "The trending feed returned no markets right now."
+                ? t("noTrendingMatchesDetail", { search: debouncedSearch })
+                : t("noTrendingMarketsDetail")
             }
             action={
               <Button
@@ -965,14 +981,14 @@ function MarketScannerCard() {
                   startTransition(() => setActiveCategory("All"));
                 }}
               >
-                Browse all markets
+                {t("browseAllMarkets")}
               </Button>
             }
           />
         ) : displayedMarkets.length === 0 ? (
           <PanelEmptyState
-            title="No markets found"
-            detail={debouncedSearch ? `No results matched "${debouncedSearch}".` : `No markets are available in ${activeCategory}.`}
+            title={t("noMarketsFound")}
+            detail={debouncedSearch ? t("noResultsMatched", { search: debouncedSearch }) : t("noMarketsInCategory", { category: activeCategory })}
           />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -1005,10 +1021,10 @@ function MarketScannerCard() {
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.46)]">
-                    <span>Vol {fmtUSDC(market.volume)}</span>
+                    <span>{t("vol", { amount: fmtUSDC(market.volume) })}</span>
                     <span>
                       {Number.isNaN(new Date(market.resolutionDate).getTime())
-                        ? "TBD"
+                        ? t("tbd")
                         : new Date(market.resolutionDate).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",

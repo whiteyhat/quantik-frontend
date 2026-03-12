@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 
 const panelStyle: React.CSSProperties = {
@@ -16,26 +17,10 @@ const panelStyle: React.CSSProperties = {
 const AUTOPILOT_LS_KEY = "autopilot_onboarded";
 
 const BULLET_POINTS = [
-  {
-    icon: "🤖",
-    title: "Full Consensus Execution",
-    desc: "All 7 agents (AURA, FLUX, CLAUSE, ORACLE, EDGE, LUCIFER, SIGMA) must reach consensus before any trade is placed.",
-  },
-  {
-    icon: "📡",
-    title: "Continuous Scanning",
-    desc: "The scanner runs every 5 minutes, monitoring hundreds of markets for volatility and liquidity thresholds.",
-  },
-  {
-    icon: "🛡️",
-    title: "Circuit Breaker Protection",
-    desc: "Automatic shutdown if drawdown limits are breached. Your capital is always protected by hard risk limits.",
-  },
-  {
-    icon: "👁️",
-    title: "Read-Only Dashboard",
-    desc: "Once active, you observe. The agent executes autonomously on the Polymarket CLOB without human intervention.",
-  },
+  { icon: "🤖", titleKey: "consensusTitle", descKey: "consensusDesc" },
+  { icon: "📡", titleKey: "scanningTitle", descKey: "scanningDesc" },
+  { icon: "🛡️", titleKey: "circuitBreakerTitle", descKey: "circuitBreakerDesc" },
+  { icon: "👁️", titleKey: "readOnlyTitle", descKey: "readOnlyDesc" },
 ];
 
 interface AutopilotOnboardingModalProps {
@@ -54,6 +39,10 @@ export function markAutopilotOnboarded(): void {
 }
 
 export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: AutopilotOnboardingModalProps) {
+  const t = useTranslations("autopilot");
+  const tc = useTranslations("common");
+  const to = useTranslations("onboarding");
+
   if (!open) return null;
 
   return createPortal(
@@ -99,7 +88,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
                 letterSpacing: "0.03em",
               }}
             >
-              AUTOPILOT MODE
+              {to("autopilotMode")}
             </div>
             <div
               style={{
@@ -109,7 +98,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
                 marginTop: 2,
               }}
             >
-              Autonomous trade execution engine
+              {to("autonomousEngine")}
             </div>
           </div>
         </div>
@@ -124,15 +113,13 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
             margin: "0 0 20px 0",
           }}
         >
-          Enabling Autopilot hands full control to your agent. Trades are placed
-          automatically on the Polymarket CLOB based on the consensus of all 7
-          specialized agents — no human intervention required.
+          {to("onboardingDesc")}
         </p>
 
         {/* Bullet points */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
           {BULLET_POINTS.map((bp) => (
-            <div key={bp.title} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div key={bp.titleKey} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{bp.icon}</span>
               <div>
                 <div
@@ -144,7 +131,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
                     marginBottom: 2,
                   }}
                 >
-                  {bp.title}
+                  {to(bp.titleKey as any)}
                 </div>
                 <div
                   style={{
@@ -153,7 +140,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
                     lineHeight: 1.5,
                   }}
                 >
-                  {bp.desc}
+                  {to(bp.descKey as any)}
                 </div>
               </div>
             </div>
@@ -177,7 +164,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
               letterSpacing: "0.04em",
             }}
           >
-            CANCEL
+            {tc("cancel")}
           </button>
           <button
             onClick={() => {
@@ -198,7 +185,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
               transition: "all 150ms ease",
             }}
           >
-            I UNDERSTAND, ENABLE AUTOPILOT
+            {to("enableConfirm")}
           </button>
         </div>
       </div>

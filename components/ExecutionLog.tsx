@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Skeleton } from "./ui/skeleton";
 import { api } from "@/lib/api";
 
@@ -27,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 function EmptyState() {
+  const t = useTranslations("executionLog");
   return (
     <div
       data-testid="execution-log-empty"
@@ -63,13 +65,14 @@ function EmptyState() {
           textAlign: "center",
         }}
       >
-        No trades yet — first signal incoming
+        {t("noTrades")}
       </span>
     </div>
   );
 }
 
 export function ExecutionLog() {
+  const t = useTranslations("executionLog");
   const [trades, setTrades] = useState<ExecutedTrade[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -120,10 +123,10 @@ export function ExecutionLog() {
             fontFamily: "\"SF Mono\", monospace",
           }}
         >
-          Execution Log
+          {t("title")}
         </span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace" }}>
-          {trades.length} trades
+          {trades.length} {t("trades")}
         </span>
       </div>
 
@@ -142,10 +145,10 @@ export function ExecutionLog() {
         <EmptyState />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {trades.map((t, i) => {
-            const id = t.id ?? `${t.slug}-${i}`;
-            const color = STATUS_COLOR[t.status] ?? "rgba(255,255,255,0.4)";
-            const icon = STATUS_ICON[t.status] ?? "·";
+          {trades.map((trade, i) => {
+            const id = trade.id ?? `${trade.slug}-${i}`;
+            const color = STATUS_COLOR[trade.status] ?? "rgba(255,255,255,0.4)";
+            const icon = STATUS_ICON[trade.status] ?? "·";
             return (
               <div
                 key={id}
@@ -172,24 +175,24 @@ export function ExecutionLog() {
                     fontFamily: "\"SF Mono\", monospace",
                   }}
                 >
-                  {t.slug}
+                  {trade.slug}
                 </span>
                 <span
                   style={{
                     fontSize: 11,
-                    color: t.direction === "YES" ? "#30d158" : "#ff453a",
+                    color: trade.direction === "YES" ? "#30d158" : "#ff453a",
                     fontWeight: 700,
                     fontFamily: "monospace",
                     flexShrink: 0,
                   }}
                 >
-                  BET {t.direction}
+                  {t("bet")}{trade.direction}
                 </span>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "monospace", flexShrink: 0 }}>
-                  ${(t.amount ?? 0).toFixed(2)}
+                  ${(trade.amount ?? 0).toFixed(2)}
                 </span>
                 <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: "monospace", flexShrink: 0 }}>
-                  {Math.round((t.confidence ?? 0) * 100)}%
+                  {Math.round((trade.confidence ?? 0) * 100)}%
                 </span>
               </div>
             );

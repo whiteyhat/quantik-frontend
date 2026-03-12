@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api, type WalletBalance } from "@/lib/api";
@@ -57,17 +58,19 @@ function formatAmount(value: number | null | undefined, digits = 2): string {
   return value.toFixed(digits);
 }
 
-function statusLabel(status: string): string {
+function statusLabelKey(status: string): string | null {
   switch (status) {
-    case "ready": return "FUNDED";
-    case "funding_required": return "UNFUNDED";
-    case "unavailable": return "UNAVAILABLE";
-    case "no_wallet": return "NO_WALLET";
-    default: return status.toUpperCase();
+    case "ready": return "funded";
+    case "funding_required": return "unfunded";
+    case "unavailable": return "unavailable";
+    case "no_wallet": return "noWallet";
+    default: return null;
   }
 }
 
 export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotControlCardProps) {
+  const t = useTranslations("autopilot");
+  const tc = useTranslations("common");
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const agentWallet = myAgent?.wallet_address ?? null;
@@ -86,7 +89,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
     pol: wallet?.pol ?? 0,
     onChainUsdc: wallet?.onChainUsdc ?? wallet?.usdc ?? 0,
     fundingStatus: wallet?.fundingStatus ?? defaultFundingStatus,
-    fundingMessage: wallet?.fundingMessage ?? "Fund this wallet with POL and USDC.e before enabling autopilot.",
+    fundingMessage: wallet?.fundingMessage ?? t("autopilotDesc"),
   });
 
   const autopilotEnabled = Boolean(myAgent?.autopilot_enabled);
@@ -206,7 +209,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
       try {
         await persistAutopilot(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to enable autopilot");
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsSaving(false);
       }
@@ -228,17 +231,17 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
 
   const chips = [
     {
-      label: autopilotEnabled ? "Autopilot on" : "Autopilot off",
+      label: autopilotEnabled ? t("autopilotOn") : t("autopilotOff"),
       color: autopilotEnabled ? "#30d158" : "rgba(255,255,255,0.55)",
       background: autopilotEnabled ? "rgba(48,209,88,0.12)" : "rgba(255,255,255,0.06)",
     },
     {
-      label: fundingReady ? "Wallet funded" : "Funding required",
+      label: fundingReady ? t("walletFunded") : t("fundingRequired"),
       color: readinessColor(fundingReady),
       background: fundingReady ? "rgba(48,209,88,0.12)" : "rgba(255,159,10,0.12)",
     },
     {
-      label: myAgent.status === "active" ? "Agent active" : `Agent ${myAgent.status}`,
+      label: myAgent.status === "active" ? t("agentActive") : t("agentStatus", { status: myAgent.status }),
       color: myAgent.status === "active" ? "#0a84ff" : "rgba(255,255,255,0.60)",
       background: myAgent.status === "active" ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
     },
@@ -267,16 +270,16 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
               </div>
               <div>
                 <div style={{ ...mono, fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Autonomous Trading
+                  {t("autonomousTrading")}
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.96)", letterSpacing: "-0.02em" }}>
-                  Autopilot Control
+                  {t("autopilotControl")}
                 </div>
               </div>
             </div>
 
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.68)", lineHeight: 1.6, maxWidth: 440 }}>
-              This switch controls real autonomous trade execution. Quantik will not arm autopilot until this wallet has both POL for fees and USDC.e for live Polymarket orders.
+              {t("autopilotDesc")}
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -322,9 +325,9 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
           }}
         >
           {[
-            { label: "POL", value: `${formatAmount(wallet?.pol ?? fundingState.pol, 4)} POL`, hint: "Fee token" },
-            { label: "USDC.e", value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc ?? fundingState.onChainUsdc)}`, hint: "Trading capital" },
-            { label: "Status", value: statusLabel(wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus), hint: wallet?.fundingMessage ?? fundingState.fundingMessage },
+            { label: "POL", value: `${formatAmount(wallet?.pol ?? fundingState.pol, 4)} POL`, hint: t("polFeeToken") },
+            { label: "USDC.e", value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc ?? fundingState.onChainUsdc)}`, hint: t("usdcTradingCapital") },
+            { label: t("status"), value: (() => { const key = statusLabelKey(wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus); return key ? t(key as any) : (wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus).toUpperCase(); })(), hint: wallet?.fundingMessage ?? fundingState.fundingMessage },
           ].map((item) => (
             <div key={item.label}>
               <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", marginBottom: 4 }}>
@@ -361,7 +364,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
               }}
             >
               <div style={{ ...mono, fontSize: 11, color: "rgba(255,255,255,0.46)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-                Live Scanner
+                {t("liveScanner")}
               </div>
               <ScannerFeed />
             </div>
@@ -393,16 +396,16 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
       <Dialog open={showFundingDialog} onOpenChange={setShowFundingDialog}>
         <DialogContent className="max-w-xl" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Fund Wallet Before Enabling Autopilot</DialogTitle>
+            <DialogTitle>{t("fundWalletTitle")}</DialogTitle>
             <DialogDescription>
-              Quantik requires both assets before autonomous trading can be armed. POL covers Polygon fees and USDC.e funds market orders on Polymarket.
+              {t("fundWalletDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {[
-              { label: "POL", value: `${formatAmount(fundingState.pol, 4)} POL`, hint: "Needs to be greater than 0" },
-              { label: "USDC.e", value: `$${formatAmount(fundingState.onChainUsdc)}`, hint: "Needs to be greater than 0" },
+              { label: "POL", value: `${formatAmount(fundingState.pol, 4)} POL`, hint: t("needsGreaterThanZero") },
+              { label: "USDC.e", value: `$${formatAmount(fundingState.onChainUsdc)}`, hint: t("needsGreaterThanZero") },
             ].map((item) => (
               <div
                 key={item.label}
@@ -435,10 +438,10 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
             }}
           >
             <div style={{ ...mono, fontSize: 10, color: "#ff9f0a", textTransform: "uppercase", marginBottom: 6 }}>
-              Deposit Address
+              {t("depositAddress")}
             </div>
             <div style={{ ...mono, fontSize: 13, color: "rgba(255,255,255,0.84)", wordBreak: "break-all" }}>
-              {resolvedAddress ?? "No wallet address available"}
+              {resolvedAddress ?? t("noWalletAddress")}
             </div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", marginTop: 8, lineHeight: 1.5 }}>
               {wallet?.fundingMessage ?? fundingState.fundingMessage}
@@ -459,7 +462,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
                 ...mono,
               }}
             >
-              Close
+              {tc("close")}
             </button>
             <button
               type="button"
@@ -476,7 +479,7 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
                 ...mono,
               }}
             >
-              {copied ? "Address Copied" : "Copy Wallet Address"}
+              {copied ? t("addressCopied") : t("copyWalletAddress")}
             </button>
           </DialogFooter>
         </DialogContent>

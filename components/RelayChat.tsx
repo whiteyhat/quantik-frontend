@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -60,6 +61,7 @@ const MODEL_LABELS: Record<string, string> = {
 // ── Component ──────────────────────────────────────────────────
 
 export function RelayChat({ slug }: RelayChatProps) {
+  const t = useTranslations("relay");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -198,7 +200,7 @@ export function RelayChat({ slug }: RelayChatProps) {
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === placeholderId
-                      ? { ...m, streaming: false, text: event.error ?? "Relay offline." }
+                      ? { ...m, streaming: false, text: event.error ?? t("offline") }
                       : m
                   )
                 );
@@ -230,18 +232,19 @@ export function RelayChat({ slug }: RelayChatProps) {
           if (hasPlaceholder) {
             return prev.map((m) =>
               m.id === placeholderId
-                ? { ...m, streaming: false, text: "Relay is momentarily offline. Try again shortly." }
+                ? { ...m, streaming: false, text: t("offlineDesc") }
                 : m
             );
           }
           return [
             ...prev,
-            { id: placeholderId, role: "relay" as const, text: "Relay is momentarily offline. Try again shortly." },
+            { id: placeholderId, role: "relay" as const, text: t("offlineDesc") },
           ];
         });
         setSending(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [input, sending, messages, slug]
   );
 
@@ -321,7 +324,7 @@ export function RelayChat({ slug }: RelayChatProps) {
               color: "rgba(255,255,255,0.92)",
             }}
           >
-            Quantik Relay
+            {t("title")}
           </div>
           <div
             style={{
@@ -330,7 +333,7 @@ export function RelayChat({ slug }: RelayChatProps) {
               marginTop: 1,
             }}
           >
-            LLM-powered agent interface
+            {t("subtitle")}
           </div>
         </div>
 
@@ -402,7 +405,7 @@ export function RelayChat({ slug }: RelayChatProps) {
             >
               ◆
             </div>
-            Ask Relay about this market, agent signals, or platform status.
+            {t("selectMarketHint")}
           </div>
         )}
 
@@ -568,8 +571,8 @@ export function RelayChat({ slug }: RelayChatProps) {
                       }}
                     >
                       {expandedAgent === msg.id
-                        ? "▾ Hide Data"
-                        : "▸ Agent Data"}
+                        ? `▾ ${t("hideData")}`
+                        : `▸ ${t("agentData")}`}
                     </button>
                   )}
               </div>
@@ -586,7 +589,7 @@ export function RelayChat({ slug }: RelayChatProps) {
                   gap: 6,
                 }}
               >
-                {getSuggestedQuestions(msg.routedTo ?? [], msgIdx).map((question) => (
+                {getSuggestedQuestions(t, msg.routedTo ?? [], msgIdx).map((question) => (
                   <button
                     key={question}
                     style={{
@@ -701,7 +704,7 @@ export function RelayChat({ slug }: RelayChatProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Relay..."
+          placeholder={t("placeholder")}
           style={{
             flex: 1,
             background: "rgba(255,255,255,0.05)",
@@ -747,42 +750,46 @@ export function RelayChat({ slug }: RelayChatProps) {
 
 const MAX_VISIBLE = 10;
 
-function getSuggestedQuestions(routedTo: string[] = [], msgIndex: number = 0): string[] {
+function getSuggestedQuestions(
+  t: ReturnType<typeof useTranslations<"relay">>,
+  routedTo: string[] = [],
+  msgIndex: number = 0
+): string[] {
   // Analysis-specific: 2 questions that dig deeper into what Relay just answered
   const analysisByAgent: Record<string, string[]> = {
     edge: [
-      "What's the exact edge over market price right now?",
-      "Should I size up or down given the current Kelly fraction?",
+      t("suggestions.edgeQuestion1"),
+      t("suggestions.edgeQuestion2"),
     ],
     aura: [
-      "Which news sources are driving the bullish bias?",
-      "How strong is this sentiment signal relative to past market moves?",
+      t("suggestions.auraQuestion1"),
+      t("suggestions.auraQuestion2"),
     ],
     oracle: [
-      "How does Oracle's probability compare to what the market is pricing in?",
-      "What would shift Oracle's estimate to below 50%?",
+      t("suggestions.oracleQuestion1"),
+      t("suggestions.oracleQuestion2"),
     ],
     flux: [
-      "Is the spread tight enough to enter without excessive slippage?",
-      "At what liquidity grade should I stop trading this market?",
+      t("suggestions.fluxQuestion1"),
+      t("suggestions.fluxQuestion2"),
     ],
     lucifer: [
-      "What's the strongest counter-argument Lucifer raised against this trade?",
-      "Which bias flag should I be most concerned about here?",
+      t("suggestions.luciferQuestion1"),
+      t("suggestions.luciferQuestion2"),
     ],
     sigma: [
-      "Walk me through exactly why Sigma chose this position size.",
-      "Under what conditions would Sigma flip to a SKIP decision?",
+      t("suggestions.sigmaQuestion1"),
+      t("suggestions.sigmaQuestion2"),
     ],
   };
 
   // Platform how-to: 1 question about how the platform works (rotated for variety)
   const howTo = [
-    "How does the Kelly criterion work in Quantik's sizing model?",
-    "What's the difference between Oracle and Edge agents?",
-    "How does Lucifer's adversarial score affect the final decision?",
-    "What does the confidence level in the execute bar actually measure?",
-    "How does Quantik's pipeline filter out false-positive signals?",
+    t("suggestions.howToQuestion1"),
+    t("suggestions.howToQuestion2"),
+    t("suggestions.howToQuestion3"),
+    t("suggestions.howToQuestion4"),
+    t("suggestions.howToQuestion5"),
   ];
 
   const analysis: string[] = [];
@@ -796,8 +803,8 @@ function getSuggestedQuestions(routedTo: string[] = [], msgIndex: number = 0): s
 
   // Fallback if no agents matched
   const fallback = [
-    "What's the net expected value if I bet YES right now?",
-    "At what probability would this signal flip to bearish?",
+    t("suggestions.fallbackQuestion1"),
+    t("suggestions.fallbackQuestion2"),
   ];
   let fi = 0;
   while (analysis.length < 2) {

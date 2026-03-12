@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Wallet,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { fmtUSDC } from "@/lib/api";
 import {
   formatRelativeTime,
@@ -45,6 +46,7 @@ export function DashboardMissionRail({
   updatedAt: number;
   now: number;
 }) {
+  const t = useTranslations("dashboard.missionRail");
   const liveAgents = agents.filter((agent) => agent.status === "live").length;
   const idleAgents = agents.filter((agent) => agent.status === "idle").length;
   const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
@@ -64,12 +66,12 @@ export function DashboardMissionRail({
           <RefreshCw className="size-4" />
         </div>
         <div className="mission-rail-copy">
-          <div className="mission-rail-label">Refresh cadence</div>
+          <div className="mission-rail-label">{t("refreshCadence")}</div>
           <div className="mission-rail-value">
-            {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : "Live sync"}
+            {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : t("liveSync")}
           </div>
           <div className="mission-rail-subtle">
-            {health?.checkedAt ? `Health snapshot ${formatRelativeTime(health.checkedAt, now)}` : "Queries share one refresh cycle"}
+            {health?.checkedAt ? t("healthSnapshot", { time: formatRelativeTime(health.checkedAt, now) }) : t("queriesShareRefresh")}
           </div>
         </div>
       </article>
@@ -79,23 +81,23 @@ export function DashboardMissionRail({
           <Wallet className="size-4" />
         </div>
         <div className="mission-rail-copy">
-          <div className="mission-rail-label">Capital posture</div>
+          <div className="mission-rail-label">{t("capitalPosture")}</div>
           <div className="mission-rail-value">
             {summary?.fundingStatus === "ready"
-              ? "Autopilot armed"
+              ? t("autopilotArmed")
               : summary?.fundingStatus === "funding_required"
-                ? "Funding required"
-                : "Telemetry only"}
+                ? t("fundingRequired")
+                : t("telemetryOnly")}
           </div>
           <div className="mission-rail-subtle">
             {summary?.fundingStatus === "ready" && summary.cashBalance != null
-              ? `${fmtUSDC(summary.cashBalance)} ready to deploy`
-              : summary?.fundingMessage ?? summary?.balanceMessage ?? "Waiting for wallet telemetry"}
+              ? t("readyToDeploy", { amount: fmtUSDC(summary.cashBalance) })
+              : summary?.fundingMessage ?? summary?.balanceMessage ?? t("waitingForWalletTelemetry")}
           </div>
         </div>
         {summary?.fundingStatus === "funding_required" ? (
           <Link href="/manage-agent" className="mission-rail-link">
-            Resolve
+            {t("resolve")}
             <ArrowRight className="size-3.5" />
           </Link>
         ) : null}
@@ -106,9 +108,9 @@ export function DashboardMissionRail({
           <Cpu className="size-4" />
         </div>
         <div className="mission-rail-copy">
-          <div className="mission-rail-label">Runtime fabric</div>
+          <div className="mission-rail-label">{t("runtimeFabric")}</div>
           <div className="mission-rail-value">
-            {health ? `${health.label} · ${health.latencyMs}ms` : "Heartbeat pending"}
+            {health ? `${health.label} · ${health.latencyMs}ms` : t("heartbeatPending")}
           </div>
           <div className="mission-rail-chip-row">
             {(health?.services ?? []).slice(0, 5).map((service) => (
@@ -128,13 +130,13 @@ export function DashboardMissionRail({
           <Bot className="size-4" />
         </div>
         <div className="mission-rail-copy">
-          <div className="mission-rail-label">Agent traffic</div>
+          <div className="mission-rail-label">{t("agentTraffic")}</div>
           <div className="mission-rail-value">
             {agents.length === 0
-              ? "No telemetry"
+              ? t("noTelemetry")
               : liveAgents > 0
-                ? `${liveAgents} live / ${agents.length}`
-                : "All agents idle"}
+                ? t("liveAgents", { live: liveAgents, total: agents.length })
+                : t("allAgentsIdle")}
           </div>
           <div className="mission-rail-dots" aria-hidden="true">
             {agents.slice(0, 7).map((agent) => (
@@ -146,10 +148,10 @@ export function DashboardMissionRail({
           </div>
           <div className="mission-rail-subtle">
             {agents.length === 0
-              ? "Pipeline agents will light up after live runs"
+              ? t("pipelineAgentsLightUp")
               : !hasTraffic
-                ? "Awaiting first live run"
-                : `${idleAgents} idle · ${degradedAgents} degraded · ${downAgents} down`}
+                ? t("awaitingFirstLiveRun")
+                : t("agentSummary", { idle: idleAgents, degraded: degradedAgents, down: downAgents })}
           </div>
         </div>
       </article>
@@ -158,10 +160,10 @@ export function DashboardMissionRail({
         <div className="mission-rail-banner-copy">
           <span className="mission-rail-banner-kicker">
             <Activity className="size-3.5" />
-            Mission control
+            {t("missionControlBanner")}
           </span>
           <span className="mission-rail-banner-text">
-            Real backend telemetry now powers funding, runtime, and pipeline status across the whole surface.
+            {t("bannerText")}
           </span>
         </div>
       </article>

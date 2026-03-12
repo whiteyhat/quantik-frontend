@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   type SigmaResult,
   type EdgeResult,
@@ -36,53 +37,54 @@ export function SignalValidator({
   flux,
   lucifer,
 }: SignalValidatorProps) {
+  const t = useTranslations("agentPipeline");
+
   const gates: Gate[] = [
     (() => {
-      const ev = edge ? num(edge.net_ev) : 0;
       const grade = edge?.ev_grade ?? "PASS";
       if (grade === "A" || grade === "B")
-        return { label: "Identity Verification", status: "pass" as GateStatus, detail: `EV ${grade}` };
+        return { label: t("validator.identityVerification"), status: "pass" as GateStatus, detail: `EV ${grade}` };
       if (grade === "C")
-        return { label: "Identity Verification", status: "watch" as GateStatus, detail: `EV marginal` };
-      return { label: "Identity Verification", status: "fail" as GateStatus, detail: edge ? `Grade: ${grade}` : "No data" };
+        return { label: t("validator.identityVerification"), status: "watch" as GateStatus, detail: t("validator.evMarginal") };
+      return { label: t("validator.identityVerification"), status: "fail" as GateStatus, detail: edge ? `Grade: ${grade}` : t("validator.noData") };
     })(),
 
     (() => {
       const conf = num(sigma.confidence);
       if (conf >= 60)
-        return { label: "Balance Check", status: "pass" as GateStatus, detail: `${conf.toFixed(0)}% conf` };
+        return { label: t("validator.balanceCheck"), status: "pass" as GateStatus, detail: `${conf.toFixed(0)}% conf` };
       if (conf >= 45)
-        return { label: "Balance Check", status: "watch" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
-      return { label: "Balance Check", status: "fail" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
+        return { label: t("validator.balanceCheck"), status: "watch" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
+      return { label: t("validator.balanceCheck"), status: "fail" as GateStatus, detail: `${conf.toFixed(0)}% — low` };
     })(),
 
     (() => {
       if (!flux)
-        return { label: "Slippage Tolerance", status: "watch" as GateStatus, detail: "No data" };
+        return { label: t("validator.slippageTolerance"), status: "watch" as GateStatus, detail: t("validator.noData") };
       const grade = flux.liquidity_grade;
       if (grade === "A" || grade === "B")
-        return { label: "Slippage Tolerance", status: "pass" as GateStatus, detail: `Liq ${grade}` };
+        return { label: t("validator.slippageTolerance"), status: "pass" as GateStatus, detail: `Liq ${grade}` };
       if (grade === "C")
-        return { label: "Slippage Tolerance", status: "watch" as GateStatus, detail: "Thin" };
-      return { label: "Slippage Tolerance", status: "fail" as GateStatus, detail: "Illiquid" };
+        return { label: t("validator.slippageTolerance"), status: "watch" as GateStatus, detail: t("validator.thin") };
+      return { label: t("validator.slippageTolerance"), status: "fail" as GateStatus, detail: t("validator.illiquid") };
     })(),
 
     (() => {
       if (!lucifer)
-        return { label: "Gas Fees", status: "watch" as GateStatus, detail: "Estimating..." };
+        return { label: t("validator.gasFees"), status: "watch" as GateStatus, detail: t("validator.estimating") };
       const da = num(lucifer.devils_advocate_score);
       if (da <= 0.5)
-        return { label: "Gas Fees", status: "pass" as GateStatus, detail: "Low" };
+        return { label: t("validator.gasFees"), status: "pass" as GateStatus, detail: t("validator.low") };
       if (da <= 0.7)
-        return { label: "Gas Fees", status: "watch" as GateStatus, detail: "Medium" };
-      return { label: "Gas Fees", status: "fail" as GateStatus, detail: "High risk" };
+        return { label: t("validator.gasFees"), status: "watch" as GateStatus, detail: t("validator.medium") };
+      return { label: t("validator.gasFees"), status: "fail" as GateStatus, detail: t("validator.highRisk") };
     })(),
   ];
 
   const passCount = gates.filter((g) => g.status === "pass").length;
   const failCount = gates.filter((g) => g.status === "fail").length;
   const finalVerdict =
-    failCount > 0 ? "SKIP" : passCount >= 3 ? "TRADE" : "WATCH";
+    failCount > 0 ? t("validator.skip") : passCount >= 3 ? t("validator.trade") : t("validator.watch");
   const verdictColor =
     finalVerdict === "TRADE"
       ? "var(--ios-green)"
@@ -106,7 +108,7 @@ export function SignalValidator({
           <span
             style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}
           >
-            Validator
+            {t("validator.title")}
           </span>
         </div>
         <span

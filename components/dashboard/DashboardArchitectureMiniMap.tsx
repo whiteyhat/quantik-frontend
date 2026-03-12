@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AGENT_ANGLES, AGENT_META } from "@/components/ArchitectureView/data/architectureData";
 import {
   CommandCenterCard,
@@ -39,16 +40,17 @@ export function DashboardArchitectureMiniMap({
   const downAgents = agents.filter((agent) => agent.status === "down").length;
   const hasTraffic = agents.some((agent) => agent.lastActiveAt);
   const hasRecentRuntime = agents.some((agent) => agent.status !== "idle" && agent.lastActiveAt);
+  const t = useTranslations("dashboard.architectureMiniMap");
 
   return (
     <CommandCenterCard accent="blue">
       <CommandCenterHeader
-        eyebrow="Architecture"
-        title="Neural Web Mini-Map"
-        subtitle="A compact live view of the full Quantik topology."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Link href="/manage-agent?tab=architecture" className="mission-rail-link">
-            Open full map
+            {t("openFullMap")}
             <ArrowRight className="size-3.5" />
           </Link>
         }
@@ -82,7 +84,7 @@ export function DashboardArchitectureMiniMap({
               <div className="dashboard-mini-map-core-emoji">{myAgent?.avatar_emoji ?? "◆"}</div>
               <div className="dashboard-mini-map-core-label">{myAgent?.name ?? "Quantik Core"}</div>
               <div className="dashboard-mini-map-core-subtitle">
-                {myAgent?.agent_code ?? "MISSION CONTROL"}
+                {myAgent?.agent_code ?? t("missionControl")}
               </div>
             </div>
 
@@ -112,8 +114,8 @@ export function DashboardArchitectureMiniMap({
             {!hasTraffic ? (
               <div className="dashboard-mini-map-overlay">
                 <PanelEmptyState
-                  title="No agent traffic yet"
-                  detail="The topology is armed and waiting for the next live pipeline cycle."
+                  title={t("noTrafficTitle")}
+                  detail={t("noTrafficDetail")}
                 />
               </div>
             ) : null}
@@ -121,34 +123,34 @@ export function DashboardArchitectureMiniMap({
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">Live</div>
+              <div className="dashboard-mini-map-stat-label">{t("live")}</div>
               <div className="dashboard-mini-map-stat-value">{liveAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">Idle</div>
+              <div className="dashboard-mini-map-stat-label">{t("idle")}</div>
               <div className="dashboard-mini-map-stat-value">{idleAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">Degraded</div>
+              <div className="dashboard-mini-map-stat-label">{t("degraded")}</div>
               <div className="dashboard-mini-map-stat-value">{degradedAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">Down</div>
+              <div className="dashboard-mini-map-stat-label">{t("down")}</div>
               <div className="dashboard-mini-map-stat-value">{downAgents}</div>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <StatusBadge tone="info" label="7 specialist agents" />
+            <StatusBadge tone="info" label={t("specialistAgents")} />
             <StatusBadge
               tone={hasTraffic ? (hasRecentRuntime ? "good" : "neutral") : "warn"}
               label={
                 hasTraffic
-                  ? (hasRecentRuntime ? "Runtime telemetry live" : "Agents currently idle")
-                  : "Awaiting runtime traffic"
+                  ? (hasRecentRuntime ? t("runtimeTelemetryLive") : t("agentsCurrentlyIdle"))
+                  : t("awaitingRuntimeTraffic")
               }
             />
-            <StatusBadge tone="neutral" label="Tap through for full architecture" />
+            <StatusBadge tone="neutral" label={t("tapThroughForFullArchitecture")} />
           </div>
         </>
       )}

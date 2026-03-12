@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api, fmtUSDC } from "@/lib/api";
 import { usePaperMode } from "@/context/PaperModeContext";
 
 export function TradeConfirmationModal() {
+  const t = useTranslations("tradeConfirm");
   const open = useQuantikStore((s) => s.tradeModalOpen);
   const pending = useQuantikStore((s) => s.pendingTrade);
   const close = useQuantikStore((s) => s.closeTradeModal);
@@ -39,10 +41,10 @@ export function TradeConfirmationModal() {
     setLoading(true);
     try {
       await api.placeOrder(slug, direction, sigma.size_usd);
-      showToast(paperMode ? "Order placed (Paper Mode)" : "Order placed");
+      showToast(paperMode ? t("orderPlacedPaper") : t("orderPlaced"));
       close();
     } catch {
-      showToast("Order failed — try again");
+      showToast(t("orderFailed"));
     } finally {
       setLoading(false);
     }
@@ -121,7 +123,7 @@ export function TradeConfirmationModal() {
           >
             {/* Title */}
             <h2 className="text-title" style={{ color: "var(--text-primary)", margin: "0 0 20px 0" }}>
-              Confirm Trade
+              {t("title")}
             </h2>
 
             {/* Market question */}
@@ -142,13 +144,13 @@ export function TradeConfirmationModal() {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Slug</span>
+                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("slug")}</span>
                 <span className="font-mono-data text-subhead" data-testid="modal-slug" style={{ color: "var(--text-primary)" }}>
                   {slug}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Direction</span>
+                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("direction")}</span>
                 <span
                   className="font-mono-data text-subhead"
                   data-testid="modal-direction"
@@ -157,23 +159,23 @@ export function TradeConfirmationModal() {
                     color: direction === "YES" ? "var(--ios-green)" : "var(--ios-red)",
                   }}
                 >
-                  BUY {direction} · {Math.round((sigma.entry_price ?? 0) * 100)}¢
+                  {t("buy", { direction })} · {Math.round((sigma.entry_price ?? 0) * 100)}¢
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Size (USDC)</span>
+                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("sizeUsdc")}</span>
                 <span className="font-mono-data text-subhead" data-testid="modal-size" style={{ color: "var(--text-primary)" }}>
                   {fmtUSDC(sigma.size_usd)} ({sigma.size_pct}%)
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Confidence</span>
+                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("confidence")}</span>
                 <span className="font-mono-data text-subhead" data-testid="modal-confidence" style={{ color: "var(--ios-green)" }}>
                   {sigma.confidence}%
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>Edge</span>
+                <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("edge")}</span>
                 <span className="font-mono-data text-subhead" data-testid="modal-edge" style={{ color: "var(--ios-green)" }}>
                   {edge.ev_grade} (+{(edge.net_ev ?? 0).toFixed(1)}%)
                 </span>
@@ -197,14 +199,14 @@ export function TradeConfirmationModal() {
                 <span style={{ fontSize: 16, flexShrink: 0 }}>{"⚠"}</span>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ios-red)", marginBottom: 2 }}>
-                    Wallet not funded
+                    {t("walletNotFunded")}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
                     {usdcBalance <= 0 && polBalance <= 0.01
-                      ? "You need USDC to place trades and POL to cover gas fees. Fund your wallet to continue."
+                      ? t("walletNotFundedDesc")
                       : usdcBalance <= 0
-                        ? "No USDC balance. Deposit USDC to your wallet before trading."
-                        : "Not enough POL for gas. Send POL to your wallet to enable transactions."}
+                        ? t("noUsdc")
+                        : t("noPol")}
                   </div>
                 </div>
               </div>
@@ -227,7 +229,7 @@ export function TradeConfirmationModal() {
                   transition: "all 200ms ease",
                 }}
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 onClick={handleConfirm}
@@ -247,14 +249,14 @@ export function TradeConfirmationModal() {
                 }}
               >
                 {!walletFunded
-                  ? "Wallet Not Funded"
+                  ? t("walletNotFundedTitle")
                   : loading
                     ? paperMode
-                      ? "Simulating..."
-                      : "Confirming..."
+                      ? t("simulating")
+                      : t("confirming")
                     : paperMode
-                      ? "Simulate Trade →"
-                      : "Confirm →"}
+                      ? `${t("simulateTrade")} →`
+                      : `${t("confirmTrade")} →`}
               </button>
             </div>
 
@@ -275,7 +277,7 @@ export function TradeConfirmationModal() {
                   transition: "all 200ms ease",
                 }}
               >
-                Cancel All Orders
+                {t("cancelAllOrders")}
               </button>
             </div>
           </div>

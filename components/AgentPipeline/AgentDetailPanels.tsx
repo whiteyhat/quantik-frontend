@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   type AuraResult,
   type OracleResult,
@@ -89,6 +90,7 @@ function Section({ children, mb = 14 }: { children: React.ReactNode; mb?: number
 /* ── Aura Panel ────────────────────────────────────────────────────────────── */
 
 export function AuraPanel({ data }: { data: AuraResult }) {
+  const t = useTranslations("agentPipeline");
   const score = num(data.sentiment_score);
   const isPositive = score >= 0;
   const barWidth = Math.min(Math.abs(score) * 100, 100);
@@ -97,7 +99,7 @@ export function AuraPanel({ data }: { data: AuraResult }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Sentiment delta bar */}
       <Section>
-        <Label>Sentiment Delta</Label>
+        <Label>{t("panels.sentimentDelta")}</Label>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
             style={{
@@ -132,15 +134,15 @@ export function AuraPanel({ data }: { data: AuraResult }) {
       <Section>
         <Row>
           <div>
-            <Label>Echo Chamber</Label>
+            <Label>{t("panels.echoChamber")}</Label>
             <Chip
-              label={data.echo_chamber ? "WARNING" : "CLEAR"}
+              label={data.echo_chamber ? t("panels.echoChamberWarning") : t("panels.echoChamberClear")}
               color={data.echo_chamber ? "var(--ios-orange)" : "var(--ios-green)"}
             />
           </div>
           {data.echo_chamber_strength !== undefined && (
             <div>
-              <Label>Echo Strength</Label>
+              <Label>{t("panels.echoStrength")}</Label>
               <Metric value={`${num(data.echo_chamber_strength).toFixed(2)}`} color="var(--ios-orange)" />
             </div>
           )}
@@ -150,7 +152,7 @@ export function AuraPanel({ data }: { data: AuraResult }) {
       {/* News source pills */}
       {data.newsArticles && data.newsArticles.length > 0 && (
         <Section mb={0}>
-          <Label>Sentiment Sources</Label>
+          <Label>{t("panels.sentimentSources")}</Label>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 4 }}>
             {data.newsArticles.map((article, i) => (
               <a
@@ -208,6 +210,7 @@ export function AuraPanel({ data }: { data: AuraResult }) {
 /* ── Oracle Panel ──────────────────────────────────────────────────────────── */
 
 export function OraclePanel({ data }: { data: OracleResult }) {
+  const t = useTranslations("agentPipeline");
   const prob = num(data.prob_estimate);
   const market = num(data.market_implied);
   const edgeDelta = prob - market;
@@ -219,15 +222,15 @@ export function OraclePanel({ data }: { data: OracleResult }) {
       <Section>
         <Row gap={24}>
           <div>
-            <Label>Model P(YES)</Label>
+            <Label>{t("panels.modelProb")}</Label>
             <Metric value={`${Math.round(prob * 100)}%`} color="var(--ios-blue)" size={20} />
           </div>
           <div>
-            <Label>Market Price</Label>
+            <Label>{t("panels.marketPrice")}</Label>
             <Metric value={`${Math.round(market * 100)}%`} />
           </div>
           <div>
-            <Label>Edge Delta</Label>
+            <Label>{t("panels.edgeDelta")}</Label>
             <Metric
               value={`${edgeDelta > 0 ? "+" : ""}${(edgeDelta * 100).toFixed(1)}%`}
               color={Math.abs(edgeDelta) > 0.05 ? "var(--ios-green)" : "var(--text-secondary)"}
@@ -239,7 +242,7 @@ export function OraclePanel({ data }: { data: OracleResult }) {
 
       {/* Confidence */}
       <Section>
-        <Label>Confidence</Label>
+        <Label>{t("panels.confidence")}</Label>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="confidence-bar" style={{ width: 100 }}>
             <div className="confidence-bar-fill" style={{ width: `${conf}%`, background: "var(--ios-blue)" }} />
@@ -254,6 +257,7 @@ export function OraclePanel({ data }: { data: OracleResult }) {
 /* ── Edge Panel ────────────────────────────────────────────────────────────── */
 
 export function EdgePanel({ data }: { data: EdgeResult }) {
+  const t = useTranslations("agentPipeline");
   const ev = num(data.net_ev);
   const kelly = num(data.kelly);
   const recSize = num(data.recommended_size);
@@ -272,11 +276,11 @@ export function EdgePanel({ data }: { data: EdgeResult }) {
       <Section>
         <Row gap={24}>
           <div>
-            <Label>EV Grade</Label>
+            <Label>{t("panels.evGrade")}</Label>
             <Chip label={data.ev_grade} color={gradeColor} />
           </div>
           <div>
-            <Label>Net EV</Label>
+            <Label>{t("panels.netEv")}</Label>
             <Metric
               value={`${ev > 0 ? "+" : ""}${ev.toFixed(1)}%`}
               color={ev > 0 ? "var(--ios-green)" : "var(--ios-red)"}
@@ -290,12 +294,12 @@ export function EdgePanel({ data }: { data: EdgeResult }) {
       <Section>
         <Row gap={24}>
           <div>
-            <Label>Kelly %</Label>
+            <Label>{t("panels.kellyPct")}</Label>
             <Metric value={`${kelly.toFixed(1)}%`} />
           </div>
           <div>
-            <Label>Rec. Size</Label>
-            <Metric value={`${recSize.toFixed(1)}% bankroll`} color="var(--ios-blue)" />
+            <Label>{t("panels.recSize")}</Label>
+            <Metric value={`${recSize.toFixed(1)}% ${t("panels.bankroll")}`} color="var(--ios-blue)" />
           </div>
         </Row>
       </Section>
@@ -306,6 +310,7 @@ export function EdgePanel({ data }: { data: EdgeResult }) {
 /* ── Clause Panel ──────────────────────────────────────────────────────────── */
 
 export function ClausePanel({ data }: { data: ClauseResult }) {
+  const t = useTranslations("agentPipeline");
   const riskColors: Record<string, string> = {
     LOW: "var(--ios-green)",
     MED: "var(--ios-orange)",
@@ -316,13 +321,13 @@ export function ClausePanel({ data }: { data: ClauseResult }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Section>
-        <Label>Resolution Risk</Label>
+        <Label>{t("panels.resolutionRisk")}</Label>
         <Chip label={data.resolution_risk} color={riskColor} />
       </Section>
 
       {data.technicality_risks && data.technicality_risks.length > 0 && (
         <Section>
-          <Label>Technicality Risks</Label>
+          <Label>{t("panels.technicalityRisks")}</Label>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {data.technicality_risks.map((risk, i) => (
               <div
@@ -350,6 +355,7 @@ export function ClausePanel({ data }: { data: ClauseResult }) {
 /* ── Flux Panel ────────────────────────────────────────────────────────────── */
 
 export function FluxPanel({ data }: { data: FluxResult }) {
+  const t = useTranslations("agentPipeline");
   const spread = num(data.spread);
   const depth = num(data.depth_score);
 
@@ -366,15 +372,15 @@ export function FluxPanel({ data }: { data: FluxResult }) {
       <Section>
         <Row gap={24}>
           <div>
-            <Label>Liquidity Grade</Label>
+            <Label>{t("panels.liquidityGrade")}</Label>
             <Chip label={data.liquidity_grade} color={gradeColor} />
           </div>
           <div>
-            <Label>Spread</Label>
+            <Label>{t("spread")}</Label>
             <Metric value={`${spread.toFixed(1)}\u00A2`} />
           </div>
           <div>
-            <Label>Whale Signals</Label>
+            <Label>{t("panels.whaleSignals")}</Label>
             <Metric value={`${data.whale_signals ?? 0}`} color="var(--ios-purple)" />
           </div>
         </Row>
@@ -382,7 +388,7 @@ export function FluxPanel({ data }: { data: FluxResult }) {
 
       {depth > 0 && (
         <Section>
-          <Label>Depth Score</Label>
+          <Label>{t("panels.depthScore")}</Label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div className="confidence-bar" style={{ width: 100 }}>
               <div
@@ -401,6 +407,7 @@ export function FluxPanel({ data }: { data: FluxResult }) {
 /* ── Lucifer Panel ─────────────────────────────────────────────────────────── */
 
 export function LuciferPanel({ data }: { data: LuciferResult }) {
+  const t = useTranslations("agentPipeline");
   const daScore = num(data.devils_advocate_score);
   const isVeto = daScore > 0.7;
 
@@ -410,21 +417,21 @@ export function LuciferPanel({ data }: { data: LuciferResult }) {
       <Section>
         <Row gap={16}>
           <div>
-            <Label>DA Score</Label>
+            <Label>{t("panels.daScore")}</Label>
             <Metric
               value={daScore.toFixed(2)}
               color={isVeto ? "var(--ios-red)" : "var(--ios-purple)"}
               size={20}
             />
           </div>
-          {isVeto && <Chip label="VETO" color="var(--ios-red)" />}
+          {isVeto && <Chip label={t("verdictVeto")} color="var(--ios-red)" />}
         </Row>
       </Section>
 
       {/* Bias flags */}
       {data.bias_flags && data.bias_flags.length > 0 && (
         <Section>
-          <Label>Bias Flags</Label>
+          <Label>{t("panels.biasFlags")}</Label>
           <Row gap={8}>
             {data.bias_flags.map((flag, i) => (
               <Chip key={i} label={flag} color="var(--ios-orange)" />
@@ -436,7 +443,7 @@ export function LuciferPanel({ data }: { data: LuciferResult }) {
       {/* Counter thesis */}
       {data.counter_thesis && (
         <Section mb={0}>
-          <Label>Counter Thesis</Label>
+          <Label>{t("panels.counterThesis")}</Label>
           <p
             style={{
               fontSize: 13,

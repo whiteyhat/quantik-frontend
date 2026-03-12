@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import {
   extractLatestSignalTimestamp,
@@ -13,31 +14,10 @@ import {
   type RelayContextKind,
   type RelayDoneEvent,
   type RelayTraceEvent,
+  type RelayTimeFormats,
 } from "@/lib/relaySidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
-const DEFAULT_ACTIONS = [
-  { label: "Refresh Signals", message: "Refresh signals now." },
-  { label: "Show Positions", message: "Show my active positions." },
-  { label: "Explain Risk", message: "What's my current risk status?" },
-  { label: "Review Trades", message: "Review recent trades." },
-];
-
-const FALLBACK_SUGGESTIONS = [
-  "What's my portfolio status?",
-  "Any new scanner signals?",
-  "What's my current risk status?",
-];
-
-const STATUS_TONE: Record<string, { dot: string; text: string }> = {
-  connected: { dot: "#30d158", text: "Connected" },
-  active: { dot: "#30d158", text: "Active" },
-  pending: { dot: "#ff9f0a", text: "Pending" },
-  disconnected: { dot: "#ff453a", text: "Disconnected" },
-  error: { dot: "#ff453a", text: "Attention" },
-  default: { dot: "rgba(255,255,255,0.32)", text: "Standby" },
-};
 
 type SidebarMessage =
   | {
@@ -100,20 +80,6 @@ function getNextMessageId() {
   return nextMessageId;
 }
 
-function getAgentIntro(name: string, personality: string, emoji: string): string {
-  switch (personality) {
-    case "guardian":
-      return `${emoji} ${name} online. I am already wired into scanner, portfolio, risk, and ops. Ask directly and I will pull the live internal view.`;
-    case "adventurer":
-      return `${emoji} ${name} ready. I can check active signals, portfolio state, risk posture, and recent decisions without making you restate the obvious.`;
-    default:
-      return `${emoji} ${name} here. Internal systems are connected. Ask about signals, portfolio, risk, or recent trades and I will summarize the latest state.`;
-  }
-}
-
-const FALLBACK_INTRO =
-  "Quantik intelligence is ready. Create or connect your agent to unlock scoped portfolio, scanner, risk, and runtime context in this drawer.";
-
 function getTheme(personality: string): PersonalityTheme {
   switch (personality) {
     case "guardian":
@@ -167,6 +133,7 @@ function ContextCard({
   onAction: (message: string) => void;
   surface?: "panel" | "inline";
 }) {
+  const t = useTranslations("relaySidebar");
   const isInline = surface === "inline";
   const sharedCardStyle: React.CSSProperties = {
     borderRadius: isInline ? 14 : 16,
@@ -190,28 +157,30 @@ function ContextCard({
       <div style={sharedCardStyle} data-testid="relay-sidebar-context-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.46)", textTransform: "uppercase", fontWeight: 700 }}>
-            Portfolio
+            {t("portfolioLabel")}
           </span>
           <span style={{ color: theme.primary, fontSize: 12, fontWeight: 700 }}>
-            {portfolio.totalValue != null ? `$${portfolio.totalValue.toFixed(2)}` : "Waiting"}
+            {portfolio.totalValue != null ? `$${portfolio.totalValue.toFixed(2)}` : t("portfolioWaiting")}
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Today</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("portfolioToday")}</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: Number(portfolio.dailyPnl ?? 0) >= 0 ? "#30d158" : "#ff6b60" }}>
               {formatMoney(portfolio.dailyPnl)}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Exposure</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("portfolioExposure")}</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
               {formatPercent(portfolio.exposurePct)}
             </div>
           </div>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.60)" }}>
-          {portfolio.positions?.length ? `${portfolio.positions.length} active positions in scope.` : portfolio.balanceMessage ?? "Portfolio snapshot ready."}
+          {portfolio.positions?.length
+            ? t("portfolioPositionsScope", { count: portfolio.positions.length })
+            : portfolio.balanceMessage ?? t("portfolioSnapshotReady")}
         </div>
       </div>
     );
@@ -232,14 +201,14 @@ function ContextCard({
       <div style={sharedCardStyle} data-testid="relay-sidebar-context-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.46)", textTransform: "uppercase", fontWeight: 700 }}>
-            Scanner
+            {t("scannerLabel")}
           </span>
           <span style={{ color: scanner.stale ? "#ff9f0a" : theme.primary, fontSize: 12, fontWeight: 700 }}>
-            {scanner.count ?? 0} live
+            {t("scannerLive", { count: scanner.count ?? 0 })}
           </span>
         </div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.86)", fontWeight: 600, lineHeight: 1.4 }}>
-          {topSignal?.question ?? "No high-conviction signals in cache."}
+          {topSignal?.question ?? t("scannerNoSignals")}
         </div>
         <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {topSignal?.recommendation && (
@@ -262,7 +231,7 @@ function ContextCard({
             </span>
           )}
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.46)" }}>
-            {scanner.newSignalCount ? `${scanner.newSignalCount} new` : "No new alerts"}
+            {scanner.newSignalCount ? t("scannerNew", { count: scanner.newSignalCount }) : t("scannerNoNewAlerts")}
           </span>
         </div>
         <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
@@ -271,7 +240,7 @@ function ContextCard({
           </span>
           {scanner.action?.message && (
             <button
-              onClick={() => onAction(scanner.action?.message ?? "Refresh signals now.")}
+              onClick={() => onAction(scanner.action?.message ?? t("actionRefreshSignalsMsg"))}
               style={{
                 padding: "7px 10px",
                 borderRadius: 10,
@@ -283,7 +252,7 @@ function ContextCard({
                 cursor: "pointer",
               }}
             >
-              {scanner.action?.label ?? "Refresh"}
+              {scanner.action?.label ?? t("scannerRefresh")}
             </button>
           )}
         </div>
@@ -307,28 +276,30 @@ function ContextCard({
       <div style={sharedCardStyle} data-testid="relay-sidebar-context-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <span style={{ fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.46)", textTransform: "uppercase", fontWeight: 700 }}>
-            Risk
+            {t("riskLabel")}
           </span>
           <span style={{ color: risk.circuitBreaker === "TRIGGERED" ? "#ff6b60" : theme.primary, fontSize: 12, fontWeight: 700 }}>
-            {risk.circuitBreaker ?? "ARMED"}
+            {risk.circuitBreaker ?? t("riskArmed")}
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
           <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Exposure</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("riskExposure")}</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
               {formatPercent(risk.exposurePct)}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Size Cap</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.34)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("riskSizeCap")}</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)" }}>
               {formatPercent(risk.maxPositionSizePct, 100)}
             </div>
           </div>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.60)" }}>
-          {topTheme ? `Top cluster: ${topTheme[0]} ${topTheme[1].toFixed(1)}%. Daily PnL ${formatMoney(risk.dailyPnl)}.` : `Daily PnL ${formatMoney(risk.dailyPnl)}.`}
+          {topTheme
+            ? t("riskTopCluster", { theme: topTheme[0], pct: `${topTheme[1].toFixed(1)}%`, pnl: formatMoney(risk.dailyPnl) })
+            : t("riskDailyPnl", { pnl: formatMoney(risk.dailyPnl) })}
         </div>
       </div>
     );
@@ -342,63 +313,71 @@ function ContextCard({
     agentName?: string | null;
   };
 
+  const heartbeatFormats: RelayTimeFormats = {
+    noSync: t("heartbeatNoSync"),
+    justNow: t("heartbeatJustNow"),
+    mAgo: (m) => t("heartbeatMAgo", { m }),
+    hAgo: (h) => t("heartbeatHAgo", { h }),
+    dAgo: (d) => t("heartbeatDAgo", { d }),
+  };
+
   return (
     <div style={sharedCardStyle} data-testid="relay-sidebar-context-card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <span style={{ fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.46)", textTransform: "uppercase", fontWeight: 700 }}>
-          Ops
+          {t("opsLabel")}
         </span>
         <span style={{ color: theme.primary, fontSize: 12, fontWeight: 700 }}>
-          {ops.health?.score != null ? `${ops.health.score}/100` : "Live"}
+          {ops.health?.score != null ? `${ops.health.score}/100` : t("opsLive")}
         </span>
       </div>
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.86)", fontWeight: 600 }}>
-        {ops.agentName ?? "Agent runtime"}
+        {ops.agentName ?? t("opsAgentRuntime")}
       </div>
       <div style={{ marginTop: 8, fontSize: 12, color: "rgba(255,255,255,0.60)", lineHeight: 1.5 }}>
-        Connection {ops.connectionStatus ?? "pending"}.
+        {t("opsConnection", { status: ops.connectionStatus ?? "pending" })}
         {" "}
-        {ops.autopilotEnabled ? "Autopilot enabled." : "Autopilot disabled."}
+        {ops.autopilotEnabled ? t("opsAutopilotEnabled") : t("opsAutopilotDisabled")}
         {" "}
-        Last heartbeat {formatRelayRelativeTime(ops.lastHeartbeat ?? null).replace("Synced ", "")}.
+        {t("opsLastHeartbeat", { time: formatRelayRelativeTime(ops.lastHeartbeat ?? null, Date.now(), heartbeatFormats) })}
       </div>
     </div>
   );
 }
 
-function getContextLogLabel(kind: RelayContextKind): string {
+function getContextLogLabel(kind: RelayContextKind, t: ReturnType<typeof useTranslations<"relaySidebar">>): string {
   switch (kind) {
     case "portfolio":
-      return "PORTFOLIO";
+      return t("contextLabelPortfolio");
     case "scanner":
-      return "SCANNER";
+      return t("contextLabelScanner");
     case "risk":
-      return "RISK";
+      return t("contextLabelRisk");
     default:
-      return "OPS";
+      return t("contextLabelOps");
   }
 }
 
-function getContextLogStatus(kind: RelayContextKind, data: unknown): string {
+function getContextLogStatus(kind: RelayContextKind, data: unknown, t: ReturnType<typeof useTranslations<"relaySidebar">>): string {
   if (kind === "scanner") {
     const scanner = data as { stale?: boolean };
-    return scanner.stale ? "cached" : "live";
+    return scanner.stale ? t("scannerStatusCached") : t("scannerStatusLive");
   }
 
   if (kind === "risk") {
     const risk = data as { circuitBreaker?: string };
-    return risk.circuitBreaker?.toLowerCase() ?? "armed";
+    return risk.circuitBreaker?.toLowerCase() ?? t("riskStatusArmed");
   }
 
   if (kind === "ops") {
     const ops = data as { connectionStatus?: string | null };
-    return ops.connectionStatus?.toLowerCase() ?? "standby";
+    return ops.connectionStatus?.toLowerCase() ?? t("statusStandby").toLowerCase();
   }
 
-  return "snapshot";
+  return t("contextStatusSnapshot");
 }
 
-function getContextLogPreview(kind: RelayContextKind, data: unknown): string {
+function getContextLogPreview(kind: RelayContextKind, data: unknown, t: ReturnType<typeof useTranslations<"relaySidebar">>): string {
   if (kind === "portfolio") {
     const portfolio = data as {
       totalValue?: number | null;
@@ -407,9 +386,11 @@ function getContextLogPreview(kind: RelayContextKind, data: unknown): string {
     };
 
     return [
-      portfolio.totalValue != null ? `$${portfolio.totalValue.toFixed(2)} total` : "Portfolio snapshot",
-      `${formatMoney(portfolio.dailyPnl)} today`,
-      `${portfolio.positions?.length ?? 0} active`,
+      portfolio.totalValue != null
+        ? t("previewTotal", { amount: `$${portfolio.totalValue.toFixed(2)}` })
+        : t("previewPortfolioSnapshot"),
+      t("previewToday", { amount: formatMoney(portfolio.dailyPnl) }),
+      t("previewActivePositions", { count: portfolio.positions?.length ?? 0 }),
     ].join(" · ");
   }
 
@@ -423,8 +404,10 @@ function getContextLogPreview(kind: RelayContextKind, data: unknown): string {
     const topSignal = scanner.signals?.[0]?.question;
 
     return [
-      `${scanner.count ?? 0} signals`,
-      scanner.newSignalCount ? `${scanner.newSignalCount} new` : "No new alerts",
+      t("previewSignals", { count: scanner.count ?? 0 }),
+      scanner.newSignalCount
+        ? t("previewNewAlerts", { count: scanner.newSignalCount })
+        : t("previewNoNewAlerts"),
       topSignal ?? formatRelayRelativeTime(scanner.lastScannedAt ?? null),
     ].join(" · ");
   }
@@ -437,9 +420,9 @@ function getContextLogPreview(kind: RelayContextKind, data: unknown): string {
     };
 
     return [
-      `Exposure ${formatPercent(risk.exposurePct)}`,
-      `P&L ${formatMoney(risk.dailyPnl)}`,
-      `Cap ${formatPercent(risk.maxPositionSizePct, 100)}`,
+      t("previewExposure", { pct: formatPercent(risk.exposurePct) }),
+      t("previewPnl", { amount: formatMoney(risk.dailyPnl) }),
+      t("previewCap", { pct: formatPercent(risk.maxPositionSizePct, 100) }),
     ].join(" · ");
   }
 
@@ -450,8 +433,10 @@ function getContextLogPreview(kind: RelayContextKind, data: unknown): string {
   };
 
   return [
-    ops.health?.score != null ? `Health ${ops.health.score}/100` : "Health pending",
-    ops.autopilotEnabled ? "Autopilot on" : "Autopilot off",
+    ops.health?.score != null
+      ? t("previewHealth", { score: ops.health.score })
+      : t("previewHealthPending"),
+    ops.autopilotEnabled ? t("previewAutopilotOn") : t("previewAutopilotOff"),
     formatRelayRelativeTime(ops.lastHeartbeat ?? null),
   ].join(" · ");
 }
@@ -471,8 +456,9 @@ function ContextLogEntry({
   onToggle: () => void;
   onAction: (message: string) => void;
 }) {
-  const status = getContextLogStatus(kind, data);
-  const summary = getContextLogPreview(kind, data);
+  const t = useTranslations("relaySidebar");
+  const status = getContextLogStatus(kind, data, t);
+  const summary = getContextLogPreview(kind, data, t);
 
   return (
     <div style={{ marginLeft: 34 }} data-testid="relay-sidebar-context-log">
@@ -522,7 +508,7 @@ function ContextLogEntry({
                   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                 }}
               >
-                {getContextLogLabel(kind)}
+                {getContextLogLabel(kind, t)}
               </span>
               <span
                 style={{
@@ -582,6 +568,7 @@ function TradeConfirmationBubble({
   onCancel: () => void;
   theme: PersonalityTheme;
 }) {
+  const t = useTranslations("relaySidebar");
   return (
     <div
       style={{
@@ -592,10 +579,10 @@ function TradeConfirmationBubble({
       }}
     >
       <div style={{ fontSize: 11, color: "#ffb340", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-        Trade Confirmation
+        {t("tradeConfirmationTitle")}
       </div>
       <div style={{ marginTop: 8, color: "rgba(255,255,255,0.78)", fontSize: 13, lineHeight: 1.5 }}>
-        {confirmation.direction} on <strong>{confirmation.slug}</strong> for ${confirmation.size.toFixed(2)} USDC.
+        {t("tradeDirectionText", { direction: confirmation.direction, slug: confirmation.slug, size: confirmation.size.toFixed(2) })}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button
@@ -611,7 +598,7 @@ function TradeConfirmationBubble({
             cursor: "pointer",
           }}
         >
-          Confirm
+          {t("tradeConfirm")}
         </button>
         <button
           onClick={onCancel}
@@ -626,7 +613,7 @@ function TradeConfirmationBubble({
             cursor: "pointer",
           }}
         >
-          Cancel
+          {t("tradeCancel")}
         </button>
       </div>
     </div>
@@ -634,11 +621,34 @@ function TradeConfirmationBubble({
 }
 
 export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSidebarProps) {
+  const t = useTranslations("relaySidebar");
   const myAgent = useQuantikStore((state) => state.myAgent);
   const agentName = myAgent?.name ?? "Relay";
   const agentEmoji = myAgent?.avatar_emoji ?? "🤝";
   const personality = myAgent?.personality ?? "balanced";
   const theme = getTheme(personality);
+
+  const defaultActions = useMemo(() => [
+    { label: t("actionRefreshSignals"), message: t("actionRefreshSignalsMsg") },
+    { label: t("actionShowPositions"), message: t("actionShowPositionsMsg") },
+    { label: t("actionExplainRisk"), message: t("actionExplainRiskMsg") },
+    { label: t("actionReviewTrades"), message: t("actionReviewTradesMsg") },
+  ], [t]);
+
+  const fallbackSuggestions = useMemo(() => [
+    t("fallbackSuggestion1"),
+    t("fallbackSuggestion2"),
+    t("fallbackSuggestion3"),
+  ], [t]);
+
+  const statusToneMap = useMemo(() => ({
+    connected: { dot: "#30d158", text: t("statusConnected") },
+    active: { dot: "#30d158", text: t("statusActive") },
+    pending: { dot: "#ff9f0a", text: t("statusPending") },
+    disconnected: { dot: "#ff453a", text: t("statusDisconnected") },
+    error: { dot: "#ff453a", text: t("statusAttention") },
+    default: { dot: "rgba(255,255,255,0.32)", text: t("statusStandby") },
+  }), [t]);
 
   const [messages, setMessages] = useState<SidebarMessage[]>([]);
   const [contexts, setContexts] = useState<ContextState>({});
@@ -656,19 +666,31 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const activeTraceIdsRef = useRef<Record<string, number>>({});
   const activeContextIdsRef = useRef<Partial<Record<RelayContextKind, number>>>({});
 
-  const statusTone = STATUS_TONE[myAgent?.connection_status ?? myAgent?.status ?? "default"] ?? STATUS_TONE.default;
+  const statusTone =
+    statusToneMap[myAgent?.connection_status as keyof typeof statusToneMap ?? myAgent?.status as keyof typeof statusToneMap ?? "default"] ??
+    statusToneMap.default;
+
+  const syncFormats: RelayTimeFormats = useMemo(() => ({
+    noSync: t("syncNoSync"),
+    justNow: t("syncJustNow"),
+    mAgo: (m) => t("syncMAgo", { m }),
+    hAgo: (h) => t("syncHAgo", { h }),
+    dAgo: (d) => t("syncDAgo", { d }),
+  }), [t]);
+
   const scannerContext = contexts.scanner as {
     lastScannedAt?: number | null;
     stale?: boolean;
   } | undefined;
+
   const headerSyncLabel = scannerContext?.lastScannedAt
-    ? `${scannerContext.stale ? "Cached" : "Scanner"} · ${formatRelayRelativeTime(scannerContext.lastScannedAt)}`
-    : formatRelayRelativeTime(lastSyncAt);
+    ? `${scannerContext.stale ? t("cachedLabel") : t("scannerSyncLabel")} · ${formatRelayRelativeTime(scannerContext.lastScannedAt, Date.now(), syncFormats)}`
+    : formatRelayRelativeTime(lastSyncAt, Date.now(), syncFormats);
 
   const suggestionPrompts = useMemo<SuggestionPrompt[]>(() => {
     const promptMap = new Map<string, SuggestionPrompt>();
 
-    for (const suggestion of suggestions.length ? suggestions : FALLBACK_SUGGESTIONS) {
+    for (const suggestion of suggestions.length ? suggestions : fallbackSuggestions) {
       const trimmed = suggestion.trim();
       if (!trimmed) continue;
       promptMap.set(trimmed.toLowerCase(), {
@@ -677,7 +699,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       });
     }
 
-    for (const action of DEFAULT_ACTIONS) {
+    for (const action of defaultActions) {
       const key = action.message.toLowerCase();
       if (!promptMap.has(key)) {
         promptMap.set(key, {
@@ -689,7 +711,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     }
 
     return Array.from(promptMap.values()).slice(0, 3);
-  }, [suggestions]);
+  }, [suggestions, fallbackSuggestions, defaultActions]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -712,13 +734,17 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       setHasInjectedIntro(true);
       onFirstOpen?.();
       const intro = myAgent
-        ? getAgentIntro(agentName, personality, agentEmoji)
-        : FALLBACK_INTRO;
+        ? (personality === "guardian"
+            ? t("introGuardian", { emoji: agentEmoji, name: agentName })
+            : personality === "adventurer"
+            ? t("introAdventurer", { emoji: agentEmoji, name: agentName })
+            : t("introDefault", { emoji: agentEmoji, name: agentName }))
+        : t("fallbackIntro");
       window.setTimeout(() => {
         setMessages((prev) => [...prev, { id: getNextMessageId(), role: "agent", text: intro }]);
       }, 240);
     }
-  }, [agentEmoji, agentName, hasInjectedIntro, myAgent, onFirstOpen, open, personality]);
+  }, [agentEmoji, agentName, hasInjectedIntro, myAgent, onFirstOpen, open, personality, t]);
 
   const resetTurnState = useCallback(() => {
     activeTraceIdsRef.current = {};
@@ -781,8 +807,8 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           id: getNextMessageId(),
           role: "agent",
           text: response.ok
-            ? `Trade executed. Order ID: ${payload.orderId ?? "pending"}.`
-            : `Trade failed: ${payload.error ?? "Unknown error"}.`,
+            ? t("tradeExecuted", { orderId: payload.orderId ?? "pending" })
+            : t("tradeFailed", { error: payload.error ?? "Unknown error" }),
         },
       ]);
     } catch {
@@ -791,18 +817,18 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         {
           id: getNextMessageId(),
           role: "agent",
-          text: "Trade execution failed. Check your connection and try again.",
+          text: t("tradeExecutionFailed"),
         },
       ]);
     }
-  }, []);
+  }, [t]);
 
   const handleTradeCancel = useCallback(() => {
     setMessages((prev) => [
       ...prev,
-      { id: getNextMessageId(), role: "agent", text: "Trade cancelled." },
+      { id: getNextMessageId(), role: "agent", text: t("tradeCancelled") },
     ]);
-  }, []);
+  }, [t]);
 
   const applyDoneContexts = useCallback((doneEvent: RelayDoneEvent) => {
     if (!doneEvent.contexts) return;
@@ -860,7 +886,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     if (event.type === "done") {
       setLastSyncAt(Date.now());
       setSending(false);
-      setSuggestions(event.suggestions?.length ? event.suggestions : FALLBACK_SUGGESTIONS);
+      setSuggestions(event.suggestions?.length ? event.suggestions : fallbackSuggestions);
       applyDoneContexts(event);
       if (agentMessageIdRef.current != null) {
         setMessages((prev) =>
@@ -897,7 +923,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         {
           id: getNextMessageId(),
           role: "agent",
-          text: event.error ?? "Unable to reach the Quantik intelligence network right now.",
+          text: event.error ?? t("networkErrorGeneric"),
         },
       ]);
       return;
@@ -917,7 +943,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         },
       ]);
     }
-  }, [applyContextUpdate, applyDoneContexts]);
+  }, [applyContextUpdate, applyDoneContexts, fallbackSuggestions, t]);
 
   const sendMessageWithText = useCallback(async (rawText: string) => {
     const trimmed = rawText.trim();
@@ -951,7 +977,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as { error?: string };
-        throw new Error(payload.error ?? "The agent chat endpoint is unavailable.");
+        throw new Error(payload.error ?? t("networkErrorGeneric"));
       }
 
       const contentType = response.headers.get("content-type") ?? "";
@@ -991,7 +1017,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       }
     } catch (error) {
       setSending(false);
-      setSuggestions(FALLBACK_SUGGESTIONS);
+      setSuggestions(fallbackSuggestions);
       setMessages((prev) => [
         ...prev,
         {
@@ -999,11 +1025,11 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           role: "agent",
           text: error instanceof Error
             ? error.message
-            : `Unable to reach ${agentName}. Check your connection and try again.`,
+            : t("networkErrorAgent", { name: agentName }),
         },
       ]);
     }
-  }, [agentName, handleParsedEvent, resetTurnState, sending, sessionId]);
+  }, [agentName, fallbackSuggestions, handleParsedEvent, resetTurnState, sending, sessionId, t]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1062,7 +1088,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
               {agentName}
             </div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.48)", marginTop: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Quantik Command Drawer
+              {t("commandDrawer")}
             </div>
           </div>
           <button
@@ -1117,7 +1143,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
               color: "rgba(255,255,255,0.78)",
             }}
           >
-            {myAgent?.autopilot_enabled ? "Autopilot On" : "Autopilot Off"}
+            {myAgent?.autopilot_enabled ? t("autopilotOn") : t("autopilotOff")}
           </div>
           <div
             style={{
@@ -1159,7 +1185,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
             }}
           >
             <div style={{ fontSize: 34, marginBottom: 12 }}>{agentEmoji}</div>
-            Ask about portfolio, signals, risk, recent trades, or runtime status. Internal systems are already in the loop.
+            {t("emptyState")}
           </div>
         )}
 
@@ -1377,7 +1403,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
           rows={1}
-          placeholder={`Message ${agentName}...`}
+          placeholder={t("inputPlaceholder", { name: agentName })}
           style={{
             flex: 1,
             minHeight: 48,

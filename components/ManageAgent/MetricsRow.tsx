@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WalletBalance, PerformanceSummary } from "@/lib/api";
 
@@ -17,41 +18,42 @@ interface MetricCard {
 }
 
 export function MetricsRow({ wallet, performance, loading }: MetricsRowProps) {
+  const t = useTranslations("manageAgent");
   const totalReturnPct = wallet?.pnlPct ?? null;
   const todayPnlPct = wallet?.pnlTodayPct ?? null;
   const streak = performance?.metrics?.currentStreak ?? 0;
 
   const metrics: MetricCard[] = [
     {
-      label: "Total Return",
+      label: t("totalReturn"),
       value: totalReturnPct != null ? `${totalReturnPct >= 0 ? "+" : ""}${(totalReturnPct * 100).toFixed(1)}%` : "--",
-      delta: todayPnlPct != null ? `${todayPnlPct >= 0 ? "+" : ""}${(todayPnlPct * 100).toFixed(1)}% today` : wallet?.balanceMessage ?? undefined,
+      delta: todayPnlPct != null ? `${todayPnlPct >= 0 ? "+" : ""}${(todayPnlPct * 100).toFixed(1)}% ${t("today")}` : wallet?.balanceMessage ?? undefined,
       color: totalReturnPct == null ? "rgba(255,255,255,0.45)" : totalReturnPct >= 0 ? "#30d158" : "#ff453a",
     },
     {
-      label: "Win Rate",
+      label: t("winRate"),
       value: wallet ? `${(wallet.winRate * 100).toFixed(0)}%` : "--",
-      delta: wallet ? `${wallet.totalTrades} trades` : undefined,
+      delta: wallet ? `${wallet.totalTrades} ${t("trades")}` : undefined,
       color: "#0a84ff",
     },
     {
-      label: "Max Drawdown",
+      label: t("maxDrawdown"),
       value: wallet?.drawdown != null ? `${(wallet.drawdown * 100).toFixed(1)}%` : "--",
-      delta: wallet?.drawdownLimit != null ? `limit ${(wallet.drawdownLimit * 100).toFixed(0)}%` : undefined,
+      delta: wallet?.drawdownLimit != null ? `${t("limit")} ${(wallet.drawdownLimit * 100).toFixed(0)}%` : undefined,
       color: "#ff453a",
     },
     {
-      label: "Streak",
+      label: t("streak"),
       value: streak !== 0 ? `${streak > 0 ? streak : Math.abs(streak)}` : "--",
       delta: streak !== 0
-        ? `${streak > 0 ? "winning" : "losing"}`
+        ? `${streak > 0 ? t("winning") : t("losing")}`
         : undefined,
       color: streak >= 0 ? "#bf5af2" : "#ff453a",
     },
     {
-      label: "Trades",
+      label: t("trades"),
       value: wallet ? `${wallet.totalTrades}` : "--",
-      delta: performance ? `$${performance.metrics.totalVolume.toLocaleString("en-US", { maximumFractionDigits: 0 })} vol` : undefined,
+      delta: performance ? `$${performance.metrics.totalVolume.toLocaleString("en-US", { maximumFractionDigits: 0 })} ${t("vol")}` : undefined,
       color: "#ff9f0a",
     },
   ];

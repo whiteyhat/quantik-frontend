@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -20,6 +21,8 @@ interface ApiKeyPanelProps {
 }
 
 export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
+  const t = useTranslations("apiKey");
+  const tc = useTranslations("common");
   const [isRotating, setIsRotating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
   const apiBaseUrl = `${BASE_URL}/api/v1/tools`;
 
   const handleRotate = useCallback(async () => {
-    if (!confirm("Rotate API key? The current key will stop working immediately.")) return;
+    if (!confirm(t("rotateConfirm"))) return;
 
     setIsRotating(true);
     setError(null);
@@ -38,17 +41,17 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
 
       if (!activeKey) {
         // No active key — create via BYO agent creation flow
-        setError("No active key found. Please create a new one from Agent Factory.");
+        setError(t("noActiveKey"));
       } else {
         const rotateData = await api.rotateApiKey(activeKey.id);
         if (rotateData.api_key) {
           setNewKey(rotateData.api_key);
         } else {
-          setError("Failed to rotate key");
+          setError(t("failedToRotate"));
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to rotate key");
+      setError(err instanceof Error ? err.message : t("failedToRotate"));
     } finally {
       setIsRotating(false);
     }
@@ -64,14 +67,14 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
           }}
         >
-          API Key & Endpoints
+          {t("title")}
         </span>
       </div>
 
       {/* API Key */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-          API KEY
+          {t("apiKey")}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <code
@@ -94,7 +97,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
               cursor: isRotating ? "not-allowed" : "pointer", outline: "none", flexShrink: 0,
             }}
           >
-            {isRotating ? "..." : "Rotate"}
+            {isRotating ? "..." : t("rotate")}
           </button>
         </div>
       </div>
@@ -102,7 +105,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
       {/* New key display */}
       {newKey && (
         <div style={{ marginBottom: 16, padding: "10px 12px", borderRadius: 8, background: "rgba(48,209,88,0.06)", border: "1px solid rgba(48,209,88,0.15)" }}>
-          <div style={{ fontSize: 11, color: "#30d158", fontWeight: 600, marginBottom: 4 }}>New API Key (save now!):</div>
+          <div style={{ fontSize: 11, color: "#30d158", fontWeight: 600, marginBottom: 4 }}>{t("newKey")}</div>
           <code style={{ fontSize: 11, color: "#30d158", fontFamily: '"SF Mono", "JetBrains Mono", monospace', wordBreak: "break-all" }}>
             {newKey}
           </code>
@@ -114,7 +117,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
               color: "#30d158", fontSize: 10, fontWeight: 600, cursor: "pointer", outline: "none",
             }}
           >
-            Copy
+            {tc("copy")}
           </button>
         </div>
       )}
@@ -126,7 +129,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
       {/* API Base URL */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-          API BASE URL
+          {t("apiBaseUrl")}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <code
@@ -149,7 +152,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
               cursor: "pointer", outline: "none", flexShrink: 0,
             }}
           >
-            Copy
+            {tc("copy")}
           </button>
         </div>
       </div>
@@ -157,7 +160,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
       {/* Skill Manifest */}
       <div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-          SKILL MANIFEST
+          {t("skillManifest")}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <code
@@ -180,7 +183,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
               cursor: "pointer", outline: "none", flexShrink: 0,
             }}
           >
-            Copy
+            {tc("copy")}
           </button>
         </div>
       </div>
@@ -195,7 +198,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
             textDecoration: "none",
           }}
         >
-          View Full API Docs →
+          {t("viewDocs")} →
         </a>
       </div>
     </div>

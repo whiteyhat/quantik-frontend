@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
@@ -25,6 +26,7 @@ interface ConnectionActivityLogProps {
 }
 
 export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
+  const t = useTranslations("activityLog");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -68,10 +70,10 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
 
   function relativeTime(ts: number): string {
     const diff = Date.now() - ts;
-    if (diff < 60_000) return `${Math.round(diff / 1000)}s ago`;
-    if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`;
-    if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}h ago`;
-    return `${Math.round(diff / 86_400_000)}d ago`;
+    if (diff < 60_000) return t("sAgo", { s: Math.round(diff / 1000) });
+    if (diff < 3_600_000) return t("mAgo", { m: Math.round(diff / 60_000) });
+    if (diff < 86_400_000) return t("hAgo", { h: Math.round(diff / 3_600_000) });
+    return t("dAgo", { d: Math.round(diff / 86_400_000) });
   }
 
   function statusColor(code: number): string {
@@ -83,14 +85,14 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
   return (
     <div style={panelStyle}>
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-        Activity Log
+        {t("title")}
       </span>
 
       {loading ? (
-        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>Loading...</div>
+        <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>{t("loading")}</div>
       ) : error ? (
         <div style={{ marginTop: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>Failed to load activity</div>
+          <div style={{ fontSize: 12, color: "#ff453a", ...mono, marginBottom: 8 }}>{t("failedToLoad")}</div>
           <button
             onClick={() => { setLoading(true); fetchLog(); }}
             style={{
@@ -100,12 +102,12 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
               cursor: "pointer", outline: "none", ...mono,
             }}
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       ) : entries.length === 0 ? (
         <div style={{ marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.25)", ...mono }}>
-          No API activity yet. Your BYO agent will appear here once it starts calling tools.
+          {t("noActivity")}
         </div>
       ) : (
         <>
@@ -160,7 +162,7 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
                 cursor: loadingMore ? "not-allowed" : "pointer", outline: "none", ...mono,
               }}
             >
-              {loadingMore ? "Loading..." : "Load More"}
+              {loadingMore ? t("loading") : t("loadMore")}
             </button>
           )}
         </>

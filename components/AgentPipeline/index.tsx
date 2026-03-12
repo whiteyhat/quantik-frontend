@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { SigmaDecision } from "./SigmaDecision";
 import { SignalValidator } from "./SignalValidator";
@@ -219,6 +220,15 @@ function ProbabilityRing({ prob, market }: { prob: number; market: number }) {
   );
 }
 
+function ClickToOpen() {
+  const t = useTranslations("agentPipeline");
+  return (
+    <span style={{ display: "block", marginTop: 4, fontSize: 10, color: "var(--ios-blue)", opacity: 0.7 }}>
+      {t("clickToOpen")}
+    </span>
+  );
+}
+
 /* ── Source Pill with tooltip ────────────────────────────────────────────────── */
 
 function SourcePill({ article }: { article: { title: string; url: string; source: string } }) {
@@ -276,9 +286,7 @@ function SourcePill({ article }: { article: { title: string; url: string; source
         >
           {article.title}
           {article.url && (
-            <span style={{ display: "block", marginTop: 4, fontSize: 10, color: "var(--ios-blue)", opacity: 0.7 }}>
-              Click to open ↗
-            </span>
+            <ClickToOpen />
           )}
         </div>
       )}
@@ -289,10 +297,11 @@ function SourcePill({ article }: { article: { title: string; url: string; source
 /* ── Aura Card ───────────────────────────────────────────────────────────────── */
 
 function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
+  const t = useTranslations("agentPipeline");
   const isIdle = status === "idle";
   const score = num(data?.sentiment_score);
   const sentimentLabel =
-    score >= 0.5 ? "BULLISH" : score >= 0.1 ? "POSITIVE" : score <= -0.5 ? "BEARISH" : score <= -0.1 ? "NEGATIVE" : "NEUTRAL";
+    score >= 0.5 ? t("sentimentBullish") : score >= 0.1 ? t("sentimentPositive") : score <= -0.5 ? t("sentimentBearish") : score <= -0.1 ? t("sentimentNegative") : t("sentimentNeutral");
   const badgeColor =
     score >= 0.1 ? "var(--ios-purple)" : score <= -0.1 ? "var(--ios-red)" : "var(--ios-orange)";
   const scoreColor = score >= 0 ? "var(--ios-green)" : "var(--ios-red)";
@@ -333,6 +342,7 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
 /* ── Flux Card ───────────────────────────────────────────────────────────────── */
 
 function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
+  const t = useTranslations("agentPipeline");
   const isIdle = status === "idle";
   const gradeColors: Record<string, string> = {
     A: "var(--ios-green)", B: "var(--ios-blue)", C: "var(--ios-orange)", D: "var(--ios-red)",
@@ -340,7 +350,7 @@ function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
   const gradeColor = gradeColors[data?.liquidity_grade ?? ""] ?? "var(--text-tertiary)";
   const spread = num(data?.spread);
   const depth = num(data?.depth_score);
-  const depthLabel = depth > 0.7 ? "High (K)" : depth > 0.4 ? "Medium" : depth > 0 ? "Low" : "—";
+  const depthLabel = depth > 0.7 ? "High (K)" : depth > 0.4 ? t("validator.medium") : depth > 0 ? t("validator.low") : "—";
 
   return (
     <div className="glass-card" style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}>
@@ -351,18 +361,18 @@ function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
       />
       {data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <SpreadRow label="Spread" value={`${spread.toFixed(1)}¢`} fill={Math.min(spread / 5, 1)} color="var(--ios-blue)" />
-          <MetricRow label="Depth" value={depthLabel} />
-          <MetricRow label="Slippage" value={spread > 0 ? `${(spread * 0.15).toFixed(1)}¢` : "—"} />
+          <SpreadRow label={t("spread")} value={`${spread.toFixed(1)}¢`} fill={Math.min(spread / 5, 1)} color="var(--ios-blue)" />
+          <MetricRow label={t("depth")} value={depthLabel} />
+          <MetricRow label={t("slippage")} value={spread > 0 ? `${(spread * 0.15).toFixed(1)}¢` : "—"} />
           {(data.whale_signals ?? 0) > 0 && (
-            <MetricRow label="Whale signals" value={String(data.whale_signals)} valueColor="var(--ios-purple)" />
+            <MetricRow label={t("whaleSignals")} value={String(data.whale_signals)} valueColor="var(--ios-purple)" />
           )}
           <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.45, margin: "8px 0 0" }}>
             {data.liquidity_grade === "A" || data.liquidity_grade === "B"
-              ? `This market is easy to buy and sell in — tight pricing with ${depth > 0.7 ? "plenty of" : "enough"} money available.`
+              ? depth > 0.7 ? t("fluxDescABPlenty") : t("fluxDescABEnough")
               : data.liquidity_grade === "C"
-                ? "Trading here costs a bit more — gaps in pricing may eat into your returns."
-                : "This market is thin — buying or selling could move the price against you significantly."}
+                ? t("fluxDescC")
+                : t("fluxDescD")}
           </p>
         </div>
       ) : (
@@ -395,6 +405,7 @@ function SpreadRow({ label, value, fill, color }: { label: string; value: string
 /* ── Oracle Card ─────────────────────────────────────────────────────────────── */
 
 function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
+  const t = useTranslations("pipelineLog");
   const isIdle = status === "idle";
   const prob = num(data?.prob_estimate);
   const conf = num(data?.confidence);
@@ -404,10 +415,10 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
   const delta = prob - market;
   const tooltipText =
     delta > 0.02
-      ? `Our model thinks this is more likely than the market does — a potential buying opportunity.`
+      ? t("oracleBullish")
       : delta < -0.02
-        ? `Our model sees this as less likely than what the market prices — caution advised.`
-        : `Our model agrees with the market price — no clear advantage either way right now.`;
+        ? t("oracleBearish")
+        : t("oracleNeutral");
 
   return (
     <div
@@ -464,6 +475,7 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
 /* ── Clause Card ─────────────────────────────────────────────────────────────── */
 
 function ClauseCard({ data, status }: { data?: ClauseResult; status: string }) {
+  const t = useTranslations("agentPipeline");
   const isIdle = status === "idle";
   const riskColors: Record<string, string> = {
     LOW: "var(--ios-green)", MED: "var(--ios-orange)", HIGH: "var(--ios-red)",
@@ -476,7 +488,7 @@ function ClauseCard({ data, status }: { data?: ClauseResult; status: string }) {
       <CardHeader
         emoji="⚖️"
         name="Clause"
-        badge={data ? <CardBadge label={isClear ? "CLEAR" : data.resolution_risk} color={riskColor} /> : undefined}
+        badge={data ? <CardBadge label={isClear ? t("panels.echoChamberClear") : data.resolution_risk} color={riskColor} /> : undefined}
       />
       {data ? (
         <div style={{ textAlign: "center", paddingTop: 4 }}>
@@ -492,10 +504,10 @@ function ClauseCard({ data, status }: { data?: ClauseResult; status: string }) {
             <span style={{ fontSize: 20, color: riskColor }}>{isClear ? "✓" : "⚠"}</span>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
-            {isClear ? "No risk flags" : `${data.technicality_risks?.length} risk(s)`}
+            {isClear ? t("clauseClear") : t("clauseRisks", { count: data.technicality_risks?.length })}
           </div>
           <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4 }}>
-            {isClear ? "Market rules verified compliant." : data.technicality_risks?.[0] ?? "Review required."}
+            {isClear ? t("clauseCompliant") : data.technicality_risks?.[0] ?? t("clauseReviewRequired")}
           </div>
         </div>
       ) : (
@@ -508,6 +520,7 @@ function ClauseCard({ data, status }: { data?: ClauseResult; status: string }) {
 /* ── Edge Card ───────────────────────────────────────────────────────────────── */
 
 function EdgeCard({ data, status }: { data?: EdgeResult; status: string }) {
+  const t = useTranslations("agentPipeline");
   const isIdle = status === "idle";
   const ev = num(data?.net_ev);
   const kelly = num(data?.kelly);
@@ -522,28 +535,24 @@ function EdgeCard({ data, status }: { data?: EdgeResult; status: string }) {
       />
       {data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {pMkt > 0 && <MetricRow label="P(mkt)" value={pMkt.toFixed(3)} />}
+          {pMkt > 0 && <MetricRow label={t("edgePMkt")} value={pMkt.toFixed(3)} />}
           <MetricRow
-            label="Edge"
+            label={t("edgeLabel")}
             value={`${ev > 0 ? "+" : ""}${ev.toFixed(1)}%`}
             valueColor={ev > 0 ? "var(--ios-green)" : "var(--ios-red)"}
           />
           <MetricRow
-            label="EV Grade"
+            label={t("evGrade")}
             value={data.ev_grade}
             valueColor={data.ev_grade === "A" ? "var(--ios-green)" : data.ev_grade === "B" ? "var(--ios-blue)" : "var(--ios-orange)"}
           />
           <MetricRow
-            label="Kelly"
+            label={t("kellyLabel")}
             value={`${(kelly * 100).toFixed(1)}%`}
             valueColor="var(--ios-green)"
           />
           <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.45, margin: "8px 0 0" }}>
-            {ev > 3
-              ? `The price looks off — our math says this bet pays more than it should on average.`
-              : ev > 0
-                ? `There's a small gap in your favor, but the advantage is modest — size carefully.`
-                : `The numbers don't favor this bet right now — the market price looks fair or expensive.`}
+            {ev > 3 ? t("edgeDescStrong") : ev > 0 ? t("edgeDescModest") : t("edgeDescWeak")}
           </p>
         </div>
       ) : (
@@ -556,16 +565,17 @@ function EdgeCard({ data, status }: { data?: EdgeResult; status: string }) {
 /* ── Idle placeholder ─────────────────────────────────────────────────────────── */
 
 function IdlePlaceholder({ status }: { status: string }) {
+  const t = useTranslations("agentPipeline");
   const isRunning = status === "running";
   return (
     <div style={{ textAlign: "center", padding: "16px 0", color: isRunning ? "var(--ios-blue)" : "var(--text-tertiary)", fontSize: 12 }}>
       {isRunning ? (
         <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ios-blue)", display: "inline-block", animation: "pipelinePulse 1.2s ease-in-out infinite" }} />
-          Analyzing...
+          {t("analyzing")}
         </span>
       ) : (
-        "Awaiting pipeline"
+        t("awaitingPipeline")
       )}
     </div>
   );
@@ -584,6 +594,7 @@ function SynthesizedInsight({
   insightText: string;
   insightLoading: boolean;
 }) {
+  const t = useTranslations("agentPipeline");
   const fallback = (() => {
     const conf = num(sigma.confidence);
     const ev = num(edge?.net_ev);
@@ -614,7 +625,7 @@ function SynthesizedInsight({
       <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{"✨"}</span>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>
-          Synthesized Insight
+          {t("synthesizedInsight")}
         </div>
         {insightLoading && !insightText ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -631,7 +642,7 @@ function SynthesizedInsight({
                 />
               ))}
             </div>
-            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Relay synthesizing...</span>
+            <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("relaySynthesizing")}</span>
             <style>{`@keyframes relayPulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
           </div>
         ) : (
@@ -650,6 +661,7 @@ function SynthesizedInsight({
 /* ── Alpha Signal Card ────────────────────────────────────────────────────────── */
 
 function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResult }) {
+  const t = useTranslations("agentPipeline");
   const wallet = useQuantikStore((s) => s.wallet);
   const bankroll = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
   const sizeUsd = num(sigma.size_usd) || (edge && bankroll > 0 ? bankroll * num(edge.recommended_size) / 100 : 0);
@@ -661,12 +673,12 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
     <div className="glass-card" style={{ padding: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
         <span style={{ fontSize: 16 }}>{"⚡"}</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Alpha Signal</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("alphaSignal")}</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 10, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
-            Expected Value
+            {t("expectedValue")}
           </div>
           <div className="font-mono-data" style={{ fontSize: 22, fontWeight: 800, color: expectedValue >= 0 ? "var(--ios-green)" : "var(--ios-red)" }}>
             {expectedValue >= 0 ? "+" : ""}${Math.abs(expectedValue).toFixed(0)}
@@ -674,7 +686,7 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
         </div>
         <div>
           <div style={{ fontSize: 10, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
-            Kelly Size
+            {t("kellySize")}
           </div>
           <div className="font-mono-data" style={{ fontSize: 22, fontWeight: 800, color: "var(--ios-blue)" }}>
             ${kellySize > 0 ? kellySize.toFixed(0) : sizeUsd.toFixed(0)}
@@ -683,8 +695,8 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
       </div>
       <div style={{ fontSize: 11, color: "var(--text-tertiary)", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
         {bankroll > 0
-          ? `Based on $${(bankroll / 1000).toFixed(0)}k live bankroll • 1/4 Kelly Fraction`
-          : "No funded bankroll detected yet. Fund the wallet before sizing live trades."}
+          ? t("bankrollDesc", { amount: (bankroll / 1000).toFixed(0) })
+          : t("noBankroll")}
       </div>
     </div>
   );
@@ -693,18 +705,19 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
 /* ── Lucifer Critic Card ──────────────────────────────────────────────────────── */
 
 function LuciferCriticCard({ data }: { data?: LuciferResult }) {
+  const t = useTranslations("agentPipeline");
   const daScore = num(data?.devils_advocate_score);
   const isVeto = daScore > 0.7;
   const isAccept = daScore <= 0.5;
   const badgeColor = isVeto ? "var(--ios-red)" : isAccept ? "var(--ios-green)" : "var(--ios-orange)";
-  const badgeLabel = isVeto ? "VETO" : isAccept ? "ACCEPT" : "REVIEW";
+  const badgeLabel = isVeto ? t("verdictVeto") : isAccept ? t("verdictAccept") : t("verdictReview");
 
   return (
     <div className="glass-card" style={{ padding: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{ fontSize: 16 }}>{"😈"}</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Lucifer (Critic)</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("luciferTitle")}</span>
         </div>
       </div>
       {data ? (
@@ -712,7 +725,7 @@ function LuciferCriticCard({ data }: { data?: LuciferResult }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div>
               <div style={{ fontSize: 10, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
-                Adversarial Score
+                {t("adversarialScore")}
               </div>
               <span className="font-mono-data" style={{ fontSize: 22, fontWeight: 800, color: badgeColor }}>
                 {daScore.toFixed(2)}
