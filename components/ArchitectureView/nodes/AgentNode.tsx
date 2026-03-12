@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { MainNodeData } from "../data/architectureData";
 
@@ -33,6 +34,7 @@ const pulseRingStyle: React.CSSProperties = {
 };
 
 function AgentNodeComponent({ data }: NodeProps) {
+  const t = useTranslations("manageAgent.architecture");
   const d = data as unknown as MainNodeData;
   const [hovered, setHovered] = useState(false);
 
@@ -86,7 +88,7 @@ function AgentNodeComponent({ data }: NodeProps) {
             fontFamily: '"SF Mono", monospace',
           }}
         >
-          MAIN
+          {t("mainBadge")}
         </span>
 
         {/* Handles on all 4 sides */}

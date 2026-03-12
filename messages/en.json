@@ -96,7 +96,206 @@
     "resolutionDate": "Resolution Date",
     "wdkWallet": "WDK Wallet: ",
     "balance": "Balance:",
-    "chatWithAgent": "CHAT WITH {name}"
+    "chatWithAgent": "CHAT WITH {name}",
+    "architecture": {
+      "infoBadgeTitle": "Enterprise Architecture: Neural Web",
+      "infoBadgeSubtitle": "System operational. 7 sub-agents connected. 30+ service layers active.",
+      "mainBadge": "MAIN",
+      "closePanel": "Close panel",
+      "viewOnPolygonscan": "View on Polygonscan",
+      "viewOnPolymarket": "View on Polymarket",
+      "shared": "Shared",
+      "personality": "Personality",
+      "tradingProfile": "Trading Profile",
+      "riskProfile": "Risk Profile",
+      "marketPreferences": "Market Preferences",
+      "deployment": "Deployment",
+      "connectedAgents": "Connected Agents",
+      "connectedServices": "Connected Services",
+      "description": "Description",
+      "about": "About",
+      "liveFeed": "Live Feed",
+      "dataSources": "Data Sources",
+      "systemLogs": "System Logs",
+      "pillType": "Type",
+      "pillDecisions": "Decisions",
+      "pillInstinct": "Instinct",
+      "pillPatience": "Patience",
+      "pillGoal": "Goal",
+      "pillApproach": "Approach",
+      "pillProtection": "Protection",
+      "pillSense": "Sense",
+      "pillAssets": "Assets",
+      "wallet": "Wallet",
+      "deployed": "Deployed",
+      "created": "Created",
+      "agentKey": "Agent Key",
+      "latency": "Latency",
+      "parent": "Parent",
+      "protocol": "Protocol",
+      "endpoint": "Endpoint",
+      "agentDescAura": "Analyzes market sentiment from news, social media, and financial feeds. Detects echo chambers and contrarian signals.",
+      "agentDescEdge": "Calculates expected value, Kelly fraction, and optimal position sizing based on probability estimates and market odds.",
+      "agentDescOracle": "Estimates true probability using ensemble ML models, historical patterns, and LLM reasoning. Compares against market-implied odds.",
+      "agentDescLucifer": "Devil's advocate agent. Challenges bullish theses, identifies bias flags, and can veto trades that fail stress tests.",
+      "agentDescFlux": "Routes liquidity across DEXs (Uniswap, Curve, 1inch). Monitors spread, depth, and whale activity for optimal execution.",
+      "agentDescClause": "Evaluates smart contract risks, resolution mechanics, and gas optimization for on-chain trading operations.",
+      "agentDescSigma": "Final decision engine. Synthesizes all agent outputs into a BET_YES, BET_NO, or PASS with confidence-weighted sizing.",
+      "agentDescFallback": "Specialized sub-agent in the trading pipeline."
+    },
+    "agentWorld": {
+      "loading": "INITIALIZING QUANTIK WORLD",
+      "loadFailed": "WORLD LOAD FAILED",
+      "pipelinePosition": "PIPELINE POSITION",
+      "systemRoom": "System Room",
+      "awaitingPipeline": "Awaiting pipeline activation.",
+      "statusLabel": "Status: {status}",
+      "metrics": {
+        "probability": "Probability",
+        "sentiment": "Sentiment",
+        "confidence": "Confidence",
+        "edge": "Edge",
+        "risk": "Risk",
+        "position": "Position",
+        "decision": "Decision",
+        "resolutionRisk": "Resolution Risk"
+      },
+      "agents": {
+        "aura": {
+          "title": "Sentiment Oracle",
+          "description": "AURA scans the pulse of social media, news feeds, and community sentiment in real-time. She reads the crowd's emotional state to detect fear, greed, and momentum shifts before they show up in price action.",
+          "specialty": "Social sentiment & crowd psychology",
+          "pipelinePhase": "Parallel Phase 1",
+          "personality": [
+            "Empathic",
+            "Intuitive",
+            "Alert"
+          ],
+          "activityText": {
+            "idle": "Monitoring social feeds passively, waiting for pipeline activation.",
+            "running": "Scanning Twitter, Reddit, Discord, and news APIs for sentiment signals.",
+            "done": "Sentiment analysis complete — crowd mood and momentum indicators locked in.",
+            "error": "Feed aggregation failed — API rate limits or connectivity issues detected."
+          }
+        },
+        "flux": {
+          "title": "Liquidity Analyst",
+          "description": "FLUX dives deep into order books, volume flows, and liquidity depth. He maps where the money is moving, detects whale activity, and identifies thin markets where slippage could eat your edge.",
+          "specialty": "Liquidity depth & volume flow analysis",
+          "pipelinePhase": "Parallel Phase 1",
+          "personality": [
+            "Analytical",
+            "Precise",
+            "Data-driven"
+          ],
+          "activityText": {
+            "idle": "Watching order book depth and volume flow patterns.",
+            "running": "Analyzing liquidity pools, tracking volume spikes and whale orders.",
+            "done": "Liquidity map complete — volume patterns and depth analysis delivered.",
+            "error": "Order book data stream interrupted — exchange API timeout."
+          }
+        },
+        "clause": {
+          "title": "Contract Auditor",
+          "description": "CLAUSE is the legal mind of the pipeline. She parses Polymarket resolution criteria, identifies ambiguous clauses, and flags contracts where the outcome could be disputed or misinterpreted.",
+          "specialty": "Resolution criteria & contract risk parsing",
+          "pipelinePhase": "Parallel Phase 1",
+          "personality": [
+            "Meticulous",
+            "Cautious",
+            "Thorough"
+          ],
+          "activityText": {
+            "idle": "Standing by, monitoring contract terms for changes.",
+            "running": "Parsing resolution criteria, checking for ambiguities and edge cases.",
+            "done": "Contract audit complete — resolution risk and clause analysis ready.",
+            "error": "Parse error — contract structure mismatch or undefined terms."
+          }
+        },
+        "oracle": {
+          "title": "Probability Engine",
+          "description": "ORACLE is the mathematical core. He ingests all market data, runs Monte Carlo simulations, and computes calibrated probability estimates. His numbers are the foundation every downstream agent relies on.",
+          "specialty": "Probability computation & model calibration",
+          "pipelinePhase": "Sequential Step 4",
+          "personality": [
+            "Mathematical",
+            "Rigorous",
+            "Objective"
+          ],
+          "activityText": {
+            "idle": "Models idle, awaiting parallel phase completion.",
+            "running": "Running Monte Carlo simulations, calibrating probability models.",
+            "done": "Probabilities computed — calibrated estimates delivered to EDGE.",
+            "error": "Model divergence — numerical instability or data feed corruption."
+          }
+        },
+        "edge": {
+          "title": "Position Sizer",
+          "description": "EDGE calculates optimal position sizes using Kelly criterion and custom risk models. He weighs the probability edge against downside risk to determine exactly how much capital to deploy.",
+          "specialty": "Kelly criterion & risk-adjusted position sizing",
+          "pipelinePhase": "Sequential Step 5",
+          "personality": [
+            "Disciplined",
+            "Risk-aware",
+            "Decisive"
+          ],
+          "activityText": {
+            "idle": "Risk parameters loaded, awaiting Oracle's probability output.",
+            "running": "Computing Kelly fraction, running drawdown simulations.",
+            "done": "Position sized — risk-reward ratio and optimal stake calculated.",
+            "error": "Negative edge detected — no viable position size within risk limits."
+          }
+        },
+        "lucifer": {
+          "title": "Devil's Advocate",
+          "description": "LUCIFER exists to break your thesis. He stress-tests every assumption, finds the holes in your logic, and plays devil's advocate so you don't walk into a trap. If he can't break it, the thesis is strong.",
+          "specialty": "Thesis stress-testing & contrarian analysis",
+          "pipelinePhase": "Sequential Step 6",
+          "personality": [
+            "Contrarian",
+            "Ruthless",
+            "Skeptical"
+          ],
+          "activityText": {
+            "idle": "Sharpening arguments, waiting for a thesis to tear apart.",
+            "running": "Stress-testing thesis from every angle, probing for weaknesses.",
+            "done": "Challenge complete — thesis either hardened or flagged with red flags.",
+            "error": "Logic failure — too many contradictions to reconcile."
+          }
+        },
+        "sigma": {
+          "title": "Final Synthesizer",
+          "description": "SIGMA is the commander. He weighs every signal from all 6 agents, resolves conflicts, and renders the final GO/NO-GO decision. His word is the last before capital moves.",
+          "specialty": "Multi-signal synthesis & trade decision",
+          "pipelinePhase": "Final Step 7",
+          "personality": [
+            "Strategic",
+            "Balanced",
+            "Authoritative"
+          ],
+          "activityText": {
+            "idle": "Awaiting all agent signals for final synthesis.",
+            "running": "Weighing all signals, resolving conflicts, computing final verdict.",
+            "done": "Verdict rendered — trade decision synthesized from all 7 agents.",
+            "error": "Synthesis failed — conflicting signals could not be reconciled."
+          }
+        }
+      },
+      "rooms": {
+        "hatchery": {
+          "title": "Command Center",
+          "description": "The HATCHERY is where new pipeline runs are spawned. Your main agent starts here and returns after each execution cycle."
+        },
+        "stack": {
+          "title": "Treasury Vault",
+          "description": "The STACK monitors live price feeds, tracks portfolio positions, and safeguards the capital allocation. Gold sparkles when prices update."
+        },
+        "victory": {
+          "title": "Execution Chamber",
+          "description": "The VICTORY room is where successful trades are celebrated. When all agents agree and a trade executes, confetti fills this room."
+        }
+      }
+    }
   },
   "tradeHistory": {
     "title": "Trade History",
@@ -798,7 +997,6 @@
     "pageTitle": "AGENT FACTORY",
     "agentCount": "1/1 AGENTS",
     "creationProgress": "Creation Progress",
-
     "steps": {
       "basicIdentity": "Basic Identity",
       "basicIdentityDesc": "Who your agent is",
@@ -811,7 +1009,6 @@
       "launchAgent": "Launch your agent",
       "launchAgentDesc": "Review and go live"
     },
-
     "stepHeaders": {
       "step1Title": "Initialize New Agent",
       "step1Desc": "Define the core identity and behavioral parameters of your trading construct.",
@@ -824,14 +1021,12 @@
       "step5Title": "Agent Deployment Reveal",
       "step5Desc": "Finalize your AI Trading Agent setup."
     },
-
     "nextLabels": {
       "step1": "Continue to Strategy",
       "step2": "Continue to Risk & Money",
       "step3": "Continue to Preferences",
       "step4": "Launch your agent"
     },
-
     "pathSelection": {
       "title": "Choose Your Path",
       "subtitle": "Create a new agent from scratch, or connect your own OpenClaw agent.",
@@ -842,7 +1037,6 @@
       "byoDesc": "Connect your external AI agent to Quantik's tools, pipeline, and trading infrastructure via API",
       "byoBadge": "OPENCLAW COMPATIBLE"
     },
-
     "identity": {
       "sectionTitle": "Identity Configuration",
       "nameLabel": "Designation / Name",
@@ -866,7 +1060,6 @@
       "observerTitle": "Patient Observer",
       "observerDesc": "Waits for high-probability setups, ignores market noise."
     },
-
     "trading": {
       "instinctTitle": "Trading Instinct",
       "instinctTooltip": "What kind of money-making opportunities does {name} chase?",
@@ -895,7 +1088,6 @@
       "wealthTitle": "Wealth Builder",
       "wealthDesc": "steady compounding growth"
     },
-
     "risk": {
       "moneyTitle": "Money Approach",
       "moneyTooltip": "How much of your money goes into each trade — safe, smart, or all-in?",
@@ -914,7 +1106,6 @@
       "handsOffTitle": "Hands-off",
       "handsOffDesc": "prioritizes profit-taking over defensive stops"
     },
-
     "prefs": {
       "senseTitle": "Market Sense",
       "senseTooltip": "Does {name} follow strict math rules or also read news and social buzz?",
@@ -933,7 +1124,6 @@
       "allRounderTitle": "All-Rounder",
       "allRounderDesc": "A versatile strategy across multiple asset classes for diversification."
     },
-
     "launch": {
       "readyBadge": "Ready for Deployment",
       "title": "Agent Deployment Reveal",
@@ -975,7 +1165,6 @@
         "aggressive": "Aggressive"
       }
     },
-
     "locked": {
       "openclawAgent": "OPENCLAW AGENT",
       "quantikAgent": "QUANTIK AGENT",
@@ -992,15 +1181,12 @@
       "confirmDelete": "Yes, Delete Agent",
       "cancel": "Cancel"
     },
-
     "footer": {
       "back": "Back",
       "skipRandomize": "Skip (Randomize)"
     },
-
     "yourAiAgent": "your AI Agent"
   },
-
   "dashboard": {
     "hero": {
       "eyebrow": "Mission Control",

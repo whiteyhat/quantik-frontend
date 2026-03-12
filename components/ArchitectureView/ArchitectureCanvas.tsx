@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   ReactFlow,
   Controls,
@@ -38,6 +39,7 @@ const defaultEdgeOptions = {
 };
 
 export function ArchitectureCanvas() {
+  const t = useTranslations("manageAgent.architecture");
   const { nodes: initialNodes, edges: initialEdges } = useArchitectureState();
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -164,7 +166,7 @@ export function ArchitectureCanvas() {
         }}
       >
         <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.70)" }}>
-          Enterprise Architecture: Neural Web
+          {t("infoBadgeTitle")}
         </span>
         <span
           style={{
@@ -173,7 +175,7 @@ export function ArchitectureCanvas() {
             fontFamily: '"SF Mono", monospace',
           }}
         >
-          System operational. 7 sub-agents connected. 30+ service layers active.
+          {t("infoBadgeSubtitle")}
         </span>
       </div>
     </div>

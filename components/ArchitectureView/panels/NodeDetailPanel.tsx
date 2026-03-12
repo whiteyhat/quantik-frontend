@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import type { Node } from "@xyflow/react";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import {
@@ -139,6 +140,7 @@ function StatusBadge({ status, color }: { status: string; color: string }) {
 // ─── Main Agent Details ──────────────────────────────────────────────────────
 
 function MainNodeDetails({ data }: { data: MainNodeData }) {
+  const t = useTranslations("manageAgent.architecture");
   const myAgent = useQuantikStore((s) => s.myAgent);
 
   return (
@@ -167,10 +169,10 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
           {/* Personality */}
           <StaggerSection index={1}>
             <div>
-              <span style={sectionLabelStyle}>Personality</span>
+              <span style={sectionLabelStyle}>{t("personality")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                <AttributePill label="Type" value={myAgent.personality} color="#BF5AF2" />
-                <AttributePill label="Decisions" value={myAgent.decision_style} color="#007AFF" />
+                <AttributePill label={t("pillType")} value={myAgent.personality} color="#BF5AF2" />
+                <AttributePill label={t("pillDecisions")} value={myAgent.decision_style} color="#007AFF" />
               </div>
             </div>
           </StaggerSection>
@@ -180,11 +182,11 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
           {/* Trading Profile */}
           <StaggerSection index={2}>
             <div>
-              <span style={sectionLabelStyle}>Trading Profile</span>
+              <span style={sectionLabelStyle}>{t("tradingProfile")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                <AttributePill label="Instinct" value={myAgent.trading_instinct} color="#FF9F0A" />
-                <AttributePill label="Patience" value={myAgent.time_patience} color="#30D158" />
-                <AttributePill label="Goal" value={myAgent.profit_dream} color="#FFD60A" />
+                <AttributePill label={t("pillInstinct")} value={myAgent.trading_instinct} color="#FF9F0A" />
+                <AttributePill label={t("pillPatience")} value={myAgent.time_patience} color="#30D158" />
+                <AttributePill label={t("pillGoal")} value={myAgent.profit_dream} color="#FFD60A" />
               </div>
             </div>
           </StaggerSection>
@@ -194,10 +196,10 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
           {/* Risk Profile */}
           <StaggerSection index={3}>
             <div>
-              <span style={sectionLabelStyle}>Risk Profile</span>
+              <span style={sectionLabelStyle}>{t("riskProfile")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                <AttributePill label="Approach" value={myAgent.money_approach} color="#FF453A" />
-                <AttributePill label="Protection" value={myAgent.protection_mindset} color="#64D2FF" />
+                <AttributePill label={t("pillApproach")} value={myAgent.money_approach} color="#FF453A" />
+                <AttributePill label={t("pillProtection")} value={myAgent.protection_mindset} color="#64D2FF" />
               </div>
             </div>
           </StaggerSection>
@@ -207,10 +209,10 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
           {/* Market Preferences */}
           <StaggerSection index={4}>
             <div>
-              <span style={sectionLabelStyle}>Market Preferences</span>
+              <span style={sectionLabelStyle}>{t("marketPreferences")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                <AttributePill label="Sense" value={myAgent.market_sense} color="#007AFF" />
-                <AttributePill label="Assets" value={myAgent.asset_love} color="#30D158" />
+                <AttributePill label={t("pillSense")} value={myAgent.market_sense} color="#007AFF" />
+                <AttributePill label={t("pillAssets")} value={myAgent.asset_love} color="#30D158" />
               </div>
             </div>
           </StaggerSection>
@@ -220,11 +222,11 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
           {/* Deployment Info */}
           <StaggerSection index={5}>
             <div>
-              <span style={sectionLabelStyle}>Deployment</span>
+              <span style={sectionLabelStyle}>{t("deployment")}</span>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                 {myAgent.wallet_address && (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-                    <span style={sectionLabelStyle}>Wallet</span>
+                    <span style={sectionLabelStyle}>{t("wallet")}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ ...monoValueStyle }}>{`${myAgent.wallet_address.slice(0, 6)}...${myAgent.wallet_address.slice(-4)}`}</span>
                       {/* Polygonscan link */}
@@ -232,7 +234,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
                         href={`https://polygonscan.com/address/${myAgent.wallet_address}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="View on Polygonscan"
+                        title={t("viewOnPolygonscan")}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -260,7 +262,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
                         href={`https://polymarket.com/profile/${myAgent.wallet_address}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title="View on Polymarket"
+                        title={t("viewOnPolymarket")}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -287,12 +289,12 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
                 )}
                 {myAgent.deployed_at && (
                   <DetailRow
-                    label="Deployed"
+                    label={t("deployed")}
                     value={new Date(myAgent.deployed_at).toLocaleDateString()}
                   />
                 )}
                 <DetailRow
-                  label="Created"
+                  label={t("created")}
                   value={new Date(myAgent.created_at).toLocaleDateString()}
                 />
               </div>
@@ -306,7 +308,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
       {/* Connected Agents */}
       <StaggerSection index={6}>
         <div>
-          <span style={sectionLabelStyle}>Connected Agents</span>
+          <span style={sectionLabelStyle}>{t("connectedAgents")}</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
             {Object.entries(AGENT_META).map(([key, meta]) => (
               <span
@@ -335,6 +337,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
 // ─── Sub-Agent Details ───────────────────────────────────────────────────────
 
 function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; onNavigateToNode?: (nodeId: string) => void }) {
+  const t = useTranslations("manageAgent.architecture");
   const statusColor =
     data.status === "running" ? "var(--ios-blue)"
     : data.status === "done" ? "var(--ios-green)"
@@ -363,9 +366,9 @@ function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; o
 
       {/* Stats */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <DetailRow label="Agent Key" value={data.agentKey} />
+        <DetailRow label={t("agentKey")} value={data.agentKey} />
         {data.latencyMs !== undefined && (
-          <DetailRow label="Latency" value={`${(data.latencyMs / 1000).toFixed(1)}s`} color="var(--ios-blue)" />
+          <DetailRow label={t("latency")} value={`${(data.latencyMs / 1000).toFixed(1)}s`} color="var(--ios-blue)" />
         )}
       </div>
 
@@ -373,9 +376,9 @@ function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; o
 
       {/* Description */}
       <div>
-        <span style={sectionLabelStyle}>Description</span>
+        <span style={sectionLabelStyle}>{t("description")}</span>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", lineHeight: 1.5, marginTop: 6, marginBottom: 0 }}>
-          {getAgentDescription(data.agentKey)}
+          {getAgentDescription(data.agentKey, t)}
         </p>
       </div>
 
@@ -384,7 +387,7 @@ function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; o
       {/* Connected Services - Fancy List */}
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={sectionLabelStyle}>Connected Services</span>
+          <span style={sectionLabelStyle}>{t("connectedServices")}</span>
           <span
             style={{
               fontSize: 10,
@@ -467,6 +470,7 @@ function ServiceListItem({ icon, label, color, onClick }: { icon: string; label:
 // ─── Service Details ─────────────────────────────────────────────────────────
 
 function ServiceDetails({ data }: { data: ServiceNodeData }) {
+  const t = useTranslations("manageAgent.architecture");
   const [logsOpen, setLogsOpen] = useState(false);
   const details = SERVICE_DETAILS[getServiceId(data)] || null;
 
@@ -495,14 +499,14 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
       {/* Info Section */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <DetailRow
-          label="Parent"
-          value={parentMeta ? `${parentMeta.emoji} ${parentMeta.label}` : "Shared"}
+          label={t("parent")}
+          value={parentMeta ? `${parentMeta.emoji} ${parentMeta.label}` : t("shared")}
           color={parentMeta?.color}
         />
         {details && (
           <>
-            <DetailRow label="Protocol" value={details.protocol} />
-            <DetailRow label="Endpoint" value={details.endpoint.length > 24 ? details.endpoint.slice(0, 24) + "..." : details.endpoint} />
+            <DetailRow label={t("protocol")} value={details.protocol} />
+            <DetailRow label={t("endpoint")} value={details.endpoint.length > 24 ? details.endpoint.slice(0, 24) + "..." : details.endpoint} />
           </>
         )}
       </div>
@@ -513,7 +517,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
 
           {/* Description */}
           <div>
-            <span style={sectionLabelStyle}>About</span>
+            <span style={sectionLabelStyle}>{t("about")}</span>
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, marginTop: 6, marginBottom: 0 }}>
               {details.description}
             </p>
@@ -524,7 +528,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
           {/* Live Feed */}
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={sectionLabelStyle}>Live Feed</span>
+              <span style={sectionLabelStyle}>{t("liveFeed")}</span>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ios-blue)", animation: "pulse-ring 1.2s ease-out infinite" }} />
             </div>
             <div
@@ -558,7 +562,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
 
           {/* Sources */}
           <div>
-            <span style={sectionLabelStyle}>Data Sources</span>
+            <span style={sectionLabelStyle}>{t("dataSources")}</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
               {details.sources.map((src, i) => (
                 <span
@@ -599,7 +603,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={sectionLabelStyle}>System Logs</span>
+                <span style={sectionLabelStyle}>{t("systemLogs")}</span>
                 <span
                   style={{
                     fontSize: 9,
@@ -704,17 +708,17 @@ function getServiceId(data: ServiceNodeData): string {
   return match?.id || data.label.toLowerCase().replace(/\s+/g, "-");
 }
 
-function getAgentDescription(key: string): string {
-  const descriptions: Record<string, string> = {
-    aura: "Analyzes market sentiment from news, social media, and financial feeds. Detects echo chambers and contrarian signals.",
-    edge: "Calculates expected value, Kelly fraction, and optimal position sizing based on probability estimates and market odds.",
-    oracle: "Estimates true probability using ensemble ML models, historical patterns, and LLM reasoning. Compares against market-implied odds.",
-    lucifer: "Devil's advocate agent. Challenges bullish theses, identifies bias flags, and can veto trades that fail stress tests.",
-    flux: "Routes liquidity across DEXs (Uniswap, Curve, 1inch). Monitors spread, depth, and whale activity for optimal execution.",
-    clause: "Evaluates smart contract risks, resolution mechanics, and gas optimization for on-chain trading operations.",
-    sigma: "Final decision engine. Synthesizes all agent outputs into a BET_YES, BET_NO, or PASS with confidence-weighted sizing.",
+function getAgentDescription(key: string, t: (k: string) => string): string {
+  const keyMap: Record<string, string> = {
+    aura: "agentDescAura",
+    edge: "agentDescEdge",
+    oracle: "agentDescOracle",
+    lucifer: "agentDescLucifer",
+    flux: "agentDescFlux",
+    clause: "agentDescClause",
+    sigma: "agentDescSigma",
   };
-  return descriptions[key] || "Specialized sub-agent in the trading pipeline.";
+  return t(keyMap[key] || "agentDescFallback");
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────
@@ -735,6 +739,7 @@ function StaggerSection({ index, children }: { index: number; children: React.Re
 }
 
 export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailPanelProps) {
+  const t = useTranslations("manageAgent.architecture");
   const [closing, setClosing] = useState(false);
   const [visibleNode, setVisibleNode] = useState<Node | null>(null);
 
@@ -787,7 +792,7 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailP
         <button
           onClick={onClose}
           style={closeButtonStyle}
-          aria-label="Close panel"
+          aria-label={t("closePanel")}
           onMouseOver={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
           onMouseOut={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
         >

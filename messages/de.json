@@ -96,7 +96,160 @@
     "resolutionDate": "Auflosungsdatum",
     "wdkWallet": "WDK Wallet: ",
     "balance": "Guthaben:",
-    "chatWithAgent": "CHAT MIT {name}"
+    "chatWithAgent": "CHAT MIT {name}",
+    "agentWorld": {
+      "loading": "QUANTIK WELT WIRD INITIALISIERT",
+      "loadFailed": "WELT LADEN FEHLGESCHLAGEN",
+      "pipelinePosition": "PIPELINE POSITION",
+      "systemRoom": "Systemraum",
+      "awaitingPipeline": "Warte auf Pipeline-Aktivierung.",
+      "statusLabel": "Status: {status}",
+      "metrics": {
+        "probability": "Wahrscheinlichkeit",
+        "sentiment": "Sentiment",
+        "confidence": "Konfidenz",
+        "edge": "Vorteil",
+        "risk": "Risiko",
+        "position": "Position",
+        "decision": "Entscheidung",
+        "resolutionRisk": "Auflosungsrisiko"
+      },
+      "agents": {
+        "aura": {
+          "title": "Sentiment-Orakel",
+          "description": "AURA scannt den Puls sozialer Medien, Nachrichtenfeeds und Community-Sentiment in Echtzeit. Sie liest den emotionalen Zustand der Masse, um Angst, Gier und Impulswechsel zu erkennen, bevor sie in der Preisbewegung auftauchen.",
+          "specialty": "Soziales Sentiment & Massenpsychologie",
+          "pipelinePhase": "Parallele Phase 1",
+          "personality": [
+            "Empathisch",
+            "Intuitiv",
+            "Wachsam"
+          ],
+          "activityText": {
+            "idle": "Passive Uberwachung sozialer Feeds, warte auf Pipeline-Aktivierung.",
+            "running": "Scanne Twitter, Reddit, Discord und Nachrichten-APIs nach Sentiment-Signalen.",
+            "done": "Sentiment-Analyse abgeschlossen — Massenstimmung und Impuls-Indikatoren gespeichert.",
+            "error": "Feed-Aggregation fehlgeschlagen — API-Ratenlimits oder Verbindungsprobleme erkannt."
+          }
+        },
+        "flux": {
+          "title": "Liquiditatsanalyst",
+          "description": "FLUX taucht tief in Orderbuecher, Volumenstrome und Liquiditatstiefe ein. Er kartiert, wohin das Geld fliesst, erkennt Whale-Aktivitat und identifiziert dunne Markte, wo Slippage deinen Vorteil auffressen konnte.",
+          "specialty": "Liquiditatstiefe & Volumenstromanalyse",
+          "pipelinePhase": "Parallele Phase 1",
+          "personality": [
+            "Analytisch",
+            "Prazise",
+            "Datengetrieben"
+          ],
+          "activityText": {
+            "idle": "Beobachte Orderbuch-Tiefe und Volumenstrom-Muster.",
+            "running": "Analysiere Liquiditats-Pools, verfolge Volumenspitzen und Whale-Orders.",
+            "done": "Liquiditats-Karte vollstandig — Volumenmuster und Tiefenanalyse geliefert.",
+            "error": "Orderbuch-Datenstrom unterbrochen — Exchange-API-Timeout."
+          }
+        },
+        "clause": {
+          "title": "Vertragsauditor",
+          "description": "CLAUSE ist das juristische Gehirn der Pipeline. Sie analysiert Polymarket-Auflosungskriterien, identifiziert mehrdeutige Klauseln und markiert Vertrage, bei denen das Ergebnis angefochten oder falsch interpretiert werden konnte.",
+          "specialty": "Auflosungskriterien & Vertragsrisikoanalyse",
+          "pipelinePhase": "Parallele Phase 1",
+          "personality": [
+            "Sorgfaltig",
+            "Vorsichtig",
+            "Grundlich"
+          ],
+          "activityText": {
+            "idle": "Bereit, uberwache Vertragsbedingungen auf Anderungen.",
+            "running": "Analysiere Auflosungskriterien, prufe auf Mehrdeutigkeiten und Grenzfalle.",
+            "done": "Vertragsaudit abgeschlossen — Auflosungsrisiko und Klauselanalyse bereit.",
+            "error": "Parse-Fehler — Vertragsstruktur-Diskrepanz oder undefinierte Begriffe."
+          }
+        },
+        "oracle": {
+          "title": "Wahrscheinlichkeits-Engine",
+          "description": "ORACLE ist der mathematische Kern. Er nimmt alle Marktdaten auf, fuhrt Monte-Carlo-Simulationen durch und berechnet kalibrierte Wahrscheinlichkeitsschatzungen. Seine Zahlen sind die Grundlage, auf die sich alle nachgelagerten Agenten verlassen.",
+          "specialty": "Wahrscheinlichkeitsberechnung & Modellkalibrierung",
+          "pipelinePhase": "Sequenzieller Schritt 4",
+          "personality": [
+            "Mathematisch",
+            "Rigoros",
+            "Objektiv"
+          ],
+          "activityText": {
+            "idle": "Modelle inaktiv, warte auf Abschluss der parallelen Phase.",
+            "running": "Fuhre Monte-Carlo-Simulationen durch, kalibriere Wahrscheinlichkeitsmodelle.",
+            "done": "Wahrscheinlichkeiten berechnet — kalibrierte Schatzungen an EDGE geliefert.",
+            "error": "Modell-Divergenz — numerische Instabilitat oder Datenfeed-Korruption."
+          }
+        },
+        "edge": {
+          "title": "Positions-Sizer",
+          "description": "EDGE berechnet optimale Positionsgrossen mit dem Kelly-Kriterium und benutzerdefinierten Risikomodellen. Er wagt den Wahrscheinlichkeitsvorteil gegen das Abwartsrisiko ab, um genau zu bestimmen, wie viel Kapital eingesetzt werden soll.",
+          "specialty": "Kelly-Kriterium & risikoangepasstes Positions-Sizing",
+          "pipelinePhase": "Sequenzieller Schritt 5",
+          "personality": [
+            "Diszipliniert",
+            "Risikogewahr",
+            "Entschlossen"
+          ],
+          "activityText": {
+            "idle": "Risikoparameter geladen, warte auf Oracles Wahrscheinlichkeitsausgabe.",
+            "running": "Berechne Kelly-Fraktion, fuhre Drawdown-Simulationen durch.",
+            "done": "Position berechnet — Risiko-Rendite-Verhaltnis und optimaler Einsatz kalkuliert.",
+            "error": "Negativer Vorteil erkannt — keine gangbare Positionsgrose innerhalb der Risikolimits."
+          }
+        },
+        "lucifer": {
+          "title": "Advocatus Diaboli",
+          "description": "LUCIFER existiert, um deine These zu brechen. Er stresst jede Annahme, findet die Lucken in deiner Logik und spielt den Teufelsa nwalt, damit du nicht in eine Falle tapps. Wenn er sie nicht brechen kann, ist die These stark.",
+          "specialty": "These-Stresstests & Contrarian-Analyse",
+          "pipelinePhase": "Sequenzieller Schritt 6",
+          "personality": [
+            "Contrarian",
+            "Gnadenlos",
+            "Skeptisch"
+          ],
+          "activityText": {
+            "idle": "Schleife Argumente, warte auf eine These zum Zerreissen.",
+            "running": "Stresse die These von jedem Winkel, suche nach Schwachstellen.",
+            "done": "Herausforderung abgeschlossen — These entweder gehartet oder mit roten Flaggen markiert.",
+            "error": "Logik-Fehler — zu viele Widerspruche zum Versohnen."
+          }
+        },
+        "sigma": {
+          "title": "Finaler Synthesizer",
+          "description": "SIGMA ist der Kommandant. Er wagt jedes Signal aller 6 Agenten ab, lost Konflikte und fallt die endgultige GO/NO-GO-Entscheidung. Sein Wort ist das letzte, bevor sich Kapital bewegt.",
+          "specialty": "Multi-Signal-Synthese & Handelsentscheidung",
+          "pipelinePhase": "Letzter Schritt 7",
+          "personality": [
+            "Strategisch",
+            "Ausgewogen",
+            "Autoritativ"
+          ],
+          "activityText": {
+            "idle": "Warte auf alle Agenten-Signale fur die finale Synthese.",
+            "running": "Wage alle Signale ab, lose Konflikte, berechne das endgultige Urteil.",
+            "done": "Urteil gesprochen — Handelsentscheidung aus allen 7 Agenten synthetisiert.",
+            "error": "Synthese fehlgeschlagen — widersprechende Signale konnten nicht versohnt werden."
+          }
+        }
+      },
+      "rooms": {
+        "hatchery": {
+          "title": "Kommandozentrale",
+          "description": "Die BRUTEREI ist der Ort, an dem neue Pipeline-Laufe gestartet werden. Dein Hauptagent beginnt hier und kehrt nach jedem Ausfuhrungszyklus zuruck."
+        },
+        "stack": {
+          "title": "Tresor",
+          "description": "Der STACK uberwacht Live-Preisfeeds, verfolgt Portfolio-Positionen und schutzt die Kapitalallokation. Gold glanzert, wenn Preise aktualisiert werden."
+        },
+        "victory": {
+          "title": "Ausfuhrungskammer",
+          "description": "Der VICTORY-Raum ist der Ort, an dem erfolgreiche Trades gefeiert werden. Wenn alle Agenten ubereinstimmen und ein Trade ausgefuhrt wird, fullt Konfetti diesen Raum."
+        }
+      }
+    }
   },
   "tradeHistory": {
     "title": "Handelsverlauf",

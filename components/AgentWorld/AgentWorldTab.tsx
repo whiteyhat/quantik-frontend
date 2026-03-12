@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { PhaserBridge } from "./PhaserBridge";
 import { useWorldBridge } from "./useWorldBridge";
 import { useQuantikStore } from "@/store/useQuantikStore";
@@ -11,6 +12,7 @@ import { getAgentLore, ROOM_DESCRIPTIONS, type AgentLore } from "./config/agentL
 // React wrapper that bootstraps and manages the Phaser 3 game instance.
 
 export function AgentWorldTab() {
+  const t = useTranslations("manageAgent.agentWorld");
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const [bridge, setBridge] = useState<PhaserBridge | null>(null);
@@ -90,7 +92,7 @@ export function AgentWorldTab() {
               fontSize: 11, fontFamily: '"SF Mono", "JetBrains Mono", monospace',
               color: "rgba(255,255,255,0.6)", marginBottom: 8, letterSpacing: "0.1em",
             }}>
-              INITIALIZING QUANTIK WORLD
+              {t("loading")}
             </div>
             <div style={{
               width: 120, height: 4, borderRadius: 2,
@@ -114,7 +116,7 @@ export function AgentWorldTab() {
         }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, fontFamily: '"SF Mono", monospace', color: "#ff453a", marginBottom: 4 }}>
-              WORLD LOAD FAILED
+              {t("loadFailed")}
             </div>
             <div style={{ fontSize: 9, fontFamily: '"SF Mono", monospace', color: "rgba(255,255,255,0.4)", maxWidth: 300 }}>
               {error}
@@ -140,6 +142,7 @@ export function AgentWorldTab() {
           agentKey={detailAgent}
           pipeline={pipeline}
           onClose={() => setDetailAgent(null)}
+          t={t}
         />
       )}
     </div>
@@ -152,10 +155,12 @@ function AgentDetailPanel({
   agentKey,
   pipeline,
   onClose,
+  t,
 }: {
   agentKey: string;
   pipeline: import("@/store/useQuantikStore").PipelineState;
   onClose: () => void;
+  t: ReturnType<typeof useTranslations<"manageAgent.agentWorld">>;
 }) {
   const room: RoomDef | undefined = getRoomByAgentKey(agentKey) || getRoomById(agentKey as "aura");
   const resolvedKey = room?.agentKey || agentKey;
@@ -165,9 +170,31 @@ function AgentDetailPanel({
   const accentHex = room ? `#${room.theme.accentColor.toString(16).padStart(6, "0")}` : "#888";
   const status = agentState?.status || "idle";
 
-  // Determine title and description
-  const title = lore?.title || roomDesc?.title || "System Room";
-  const description = lore?.description || roomDesc?.description || "";
+  // Determine title and description from translations, falling back to lore/roomDesc
+  const agentTransKey = `agents.${resolvedKey}` as const;
+  const roomTransKey = `rooms.${agentKey}` as const;
+  const hasAgentTrans = Boolean(lore);
+  const hasRoomTrans = Boolean(roomDesc);
+
+  const title = hasAgentTrans
+    ? t(`${agentTransKey}.title` as Parameters<typeof t>[0])
+    : hasRoomTrans
+    ? t(`${roomTransKey}.title` as Parameters<typeof t>[0])
+    : t("systemRoom");
+
+  const description = hasAgentTrans
+    ? t(`${agentTransKey}.description` as Parameters<typeof t>[0])
+    : hasRoomTrans
+    ? t(`${roomTransKey}.description` as Parameters<typeof t>[0])
+    : "";
+
+  const pipelinePhase = hasAgentTrans
+    ? t(`${agentTransKey}.pipelinePhase` as Parameters<typeof t>[0])
+    : lore?.pipelinePhase ?? "";
+
+  const personality = hasAgentTrans
+    ? (t.raw(`${agentTransKey}.personality` as Parameters<typeof t>[0]) as string[])
+    : lore?.personality ?? [];
 
   // Status color mapping
   const statusColors: Record<string, string> = {
@@ -175,9 +202,10 @@ function AgentDetailPanel({
   };
   const statusColor = statusColors[status] || "#666";
 
-  // Activity text
-  const activityText = lore?.activityText?.[status as keyof AgentLore["activityText"]]
-    || (status === "idle" ? "Awaiting pipeline activation." : `Status: ${status}`);
+  // Activity text from translations
+  const activityText = hasAgentTrans
+    ? t(`${agentTransKey}.activityText.${status}` as Parameters<typeof t>[0])
+    : (status === "idle" ? t("awaitingPipeline") : t("statusLabel", { status }));
 
   return (
     <div
@@ -246,7 +274,7 @@ function AgentDetailPanel({
             border: `1px solid ${accentHex}30`, borderRadius: 4,
             padding: "3px 8px", marginBottom: 12, letterSpacing: "0.05em",
           }}>
-            {lore.pipelinePhase}
+            {pipelinePhase}
           </div>
         )}
 
@@ -279,9 +307,9 @@ function AgentDetailPanel({
         )}
 
         {/* Personality traits */}
-        {lore?.personality && (
+        {personality.length > 0 && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-            {lore.personality.map((trait) => (
+            {personality.map((trait) => (
               <span key={trait} style={{
                 fontSize: 11, fontFamily: '"SF Mono", monospace',
                 color: accentHex, background: `${accentHex}12`,
@@ -316,11 +344,11 @@ function AgentDetailPanel({
 
         {/* Output summary (formatted instead of raw JSON) */}
         {agentState?.data != null && (
-          <AgentOutputSummary data={agentState.data} accentHex={accentHex} agentKey={resolvedKey} />
+          <AgentOutputSummary data={agentState.data} accentHex={accentHex} agentKey={resolvedKey} t={t} />
         )}
 
         {/* Pipeline position indicator */}
-        {lore && <PipelinePositionIndicator currentStep={lore.pipelineStep} agents={pipeline.agents} />}
+        {lore && <PipelinePositionIndicator currentStep={lore.pipelineStep} agents={pipeline.agents} label={t("pipelinePosition")} />}
       </div>
     </div>
   );
@@ -343,7 +371,12 @@ function StatusPill({ label, color }: { label: string; color: string }) {
 
 // ── Agent Output Summary ────────────────────────────────────────────
 
-function AgentOutputSummary({ data, accentHex, agentKey }: { data: unknown; accentHex: string; agentKey: string }) {
+function AgentOutputSummary({ data, accentHex, agentKey, t }: {
+  data: unknown;
+  accentHex: string;
+  agentKey: string;
+  t: ReturnType<typeof useTranslations<"manageAgent.agentWorld">>;
+}) {
   // Try to extract meaningful metrics from agent output
   const obj = typeof data === "object" && data !== null ? data as Record<string, unknown> : null;
 
@@ -353,34 +386,34 @@ function AgentOutputSummary({ data, accentHex, agentKey }: { data: unknown; acce
   if (obj) {
     if ("probability" in obj) {
       const p = Number(obj.probability);
-      metrics.push({ label: "Probability", value: `${(p * 100).toFixed(1)}%`, color: p > 0.6 ? "#30d158" : p > 0.4 ? "#ff9f0a" : "#ff453a" });
+      metrics.push({ label: t("metrics.probability"), value: `${(p * 100).toFixed(1)}%`, color: p > 0.6 ? "#30d158" : p > 0.4 ? "#ff9f0a" : "#ff453a" });
     }
     if ("sentiment" in obj || "sentimentScore" in obj) {
       const s = Number(obj.sentiment ?? obj.sentimentScore);
-      metrics.push({ label: "Sentiment", value: s > 0 ? `+${s.toFixed(2)}` : s.toFixed(2), color: s > 0 ? "#30d158" : "#ff453a" });
+      metrics.push({ label: t("metrics.sentiment"), value: s > 0 ? `+${s.toFixed(2)}` : s.toFixed(2), color: s > 0 ? "#30d158" : "#ff453a" });
     }
     if ("confidence" in obj) {
       const c = Number(obj.confidence);
-      metrics.push({ label: "Confidence", value: `${(c * 100).toFixed(0)}%` });
+      metrics.push({ label: t("metrics.confidence"), value: `${(c * 100).toFixed(0)}%` });
     }
     if ("edge" in obj) {
       const e = Number(obj.edge);
-      metrics.push({ label: "Edge", value: `${(e * 100).toFixed(1)}%`, color: e > 0 ? "#30d158" : "#ff453a" });
+      metrics.push({ label: t("metrics.edge"), value: `${(e * 100).toFixed(1)}%`, color: e > 0 ? "#30d158" : "#ff453a" });
     }
     if ("riskScore" in obj) {
       const r = Number(obj.riskScore);
-      metrics.push({ label: "Risk", value: `${(r * 100).toFixed(0)}%`, color: r < 0.3 ? "#30d158" : r < 0.6 ? "#ff9f0a" : "#ff453a" });
+      metrics.push({ label: t("metrics.risk"), value: `${(r * 100).toFixed(0)}%`, color: r < 0.3 ? "#30d158" : r < 0.6 ? "#ff9f0a" : "#ff453a" });
     }
     if ("positionSize" in obj) {
-      metrics.push({ label: "Position", value: `${Number(obj.positionSize).toFixed(2)}` });
+      metrics.push({ label: t("metrics.position"), value: `${Number(obj.positionSize).toFixed(2)}` });
     }
     if ("decision" in obj || "verdict" in obj) {
       const d = String(obj.decision ?? obj.verdict);
-      metrics.push({ label: "Decision", value: d.toUpperCase(), color: d.toLowerCase().includes("go") ? "#30d158" : "#ff453a" });
+      metrics.push({ label: t("metrics.decision"), value: d.toUpperCase(), color: d.toLowerCase().includes("go") ? "#30d158" : "#ff453a" });
     }
     if ("resolutionRisk" in obj) {
       const r = Number(obj.resolutionRisk);
-      metrics.push({ label: "Resolution Risk", value: `${(r * 100).toFixed(0)}%`, color: r < 0.3 ? "#30d158" : "#ff453a" });
+      metrics.push({ label: t("metrics.resolutionRisk"), value: `${(r * 100).toFixed(0)}%`, color: r < 0.3 ? "#30d158" : "#ff453a" });
     }
   }
 
@@ -434,14 +467,16 @@ const PIPELINE_AGENTS = [
 function PipelinePositionIndicator({
   currentStep,
   agents,
+  label,
 }: {
   currentStep: number;
   agents: Record<string, import("@/store/useQuantikStore").AgentCardState>;
+  label: string;
 }) {
   return (
     <div style={{ marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 8 }}>
       <div style={{ fontSize: 10, fontFamily: '"SF Mono", monospace', color: "rgba(255,255,255,0.25)", marginBottom: 6, letterSpacing: "0.08em" }}>
-        PIPELINE POSITION
+        {label}
       </div>
       <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
         {PIPELINE_AGENTS.map((agent, i) => {

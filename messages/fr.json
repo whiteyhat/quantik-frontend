@@ -96,7 +96,160 @@
     "resolutionDate": "Date de Resolution",
     "wdkWallet": "Wallet WDK: ",
     "balance": "Solde:",
-    "chatWithAgent": "DISCUTER AVEC {name}"
+    "chatWithAgent": "DISCUTER AVEC {name}",
+    "agentWorld": {
+      "loading": "INITIALISATION DU MONDE QUANTIK",
+      "loadFailed": "ECHEC DU CHARGEMENT DU MONDE",
+      "pipelinePosition": "POSITION DANS LE PIPELINE",
+      "systemRoom": "Salle Systeme",
+      "awaitingPipeline": "En attente de l'activation du pipeline.",
+      "statusLabel": "Statut: {status}",
+      "metrics": {
+        "probability": "Probabilite",
+        "sentiment": "Sentiment",
+        "confidence": "Confiance",
+        "edge": "Avantage",
+        "risk": "Risque",
+        "position": "Position",
+        "decision": "Decision",
+        "resolutionRisk": "Risque de Resolution"
+      },
+      "agents": {
+        "aura": {
+          "title": "Oracle du Sentiment",
+          "description": "AURA scanne le pouls des reseaux sociaux, des flux d'actualites et du sentiment communautaire en temps reel. Elle lit l'etat emotionnel de la foule pour detecter la peur, la cupidite et les changements de dynamique avant qu'ils n'apparaissent dans les prix.",
+          "specialty": "Sentiment social et psychologie des foules",
+          "pipelinePhase": "Phase Parallele 1",
+          "personality": [
+            "Empathique",
+            "Intuitive",
+            "Alerte"
+          ],
+          "activityText": {
+            "idle": "Surveillance passive des flux sociaux, en attente de l'activation du pipeline.",
+            "running": "Scan de Twitter, Reddit, Discord et des APIs d'actualites pour les signaux de sentiment.",
+            "done": "Analyse de sentiment terminee — humeur de la foule et indicateurs de dynamique enregistres.",
+            "error": "Echec d'agregation des flux — limites de taux d'API ou problemes de connectivite detectes."
+          }
+        },
+        "flux": {
+          "title": "Analyste de Liquidite",
+          "description": "FLUX plonge profondement dans les carnets d'ordres, les flux de volume et la profondeur de liquidite. Il cartographie les mouvements d'argent, detecte l'activite des baleines et identifie les marches minces ou le glissement pourrait ronger votre avantage.",
+          "specialty": "Profondeur de liquidite et analyse des flux de volume",
+          "pipelinePhase": "Phase Parallele 1",
+          "personality": [
+            "Analytique",
+            "Precis",
+            "Oriente donnees"
+          ],
+          "activityText": {
+            "idle": "Observation de la profondeur du carnet d'ordres et des patterns de flux de volume.",
+            "running": "Analyse des pools de liquidite, suivi des pics de volume et des ordres baleines.",
+            "done": "Carte de liquidite complete — patterns de volume et analyse de profondeur livres.",
+            "error": "Flux de donnees du carnet d'ordres interrompu — timeout de l'API de l'echange."
+          }
+        },
+        "clause": {
+          "title": "Auditeur de Contrats",
+          "description": "CLAUSE est l'esprit juridique du pipeline. Elle analyse les criteres de resolution de Polymarket, identifie les clauses ambigues et signale les contrats dont le resultat pourrait etre conteste ou mal interprete.",
+          "specialty": "Criteres de resolution et analyse du risque contractuel",
+          "pipelinePhase": "Phase Parallele 1",
+          "personality": [
+            "Minutieuse",
+            "Prudente",
+            "Rigoureuse"
+          ],
+          "activityText": {
+            "idle": "En attente, surveillance des termes contractuels pour les changements.",
+            "running": "Analyse des criteres de resolution, verification des ambiguites et cas limites.",
+            "done": "Audit de contrat termine — risque de resolution et analyse des clauses prets.",
+            "error": "Erreur d'analyse — inadequation de structure contractuelle ou termes indefinis."
+          }
+        },
+        "oracle": {
+          "title": "Moteur de Probabilite",
+          "description": "ORACLE est le coeur mathematique. Il ingere toutes les donnees de marche, execute des simulations Monte Carlo et calcule des estimations de probabilite calibrees. Ses chiffres sont le fondement sur lequel s'appuient tous les agents en aval.",
+          "specialty": "Calcul de probabilite et calibration de modeles",
+          "pipelinePhase": "Etape Sequentielle 4",
+          "personality": [
+            "Mathematique",
+            "Rigoureux",
+            "Objectif"
+          ],
+          "activityText": {
+            "idle": "Modeles inactifs, en attente de la completion de la phase parallele.",
+            "running": "Execution de simulations Monte Carlo, calibration des modeles de probabilite.",
+            "done": "Probabilites calculees — estimations calibrees livrees a EDGE.",
+            "error": "Divergence du modele — instabilite numerique ou corruption du flux de donnees."
+          }
+        },
+        "edge": {
+          "title": "Dimensionneur de Position",
+          "description": "EDGE calcule les tailles de position optimales en utilisant le critere de Kelly et des modeles de risque personnalises. Il pese l'avantage de probabilite contre le risque a la baisse pour determiner exactement combien de capital deployer.",
+          "specialty": "Critere de Kelly et dimensionnement de position ajuste au risque",
+          "pipelinePhase": "Etape Sequentielle 5",
+          "personality": [
+            "Discipline",
+            "Conscient du risque",
+            "Decisif"
+          ],
+          "activityText": {
+            "idle": "Parametres de risque charges, en attente de la sortie de probabilite d'Oracle.",
+            "running": "Calcul de la fraction de Kelly, execution de simulations de drawdown.",
+            "done": "Position dimensionnee — ratio risque-recompense et mise optimale calcules.",
+            "error": "Avantage negatif detecte — aucune taille de position viable dans les limites de risque."
+          }
+        },
+        "lucifer": {
+          "title": "Avocat du Diable",
+          "description": "LUCIFER existe pour briser votre these. Il soumet chaque hypothese a des tests de stress, trouve les failles dans votre logique et joue l'avocat du diable pour que vous ne tombiez pas dans un piege. S'il ne peut pas la briser, la these est solide.",
+          "specialty": "Tests de stress de these et analyse contrarian",
+          "pipelinePhase": "Etape Sequentielle 6",
+          "personality": [
+            "Contrarian",
+            "Implacable",
+            "Sceptique"
+          ],
+          "activityText": {
+            "idle": "Affutage des arguments, en attente d'une these a demonter.",
+            "running": "Test de stress de la these sous tous les angles, recherche de faiblesses.",
+            "done": "Defi termine — la these a ete renforcee ou marquee avec des drapeaux rouges.",
+            "error": "Echec logique — trop de contradictions a reconcilier."
+          }
+        },
+        "sigma": {
+          "title": "Synthetiseur Final",
+          "description": "SIGMA est le commandant. Il pese chaque signal des 6 agents, resout les conflits et rend la decision finale GO/NO-GO. Sa parole est la derniere avant que le capital ne bouge.",
+          "specialty": "Synthese multi-signaux et decision de trading",
+          "pipelinePhase": "Etape Finale 7",
+          "personality": [
+            "Strategique",
+            "Equilibre",
+            "Autoritaire"
+          ],
+          "activityText": {
+            "idle": "En attente de tous les signaux des agents pour la synthese finale.",
+            "running": "Ponderation de tous les signaux, resolution des conflits, calcul du verdict final.",
+            "done": "Verdict rendu — decision de trading synthetisee de tous les 7 agents.",
+            "error": "Synthese echouee — les signaux contradictoires n'ont pas pu etre reconcilies."
+          }
+        }
+      },
+      "rooms": {
+        "hatchery": {
+          "title": "Centre de Commandement",
+          "description": "L'INCUBATEUR est l'endroit ou de nouvelles executions de pipeline sont generees. Votre agent principal commence ici et revient apres chaque cycle d'execution."
+        },
+        "stack": {
+          "title": "Coffre-fort du Tresor",
+          "description": "Le STACK surveille les flux de prix en direct, suit les positions du portefeuille et protege l'allocation du capital. L'or scintille lorsque les prix se mettent a jour."
+        },
+        "victory": {
+          "title": "Chambre d'Execution",
+          "description": "La salle VICTORY est l'endroit ou les trades reussis sont celebres. Lorsque tous les agents sont d'accord et qu'un trade s'execute, des confettis remplissent cette salle."
+        }
+      }
+    }
   },
   "tradeHistory": {
     "title": "Historique des Trades",

@@ -96,7 +96,206 @@
     "resolutionDate": "Fecha de Resolucion",
     "wdkWallet": "Wallet WDK: ",
     "balance": "Saldo:",
-    "chatWithAgent": "CHATEAR CON {name}"
+    "chatWithAgent": "CHATEAR CON {name}",
+    "architecture": {
+      "infoBadgeTitle": "Arquitectura Empresarial: Red Neural",
+      "infoBadgeSubtitle": "Sistema operativo. 7 sub-agentes conectados. Mas de 30 capas de servicios activas.",
+      "mainBadge": "PRINCIPAL",
+      "closePanel": "Cerrar panel",
+      "viewOnPolygonscan": "Ver en Polygonscan",
+      "viewOnPolymarket": "Ver en Polymarket",
+      "shared": "Compartido",
+      "personality": "Personalidad",
+      "tradingProfile": "Perfil de Trading",
+      "riskProfile": "Perfil de Riesgo",
+      "marketPreferences": "Preferencias de Mercado",
+      "deployment": "Despliegue",
+      "connectedAgents": "Agentes Conectados",
+      "connectedServices": "Servicios Conectados",
+      "description": "Descripcion",
+      "about": "Acerca de",
+      "liveFeed": "Feed en Vivo",
+      "dataSources": "Fuentes de Datos",
+      "systemLogs": "Registros del Sistema",
+      "pillType": "Tipo",
+      "pillDecisions": "Decisiones",
+      "pillInstinct": "Instinto",
+      "pillPatience": "Paciencia",
+      "pillGoal": "Objetivo",
+      "pillApproach": "Enfoque",
+      "pillProtection": "Proteccion",
+      "pillSense": "Sentido",
+      "pillAssets": "Activos",
+      "wallet": "Cartera",
+      "deployed": "Desplegado",
+      "created": "Creado",
+      "agentKey": "Clave del Agente",
+      "latency": "Latencia",
+      "parent": "Padre",
+      "protocol": "Protocolo",
+      "endpoint": "Punto de Acceso",
+      "agentDescAura": "Analiza el sentimiento del mercado a partir de noticias, redes sociales y datos financieros. Detecta camaras de eco y senales contrarias.",
+      "agentDescEdge": "Calcula el valor esperado, la fraccion de Kelly y el tamano optimo de posicion basandose en estimaciones de probabilidad y precios de mercado.",
+      "agentDescOracle": "Estima la probabilidad real usando modelos de ML en conjunto, patrones historicos y razonamiento LLM. Compara con las probabilidades implicitas del mercado.",
+      "agentDescLucifer": "Agente del abogado del diablo. Desafia las tesis alcistas, identifica sesgos y puede vetar operaciones que no superen las pruebas de estres.",
+      "agentDescFlux": "Enruta la liquidez entre DEXs (Uniswap, Curve, 1inch). Monitorea spread, profundidad y actividad de ballenas para una ejecucion optima.",
+      "agentDescClause": "Evalua riesgos de contratos inteligentes, mecanicas de resolucion y optimizacion de gas para operaciones de trading on-chain.",
+      "agentDescSigma": "Motor de decision final. Sintetiza todas las salidas de los agentes en una decision BET_YES, BET_NO o PASS con tamano ponderado por confianza.",
+      "agentDescFallback": "Sub-agente especializado en el pipeline de trading."
+    },
+    "agentWorld": {
+      "loading": "INICIALIZANDO MUNDO QUANTIK",
+      "loadFailed": "ERROR AL CARGAR EL MUNDO",
+      "pipelinePosition": "POSICION EN PIPELINE",
+      "systemRoom": "Sala del Sistema",
+      "awaitingPipeline": "Esperando activacion del pipeline.",
+      "statusLabel": "Estado: {status}",
+      "metrics": {
+        "probability": "Probabilidad",
+        "sentiment": "Sentimiento",
+        "confidence": "Confianza",
+        "edge": "Ventaja",
+        "risk": "Riesgo",
+        "position": "Posicion",
+        "decision": "Decision",
+        "resolutionRisk": "Riesgo de Resolucion"
+      },
+      "agents": {
+        "aura": {
+          "title": "Oraculo del Sentimiento",
+          "description": "AURA escanea el pulso de las redes sociales, noticias y sentimiento comunitario en tiempo real. Lee el estado emocional de la masa para detectar miedo, codicia y cambios de impulso antes de que aparezcan en el precio.",
+          "specialty": "Sentimiento social y psicologia de masas",
+          "pipelinePhase": "Fase Paralela 1",
+          "personality": [
+            "Empatica",
+            "Intuitiva",
+            "Alerta"
+          ],
+          "activityText": {
+            "idle": "Monitoreando feeds sociales pasivamente, esperando activacion del pipeline.",
+            "running": "Escaneando Twitter, Reddit, Discord y APIs de noticias en busca de senales de sentimiento.",
+            "done": "Analisis de sentimiento completo — estado de animo de la masa e indicadores de impulso registrados.",
+            "error": "Fallo en la agregacion de feeds — limites de tasa de API o problemas de conectividad detectados."
+          }
+        },
+        "flux": {
+          "title": "Analista de Liquidez",
+          "description": "FLUX profundiza en libros de ordenes, flujos de volumen y profundidad de liquidez. Mapea hacia donde se mueve el dinero, detecta actividad de ballenas e identifica mercados delgados donde el deslizamiento podria comer tu ventaja.",
+          "specialty": "Profundidad de liquidez y analisis de flujo de volumen",
+          "pipelinePhase": "Fase Paralela 1",
+          "personality": [
+            "Analitico",
+            "Preciso",
+            "Orientado a datos"
+          ],
+          "activityText": {
+            "idle": "Observando la profundidad del libro de ordenes y patrones de flujo de volumen.",
+            "running": "Analizando grupos de liquidez, rastreando picos de volumen y ordenes de ballenas.",
+            "done": "Mapa de liquidez completo — patrones de volumen y analisis de profundidad entregados.",
+            "error": "Flujo de datos del libro de ordenes interrumpido — tiempo de espera de API de intercambio."
+          }
+        },
+        "clause": {
+          "title": "Auditor de Contratos",
+          "description": "CLAUSE es la mente juridica del pipeline. Analiza los criterios de resolucion de Polymarket, identifica clausulas ambiguas y marca contratos donde el resultado podria ser disputado o malinterpretado.",
+          "specialty": "Criterios de resolucion y analisis de riesgo contractual",
+          "pipelinePhase": "Fase Paralela 1",
+          "personality": [
+            "Minuciosa",
+            "Cautelosa",
+            "Exhaustiva"
+          ],
+          "activityText": {
+            "idle": "En espera, monitoreando terminos contractuales para cambios.",
+            "running": "Analizando criterios de resolucion, verificando ambiguedades y casos extremos.",
+            "done": "Auditoria de contrato completa — riesgo de resolucion y analisis de clausulas listo.",
+            "error": "Error de analisis — discrepancia en la estructura del contrato o terminos indefinidos."
+          }
+        },
+        "oracle": {
+          "title": "Motor de Probabilidad",
+          "description": "ORACLE es el nucleo matematico. Ingiere todos los datos del mercado, ejecuta simulaciones de Monte Carlo y calcula estimaciones de probabilidad calibradas. Sus numeros son la base en la que confian todos los agentes posteriores.",
+          "specialty": "Calculo de probabilidades y calibracion de modelos",
+          "pipelinePhase": "Paso Secuencial 4",
+          "personality": [
+            "Matematico",
+            "Riguroso",
+            "Objetivo"
+          ],
+          "activityText": {
+            "idle": "Modelos inactivos, esperando la finalizacion de la fase paralela.",
+            "running": "Ejecutando simulaciones de Monte Carlo, calibrando modelos de probabilidad.",
+            "done": "Probabilidades calculadas — estimaciones calibradas enviadas a EDGE.",
+            "error": "Divergencia del modelo — inestabilidad numerica o corrupcion del feed de datos."
+          }
+        },
+        "edge": {
+          "title": "Dimensionador de Posicion",
+          "description": "EDGE calcula tamanios optimos de posicion usando el criterio de Kelly y modelos de riesgo personalizados. Pondera la ventaja de probabilidad contra el riesgo a la baja para determinar exactamente cuanto capital desplegar.",
+          "specialty": "Criterio de Kelly y dimensionamiento de posicion ajustado al riesgo",
+          "pipelinePhase": "Paso Secuencial 5",
+          "personality": [
+            "Disciplinado",
+            "Consciente del riesgo",
+            "Decisivo"
+          ],
+          "activityText": {
+            "idle": "Parametros de riesgo cargados, esperando la salida de probabilidad de Oracle.",
+            "running": "Calculando la fraccion de Kelly, ejecutando simulaciones de reduccion.",
+            "done": "Posicion dimensionada — relacion riesgo-recompensa y apuesta optima calculadas.",
+            "error": "Ventaja negativa detectada — no hay tamanio de posicion viable dentro de los limites de riesgo."
+          }
+        },
+        "lucifer": {
+          "title": "Abogado del Diablo",
+          "description": "LUCIFER existe para romper tu tesis. Somete a prueba de estres cada suposicion, encuentra los agujeros en tu logica y hace de abogado del diablo para que no caigas en una trampa. Si no puede romperla, la tesis es solida.",
+          "specialty": "Pruebas de estres de tesis y analisis contrarian",
+          "pipelinePhase": "Paso Secuencial 6",
+          "personality": [
+            "Contrarian",
+            "Despiadado",
+            "Esceptico"
+          ],
+          "activityText": {
+            "idle": "Afilando argumentos, esperando una tesis que destrozar.",
+            "running": "Sometiendo la tesis a prueba de estres desde todos los angulos, buscando debilidades.",
+            "done": "Desafio completo — la tesis fue reforzada o marcada con advertencias.",
+            "error": "Fallo logico — demasiadas contradicciones para reconciliar."
+          }
+        },
+        "sigma": {
+          "title": "Sintetizador Final",
+          "description": "SIGMA es el comandante. Pondera cada senal de los 6 agentes, resuelve conflictos y emite la decision final IR/NO IR. Su palabra es la ultima antes de que el capital se mueva.",
+          "specialty": "Sintesis multisenal y decision de trading",
+          "pipelinePhase": "Paso Final 7",
+          "personality": [
+            "Estrategico",
+            "Equilibrado",
+            "Autoritario"
+          ],
+          "activityText": {
+            "idle": "Esperando todas las senales de los agentes para la sintesis final.",
+            "running": "Ponderando todas las senales, resolviendo conflictos, calculando el veredicto final.",
+            "done": "Veredicto emitido — decision de trading sintetizada de los 7 agentes.",
+            "error": "Sintesis fallida — las senales conflictivas no pudieron reconciliarse."
+          }
+        }
+      },
+      "rooms": {
+        "hatchery": {
+          "title": "Centro de Comando",
+          "description": "La INCUBADORA es donde se generan nuevas ejecuciones del pipeline. Tu agente principal comienza aqui y regresa despues de cada ciclo de ejecucion."
+        },
+        "stack": {
+          "title": "Boveda del Tesoro",
+          "description": "El STACK monitorea feeds de precios en vivo, rastrea posiciones de cartera y protege la asignacion de capital. El oro brilla cuando se actualizan los precios."
+        },
+        "victory": {
+          "title": "Camara de Ejecucion",
+          "description": "La sala VICTORIA es donde se celebran los trades exitosos. Cuando todos los agentes estan de acuerdo y se ejecuta un trade, confeti llena esta sala."
+        }
+      }
+    }
   },
   "tradeHistory": {
     "title": "Historial de Operaciones",
