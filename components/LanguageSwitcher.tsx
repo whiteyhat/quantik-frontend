@@ -6,17 +6,17 @@ import { routing, type Locale } from "@/i18n/routing";
 import { useTransition } from "react";
 
 const localeLabels: Record<Locale, string> = {
-  en: "English",
-  es: "Espanol",
-  fr: "Francais",
-  de: "Deutsch",
+  en: "🇺🇸 English",
+  es: "🇪🇸 Espanol",
+  fr: "🇫🇷 Francais",
+  de: "🇩🇪 Deutsch",
 };
 
 const localeFlags: Record<Locale, string> = {
-  en: "EN",
-  es: "ES",
-  fr: "FR",
-  de: "DE",
+  en: "🇺🇸 EN",
+  es: "🇪🇸 ES",
+  fr: "🇫🇷 FR",
+  de: "🇩🇪 DE",
 };
 
 interface LanguageSwitcherProps {
@@ -65,7 +65,7 @@ export function LanguageSwitcher({ variant = "default" }: LanguageSwitcherProps)
           WebkitAppearance: "none",
           MozAppearance: "none",
           appearance: "none",
-          minWidth: 42,
+          minWidth: 68,
           textAlign: "center",
         }}
       >

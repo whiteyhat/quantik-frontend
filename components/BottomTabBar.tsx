@@ -2,15 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { useQuantikStore } from "@/store/useQuantikStore";
-
-const NAV_ITEMS: { label: string; href: string; icon: string; isFactory?: boolean }[] = [
-  { label: "Dashboard", href: "/dashboard", icon: "🏠" },
-  { label: "My Agent", href: "/manage-agent", icon: "🤖" },
-  { label: "Factory", href: "/agent-factory", icon: "🏭", isFactory: true },
-  { label: "Trades", href: "/trade-history", icon: "📈" },
-];
 
 interface BottomTabBarProps {
   relayOpen?: boolean;
@@ -22,6 +16,15 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
   const pathname = usePathname();
   const myAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  const tNav = useTranslations("nav");
+  const tSidebar = useTranslations("sidebar");
+
+  const NAV_ITEMS = [
+    { label: tNav("dashboard"), href: "/dashboard", icon: "🏠" },
+    { label: tNav("myAgent"), href: "/manage-agent", icon: "🤖" },
+    { label: tNav("factory"), href: "/agent-factory", icon: "🏭", isFactory: true },
+    { label: tNav("trades"), href: "/trade-history", icon: "📈" },
+  ];
 
   return (
     <nav
@@ -128,7 +131,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
         )}
         <span style={{ fontSize: 20, marginBottom: 4 }}>{myAgent?.avatar_emoji ?? "🤝"}</span>
         <span style={{ fontSize: 10, fontWeight: relayOpen ? 600 : 400 }}>
-          {myAgent?.name ?? "Chat"}
+          {myAgent?.name ?? tSidebar("chat")}
         </span>
       </button>
     </nav>

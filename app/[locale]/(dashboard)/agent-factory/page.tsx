@@ -1961,7 +1961,7 @@ export default function AgentFactoryPage() {
                         }}
                       >
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#30d158" }} />
-                        5-STEP WIZARD
+                        {t("pathSelection.createBadge")}
                       </div>
                     </button>
 
@@ -2000,7 +2000,7 @@ export default function AgentFactoryPage() {
                             marginBottom: 6,
                           }}
                         >
-                          Bring Your Own OpenClaw Agent
+                          {t("pathSelection.byoTitle")}
                         </div>
                         <div
                           style={{
@@ -2010,7 +2010,7 @@ export default function AgentFactoryPage() {
                             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                           }}
                         >
-                          Connect your external AI agent to Quantik&apos;s tools, pipeline, and trading infrastructure via API
+                          {t("pathSelection.byoDesc")}
                         </div>
                       </div>
                       <div
@@ -2028,7 +2028,7 @@ export default function AgentFactoryPage() {
                         }}
                       >
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0a84ff" }} />
-                        OPENCLAW COMPATIBLE
+                        {t("pathSelection.byoBadge")}
                       </div>
                     </button>
                   </div>
@@ -2087,7 +2087,7 @@ export default function AgentFactoryPage() {
                   gap: 6,
                 }}
               >
-                ← Back
+                ← {t("footer.back")}
               </button>
             )}
           </div>
@@ -2108,7 +2108,7 @@ export default function AgentFactoryPage() {
                 outline: "none",
               }}
             >
-              Skip (Randomize)
+              {t("footer.skipRandomize")}
             </button>
             <button
               onClick={handleNext}
@@ -2129,7 +2129,8 @@ export default function AgentFactoryPage() {
                 gap: 6,
               }}
             >
-              {NEXT_LABELS[step]} <span style={{ fontSize: 15 }}>→</span>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {t(`nextLabels.step${step}` as any)} <span style={{ fontSize: 15 }}>→</span>
             </button>
           </div>
         </div>

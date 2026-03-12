@@ -26,7 +26,8 @@
     "createAgentFirst": "Erstelle zuerst einen Agenten",
     "chatWith": "CHAT MIT {name}",
     "chatDefault": "CHAT MIT QUANTIK INTELLIGENCE",
-    "hey": "Hey! Sprich mit mir"
+    "hey": "Hey! Sprich mit mir",
+    "chat": "Chat"
   },
   "common": {
     "loading": "Laden...",

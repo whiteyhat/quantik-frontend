@@ -8,6 +8,24 @@ export interface ReleaseEntry {
 
 export const RELEASES: ReleaseEntry[] = [
   {
+    version: "v0.10.0",
+    date: "2026-03-12",
+    highlight: "Full i18n rollout, Polymarket status card, Playwright E2E migration, and component polish pass.",
+    features: [
+      "🌐 i18n migration — next-intl integrated across all dashboard pages; en, de, fr, es, pt locale files wired up",
+      "📡 PolymarketStatusCard — live platform health indicator in sidebar showing API status, latency, and incident banner",
+      "🎭 Playwright E2E — migrated all Cypress specs to Playwright; new CI steps with Clerk env injection",
+      "🎨 Component polish pass — glass-morphism refinements, spacing consistency, and typography tuning across Manage Agent and Factory pages",
+      "📋 Changelog panel i18n — title, labels, and version copy now fully translated via changelog message namespace",
+    ],
+    fixes: [
+      "🔧 Clerk env vars added to Playwright CI steps — specs were failing in GitHub Actions",
+      "🗑️ Stale test-results artifacts removed from git tracking; .gitignore updated",
+      "🧹 E2E suite cleaned up — removed outdated Cypress fixtures replaced by Playwright equivalents",
+      "📦 Dashboard mission-rail, mini-map, and wallet checks added to Playwright coverage",
+    ],
+  },
+  {
     version: "v0.9.0",
     date: "2026-03-09",
     highlight: "BYO OpenClaw Agent, Agent World pixel environment, Architecture Viewer, onboarding flow, and full Manage Agent dashboard.",
