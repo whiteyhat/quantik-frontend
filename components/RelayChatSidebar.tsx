@@ -20,6 +20,15 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+let traceSpinStyleInjected = false;
+function ensureTraceSpinStyle() {
+  if (traceSpinStyleInjected || typeof document === "undefined") return;
+  const style = document.createElement("style");
+  style.textContent = `@keyframes traceSpinRing { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
+  document.head.appendChild(style);
+  traceSpinStyleInjected = true;
+}
+
 type SidebarMessage =
   | {
       id: string;
@@ -1228,6 +1237,10 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         {messages.map((message) => {
           if (message.role === "trace") {
             const trace = message.trace;
+            const isRunning = trace.state !== "done";
+            if (isRunning) ensureTraceSpinStyle();
+            const traceLabel = trace.labelKey ? t(trace.labelKey as never) : trace.label;
+            const traceStatus = trace.statusKey ? t(trace.statusKey as never) : trace.status;
             return (
               <div
                 key={message.id}
@@ -1236,35 +1249,42 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
                   marginLeft: 34,
                   padding: "10px 12px",
                   borderRadius: 14,
-                  border: `1px solid ${trace.state === "done" ? `${theme.primary}33` : "rgba(255,255,255,0.08)"}`,
-                  background: trace.state === "done"
+                  border: `1px solid ${!isRunning ? `${theme.primary}33` : "rgba(255,255,255,0.08)"}`,
+                  background: !isRunning
                     ? `linear-gradient(135deg, ${theme.primary}18, rgba(255,255,255,0.03))`
                     : "rgba(255,255,255,0.04)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 999,
-                      background: trace.state === "done" ? theme.primary : "rgba(255,255,255,0.12)",
-                      color: trace.state === "done" ? "#fff" : "rgba(255,255,255,0.65)",
-                      fontSize: 11,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {trace.state === "done" ? "✓" : "•"}
-                  </div>
+                  {isRunning ? (
+                    <div style={{ width: 18, height: 18, flexShrink: 0, position: "relative" }}>
+                      <div style={{
+                        position: "absolute", inset: 0, borderRadius: "50%",
+                        border: "2px solid rgba(255,255,255,0.12)",
+                        borderTopColor: theme.primary,
+                        borderRightColor: theme.primary,
+                        animation: "traceSpinRing 700ms linear infinite",
+                      }} />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: 18, height: 18, borderRadius: 999,
+                        background: theme.primary,
+                        color: "#fff", fontSize: 11,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 800, flexShrink: 0,
+                      }}
+                    >
+                      ✓
+                    </div>
+                  )}
                   <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.84)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                    {trace.label}
+                    {traceLabel}
                   </span>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 13, color: "rgba(255,255,255,0.66)", lineHeight: 1.5 }}>
-                  {trace.status}
+                  {traceStatus}
                   {trace.detail ? ` ${trace.detail}` : ""}
                 </div>
               </div>

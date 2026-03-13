@@ -13,7 +13,7 @@ import { BottomTabBar } from "@/components/BottomTabBar";
 import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { ToastNotification } from "@/components/ToastNotification";
 import { VersionLogButton } from "@/components/VersionLog";
-import { CURRENT_RELEASE } from "@/lib/releases";
+import { CURRENT_VERSION } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -400,7 +400,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
             letterSpacing: "0.02em",
           }}
         >
-          {CURRENT_RELEASE.version} · Quantik
+          {CURRENT_VERSION} · Quantik
         </span>
 
         {/* Agent chat trigger */}

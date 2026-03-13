@@ -1622,6 +1622,18 @@
     "contextLabelOps": "OPS",
     "scannerStatusCached": "cached",
     "scannerStatusLive": "live",
-    "contextStatusSnapshot": "snapshot"
+    "contextStatusSnapshot": "snapshot",
+    "traceLabelSignalScout": "Signal Scout",
+    "traceLabelPortfolioAnalyst": "Portfolio Analyst",
+    "traceLabelRiskOfficer": "Risk Officer",
+    "traceLabelOpsMonitor": "Ops Monitor",
+    "traceSignalScoutRunning": "Running live scanner scan",
+    "traceSignalScoutDone": "Scanner ready",
+    "tracePortfolioAnalystRunning": "Syncing portfolio",
+    "tracePortfolioAnalystDone": "Portfolio ready",
+    "traceRiskOfficerRunning": "Reviewing risk posture",
+    "traceRiskOfficerDone": "Risk ready",
+    "traceOpsMonitorRunning": "Checking agent runtime",
+    "traceOpsMonitorDone": "Runtime ready"
   }
 }

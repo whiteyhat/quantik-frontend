@@ -1381,6 +1381,12 @@ export function runPipeline(
   };
 }
 
+// ─── Releases ────────────────────────────────────────────────────────────────
+
+export async function getReleases(): Promise<import("./releases").ReleaseEntry[]> {
+  return apiFetch("/api/versions");
+}
+
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
 export function fmtPrice(p: number | null | undefined): string {

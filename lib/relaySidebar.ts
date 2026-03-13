@@ -4,7 +4,9 @@ export interface RelayTraceEvent {
   type: "trace";
   key: string;
   label: string;
+  labelKey?: string;
   status: string;
+  statusKey?: string;
   state?: "running" | "done";
   detail?: string;
 }
@@ -64,7 +66,9 @@ export function parseRelaySidebarEvent(payload: string): RelaySidebarEvent | nul
         type: "trace",
         key: String(parsed.key ?? ""),
         label: String(parsed.label ?? ""),
+        labelKey: typeof parsed.labelKey === "string" ? parsed.labelKey : undefined,
         status: String(parsed.status ?? ""),
+        statusKey: typeof parsed.statusKey === "string" ? parsed.statusKey : undefined,
         state: parsed.state === "done" ? "done" : "running",
         detail: typeof parsed.detail === "string" ? parsed.detail : undefined,
       };

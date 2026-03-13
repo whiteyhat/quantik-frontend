@@ -660,6 +660,8 @@ function TelegramSettingsPanel() {
   const [botToken, setBotToken] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [chatIdTooltip, setChatIdTooltip] = useState(false);
+  const [botTokenTooltip, setBotTokenTooltip] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["telegramSettings"],
@@ -791,7 +793,7 @@ function TelegramSettingsPanel() {
           <motion.div
             key="telegram-body"
             initial={{ height: 0, opacity: 0, overflow: "hidden" }}
-            animate={{ height: "auto", opacity: 1, overflow: "hidden", transition: { duration: 0.28, ease: gentleEase } }}
+            animate={{ height: "auto", opacity: 1, overflow: "visible", transition: { duration: 0.28, ease: gentleEase } }}
             exit={{ height: 0, opacity: 0, overflow: "hidden", transition: { duration: 0.22, ease: gentleEase } }}
           >
             {isLoading ? (
@@ -822,9 +824,76 @@ function TelegramSettingsPanel() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: saveStatus !== "idle" ? 14 : 0 }}>
                   {/* Chat ID */}
                   <div>
-                    <label style={{ display: "block", fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>
-                      {t("chatId")}
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                        {t("chatId")}
+                      </span>
+                      <div style={{ position: "relative", display: "inline-flex" }}>
+                        <span
+                          onMouseEnter={() => setChatIdTooltip(true)}
+                          onMouseLeave={() => setChatIdTooltip(false)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 16,
+                            height: 16,
+                            borderRadius: "50%",
+                            border: "1px solid rgba(10,132,255,0.75)",
+                            background: "rgba(10,132,255,0.22)",
+                            color: "#0a84ff",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            cursor: "help",
+                            flexShrink: 0,
+                            lineHeight: 1,
+                            userSelect: "none",
+                          }}
+                        >
+                          ?
+                        </span>
+                        {chatIdTooltip && (
+                          <div style={{
+                            position: "absolute",
+                            bottom: "calc(100% + 8px)",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "rgba(14,14,20,0.97)",
+                            border: "1px solid rgba(10,132,255,0.30)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)",
+                            color: "rgba(255,255,255,0.85)",
+                            fontSize: 11,
+                            fontWeight: 400,
+                            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                            letterSpacing: "0.02em",
+                            padding: "10px 14px",
+                            borderRadius: 8,
+                            whiteSpace: "nowrap",
+                            pointerEvents: "none",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                            zIndex: 9999,
+                            lineHeight: 1.6,
+                          }}>
+                            <div style={{ color: "#0a84ff", fontWeight: 700, marginBottom: 4, fontSize: 10, letterSpacing: "0.08em" }}>WHERE TO FIND IT</div>
+                            <div>1. Open Telegram → search <span style={{ color: "#0a84ff" }}>@userinfobot</span></div>
+                            <div>2. Press <span style={{ color: "#0a84ff" }}>Start</span> — it replies with your Chat ID</div>
+                            <div>3. For a group: add the bot to the group, it shows the group ID</div>
+                            <div style={{ marginTop: 6, color: "rgba(255,255,255,0.40)", fontSize: 10 }}>Usually a number like <span style={{ color: "rgba(255,255,255,0.60)" }}>123456789</span> or <span style={{ color: "rgba(255,255,255,0.60)" }}>-987654321</span></div>
+                            <div style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                              width: 0, height: 0,
+                              borderLeft: "5px solid transparent",
+                              borderRight: "5px solid transparent",
+                              borderTop: "5px solid rgba(10,132,255,0.30)",
+                            }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <input
                       type="text"
                       value={chatId}
@@ -838,9 +907,77 @@ function TelegramSettingsPanel() {
 
                   {/* Bot Token */}
                   <div>
-                    <label style={{ display: "block", fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>
-                      {t("botToken")}
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                        {t("botToken")}
+                      </span>
+                      <div style={{ position: "relative", display: "inline-flex" }}>
+                        <span
+                          onMouseEnter={() => setBotTokenTooltip(true)}
+                          onMouseLeave={() => setBotTokenTooltip(false)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 16,
+                            height: 16,
+                            borderRadius: "50%",
+                            border: "1px solid rgba(10,132,255,0.75)",
+                            background: "rgba(10,132,255,0.22)",
+                            color: "#0a84ff",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            cursor: "help",
+                            flexShrink: 0,
+                            lineHeight: 1,
+                            userSelect: "none",
+                          }}
+                        >
+                          ?
+                        </span>
+                        {botTokenTooltip && (
+                          <div style={{
+                            position: "absolute",
+                            bottom: "calc(100% + 8px)",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "rgba(14,14,20,0.97)",
+                            border: "1px solid rgba(10,132,255,0.30)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)",
+                            color: "rgba(255,255,255,0.85)",
+                            fontSize: 11,
+                            fontWeight: 400,
+                            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                            letterSpacing: "0.02em",
+                            padding: "10px 14px",
+                            borderRadius: 8,
+                            whiteSpace: "nowrap",
+                            pointerEvents: "none",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                            zIndex: 9999,
+                            lineHeight: 1.6,
+                          }}>
+                            <div style={{ color: "#0a84ff", fontWeight: 700, marginBottom: 4, fontSize: 10, letterSpacing: "0.08em" }}>WHERE TO FIND IT</div>
+                            <div>1. Open Telegram → search <span style={{ color: "#0a84ff" }}>@BotFather</span></div>
+                            <div>2. Press <span style={{ color: "#0a84ff" }}>Start</span> → type <span style={{ color: "#0a84ff" }}>/newbot</span></div>
+                            <div>3. Follow the steps to name your bot</div>
+                            <div>4. BotFather sends you the token — copy it here</div>
+                            <div style={{ marginTop: 6, color: "rgba(255,255,255,0.40)", fontSize: 10 }}>Looks like <span style={{ color: "rgba(255,255,255,0.60)" }}>110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw</span></div>
+                            <div style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: "50%",
+                              transform: "translateX(-50%)",
+                              width: 0, height: 0,
+                              borderLeft: "5px solid transparent",
+                              borderRight: "5px solid transparent",
+                              borderTop: "5px solid rgba(10,132,255,0.30)",
+                            }} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <input
                       type="password"
                       value={botToken}

@@ -134,7 +134,7 @@
       "parent": "Padre",
       "protocol": "Protocolo",
       "endpoint": "Punto de Acceso",
-      "agentDescAura": "Analiza el sentimiento del mercado a partir de noticias, redes sociales y datos financieros. Detecta camaras de eco y senales contrarias.",
+      "agentDescAura": "Analiza el sentimiento del mercado a partir de noticias, redes sociales y datos financieros. Detecta camaras de eco y Señales contrarias.",
       "agentDescEdge": "Calcula el valor esperado, la fraccion de Kelly y el tamano optimo de posicion basandose en estimaciones de probabilidad y precios de mercado.",
       "agentDescOracle": "Estima la probabilidad real usando modelos de ML en conjunto, patrones historicos y razonamiento LLM. Compara con las probabilidades implicitas del mercado.",
       "agentDescLucifer": "Agente del abogado del diablo. Desafia las tesis alcistas, identifica sesgos y puede vetar operaciones que no superen las pruebas de estres.",
@@ -173,7 +173,7 @@
           ],
           "activityText": {
             "idle": "Monitoreando feeds sociales pasivamente, esperando activacion del pipeline.",
-            "running": "Escaneando Twitter, Reddit, Discord y APIs de noticias en busca de senales de sentimiento.",
+            "running": "Escaneando Twitter, Reddit, Discord y APIs de noticias en busca de Señales de sentimiento.",
             "done": "Analisis de sentimiento completo — estado de animo de la masa e indicadores de impulso registrados.",
             "error": "Fallo en la agregacion de feeds — limites de tasa de API o problemas de conectividad detectados."
           }
@@ -265,8 +265,8 @@
         },
         "sigma": {
           "title": "Sintetizador Final",
-          "description": "SIGMA es el comandante. Pondera cada senal de los 6 agentes, resuelve conflictos y emite la decision final IR/NO IR. Su palabra es la ultima antes de que el capital se mueva.",
-          "specialty": "Sintesis multisenal y decision de trading",
+          "description": "SIGMA es el comandante. Pondera cada Señal de los 6 agentes, resuelve conflictos y emite la decision final IR/NO IR. Su palabra es la ultima antes de que el capital se mueva.",
+          "specialty": "Sintesis multiSeñal y decision de trading",
           "pipelinePhase": "Paso Final 7",
           "personality": [
             "Estrategico",
@@ -274,10 +274,10 @@
             "Autoritario"
           ],
           "activityText": {
-            "idle": "Esperando todas las senales de los agentes para la sintesis final.",
-            "running": "Ponderando todas las senales, resolviendo conflictos, calculando el veredicto final.",
+            "idle": "Esperando todas las Señales de los agentes para la sintesis final.",
+            "running": "Ponderando todas las Señales, resolviendo conflictos, calculando el veredicto final.",
             "done": "Veredicto emitido — decision de trading sintetizada de los 7 agentes.",
-            "error": "Sintesis fallida — las senales conflictivas no pudieron reconciliarse."
+            "error": "Sintesis fallida — las Señales conflictivas no pudieron reconciliarse."
           }
         }
       },
@@ -551,12 +551,12 @@
   },
   "performance": {
     "title": "Rendimiento",
-    "desc": "Metricas avanzadas de rendimiento y atribucion de senales. Rastrea la precision de las predicciones de los agentes a lo largo del tiempo.",
+    "desc": "Metricas avanzadas de rendimiento y atribucion de Señales. Rastrea la precision de las predicciones de los agentes a lo largo del tiempo.",
     "layer5": "Capa 5 — Monitoreo y calibracion",
     "brierScores": "PUNTAJES BRIER (ULTIMOS 5)",
     "brierDesc": "Una medida de precision de prediccion. Puntaje de 0 a 1, donde 0 es una prediccion perfecta y 1 es un fallo total.",
     "noScoresYet": "Sin puntajes aun",
-    "topSignalAttribution": "ATRIBUCION TOP DE SENALES",
+    "topSignalAttribution": "ATRIBUCION TOP DE SeñalES",
     "signalAttrDesc": "Identifica que rama logica (Oracle, Aura, Flux, etc.) esta contribuyendo mas a los operaciones exitosos.",
     "driftDetection": "DETECCION DE DERIVA",
     "driftDesc": "Deteccion automatica de cambios de regimen de mercado. Las banderas de concept drift se activan cuando el comportamiento del mercado se desvia de la logica de entrenamiento.",
@@ -577,7 +577,7 @@
     "sentiment": "Sentimiento",
     "liquidityLabel": "Liquidez",
     "spread": "Spread",
-    "whaleSignals": "Senales ballena:",
+    "whaleSignals": "Señales ballena:",
     "est": "Est.",
     "market": "Mercado",
     "conf": "Conf",
@@ -618,12 +618,12 @@
     "trade": "OPERAR",
     "watch": "VIGILAR",
     "skip": "OMITIR",
-    "noSignals": "Sin senales recientes"
+    "noSignals": "Sin Señales recientes"
   },
   "scannerFeed": {
     "title": "Feed del Scanner",
     "desc": "Vigilancia en tiempo real de mercados de prediccion. Solo se rastrean mercados liquidos con alta actividad de trading.",
-    "signals": "senales",
+    "signals": "Señales",
     "betYes": "APOSTAR SI",
     "betNo": "APOSTAR NO",
     "veto": "VETO",
@@ -697,14 +697,14 @@
     "placeholder": "Pregunta a Relay...",
     "offline": "Relay desconectado.",
     "offlineDesc": "Relay esta momentaneamente desconectado. Intenta de nuevo en breve.",
-    "selectMarketHint": "Pregunta a Relay sobre este mercado, senales de agentes o estado de la plataforma.",
+    "selectMarketHint": "Pregunta a Relay sobre este mercado, Señales de agentes o estado de la plataforma.",
     "hideData": "Ocultar Datos",
     "agentData": "Datos del Agente",
     "suggestions": {
       "edgeQuestion1": "¿Cual es la ventaja exacta sobre el precio de mercado ahora mismo?",
       "edgeQuestion2": "¿Deberia aumentar o reducir posicion dada la fraccion Kelly actual?",
       "auraQuestion1": "¿Que fuentes de noticias estan impulsando el sesgo alcista?",
-      "auraQuestion2": "¿Que tan fuerte es esta senal de sentimiento en relacion con movimientos pasados?",
+      "auraQuestion2": "¿Que tan fuerte es esta Señal de sentimiento en relacion con movimientos pasados?",
       "oracleQuestion1": "¿Como se compara la probabilidad de Oracle con lo que el mercado esta cotizando?",
       "oracleQuestion2": "¿Que haria que la estimacion de Oracle caiga por debajo del 50%?",
       "fluxQuestion1": "¿El spread es lo suficientemente estrecho para entrar sin slippage excesivo?",
@@ -717,9 +717,9 @@
       "howToQuestion2": "¿Cual es la diferencia entre los agentes Oracle y Edge?",
       "howToQuestion3": "¿Como afecta la puntuacion adversarial de Lucifer a la decision final?",
       "howToQuestion4": "¿Que mide realmente el nivel de confianza en la barra de ejecucion?",
-      "howToQuestion5": "¿Como filtra el pipeline de Quantik las senales de falsos positivos?",
+      "howToQuestion5": "¿Como filtra el pipeline de Quantik las Señales de falsos positivos?",
       "fallbackQuestion1": "¿Cual es el valor esperado neto si apuesto SI ahora mismo?",
-      "fallbackQuestion2": "¿A que probabilidad esta senal cambiaria a bajista?"
+      "fallbackQuestion2": "¿A que probabilidad esta Señal cambiaria a bajista?"
     }
   },
   "alerts": {
@@ -735,7 +735,7 @@
     "dd": "DD",
     "maxPos": "Pos Max",
     "kelly": "Kelly",
-    "noAlerts": "Sin alertas aun — las alertas se activan cuando el pipeline genera senales de alta confianza.",
+    "noAlerts": "Sin alertas aun — las alertas se activan cuando el pipeline genera Señales de alta confianza.",
     "justNow": "ahora mismo",
     "mAgo": "{m}m atras",
     "hAgo": "{h}h atras",
@@ -791,8 +791,8 @@
   },
   "insights": {
     "title": "Perspectivas IA",
-    "signal": "senal",
-    "signals": "senales",
+    "signal": "Señal",
+    "signals": "Señales",
     "confidence": "Confianza",
     "noInsights": "Sin perspectivas aun — ejecuta un analisis de pipeline para generar perspectivas.",
     "edge": "ventaja",
@@ -1086,7 +1086,7 @@
       "fixedTitle": "Fijo y Seguro",
       "fixedDesc": "Tamanos de posicion consistentes para varianza minima.",
       "scalingTitle": "Escalado Inteligente",
-      "scalingDesc": "Ajusta el tamano segun la confianza de la senal y rachas ganadoras.",
+      "scalingDesc": "Ajusta el tamano segun la confianza de la Señal y rachas ganadoras.",
       "aggressiveTitle": "Dimensionador Agresivo",
       "aggressiveDesc": "Maximiza la utilizacion de capital en operaciones de alta conviccion.",
       "protectionTitle": "Mentalidad de Proteccion",
@@ -1271,7 +1271,7 @@
       "kelly": "Kelly"
     },
     "performance": {
-      "eyebrow": "Calidad de Senal",
+      "eyebrow": "Calidad de Señal",
       "title": "Pulso de Rendimiento",
       "subtitle": "El mismo snapshot de resumen impulsa tasa de exito, racha y mensajes de decay.",
       "errorTitle": "Resumen de rendimiento no disponible",
@@ -1330,11 +1330,11 @@
     },
     "recentSignals": {
       "eyebrow": "Feed de Decisiones",
-      "title": "Senales Recientes",
+      "title": "Señales Recientes",
       "subtitle": "Las ultimas decisiones trade/vigilar/omitir con confianza y ventaja.",
-      "errorTitle": "Feed de senales no disponible",
+      "errorTitle": "Feed de Señales no disponible",
       "errorDetail": "El dashboard no pudo actualizar las ultimas decisiones.",
-      "emptyTitle": "Sin senales recientes",
+      "emptyTitle": "Sin Señales recientes",
       "emptyDetail": "Una vez que el pipeline tome decisiones, se apilaran aqui en orden de recencia.",
       "unknownMarket": "Mercado desconocido"
     },
@@ -1529,7 +1529,7 @@
     "commandDrawer": "Panel de Control Quantik",
     "autopilotOn": "Piloto Automatico Activado",
     "autopilotOff": "Piloto Automatico Desactivado",
-    "emptyState": "Pregunta sobre portafolio, senales, riesgo, operaciones recientes o estado del sistema. Los sistemas internos ya estan conectados.",
+    "emptyState": "Pregunta sobre portafolio, Señales, riesgo, operaciones recientes o estado del sistema. Los sistemas internos ya estan conectados.",
     "inputPlaceholder": "Mensaje a {name}...",
     "statusConnected": "Conectado",
     "statusActive": "Activo",
@@ -1545,7 +1545,7 @@
     "portfolioSnapshotReady": "Snapshot del portafolio listo.",
     "scannerLabel": "Scanner",
     "scannerLive": "{count} en vivo",
-    "scannerNoSignals": "Sin senales de alta conviccion en cache.",
+    "scannerNoSignals": "Sin Señales de alta conviccion en cache.",
     "scannerNew": "{count} nuevas",
     "scannerNoNewAlerts": "Sin nuevas alertas",
     "scannerRefresh": "Actualizar",
@@ -1577,10 +1577,10 @@
     "networkErrorTimeout": "La respuesta tardo demasiado. Por favor intenta de nuevo.",
     "fallbackIntro": "La inteligencia Quantik esta lista. Crea o conecta tu agente para desbloquear el contexto de portafolio, scanner, riesgo y runtime en este panel.",
     "introGuardian": "{emoji} {name} en linea. Ya estoy conectado al scanner, portafolio, riesgo y operaciones. Pregunta directamente y traeré la vista interna en vivo.",
-    "introAdventurer": "{emoji} {name} listo. Puedo verificar senales activas, estado del portafolio, postura de riesgo y decisiones recientes sin que tengas que repetir lo obvio.",
-    "introDefault": "{emoji} {name} aqui. Los sistemas internos estan conectados. Pregunta sobre senales, portafolio, riesgo o operaciones recientes y resumire el estado mas reciente.",
-    "actionRefreshSignals": "Actualizar Senales",
-    "actionRefreshSignalsMsg": "Actualizar senales ahora.",
+    "introAdventurer": "{emoji} {name} listo. Puedo verificar Señales activas, estado del portafolio, postura de riesgo y decisiones recientes sin que tengas que repetir lo obvio.",
+    "introDefault": "{emoji} {name} aqui. Los sistemas internos estan conectados. Pregunta sobre Señales, portafolio, riesgo o operaciones recientes y resumire el estado mas reciente.",
+    "actionRefreshSignals": "Actualizar Señales",
+    "actionRefreshSignalsMsg": "Actualizar Señales ahora.",
     "actionShowPositions": "Ver Posiciones",
     "actionShowPositionsMsg": "Mostrar mis posiciones activas.",
     "actionExplainRisk": "Explicar Riesgo",
@@ -1588,7 +1588,7 @@
     "actionReviewTrades": "Revisar Operaciones",
     "actionReviewTradesMsg": "Revisar operaciones recientes.",
     "fallbackSuggestion1": "¿Cual es el estado de mi portafolio?",
-    "fallbackSuggestion2": "¿Alguna nueva senal del scanner?",
+    "fallbackSuggestion2": "¿Alguna nueva Señal del scanner?",
     "fallbackSuggestion3": "¿Cual es mi estado de riesgo actual?",
     "syncNoSync": "Sin sincronizacion",
     "syncJustNow": "Sincronizado ahora mismo",
@@ -1606,7 +1606,7 @@
     "previewTotal": "{amount} total",
     "previewToday": "{amount} hoy",
     "previewActivePositions": "{count} activas",
-    "previewSignals": "{count} senales",
+    "previewSignals": "{count} Señales",
     "previewNewAlerts": "{count} nuevas",
     "previewNoNewAlerts": "Sin nuevas alertas",
     "previewExposure": "Exposicion {pct}",
@@ -1622,6 +1622,18 @@
     "contextLabelOps": "OPS",
     "scannerStatusCached": "cache",
     "scannerStatusLive": "en vivo",
-    "contextStatusSnapshot": "snapshot"
+    "contextStatusSnapshot": "snapshot",
+    "traceLabelSignalScout": "Explorador de Señales",
+    "traceLabelPortfolioAnalyst": "Analista de Cartera",
+    "traceLabelRiskOfficer": "Oficial de Riesgo",
+    "traceLabelOpsMonitor": "Monitor de Operaciones",
+    "traceSignalScoutRunning": "Ejecutando escáner en vivo",
+    "traceSignalScoutDone": "Escáner listo",
+    "tracePortfolioAnalystRunning": "Sincronizando cartera",
+    "tracePortfolioAnalystDone": "Cartera lista",
+    "traceRiskOfficerRunning": "Revisando postura de riesgo",
+    "traceRiskOfficerDone": "Riesgo listo",
+    "traceOpsMonitorRunning": "Verificando entorno del agente",
+    "traceOpsMonitorDone": "Entorno listo"
   }
 }

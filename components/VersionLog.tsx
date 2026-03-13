@@ -1,14 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { createPortal } from "react-dom";
-import { CURRENT_RELEASE, RELEASES } from "@/lib/releases";
+import { useQuery } from "@tanstack/react-query";
+import { getReleases, type ReleaseEntry } from "@/lib/api";
+import { CURRENT_VERSION } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
+
+type SupportedLocale = "en" | "es" | "fr" | "de";
+
+function localeKey(locale: string): SupportedLocale {
+  if (locale === "es" || locale === "fr" || locale === "de") return locale;
+  return "en";
+}
+
+function pick(map: Record<SupportedLocale, string>, locale: SupportedLocale): string {
+  return map[locale] || map.en;
+}
+
+function pickArr(map: Record<SupportedLocale, string[]>, locale: SupportedLocale): string[] {
+  return (map[locale]?.length ? map[locale] : map.en) ?? [];
+}
+
+// ─── Panel ────────────────────────────────────────────────────────────────────
 
 function VersionLogPanel({ onClose }: { onClose: () => void }) {
   const t = useTranslations("changelog");
+  const locale = localeKey(useLocale());
   const [visible, setVisible] = useState(false);
+
+  const { data: releases = [], isLoading } = useQuery<ReleaseEntry[]>({
+    queryKey: ["versions"],
+    queryFn: getReleases,
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
@@ -19,7 +45,6 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
@@ -71,19 +96,21 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
             >
               {t("title")}
             </span>
-            <span
-              style={{
-                padding: "1px 7px",
-                borderRadius: 100,
-                background: "rgba(10,132,255,0.12)",
-                border: "1px solid rgba(10,132,255,0.22)",
-                fontSize: 10,
-                fontFamily: "monospace",
-                color: "#0a84ff",
-              }}
-            >
-              {RELEASES.length}
-            </span>
+            {!isLoading && (
+              <span
+                style={{
+                  padding: "1px 7px",
+                  borderRadius: 100,
+                  background: "rgba(10,132,255,0.12)",
+                  border: "1px solid rgba(10,132,255,0.22)",
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                  color: "#0a84ff",
+                }}
+              >
+                {releases.length}
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -107,123 +134,138 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div style={{ flex: 1, padding: "6px 0 24px" }}>
-          {RELEASES.map((entry, index) => (
-            <div
-              key={entry.version}
-              style={{
-                padding: "14px 16px",
-                borderBottom: index < RELEASES.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                <span
+          {isLoading ? (
+            <div style={{ padding: "24px 16px", fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
+              Loading…
+            </div>
+          ) : (
+            releases.map((entry, index) => {
+              const isCurrent = entry.version === CURRENT_VERSION;
+              const features = pickArr(entry.features, locale);
+              const fixes = pickArr(entry.fixes, locale);
+              const highlight = pick(entry.highlight, locale);
+
+              return (
+                <div
+                  key={entry.version}
                   style={{
-                    padding: "2px 9px",
-                    borderRadius: 100,
-                    background: index === 0 ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.06)",
-                    border: `1px solid ${index === 0 ? "rgba(10,132,255,0.35)" : "rgba(255,255,255,0.08)"}`,
-                    fontFamily: '"SF Mono","JetBrains Mono",monospace',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: index === 0 ? "#0a84ff" : "rgba(255,255,255,0.55)",
-                    letterSpacing: "0.05em",
+                    padding: "14px 16px",
+                    borderBottom: index < releases.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                   }}
                 >
-                  {entry.version}
-                </span>
-                {index === 0 ? (
-                  <span
-                    style={{
-                      padding: "1px 7px",
-                      borderRadius: 100,
-                      background: "rgba(48,209,88,0.12)",
-                      border: "1px solid rgba(48,209,88,0.22)",
-                      fontSize: 9,
-                      fontFamily: "monospace",
-                      color: "#30d158",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {t("current")}
-                  </span>
-                ) : null}
-                <span style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>
-                  {entry.date}
-                </span>
-              </div>
-
-              <p style={{ margin: "0 0 10px", fontSize: 11, fontStyle: "italic", color: "rgba(255,255,255,0.38)", lineHeight: 1.5 }}>
-                {entry.highlight}
-              </p>
-
-              {entry.features.length > 0 ? (
-                <div style={{ marginBottom: entry.fixes.length > 0 ? 10 : 0 }}>
-                  <div
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      letterSpacing: "0.10em",
-                      color: "rgba(48,209,88,0.65)",
-                      textTransform: "uppercase",
-                      marginBottom: 5,
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {t("newFeatures")}
-                  </div>
-                  {entry.features.map((feature) => (
-                    <div
-                      key={feature}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span
                       style={{
-                        marginBottom: 4,
+                        padding: "2px 9px",
+                        borderRadius: 100,
+                        background: isCurrent ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.06)",
+                        border: `1px solid ${isCurrent ? "rgba(10,132,255,0.35)" : "rgba(255,255,255,0.08)"}`,
+                        fontFamily: '"SF Mono","JetBrains Mono",monospace',
                         fontSize: 11,
-                        color: "rgba(255,255,255,0.65)",
-                        lineHeight: 1.45,
+                        fontWeight: 700,
+                        color: isCurrent ? "#0a84ff" : "rgba(255,255,255,0.55)",
+                        letterSpacing: "0.05em",
                       }}
                     >
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              {entry.fixes.length > 0 ? (
-                <div>
-                  <div
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      letterSpacing: "0.10em",
-                      color: "rgba(255,159,10,0.65)",
-                      textTransform: "uppercase",
-                      marginBottom: 5,
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {t("bugFixes")}
+                      {entry.version}
+                    </span>
+                    {isCurrent ? (
+                      <span
+                        style={{
+                          padding: "1px 7px",
+                          borderRadius: 100,
+                          background: "rgba(48,209,88,0.12)",
+                          border: "1px solid rgba(48,209,88,0.22)",
+                          fontSize: 9,
+                          fontFamily: "monospace",
+                          color: "#30d158",
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        {t("current")}
+                      </span>
+                    ) : null}
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>
+                      {entry.date}
+                    </span>
                   </div>
-                  {entry.fixes.map((fix) => (
-                    <div
-                      key={fix}
-                      style={{
-                        marginBottom: 4,
-                        fontSize: 11,
-                        color: "rgba(255,255,255,0.45)",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {fix}
+
+                  <p style={{ margin: "0 0 10px", fontSize: 11, fontStyle: "italic", color: "rgba(255,255,255,0.38)", lineHeight: 1.5 }}>
+                    {highlight}
+                  </p>
+
+                  {features.length > 0 ? (
+                    <div style={{ marginBottom: fixes.length > 0 ? 10 : 0 }}>
+                      <div
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: "0.10em",
+                          color: "rgba(48,209,88,0.65)",
+                          textTransform: "uppercase",
+                          marginBottom: 5,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {t("newFeatures")}
+                      </div>
+                      {features.map((feature) => (
+                        <div
+                          key={feature}
+                          style={{
+                            marginBottom: 4,
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.65)",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {feature}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : null}
+
+                  {fixes.length > 0 ? (
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: "0.10em",
+                          color: "rgba(255,159,10,0.65)",
+                          textTransform: "uppercase",
+                          marginBottom: 5,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {t("bugFixes")}
+                      </div>
+                      {fixes.map((fix) => (
+                        <div
+                          key={fix}
+                          style={{
+                            marginBottom: 4,
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.45)",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {fix}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          ))}
+              );
+            })
+          )}
         </div>
       </div>
     </>
   );
 }
+
+// ─── Button ───────────────────────────────────────────────────────────────────
 
 const SEEN_KEY = "quantik_changelog_seen";
 
@@ -235,14 +277,14 @@ export function VersionLogButton() {
 
   useEffect(() => {
     const seen = localStorage.getItem(SEEN_KEY);
-    setHasUnread(seen !== CURRENT_RELEASE.version);
+    setHasUnread(seen !== CURRENT_VERSION);
   }, []);
 
   function handleOpen() {
     setOpen((previous) => {
       const next = !previous;
       if (next && hasUnread) {
-        localStorage.setItem(SEEN_KEY, CURRENT_RELEASE.version);
+        localStorage.setItem(SEEN_KEY, CURRENT_VERSION);
         setHasUnread(false);
       }
       return next;
@@ -254,7 +296,7 @@ export function VersionLogButton() {
       <div style={{ position: "relative", flexShrink: 0 }}>
         <button
           onClick={handleOpen}
-          title={t("viewChangelog", { version: CURRENT_RELEASE.version })}
+          title={t("viewChangelog", { version: CURRENT_VERSION })}
           aria-label={t("openChangelog")}
           style={{
             background: open ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.05)",

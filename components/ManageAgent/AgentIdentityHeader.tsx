@@ -50,6 +50,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const [copied, setCopied] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteToast, setDeleteToast] = useState<string | null>(null);
+  const [deleteBtnHovered, setDeleteBtnHovered] = useState(false);
 
   const handleDeleted = useCallback(() => {
     setDeleteModalOpen(false);
@@ -253,36 +254,68 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
           </button>
 
           {/* Delete agent button */}
-          <button
-            onClick={() => setDeleteModalOpen(true)}
-            title={td("deleteAgentTitle")}
-            style={{
-              padding: "7px 12px",
-              borderRadius: 8,
-              border: "1px solid rgba(255,69,58,0.20)",
-              background: "rgba(255,69,58,0.08)",
-              color: "rgba(255,69,58,0.6)",
-              fontSize: 14,
-              cursor: "pointer",
-              fontFamily: '"SF Mono", monospace',
-              transition: "all 150ms ease",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,69,58,0.15)";
-              e.currentTarget.style.color = "#ff453a";
-              e.currentTarget.style.borderColor = "rgba(255,69,58,0.35)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,69,58,0.08)";
-              e.currentTarget.style.color = "rgba(255,69,58,0.6)";
-              e.currentTarget.style.borderColor = "rgba(255,69,58,0.20)";
-            }}
-          >
-            🗑
-          </button>
+          <div style={{ position: "relative", display: "inline-flex" }}>
+            <button
+              onClick={() => setDeleteModalOpen(true)}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 8,
+                border: `1px solid ${deleteBtnHovered ? "rgba(255,69,58,0.35)" : "rgba(255,69,58,0.20)"}`,
+                background: deleteBtnHovered ? "rgba(255,69,58,0.15)" : "rgba(255,69,58,0.08)",
+                color: deleteBtnHovered ? "#ff453a" : "rgba(255,69,58,0.6)",
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: '"SF Mono", monospace',
+                transition: "all 150ms ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+              onMouseEnter={() => setDeleteBtnHovered(true)}
+              onMouseLeave={() => setDeleteBtnHovered(false)}
+            >
+              🗑
+            </button>
+            {deleteBtnHovered && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "calc(100% + 8px)",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "rgba(20,20,28,0.95)",
+                  border: "1px solid rgba(255,69,58,0.35)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  color: "#ff453a",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  letterSpacing: "0.1em",
+                  padding: "5px 10px",
+                  borderRadius: 6,
+                  whiteSpace: "nowrap",
+                  pointerEvents: "none",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                }}
+              >
+                DELETE AGENT
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 0,
+                    height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: "5px solid rgba(255,69,58,0.35)",
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
