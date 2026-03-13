@@ -9,44 +9,69 @@ import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
 import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
-import {
-  AutopilotOnboardingModal,
-  isAutopilotOnboarded,
-} from "./AutopilotOnboardingModal";
 
 const AUTOPILOT_PULSE_KEY = "autopilot_pulse_dismissed";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+const AP_STYLE_ID = "autopilot-particle-keyframes";
+
+function ensureParticleKeyframes() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(AP_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = AP_STYLE_ID;
+  style.textContent = `
+    @keyframes ap-particle-rise {
+      0%   { transform: translateY(0px) translateX(0px) scale(1); opacity: 0; }
+      12%  { opacity: 1; }
+      75%  { opacity: 0.7; }
+      100% { transform: translateY(-72px) translateX(var(--ap-dx, 0px)) scale(0.15); opacity: 0; }
+    }
+    @keyframes ap-particle-drift {
+      0%   { transform: translateY(0px) translateX(0px) scale(1); opacity: 0; }
+      10%  { opacity: 0.8; }
+      100% { transform: translateY(-40px) translateX(var(--ap-dx, 0px)) scale(0.4); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Deterministic particle configs — no Math.random to avoid SSR/hydration mismatch
+const PARTICLE_CONFIGS = Array.from({ length: 22 }, (_, i) => ({
+  id: i,
+  left: `${4 + ((i * 4.37 + 1.8) % 91)}%`,
+  top: `${6 + ((i * 8.13 + 3.7) % 84)}%`,
+  size: 2 + (i % 3),
+  duration: `${3.2 + (i % 6) * 0.65}s`,
+  delay: `${(i * 0.31) % 3.5}s`,
+  anim: i % 2 === 0 ? "ap-particle-rise" : "ap-particle-drift",
+  dx: `${-18 + (i % 8) * 5.5}px`,
+  color:
+    i % 4 === 0
+      ? "rgba(255,122,69,0.65)"
+      : i % 4 === 1
+      ? "rgba(10,132,255,0.50)"
+      : i % 4 === 2
+      ? "rgba(255,159,10,0.55)"
+      : "rgba(255,255,255,0.20)",
+}));
 
 const panelStyle: React.CSSProperties = {
-  background: "radial-gradient(circle at top left, rgba(255,122,69,0.22), transparent 42%), linear-gradient(135deg, rgba(20,33,61,0.96), rgba(14,18,28,0.94))",
+  background:
+    "radial-gradient(circle at top left, rgba(255,122,69,0.22), transparent 42%), linear-gradient(135deg, rgba(20,33,61,0.96), rgba(14,18,28,0.94))",
   border: "1px solid rgba(255,255,255,0.10)",
   borderRadius: 18,
   padding: 20,
   boxShadow: "0 18px 48px rgba(0,0,0,0.28)",
+  position: "relative",
+  overflow: "hidden",
 };
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
 };
 
-interface FundingState {
-  address: string | null;
-  pol: number;
-  onChainUsdc: number;
-  fundingStatus: WalletBalance["fundingStatus"];
-  fundingMessage: string;
-}
-
 interface AutopilotControlCardProps {
   wallet: WalletBalance | null;
-  onWalletRefresh: () => Promise<WalletBalance | null>;
+  onWalletRefresh?: () => Promise<WalletBalance | null>;
 }
 
 function readinessColor(ready: boolean): string {
@@ -60,68 +85,44 @@ function formatAmount(value: number | null | undefined, digits = 2): string {
 
 function statusLabelKey(status: string): string | null {
   switch (status) {
-    case "ready": return "funded";
+    case "ready":            return "funded";
     case "funding_required": return "unfunded";
-    case "unavailable": return "unavailable";
-    case "no_wallet": return "noWallet";
-    default: return null;
+    case "unavailable":      return "unavailable";
+    case "no_wallet":        return "noWallet";
+    default:                 return null;
   }
 }
 
-export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotControlCardProps) {
+export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const t = useTranslations("autopilot");
-  const tc = useTranslations("common");
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const agentWallet = myAgent?.wallet_address ?? null;
   const defaultFundingStatus = agentWallet ? "funding_required" : "no_wallet";
+
   const [isSaving, setIsSaving] = useState(false);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [showFundingDialog, setShowFundingDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [showPulse, setShowPulse] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(AUTOPILOT_PULSE_KEY) !== "true";
   });
-  const [fundingState, setFundingState] = useState<FundingState>({
-    address: wallet?.address ?? agentWallet,
-    pol: wallet?.pol ?? 0,
-    onChainUsdc: wallet?.onChainUsdc ?? wallet?.usdc ?? 0,
-    fundingStatus: wallet?.fundingStatus ?? defaultFundingStatus,
-    fundingMessage: wallet?.fundingMessage ?? t("autopilotDesc"),
-  });
 
-  const autopilotEnabled = Boolean(myAgent?.autopilot_enabled);
+  useEffect(ensureParticleKeyframes, []);
+
   const fundingReady = useMemo(() => {
-    const nextPol = wallet?.pol ?? fundingState.pol ?? 0;
-    const nextUsdc = wallet?.onChainUsdc ?? wallet?.usdc ?? fundingState.onChainUsdc ?? 0;
-    const nextStatus = wallet?.fundingStatus ?? fundingState.fundingStatus;
-    return nextStatus === "ready" && nextPol > 0 && nextUsdc > 0;
-  }, [fundingState, wallet]);
-
-  useEffect(() => {
-    if (!wallet) return;
-    setFundingState((prev) => ({
-      address: wallet.address ?? prev.address ?? agentWallet,
-      pol: wallet.pol ?? prev.pol,
-      onChainUsdc: wallet.onChainUsdc ?? wallet.usdc ?? prev.onChainUsdc,
-      fundingStatus: wallet.fundingStatus ?? prev.fundingStatus,
-      fundingMessage: wallet.fundingMessage ?? prev.fundingMessage,
-    }));
-  }, [wallet, agentWallet]);
+    const pol = wallet?.pol ?? 0;
+    const usdc = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
+    const status = wallet?.fundingStatus ?? defaultFundingStatus;
+    return status === "ready" && pol > 0 && usdc > 0;
+  }, [wallet, defaultFundingStatus]);
 
   if (!myAgent) return null;
 
-  const updateFundingState = (nextWallet: WalletBalance | null, fallbackMessage?: string) => {
-    setFundingState({
-      address: nextWallet?.address ?? fundingState.address ?? agentWallet,
-      pol: nextWallet?.pol ?? fundingState.pol ?? 0,
-      onChainUsdc: nextWallet?.onChainUsdc ?? nextWallet?.usdc ?? fundingState.onChainUsdc ?? 0,
-      fundingStatus: nextWallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus,
-      fundingMessage: nextWallet?.fundingMessage ?? fallbackMessage ?? fundingState.fundingMessage,
-    });
-  };
+  // Hide entirely until polymarket is fully ready (funded + contracts signed)
+  if (!myAgent.polymarket_ready) return null;
+
+  const autopilotEnabled = Boolean(myAgent?.autopilot_enabled);
 
   const persistAutopilot = async (enabled: boolean) => {
     setError(null);
@@ -145,25 +146,6 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
     setMyAgent(nextAgent);
   };
 
-  const handleEnable = async () => {
-    const refreshed = await onWalletRefresh();
-    updateFundingState(refreshed);
-    const nextPol = refreshed?.pol ?? 0;
-    const nextUsdc = refreshed?.onChainUsdc ?? refreshed?.usdc ?? 0;
-    const nextStatus = refreshed?.fundingStatus ?? defaultFundingStatus;
-    if (nextStatus !== "ready" || nextPol <= 0 || nextUsdc <= 0) {
-      setShowFundingDialog(true);
-      return;
-    }
-
-    if (!isAutopilotOnboarded()) {
-      setShowOnboardingModal(true);
-      return;
-    }
-
-    await persistAutopilot(true);
-  };
-
   const handleToggle = (enabled: boolean) => {
     if (showPulse) {
       setShowPulse(false);
@@ -172,61 +154,13 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
     void (async () => {
       setIsSaving(true);
       try {
-        if (enabled) {
-          await handleEnable();
-          return;
-        }
-        await persistAutopilot(false);
-      } catch (err) {
-        const typedError = err as Error & {
-          code?: string;
-          data?: Record<string, unknown> | null;
-        };
-        if (typedError.code === "AUTOPILOT_FUNDING_REQUIRED") {
-          setFundingState({
-            address: typeof typedError.data?.wallet_address === "string" ? typedError.data.wallet_address : wallet?.address ?? agentWallet,
-            pol: Number(typedError.data?.pol ?? wallet?.pol ?? 0),
-            onChainUsdc: Number(typedError.data?.on_chain_usdc ?? wallet?.onChainUsdc ?? wallet?.usdc ?? 0),
-            fundingStatus: "funding_required",
-            fundingMessage: typeof typedError.data?.funding_message === "string"
-              ? typedError.data.funding_message
-              : typedError.message,
-          });
-          setShowFundingDialog(true);
-          return;
-        }
-        setError(typedError.message);
-      } finally {
-        setIsSaving(false);
-      }
-    })();
-  };
-
-  const handleOnboardingConfirm = () => {
-    setShowOnboardingModal(false);
-    void (async () => {
-      setIsSaving(true);
-      try {
-        await persistAutopilot(true);
+        await persistAutopilot(enabled);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
         setIsSaving(false);
       }
     })();
-  };
-
-  const resolvedAddress = fundingState.address ?? agentWallet;
-
-  const copyWalletAddress = async () => {
-    if (!resolvedAddress) return;
-    try {
-      await navigator.clipboard.writeText(resolvedAddress);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
   };
 
   const chips = [
@@ -241,15 +175,62 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
       background: fundingReady ? "rgba(48,209,88,0.12)" : "rgba(255,159,10,0.12)",
     },
     {
-      label: myAgent.status === "active" ? t("agentActive") : t("agentStatus", { status: myAgent.status }),
+      label:
+        myAgent.status === "active"
+          ? t("agentActive")
+          : t("agentStatus", { status: myAgent.status }),
       color: myAgent.status === "active" ? "#0a84ff" : "rgba(255,255,255,0.60)",
-      background: myAgent.status === "active" ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
+      background:
+        myAgent.status === "active" ? "rgba(10,132,255,0.14)" : "rgba(255,255,255,0.06)",
     },
   ];
 
   return (
-    <>
-      <div style={panelStyle} data-testid="autopilot-control-card">
+    <div
+      style={panelStyle}
+      data-testid="autopilot-control-card"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Particle layer — visible on hover, pointer-events none */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 0,
+          borderRadius: 18,
+          overflow: "hidden",
+          transition: "opacity 400ms ease",
+          opacity: isHovered ? 1 : 0,
+        }}
+      >
+        {PARTICLE_CONFIGS.map((p) => (
+          <div
+            key={p.id}
+            style={
+              {
+                position: "absolute",
+                left: p.left,
+                top: p.top,
+                width: p.size,
+                height: p.size,
+                borderRadius: "50%",
+                background: p.color,
+                boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+                "--ap-dx": p.dx,
+                animation: isHovered
+                  ? `${p.anim} ${p.duration} ${p.delay} ease-out infinite`
+                  : "none",
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
+
+      {/* Card content */}
+      <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -269,7 +250,15 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
                 ⚡
               </div>
               <div>
-                <div style={{ ...mono, fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <div
+                  style={{
+                    ...mono,
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.45)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                  }}
+                >
                   {t("autonomousTrading")}
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.96)", letterSpacing: "-0.02em" }}>
@@ -325,12 +314,37 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
           }}
         >
           {[
-            { label: "POL", value: `${formatAmount(wallet?.pol ?? fundingState.pol, 4)} POL`, hint: t("polFeeToken") },
-            { label: "USDC.e", value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc ?? fundingState.onChainUsdc)}`, hint: t("usdcTradingCapital") },
-            { label: t("status"), value: (() => { const key = statusLabelKey(wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus); return key ? t(key as any) : (wallet?.fundingStatus ?? fundingState.fundingStatus ?? defaultFundingStatus).toUpperCase(); })(), hint: wallet?.fundingMessage ?? fundingState.fundingMessage },
+            {
+              label: "POL",
+              value: `${formatAmount(wallet?.pol, 4)} POL`,
+              hint: t("polFeeToken"),
+            },
+            {
+              label: "USDC.e",
+              value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc)}`,
+              hint: t("usdcTradingCapital"),
+            },
+            {
+              label: t("status"),
+              value: (() => {
+                const key = statusLabelKey(wallet?.fundingStatus ?? defaultFundingStatus);
+                return key
+                  ? t(key as Parameters<typeof t>[0])
+                  : (wallet?.fundingStatus ?? defaultFundingStatus).toUpperCase();
+              })(),
+              hint: wallet?.fundingMessage ?? t("autopilotDesc"),
+            },
           ].map((item) => (
             <div key={item.label}>
-              <div style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", marginBottom: 4 }}>
+              <div
+                style={{
+                  ...mono,
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.35)",
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
                 {item.label}
               </div>
               <div style={{ ...mono, fontSize: 14, color: "rgba(255,255,255,0.88)", fontWeight: 700 }}>
@@ -363,7 +377,16 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
                 padding: 14,
               }}
             >
-              <div style={{ ...mono, fontSize: 11, color: "rgba(255,255,255,0.46)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+              <div
+                style={{
+                  ...mono,
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.46)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: 10,
+                }}
+              >
                 {t("liveScanner")}
               </div>
               <ScannerFeed />
@@ -386,104 +409,6 @@ export function AutopilotControlCard({ wallet, onWalletRefresh }: AutopilotContr
           </div>
         )}
       </div>
-
-      <AutopilotOnboardingModal
-        open={showOnboardingModal}
-        onConfirm={handleOnboardingConfirm}
-        onCancel={() => setShowOnboardingModal(false)}
-      />
-
-      <Dialog open={showFundingDialog} onOpenChange={setShowFundingDialog}>
-        <DialogContent className="max-w-xl" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>{t("fundWalletTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("fundWalletDesc")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[
-              { label: "POL", value: `${formatAmount(fundingState.pol, 4)} POL`, hint: t("needsGreaterThanZero") },
-              { label: "USDC.e", value: `$${formatAmount(fundingState.onChainUsdc)}`, hint: t("needsGreaterThanZero") },
-            ].map((item) => (
-              <div
-                key={item.label}
-                style={{
-                  padding: 14,
-                  borderRadius: 12,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", marginBottom: 6 }}>
-                  {item.label}
-                </div>
-                <div style={{ ...mono, fontSize: 18, color: "rgba(255,255,255,0.92)", fontWeight: 700 }}>
-                  {item.value}
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 4 }}>
-                  {item.hint}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              padding: 14,
-              borderRadius: 12,
-              background: "rgba(255,122,69,0.08)",
-              border: "1px solid rgba(255,122,69,0.18)",
-            }}
-          >
-            <div style={{ ...mono, fontSize: 10, color: "#ff9f0a", textTransform: "uppercase", marginBottom: 6 }}>
-              {t("depositAddress")}
-            </div>
-            <div style={{ ...mono, fontSize: 13, color: "rgba(255,255,255,0.84)", wordBreak: "break-all" }}>
-              {resolvedAddress ?? t("noWalletAddress")}
-            </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", marginTop: 8, lineHeight: 1.5 }}>
-              {wallet?.fundingMessage ?? fundingState.fundingMessage}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => setShowFundingDialog(false)}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(255,255,255,0.05)",
-                color: "rgba(255,255,255,0.72)",
-                cursor: "pointer",
-                ...mono,
-              }}
-            >
-              {tc("close")}
-            </button>
-            <button
-              type="button"
-              onClick={copyWalletAddress}
-              disabled={!resolvedAddress}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "1px solid rgba(10,132,255,0.30)",
-                background: "rgba(10,132,255,0.14)",
-                color: "#0a84ff",
-                cursor: resolvedAddress ? "pointer" : "not-allowed",
-                opacity: resolvedAddress ? 1 : 0.5,
-                ...mono,
-              }}
-            >
-              {copied ? t("addressCopied") : t("copyWalletAddress")}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    </div>
   );
 }

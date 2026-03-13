@@ -80,14 +80,14 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
           {/* Avatar */}
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
+              width: 120,
+              height: 120,
+              borderRadius: 30,
               background: "rgba(255,255,255,0.08)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 28,
+              fontSize: 64,
               position: "relative",
               flexShrink: 0,
             }}
@@ -96,7 +96,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
               <img
                 src={myAgent.avatar_image}
                 alt={myAgent.name}
-                style={{ width: 56, height: 56, borderRadius: 16, objectFit: "cover" }}
+                style={{ width: 120, height: 120, borderRadius: 30, objectFit: "cover" }}
               />
             ) : (
               myAgent.avatar_emoji || "🤖"
@@ -248,7 +248,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
               gap: 6,
             }}
           >
-            <span style={{ fontSize: 13 }}>{myAgent.avatar_emoji || "💬"}</span>
+            <span style={{ fontSize: 13 }}>💬</span>
             {t("chatWithAgent", { name: myAgent.name?.toUpperCase() || "AGENT" })}
           </button>
 

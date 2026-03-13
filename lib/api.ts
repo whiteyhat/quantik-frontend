@@ -930,6 +930,13 @@ export const api = {
     return apiFetch(`/api/v1/agents/${agentId}/verify-polymarket`, { method: "POST" });
   },
 
+  assignWallet: async (agentId: string, walletAddress: string, privateKey?: string, seedPhrase?: string): Promise<{ ok: boolean; wallet_address: string }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/wallet`, {
+      method: "POST",
+      body: JSON.stringify({ wallet_address: walletAddress, private_key: privateKey, seed_phrase: seedPhrase }),
+    });
+  },
+
   deleteAgent: async (id: string): Promise<void> => {
     await apiFetch(`/api/v1/agents/${id}`, { method: "DELETE" });
   },

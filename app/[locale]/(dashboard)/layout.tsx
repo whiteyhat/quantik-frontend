@@ -33,16 +33,25 @@ function AuthSync() {
 
   useEffect(() => {
     let active = true;
-    const sync = () => {
+    const sync = (isInitial = false) => {
       getToken().then((t) => {
-        if (active) {
+        if (!active) return;
+        // Only update the token when we got a real value.
+        // During Clerk's mid-rotation refresh window getToken() can return null
+        // for a signed-in user. Nulling out _authToken here would silently drop
+        // the Authorization header on the next API call (→ 401) while myAgent
+        // stays non-null (so the redirect to agent-factory never fires).
+        if (t) {
           setAuthToken(t);
-          setAuthReady(true);
         }
-      }).catch(() => {});
+        // Mark ready after the first attempt regardless (covers signed-out state).
+        if (isInitial) setAuthReady(true);
+      }).catch(() => {
+        if (active && isInitial) setAuthReady(true);
+      });
     };
-    sync();
-    const iv = setInterval(sync, 50_000); // refresh before 60s JWT expiry
+    sync(true);
+    const iv = setInterval(() => sync(false), 50_000); // refresh before 60s JWT expiry
     return () => { active = false; clearInterval(iv); };
   }, [getToken]);
 
