@@ -29,11 +29,16 @@ function AuthSync() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const [authReady, setAuthReady] = useState(false);
+
   useEffect(() => {
     let active = true;
     const sync = () => {
       getToken().then((t) => {
-        if (active) setAuthToken(t);
+        if (active) {
+          setAuthToken(t);
+          setAuthReady(true);
+        }
       }).catch(() => {});
     };
     sync();
@@ -41,9 +46,9 @@ function AuthSync() {
     return () => { active = false; clearInterval(iv); };
   }, [getToken]);
 
-  // Fetch the user's agent once authenticated
+  // Fetch the user's agent once authenticated AND auth token is set
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn || !authReady) return;
     setMyAgentLoading(true);
     api.getMyAgent()
       .then((data) => {
@@ -51,7 +56,7 @@ function AuthSync() {
       })
       .catch(() => {})
       .finally(() => setMyAgentLoading(false));
-  }, [isSignedIn, setMyAgent, setMyAgentLoading]);
+  }, [isSignedIn, authReady, setMyAgent, setMyAgentLoading]);
 
   // Redirect first-time users (no agent) to Agent Factory
   useEffect(() => {
