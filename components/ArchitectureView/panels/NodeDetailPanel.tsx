@@ -378,7 +378,7 @@ function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; o
       <div>
         <span style={sectionLabelStyle}>{t("description")}</span>
         <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", lineHeight: 1.5, marginTop: 6, marginBottom: 0 }}>
-          {getAgentDescription(data.agentKey, t)}
+          {getAgentDescription(data.agentKey, t as unknown as (k: string) => string)}
         </p>
       </div>
 
