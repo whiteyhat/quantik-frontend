@@ -11,6 +11,7 @@ export type DashboardServiceStatus = "healthy" | "degraded" | "down";
 export interface DashboardSummarySnapshot {
   totalValue: number | null;
   cashBalance: number | null;
+  pol: number;
   positionsValue: number | null;
   pnlToday: number;
   pnlTodayPct: number | null;
@@ -121,6 +122,7 @@ export function normalizeDashboardSummary(raw: Record<string, unknown> | null | 
   return {
     totalValue,
     cashBalance,
+    pol: coerceNumber(raw?.pol),
     positionsValue,
     pnlToday: coerceNumber(raw?.pnlToday ?? raw?.dailyPnl),
     pnlTodayPct: coerceNullableNumber(raw?.pnlTodayPct ?? raw?.dailyPnlPct),
@@ -159,6 +161,7 @@ export function toWalletBalance(summary: DashboardSummarySnapshot): WalletBalanc
     address: "",
     usdc: summary.cashBalance,
     onChainUsdc: summary.cashBalance,
+    pol: summary.pol,
     pnl: summary.totalPnl,
     pnlPct: summary.totalPnlPct,
     winRate: summary.winRate,

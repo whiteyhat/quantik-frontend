@@ -971,26 +971,18 @@
     "fundWallet": "Fondear Wallet",
     "setupRequired": "Configuracion de Polymarket Requerida",
     "blocker": "Bloqueador",
-    "completeSteps": "Completa ambos pasos antes de que tu agente pueda operar en el CLOB de Polymarket.",
+    "completeSteps": "Completa ambos pasos antes de que tu agente pueda empezar a operar.",
     "depositTo": "DEPOSITAR EN",
-    "polGas": "POL (Gas de Polygon)",
-    "polMin": "Min 1 POL para transacciones de aprobacion",
-    "usdcCapital": "USDC (Capital de Trading)",
-    "usdcMin": "Min $10.00 para ordenes en Polymarket",
-    "usdcCtf": "USDC > ConditionalTokens",
-    "approveCtf": "Aprobar contrato CTF para gastar USDC",
-    "usdcExchange": "USDC > CTF Exchange",
-    "approveExchange": "Aprobar exchange para gastar USDC",
-    "ctfExchange": "CTF > CTF Exchange",
-    "approveCtfTransfers": "Aprobar transferencias de tokens condicionales",
-    "usdcNegRisk": "USDC > Neg Risk Exchange",
-    "approveNegRiskUsdc": "Aprobar adaptador neg-risk para USDC",
-    "ctfNegRisk": "CTF > Neg Risk Exchange",
-    "approveNegRiskCtf": "Aprobar transferencias condicionales neg-risk",
-    "negRiskCtf": "Neg Risk CTF > Neg Risk Exchange",
-    "approveNegRiskCtfTokens": "Aprobar transferencias de tokens CTF neg-risk",
-    "checkingBalances": "Verificando saldos...",
-    "runningApprovals": "Ejecutando aprobaciones on-chain...",
+    "polGas": "Reserva para Comisiones",
+    "polMin": "Mínimo 3 POL requeridos para comisiones de gas",
+    "usdcCapital": "Fondos para Operar",
+    "usdcMin": "Minimo $10.00 para realizar tu primera operacion",
+    "tradingPermissions": "Permisos de Operacion",
+    "tradingPermissionsDesc": "Tu agente esta siendo autorizado para operar — esto ocurre automaticamente y tarda aproximadamente un minuto",
+    "checkingBalances": "Verificando tu cartera",
+    "runningApprovals": "Autorizando a tu agente para operar",
+    "approvalTimeHint": "Esto suele tardar unos 90 segundos",
+    "approvalSuccess": "¡Tu agente esta listo para operar!",
     "verify": "Verificar"
   },
   "agentFactory": {
@@ -1413,6 +1405,19 @@
       "fundingPending": "fondeo pendiente",
       "viewAgentsWorld": "Ver Mundo de Agentes"
     },
+    "equity": {
+      "eyebrow": "Rendimiento",
+      "title": "Curva de Capital",
+      "subtitle": "Valor del portafolio a lo largo del tiempo, construido desde el historial de operaciones."
+    },
+    "recentTrades": {
+      "eyebrow": "Historial",
+      "title": "Operaciones Recientes",
+      "subtitle": "Últimas 5 posiciones ejecutadas ordenadas por recencia.",
+      "viewAll": "Ver Todo",
+      "emptyTitle": "Aún no hay operaciones",
+      "emptyDetail": "Una vez que el agente ejecute su primera operación, tu historial aparecerá aquí."
+    },
     "primitives": {
       "retry": "Reintentar"
     }
@@ -1569,6 +1574,7 @@
     "tradeCancelled": "Operacion cancelada.",
     "networkErrorAgent": "No se puede alcanzar a {name}. Verifica tu conexion e intenta de nuevo.",
     "networkErrorGeneric": "No se puede alcanzar la red de inteligencia de Quantik en este momento.",
+    "networkErrorTimeout": "La respuesta tardo demasiado. Por favor intenta de nuevo.",
     "fallbackIntro": "La inteligencia Quantik esta lista. Crea o conecta tu agente para desbloquear el contexto de portafolio, scanner, riesgo y runtime en este panel.",
     "introGuardian": "{emoji} {name} en linea. Ya estoy conectado al scanner, portafolio, riesgo y operaciones. Pregunta directamente y traeré la vista interna en vivo.",
     "introAdventurer": "{emoji} {name} listo. Puedo verificar senales activas, estado del portafolio, postura de riesgo y decisiones recientes sin que tengas que repetir lo obvio.",

@@ -35,6 +35,7 @@ export const dashboardKeys = {
   agents: ["dashboard", "agents"] as const,
   health: ["dashboard", "health"] as const,
   orchestrator: ["dashboard", "orchestrator"] as const,
+  trades: ["dashboard", "trades"] as const,
   scannerTrending: (search: string) => ["dashboard", "scanner", "trending", search] as const,
   scannerPaged: (category: ScannerCategory, search: string) => ["dashboard", "scanner", category, search] as const,
 };
@@ -178,6 +179,15 @@ export function useDashboardAgentHealthScoreQuery(agentId?: string | null, enabl
       return response.data;
     },
     staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useDashboardTradesQuery() {
+  return useQuery({
+    queryKey: dashboardKeys.trades,
+    queryFn: () => api.getTrades(),
+    staleTime: 30_000,
     refetchInterval: 60_000,
   });
 }

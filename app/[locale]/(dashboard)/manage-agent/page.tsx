@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSocketEvent } from "@/context/SocketContext";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import {
   api,
-  type WalletBalance,
   type Position,
   type Trade,
   type Signal,
@@ -53,6 +53,8 @@ export default function ManageAgentPage() {
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const setMyAgentLoading = useQuantikStore((s) => s.setMyAgentLoading);
+  const storeWallet = useQuantikStore((s) => s.wallet);
+  const storeSetWallet = useQuantikStore((s) => s.setWallet);
 
   // Safety net: if store is empty and not loading, try fetching agent
   useEffect(() => {
@@ -85,7 +87,6 @@ export default function ManageAgentPage() {
   }, []);
 
   // Data state
-  const [wallet, setWallet] = useState<WalletBalance | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -117,7 +118,7 @@ export default function ManageAgentPage() {
 
         if (!active) return;
 
-        if (walletData.status === "fulfilled") setWallet(walletData.value);
+        if (walletData.status === "fulfilled") storeSetWallet(walletData.value);
         if (posData.status === "fulfilled") setPositions(posData.value);
         if (signalData.status === "fulfilled") setSignals(signalData.value);
         if (riskData.status === "fulfilled" && riskData.value) setRiskConfig(riskData.value);
@@ -133,7 +134,7 @@ export default function ManageAgentPage() {
     fetchAll();
 
     const interval = setInterval(() => {
-      api.getBalance().then((w) => { if (active && w) setWallet(w); }).catch(() => {});
+      api.getBalance().then((w) => { if (active && w) storeSetWallet(w); }).catch(() => {});
       api.getPositions().then((p) => { if (active) setPositions(p); }).catch(() => {});
     }, 30_000);
 
@@ -157,12 +158,22 @@ export default function ManageAgentPage() {
   const refreshWallet = useCallback(async () => {
     try {
       const nextWallet = await api.getBalance();
-      if (nextWallet) setWallet(nextWallet);
+      if (nextWallet) storeSetWallet(nextWallet);
       return nextWallet;
     } catch {
       return null;
     }
-  }, []);
+  }, [storeSetWallet]);
+
+  // Gap 2: instant balance refresh when a trade executes
+  const handleTradeExecuted = useCallback(() => {
+    if (!myAgent) return;
+    api.getBalance()
+      .then((w) => { if (w) storeSetWallet(w); })
+      .catch(() => {});
+  }, [myAgent, storeSetWallet]);
+
+  useSocketEvent("trade:executed", handleTradeExecuted);
 
   // Loading state
   if (myAgentLoading) {
@@ -284,17 +295,17 @@ export default function ManageAgentPage() {
           {/* LEFT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
             <AgentIdentityHeader
-              wallet={wallet}
+              wallet={storeWallet}
               timePeriod={timePeriod}
               onPeriodChange={setTimePeriod}
             />
             <EquityCurveChart
-              wallet={wallet}
+              wallet={storeWallet}
               trades={trades}
               timePeriod={timePeriod}
             />
             <MetricsRow
-              wallet={wallet}
+              wallet={storeWallet}
               performance={performance}
               loading={loading}
             />
@@ -314,9 +325,10 @@ export default function ManageAgentPage() {
               walletAddress={storeAgent?.wallet_address ?? null}
               polymarketReady={storeAgent?.polymarket_ready}
               polymarketStatus={storeAgent?.polymarket_status}
+              wallet={storeWallet}
             />
             <AutopilotControlCard
-              wallet={wallet}
+              wallet={storeWallet}
               onWalletRefresh={refreshWallet}
             />
             <AiInsightCard signals={signals} loading={loading} />

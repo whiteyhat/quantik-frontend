@@ -2164,20 +2164,12 @@ a.command-center-list-row:focus-visible,
   background-color: #e5e7eb !important;
 }
 
-/* UserButton popover — keep dark (it's in the dashboard) */
-.cl-userButtonPopoverCard,
+/* UserButton popover — dark text colors (background handled via Clerk appearance API) */
 .cl-userButtonPopoverCard *,
 .cl-userButtonPopoverCard [class^="cl-"],
 .cl-userButtonPopoverCard [class*=" cl-"] {
   background-color: transparent !important;
   color: rgba(255, 255, 255, 0.75) !important;
-}
-
-.cl-userButtonPopoverCard {
-  background-color: #050508 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
 }
 
 .cl-userButtonPopoverActionButton:hover {
@@ -2200,16 +2192,10 @@ a.command-center-list-row:focus-visible,
   display: none !important;
 }
 
-/* Popover root box — catch the parent wrapper too */
+/* Popover root box — transparent wrapper, card styled via appearance API */
 .cl-userButtonPopoverRootBox,
-.cl-userButtonPopoverRootBox * {
+.cl-userButtonPopoverRootBox > * {
   background-color: transparent !important;
-}
-
-.cl-userButtonPopoverRootBox {
-  background-color: #050508 !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
 }
 
 /* Popover opens upward from sidebar bottom */

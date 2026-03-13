@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useInView } from "react-intersection-observer";
+import { toWalletBalance } from "@/lib/dashboard";
+import { EquityCurveChart } from "@/components/ManageAgent/EquityCurveChart";
 import {
   ArrowRight,
   Radar,
@@ -46,6 +48,7 @@ import {
   useDashboardScannerQuery,
   useDashboardSignalsQuery,
   useDashboardSummaryQuery,
+  useDashboardTradesQuery,
   useTriggerOrchestratorScan,
 } from "@/components/dashboard/dashboardQueries";
 import { useQuantikStore } from "@/store/useQuantikStore";
@@ -1045,11 +1048,141 @@ function MarketScannerCard() {
   );
 }
 
+const TIME_PERIODS = ["7D", "30D", "All"] as const;
+type TimePeriod = (typeof TIME_PERIODS)[number];
+
+function EquityChartCard() {
+  const t = useTranslations("dashboard.equity");
+  const [period, setPeriod] = useState<TimePeriod>("7D");
+  const wallet = useQuantikStore((state) => state.wallet);
+  const tradesQuery = useDashboardTradesQuery();
+
+  return (
+    <CommandCenterCard accent="green">
+      <CommandCenterHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        action={
+          <div className="flex gap-1">
+            {TIME_PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={period === p ? "command-center-pill command-center-pill--active" : "command-center-pill"}
+                style={{ fontSize: 11 }}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {tradesQuery.isLoading ? (
+        <div className="space-y-3">
+          <Skeleton width="40%" height={28} borderRadius={8} />
+          <Skeleton width="100%" height={240} borderRadius={12} />
+        </div>
+      ) : (
+        <EquityCurveChart
+          wallet={wallet}
+          trades={tradesQuery.data ?? []}
+          timePeriod={period}
+        />
+      )}
+    </CommandCenterCard>
+  );
+}
+
+function RecentTradesCard() {
+  const t = useTranslations("dashboard.recentTrades");
+  const tradesQuery = useDashboardTradesQuery();
+
+  const recentTrades = useMemo(() => {
+    const trades = tradesQuery.data ?? [];
+    return [...trades].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+  }, [tradesQuery.data]);
+
+  return (
+    <CommandCenterCard accent="neutral">
+      <CommandCenterHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        subtitle={t("subtitle")}
+        action={
+          <Link
+            href="/trade-history"
+            className="text-xs font-medium text-[rgba(255,255,255,0.45)] hover:text-white transition-colors no-underline"
+          >
+            {t("viewAll")} →
+          </Link>
+        }
+      />
+
+      {tradesQuery.isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="command-center-list-row">
+              <Skeleton width="55%" height={14} borderRadius={5} />
+              <Skeleton width={84} height={14} borderRadius={5} />
+            </div>
+          ))}
+        </div>
+      ) : recentTrades.length === 0 ? (
+        <PanelEmptyState
+          title={t("emptyTitle")}
+          detail={t("emptyDetail")}
+        />
+      ) : (
+        <div className="space-y-3">
+          {recentTrades.map((trade) => {
+            const pnl = trade.pnl ?? 0;
+            const date = new Date(trade.timestamp);
+            const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+            return (
+              <Link
+                key={trade.id}
+                href={trade.slug ? `/market/${trade.slug}` : "#"}
+                className="command-center-list-row block no-underline"
+              >
+                <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-white">{trade.market}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[rgba(255,255,255,0.45)]">
+                      <StatusBadge tone={trade.direction === "YES" ? "good" : "bad"} label={trade.direction} />
+                      <span className="font-mono">{dateStr} {timeStr}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right font-mono text-sm font-semibold">
+                    <div className={pnl >= 0 ? "text-[#30d158]" : "text-[#ff453a]"}>
+                      {pnl >= 0 ? "+" : ""}{fmtUSDC(pnl)}
+                    </div>
+                    <div className="mt-1 text-xs text-[rgba(255,255,255,0.35)]">{fmtUSDC(trade.size)}</div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </CommandCenterCard>
+  );
+}
+
 export function DashboardPageClient() {
   const now = useNow(5_000);
   const myAgent = useQuantikStore((state) => state.myAgent);
   const myAgentLoading = useQuantikStore((state) => state.myAgentLoading);
+  const setWallet = useQuantikStore((state) => state.setWallet);
   const summaryQuery = useDashboardSummaryQuery();
+
+  // Sync summary → global wallet store so ManageAgent and other pages stay fresh
+  useEffect(() => {
+    if (summaryQuery.data) setWallet(toWalletBalance(summaryQuery.data));
+  }, [summaryQuery.data, setWallet]);
   const riskStatusQuery = useDashboardRiskStatusQuery();
   const riskConfigQuery = useDashboardRiskConfigQuery();
   const orchestratorQuery = useDashboardOrchestratorQuery();
@@ -1098,6 +1231,7 @@ export function DashboardPageClient() {
             error={positionsQuery.isError}
             onRetry={() => void positionsQuery.refetch()}
           />
+          <RecentTradesCard />
           <RiskPostureCard
             riskStatus={riskStatusQuery.data}
             riskConfig={riskConfigQuery.data}
@@ -1111,6 +1245,7 @@ export function DashboardPageClient() {
         </div>
 
         <div className="command-center-column">
+          <EquityChartCard />
           <OrchestratorCard
             orchestrator={orchestratorQuery.data}
             loading={orchestratorQuery.isLoading}

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { getAuthToken } from "@/lib/api";
 import {
   extractLatestSignalTimestamp,
   formatRelayRelativeTime,
@@ -21,30 +22,30 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 type SidebarMessage =
   | {
-      id: number;
+      id: string;
       role: "user";
       text: string;
     }
   | {
-      id: number;
+      id: string;
       role: "agent";
       text: string;
       latencyMs?: number;
       model?: string;
     }
   | {
-      id: number;
+      id: string;
       role: "trace";
       trace: RelayTraceEvent;
     }
   | {
-      id: number;
+      id: string;
       role: "context";
       kind: RelayContextKind;
       data: unknown;
     }
   | {
-      id: number;
+      id: string;
       role: "tool";
       tradeConfirmation: {
         slug: string;
@@ -74,10 +75,8 @@ interface SuggestionPrompt {
   message: string;
 }
 
-let nextMessageId = 0;
 function getNextMessageId() {
-  nextMessageId += 1;
-  return nextMessageId;
+  return crypto.randomUUID();
 }
 
 function getTheme(personality: string): PersonalityTheme {
@@ -622,6 +621,7 @@ function TradeConfirmationBubble({
 
 export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSidebarProps) {
   const t = useTranslations("relaySidebar");
+  const locale = useLocale();
   const myAgent = useQuantikStore((state) => state.myAgent);
   const agentName = myAgent?.name ?? "Relay";
   const agentEmoji = myAgent?.avatar_emoji ?? "🤝";
@@ -655,20 +655,26 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [expandedContextIds, setExpandedContextIds] = useState<Record<number, boolean>>({});
+  const [expandedContextIds, setExpandedContextIds] = useState<Record<string, boolean>>({});
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [hasInjectedIntro, setHasInjectedIntro] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const agentMessageIdRef = useRef<number | null>(null);
-  const activeTraceIdsRef = useRef<Record<string, number>>({});
-  const activeContextIdsRef = useRef<Partial<Record<RelayContextKind, number>>>({});
+  const agentMessageIdRef = useRef<string | null>(null);
+  const activeTraceIdsRef = useRef<Record<string, string>>({});
+  const activeContextIdsRef = useRef<Partial<Record<RelayContextKind, string>>>({});
 
-  const statusTone =
-    statusToneMap[myAgent?.connection_status as keyof typeof statusToneMap ?? myAgent?.status as keyof typeof statusToneMap ?? "default"] ??
-    statusToneMap.default;
+  const rawStatusKey = (myAgent?.connection_status ?? myAgent?.status ?? "default") as keyof typeof statusToneMap;
+  // When autopilot is enabled and the agent hasn't yet reported a live connection_status,
+  // the raw status can be stuck on "pending". Promote it to "active" so the pill
+  // reflects reality instead of a stale initialisation state.
+  const effectiveStatusKey =
+    myAgent?.autopilot_enabled && (rawStatusKey === "pending" || rawStatusKey === "default")
+      ? "active"
+      : rawStatusKey;
+  const statusTone = statusToneMap[effectiveStatusKey] ?? statusToneMap.default;
 
   const syncFormats: RelayTimeFormats = useMemo(() => ({
     noSync: t("syncNoSync"),
@@ -683,9 +689,17 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     stale?: boolean;
   } | undefined;
 
-  const headerSyncLabel = scannerContext?.lastScannedAt
-    ? `${scannerContext.stale ? t("cachedLabel") : t("scannerSyncLabel")} · ${formatRelayRelativeTime(scannerContext.lastScannedAt, Date.now(), syncFormats)}`
-    : formatRelayRelativeTime(lastSyncAt, Date.now(), syncFormats);
+  const headerSyncLabel = (() => {
+    if (scannerContext?.lastScannedAt) {
+      const prefix = scannerContext.stale ? t("cachedLabel") : t("scannerSyncLabel");
+      return `${prefix} · ${formatRelayRelativeTime(scannerContext.lastScannedAt, Date.now(), syncFormats)}`;
+    }
+    if (lastSyncAt) return formatRelayRelativeTime(lastSyncAt, Date.now(), syncFormats);
+    // Autopilot is running but no manual chat sync yet — show a meaningful label
+    // instead of "no sync" which implies the agent is idle.
+    if (myAgent?.autopilot_enabled) return t("autopilotOn");
+    return t("syncNoSync");
+  })();
 
   const suggestionPrompts = useMemo<SuggestionPrompt[]>(() => {
     const promptMap = new Map<string, SuggestionPrompt>();
@@ -959,21 +973,29 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     const resolvedSessionId = sessionId || getRelaySidebarSessionId(localStorageRef);
     if (!sessionId) setSessionId(resolvedSessionId);
 
+    const abortController = new AbortController();
+    const fetchTimeout = setTimeout(() => abortController.abort(), 90_000);
+
     try {
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/v1/agent/chat`, {
         method: "POST",
+        signal: abortController.signal,
         headers: {
           "Content-Type": "application/json",
           "X-Session-Id": resolvedSessionId,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           message: trimmed,
           sessionId: resolvedSessionId,
+          locale,
           clientContext: {
             lastSeenSignalAt: getRelaySidebarLastSeenSignalAt(localStorageRef),
           },
         }),
       });
+      clearTimeout(fetchTimeout);
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as { error?: string };
@@ -1016,20 +1038,21 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         }
       }
     } catch (error) {
+      clearTimeout(fetchTimeout);
       setSending(false);
       setSuggestions(fallbackSuggestions);
+      const isAbort = error instanceof DOMException && error.name === "AbortError";
+      const errorText = isAbort
+        ? t("networkErrorTimeout")
+        : error instanceof Error
+          ? error.message
+          : t("networkErrorAgent", { name: agentName });
       setMessages((prev) => [
         ...prev,
-        {
-          id: getNextMessageId(),
-          role: "agent",
-          text: error instanceof Error
-            ? error.message
-            : t("networkErrorAgent", { name: agentName }),
-        },
+        { id: getNextMessageId(), role: "agent", text: errorText },
       ]);
     }
-  }, [agentName, fallbackSuggestions, handleParsedEvent, resetTurnState, sending, sessionId, t]);
+  }, [agentName, fallbackSuggestions, handleParsedEvent, locale, resetTurnState, sending, sessionId, t]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1133,30 +1156,43 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusTone.dot, boxShadow: `0 0 18px ${statusTone.dot}` }} />
             {statusTone.text}
           </div>
-          <div
-            style={{
-              padding: "8px 10px",
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.04)",
-              fontSize: 12,
-              color: "rgba(255,255,255,0.78)",
-            }}
-          >
-            {myAgent?.autopilot_enabled ? t("autopilotOn") : t("autopilotOff")}
-          </div>
-          <div
-            style={{
-              padding: "8px 10px",
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.04)",
-              fontSize: 12,
-              color: "rgba(255,255,255,0.62)",
-            }}
-          >
-            {headerSyncLabel}
-          </div>
+          {(() => {
+            const apStr = myAgent?.autopilot_enabled ? t("autopilotOn") : t("autopilotOff");
+            const lastSpace = apStr.lastIndexOf(" ");
+            const prefix = apStr.slice(0, lastSpace);
+            const state = apStr.slice(lastSpace + 1);
+            return (
+              <div
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 999,
+                  border: myAgent?.autopilot_enabled ? "1px solid rgba(48,209,88,0.22)" : "1px solid rgba(255,255,255,0.08)",
+                  background: myAgent?.autopilot_enabled ? "rgba(48,209,88,0.07)" : "rgba(255,255,255,0.04)",
+                  fontSize: 12,
+                  color: "rgba(255,255,255,0.78)",
+                }}
+              >
+                {prefix}{" "}
+                <span style={{ color: myAgent?.autopilot_enabled ? "#30d158" : "rgba(255,255,255,0.45)", fontWeight: 600 }}>
+                  {state}
+                </span>
+              </div>
+            );
+          })()}
+          {(scannerContext?.lastScannedAt || lastSyncAt) && (
+            <div
+              style={{
+                padding: "8px 10px",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                fontSize: 12,
+                color: "rgba(255,255,255,0.62)",
+              }}
+            >
+              {headerSyncLabel}
+            </div>
+          )}
         </div>
       </div>
 

@@ -925,26 +925,18 @@
     "fundWallet": "Wallet Finanzieren",
     "setupRequired": "Polymarket-Einrichtung Erforderlich",
     "blocker": "Blocker",
-    "completeSteps": "Schliesse beide Schritte ab, bevor dein Agent auf dem Polymarket-CLOB handeln kann.",
+    "completeSteps": "Schliesse beide Schritte ab, bevor dein Agent mit dem Handel beginnen kann.",
     "depositTo": "EINZAHLEN AUF",
-    "polGas": "POL (Polygon Gas)",
-    "polMin": "Min 1 POL fur Genehmigungstransaktionen",
-    "usdcCapital": "USDC (Handelskapital)",
-    "usdcMin": "Min 10,00$ fur Polymarket-Ordres",
-    "usdcCtf": "USDC > ConditionalTokens",
-    "approveCtf": "CTF-Vertrag zum USDC-Ausgeben genehmigen",
-    "usdcExchange": "USDC > CTF Exchange",
-    "approveExchange": "Exchange zum USDC-Ausgeben genehmigen",
-    "ctfExchange": "CTF > CTF Exchange",
-    "approveCtfTransfers": "Bedingte Token-Transfers genehmigen",
-    "usdcNegRisk": "USDC > Neg Risk Exchange",
-    "approveNegRiskUsdc": "Neg-Risk-Adapter fur USDC genehmigen",
-    "ctfNegRisk": "CTF > Neg Risk Exchange",
-    "approveNegRiskCtf": "Bedingte Neg-Risk-Transfers genehmigen",
-    "negRiskCtf": "Neg Risk CTF > Neg Risk Exchange",
-    "approveNegRiskCtfTokens": "Neg-Risk-CTF-Token-Transfers genehmigen",
-    "checkingBalances": "Guthaben wird gepruft...",
-    "runningApprovals": "On-Chain-Genehmigungen laufen...",
+    "polGas": "Gebuehrenreserve",
+    "polMin": "Mindestens 3 POL für Gasgebühren erforderlich",
+    "usdcCapital": "Handelsguthaben",
+    "usdcMin": "Mindestens 10,00$ fur deinen ersten Handel",
+    "tradingPermissions": "Handelsberechtigungen",
+    "tradingPermissionsDesc": "Dein Agent wird fuer den Handel autorisiert — das laeuft automatisch ab und dauert etwa eine Minute",
+    "checkingBalances": "Dein Wallet wird geprueft",
+    "runningApprovals": "Agent wird fuer den Handel autorisiert",
+    "approvalTimeHint": "Das dauert normalerweise etwa 90 Sekunden",
+    "approvalSuccess": "Dein Agent ist bereit zu handeln!",
     "verify": "Verifizieren"
   },
   "agentFactory": {
@@ -1470,6 +1462,19 @@
       "fundingPending": "Finanzierung ausstehend",
       "viewAgentsWorld": "Agenten-Welt ansehen"
     },
+    "equity": {
+      "eyebrow": "Performance",
+      "title": "Eigenkapitalkurve",
+      "subtitle": "Portfoliowert im Zeitverlauf, basierend auf der abgeschlossenen Handelshistorie."
+    },
+    "recentTrades": {
+      "eyebrow": "Verlauf",
+      "title": "Letzte Trades",
+      "subtitle": "Die letzten 5 ausgeführten Positionen nach Aktualität sortiert.",
+      "viewAll": "Alle anzeigen",
+      "emptyTitle": "Noch keine Trades",
+      "emptyDetail": "Sobald der Agent seinen ersten Trade ausführt, erscheint Ihre Historie hier."
+    },
     "primitives": {
       "retry": "Erneut versuchen"
     }
@@ -1523,6 +1528,7 @@
     "tradeCancelled": "Trade abgebrochen.",
     "networkErrorAgent": "Kann {name} nicht erreichen. Verbindung prufen und erneut versuchen.",
     "networkErrorGeneric": "Das Quantik-Intelligenznetzwerk ist gerade nicht erreichbar.",
+    "networkErrorTimeout": "Die Antwort hat zu lange gedauert. Bitte versuche es erneut.",
     "fallbackIntro": "Quantik-Intelligenz ist bereit. Erstelle oder verbinde deinen Agenten, um Portfolio-, Scanner-, Risiko- und Runtime-Kontext in diesem Panel freizuschalten.",
     "introGuardian": "{emoji} {name} online. Ich bin bereits mit Scanner, Portfolio, Risiko und Ops verbunden. Frage direkt und ich liefere die aktuelle interne Ansicht.",
     "introAdventurer": "{emoji} {name} bereit. Ich kann aktive Signale, Portfolio-Status, Risikoposition und aktuelle Entscheidungen prufen, ohne dass du das Offensichtliche wiederholen musst.",

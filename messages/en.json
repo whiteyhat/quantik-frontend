@@ -971,26 +971,18 @@
     "fundWallet": "Fund Wallet",
     "setupRequired": "Polymarket Setup Required",
     "blocker": "Blocker",
-    "completeSteps": "Complete both steps before your agent can place trades on the Polymarket CLOB.",
+    "completeSteps": "Complete both steps before your agent can start trading.",
     "depositTo": "DEPOSIT TO",
-    "polGas": "POL (Polygon Gas)",
-    "polMin": "Min 1 POL for approval transactions",
-    "usdcCapital": "USDC (Trading Capital)",
-    "usdcMin": "Min $10.00 for Polymarket orders",
-    "usdcCtf": "USDC > ConditionalTokens",
-    "approveCtf": "Approve CTF contract to spend USDC",
-    "usdcExchange": "USDC > CTF Exchange",
-    "approveExchange": "Approve exchange to spend USDC",
-    "ctfExchange": "CTF > CTF Exchange",
-    "approveCtfTransfers": "Approve conditional token transfers",
-    "usdcNegRisk": "USDC > Neg Risk Exchange",
-    "approveNegRiskUsdc": "Approve neg-risk adapter for USDC",
-    "ctfNegRisk": "CTF > Neg Risk Exchange",
-    "approveNegRiskCtf": "Approve neg-risk conditional transfers",
-    "negRiskCtf": "Neg Risk CTF > Neg Risk Exchange",
-    "approveNegRiskCtfTokens": "Approve neg-risk CTF token transfers",
-    "checkingBalances": "Checking balances...",
-    "runningApprovals": "Running on-chain approvals...",
+    "polGas": "Network Fee Reserve",
+    "polMin": "Minimum 3 POL required for gas fees",
+    "usdcCapital": "Trading Funds",
+    "usdcMin": "Minimum $10.00 to place your first trade",
+    "tradingPermissions": "Trading Permissions",
+    "tradingPermissionsDesc": "Your agent is getting authorized to trade — this happens automatically and takes about a minute",
+    "checkingBalances": "Checking your wallet",
+    "runningApprovals": "Authorizing your agent to trade",
+    "approvalTimeHint": "This usually takes about 90 seconds",
+    "approvalSuccess": "Your agent is ready to trade!",
     "verify": "Verify"
   },
   "agentFactory": {
@@ -1413,6 +1405,19 @@
       "fundingPending": "funding pending",
       "viewAgentsWorld": "View Agents World"
     },
+    "equity": {
+      "eyebrow": "Performance",
+      "title": "Equity Curve",
+      "subtitle": "Portfolio value over time, built from settled trade history."
+    },
+    "recentTrades": {
+      "eyebrow": "History",
+      "title": "Recent Trades",
+      "subtitle": "Last 5 executed positions sorted by recency.",
+      "viewAll": "View All",
+      "emptyTitle": "No trades yet",
+      "emptyDetail": "Once the agent executes its first trade, your history will appear here."
+    },
     "primitives": {
       "retry": "Retry"
     }
@@ -1569,6 +1574,7 @@
     "tradeCancelled": "Trade cancelled.",
     "networkErrorAgent": "Unable to reach {name}. Check your connection and try again.",
     "networkErrorGeneric": "Unable to reach the Quantik intelligence network right now.",
+    "networkErrorTimeout": "Response took too long. Please try again.",
     "fallbackIntro": "Quantik intelligence is ready. Create or connect your agent to unlock scoped portfolio, scanner, risk, and runtime context in this drawer.",
     "introGuardian": "{emoji} {name} online. I am already wired into scanner, portfolio, risk, and ops. Ask directly and I will pull the live internal view.",
     "introAdventurer": "{emoji} {name} ready. I can check active signals, portfolio state, risk posture, and recent decisions without making you restate the obvious.",

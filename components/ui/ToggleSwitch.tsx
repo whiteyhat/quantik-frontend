@@ -6,6 +6,10 @@ const pulseKeyframes = `
   70% { box-shadow: 0 0 0 10px rgba(255,159,10,0); }
   100% { box-shadow: 0 0 0 0 rgba(255,159,10,0); }
 }
+@keyframes toggleSpinKnob {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 `;
 
 let pulseStyleInjected = false;
@@ -22,13 +26,15 @@ export function ToggleSwitch({
   onChange,
   disabled,
   pulse,
+  loading,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
   pulse?: boolean;
+  loading?: boolean;
 }) {
-  if (pulse) ensurePulseStyle();
+  if (pulse || loading) ensurePulseStyle();
 
   return (
     <button
@@ -59,11 +65,23 @@ export function ToggleSwitch({
           width: 22,
           height: 22,
           borderRadius: "50%",
-          background: "white",
+          background: loading ? "rgba(255,255,255,0.85)" : "white",
           transition: "left 220ms cubic-bezier(0.34,1.56,0.64,1)",
           boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+          ...(loading ? { animation: "toggleSpinKnob 700ms linear infinite" } : {}),
         }}
-      />
+      >
+        {loading && (
+          <div style={{
+            position: "absolute",
+            inset: 3,
+            borderRadius: "50%",
+            border: "2.5px solid transparent",
+            borderTopColor: checked ? "#30d158" : "rgba(255,255,255,0.5)",
+            borderRightColor: checked ? "#30d158" : "rgba(255,255,255,0.5)",
+          }} />
+        )}
+      </div>
     </button>
   );
 }

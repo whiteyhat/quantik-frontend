@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { HelpTooltip } from "./ui/HelpTooltip";
 
@@ -11,11 +11,18 @@ export type Recommendation = "BET_YES" | "BET_NO" | "VETO" | "SKIP";
 export interface ScannerResult {
   id?: string;
   slug: string;
-  question: string;
+  question?: string;
   recommendation: Recommendation;
-  confidence: number;    // 0–1
-  kellyFraction: number; // 0–1
-  scannedAt?: string;
+  confidence?: number;      // frontend-only alias
+  sigmaConfidence?: number; // backend field name
+  kellyFraction?: number;
+  kelly_fraction?: number;  // backend alias
+  probability?: number;     // oracle true prob
+  scannedAt?: string | number;
+  pipelineResult?: {
+    oracle?: { yes_price?: number; market_implied?: number; estimated_true_prob?: number; calibrated_prob?: number };
+    sigma?: { thesis?: string };
+  } | null;
 }
 
 const REC_CONFIG: Record<Recommendation, { labelKey: string; color: string; bg: string }> = {
@@ -25,13 +32,51 @@ const REC_CONFIG: Record<Recommendation, { labelKey: string; color: string; bg: 
   SKIP:    { labelKey: "skip",    color: "rgba(255,255,255,0.25)", bg: "rgba(255,255,255,0.05)" },
 };
 
-function timeAgo(iso?: string): string {
-  if (!iso) return "";
-  const diffMs = Date.now() - new Date(iso).getTime();
+function timeAgo(val?: string | number): string {
+  if (val == null) return "";
+  const ts = typeof val === "number" ? val : new Date(val).getTime();
+  const diffMs = Date.now() - ts;
   const min = Math.floor(diffMs / 60000);
   if (min < 1) return "just now";
   if (min < 60) return `${min}m ago`;
   return `${Math.floor(min / 60)}h ago`;
+}
+
+function resolveConf(r: ScannerResult): number {
+  const raw = r.sigmaConfidence ?? r.confidence ?? 0;
+  return Number.isFinite(raw) ? raw : 0;
+}
+
+function resolveKelly(r: ScannerResult): number {
+  const raw = r.kellyFraction ?? r.kelly_fraction ?? 0;
+  return Number.isFinite(raw) ? raw : 0;
+}
+
+function resolveProb(r: ScannerResult): number | null {
+  const raw = r.probability
+    ?? r.pipelineResult?.oracle?.calibrated_prob
+    ?? r.pipelineResult?.oracle?.estimated_true_prob;
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return raw;
+}
+
+function resolveMarketPrice(r: ScannerResult): number | null {
+  const raw = r.pipelineResult?.oracle?.market_implied ?? r.pipelineResult?.oracle?.yes_price;
+  if (raw == null || !Number.isFinite(raw) || raw === 0) return null;
+  return raw;
+}
+
+function humanizeSlug(slug: string): string {
+  return slug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    + "?";
+}
+
+function resolveQuestion(r: ScannerResult, i: number): string {
+  const q = r.question
+    ?? (r.slug ? humanizeSlug(r.slug) : `Market #${i + 1}`);
+  return q.length > 60 ? q.slice(0, 60) + "…" : q;
 }
 
 function RadarPulse({ scanningText }: { scanningText: string }) {
@@ -76,10 +121,14 @@ function RadarPulse({ scanningText }: { scanningText: string }) {
   );
 }
 
+const VISIBLE_DEFAULT = 3;
+const VISIBLE_MAX = 10;
+
 export function ScannerFeed() {
   const t = useTranslations("scannerFeed");
   const [results, setResults] = useState<ScannerResult[]>([]);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState(false);
   const prevIdsRef = useRef<Set<string>>(new Set());
 
   const fetchResults = async () => {
@@ -148,82 +197,204 @@ export function ScannerFeed() {
 
       {results.length === 0 ? (
         <RadarPulse scanningText={t("scanning")} />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {results.map((r, i) => {
-            const id = r.id ?? r.slug ?? String(i);
-            const cfg = REC_CONFIG[r.recommendation] ?? REC_CONFIG.SKIP;
-            const isNew = animatingIds.has(id);
-            const q = r.question ?? r.slug ?? "";
-            const shortQ = q.length > 50 ? q.slice(0, 50) + "…" : q;
-            return (
-              <div
-                key={id}
-                data-testid="scanner-row"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
-                  transition: "background 200ms ease",
-                }}
-              >
-                {/* Recommendation badge */}
-                <span
-                  data-testid={`badge-${r.recommendation}`}
+      ) : (() => {
+        const capped = results.filter(r => r.recommendation === "BET_YES" || r.recommendation === "BET_NO").slice(0, VISIBLE_MAX);
+        const above = capped.slice(0, VISIBLE_DEFAULT);
+        const below = capped.slice(VISIBLE_DEFAULT);
+        const hiddenCount = below.length;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {above.map((r, i) => {
+              const id = r.id ?? r.slug ?? String(i);
+              const cfg = REC_CONFIG[r.recommendation] ?? REC_CONFIG.SKIP;
+              const isNew = animatingIds.has(id);
+              const shortQ = resolveQuestion(r, i);
+              const conf = resolveConf(r);
+              const kelly = resolveKelly(r);
+              const oracleProb = resolveProb(r);
+              const marketPrice = resolveMarketPrice(r);
+              const edge = oracleProb != null && marketPrice != null
+                ? oracleProb - marketPrice
+                : null;
+              return (
+                <div
+                  key={id}
+                  data-testid="scanner-row"
                   style={{
-                    padding: "2px 8px",
-                    borderRadius: 100,
-                    background: cfg.bg,
-                    border: `1px solid ${cfg.color}44`,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: cfg.color,
-                    letterSpacing: "0.06em",
-                    fontFamily: "\"SF Mono\", monospace",
-                    whiteSpace: "nowrap",
+                    display: "grid",
+                    gridTemplateColumns: "auto 1fr auto",
+                    alignItems: "center",
+                    gap: "8px 10px",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
                   }}
                 >
-                  {t(cfg.labelKey as any)}
-                </span>
-
-                {/* Question */}
-                <span
-                  style={{
-                    flex: 1,
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.75)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {shortQ}
-                </span>
-
-                {/* Confidence + Kelly */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "monospace" }}>
-                    {Math.round(r.confidence * 100)}% {t("conf")}
+                  {/* Recommendation badge */}
+                  <span
+                    data-testid={`badge-${r.recommendation}`}
+                    style={{
+                      padding: "2px 7px",
+                      borderRadius: 100,
+                      background: cfg.bg,
+                      border: `1px solid ${cfg.color}44`,
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: cfg.color,
+                      letterSpacing: "0.07em",
+                      fontFamily: "\"SF Mono\", monospace",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t(cfg.labelKey as any)}
                   </span>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "monospace" }}>
-                    {(r.kellyFraction * 100).toFixed(1)}% {t("kelly")}
+
+                  {/* Question */}
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.78)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {shortQ}
                   </span>
-                  {r.scannedAt && (
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "monospace" }}>
-                      {timeAgo(r.scannedAt)}
+
+                  {/* Confidence + time */}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: conf >= 0.7 ? "#30d158" : conf >= 0.5 ? "#ff9f0a" : "rgba(255,255,255,0.35)",
+                        fontFamily: '"SF Mono", monospace',
+                      }}
+                    >
+                      {Math.round(conf * 100)}% sure
                     </span>
-                  )}
+                    {r.scannedAt && (
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontFamily: "monospace" }}>
+                        {timeAgo(r.scannedAt)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+
+            {hiddenCount > 0 && (
+              <>
+                {/* Animated extra rows */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                    overflow: "hidden",
+                    maxHeight: expanded ? `${hiddenCount * 56}px` : "0px",
+                    opacity: expanded ? 1 : 0,
+                    transition: "max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 240ms ease",
+                  }}
+                >
+                  {below.map((r, i) => {
+                    const id = r.id ?? r.slug ?? String(VISIBLE_DEFAULT + i);
+                    const cfg = REC_CONFIG[r.recommendation] ?? REC_CONFIG.SKIP;
+                    const isNew = animatingIds.has(id);
+                    const shortQ = resolveQuestion(r, VISIBLE_DEFAULT + i);
+                    const conf = resolveConf(r);
+                    return (
+                      <div
+                        key={id}
+                        data-testid="scanner-row"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "auto 1fr auto",
+                          alignItems: "center",
+                          gap: "8px 10px",
+                          padding: "8px 10px",
+                          borderRadius: 8,
+                          background: "rgba(255,255,255,0.04)",
+                          border: "1px solid rgba(255,255,255,0.06)",
+                          animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
+                        }}
+                      >
+                        <span
+                          data-testid={`badge-${r.recommendation}`}
+                          style={{
+                            padding: "2px 7px",
+                            borderRadius: 100,
+                            background: cfg.bg,
+                            border: `1px solid ${cfg.color}44`,
+                            fontSize: 9,
+                            fontWeight: 700,
+                            color: cfg.color,
+                            letterSpacing: "0.07em",
+                            fontFamily: '"SF Mono", monospace',
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {t(cfg.labelKey as any)}
+                        </span>
+                        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {shortQ}
+                        </span>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: conf >= 0.7 ? "#30d158" : conf >= 0.5 ? "#ff9f0a" : "rgba(255,255,255,0.35)", fontFamily: '"SF Mono", monospace' }}>
+                            {Math.round(conf * 100)}% sure
+                          </span>
+                          {r.scannedAt && (
+                            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontFamily: "monospace" }}>
+                              {timeAgo(r.scannedAt)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Toggle button */}
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  style={{
+                    marginTop: 2,
+                    width: "100%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 8,
+                    padding: "7px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    cursor: "pointer",
+                    color: "rgba(255,255,255,0.40)",
+                    fontSize: 11,
+                    fontFamily: '"SF Mono", monospace',
+                    letterSpacing: "0.06em",
+                    transition: "background 150ms ease, color 150ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.07)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.65)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.40)";
+                  }}
+                >
+                  <span style={{ fontSize: 9, transform: expanded ? "rotate(180deg)" : "none", transition: "transform 320ms cubic-bezier(0.4,0,0.2,1)", display: "inline-block" }}>▼</span>
+                  {expanded ? "SHOW LESS" : `+${hiddenCount} MORE SIGNALS`}
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

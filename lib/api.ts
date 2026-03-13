@@ -12,6 +12,9 @@ let _authToken: string | null = null;
 export function setAuthToken(token: string | null) {
   _authToken = token;
 }
+export function getAuthToken(): string | null {
+  return _authToken;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -928,6 +931,28 @@ export const api = {
     error?: string;
   }> => {
     return apiFetch(`/api/v1/agents/${agentId}/verify-polymarket`, { method: "POST" });
+  },
+
+  checkBalance: async (agentId: string): Promise<{
+    status: string;
+    polymarketReady: boolean;
+    address: string;
+    balances: { pol: number; usdc: number; polSufficient: boolean; usdcSufficient: boolean };
+    missingItems?: string[];
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/check-balance`, { method: "POST" });
+  },
+
+  runApprovals: async (agentId: string): Promise<{
+    status: string;
+    polymarketReady: boolean;
+    address: string;
+    balances: { pol: number; usdc: number; polSufficient: boolean; usdcSufficient: boolean };
+    approvals?: { allPassed: boolean; details: unknown };
+    missingItems?: string[];
+    error?: string;
+  }> => {
+    return apiFetch(`/api/v1/agents/${agentId}/run-approvals`, { method: "POST" });
   },
 
   assignWallet: async (agentId: string, walletAddress: string, privateKey?: string, seedPhrase?: string): Promise<{ ok: boolean; wallet_address: string }> => {

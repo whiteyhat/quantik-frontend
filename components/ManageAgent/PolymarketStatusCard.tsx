@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
+import JSConfetti from "js-confetti";
+import { api, type WalletBalance } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useSocketEvent } from "@/context/SocketContext";
 
 // ── CSS keyframes injected once ──────────────────────────────────────────────
 
@@ -49,6 +51,22 @@ function ensureKeyframes() {
       40% { opacity: 1; }
       100% { stroke-dashoffset: 0; opacity: 1; }
     }
+    @keyframes pm-progress-fill {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+    @keyframes pm-progress-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pm-toast-in {
+      0% { opacity: 0; transform: translateY(-12px) scale(0.94); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes pm-toast-out {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-8px) scale(0.96); }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -69,6 +87,7 @@ interface Props {
   walletAddress: string | null;
   polymarketReady?: boolean;
   polymarketStatus?: string;
+  wallet?: WalletBalance | null;
 }
 
 // ── Fonts ────────────────────────────────────────────────────────────────────
@@ -87,10 +106,13 @@ function StepIndicator({ step, currentStep, label }: { step: 1 | 2; currentStep:
         style={{
           width: 28,
           height: 28,
+          minWidth: 28,
+          minHeight: 28,
           borderRadius: "50%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexShrink: 0,
           fontSize: 12,
           fontWeight: 800,
           fontFamily: mono,
@@ -206,18 +228,38 @@ function CheckItem({
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, polymarketStatus }: Props) {
+export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, polymarketStatus, wallet }: Props) {
   const t = useTranslations("polymarket");
   const tc = useTranslations("common");
   useEffect(ensureKeyframes, []);
 
+  useEffect(() => {
+    jsConfettiRef.current = new JSConfetti();
+    return () => { jsConfettiRef.current = null; };
+  }, []);
+
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const myAgent = useQuantikStore((s) => s.myAgent);
 
-  const [verifying, setVerifying] = useState(false);
-  const [result, setResult] = useState<VerifyResult | null>(null);
+  // Step 1: checking balances. Step 2: running approvals (auto-started after step 1 passes).
+  const [displayStep, setDisplayStep] = useState<1 | 2>(
+    (polymarketStatus === "approving" || polymarketStatus === "approval_failed" || polymarketStatus === "funding_detected") ? 2 : 1
+  );
+  const [forcedReady, setForcedReady] = useState(false);
+  const [checkingBalance, setCheckingBalance] = useState(false);
+  const [runningApprovals, setRunningApprovals] = useState(false);
+  const [balanceResult, setBalanceResult] = useState<VerifyResult | null>(null);
+  const [approvalResult, setApprovalResult] = useState<VerifyResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [copyFading, setCopyFading] = useState(false);
+
+  // Progress timer state for step 2 approval (~90s)
+  const [approvalProgress, setApprovalProgress] = useState(0);
+  const [approvalStartTime, setApprovalStartTime] = useState<number | null>(null);
+  const [successToast, setSuccessToast] = useState(false);
+  const [toastFading, setToastFading] = useState(false);
+  const approvalTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jsConfettiRef = useRef<JSConfetti | null>(null);
 
   // Wallet re-assignment state (for when walletAddress is null or private key is missing)
   const [showWalletAssign, setShowWalletAssign] = useState(false);
@@ -240,40 +282,111 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
     setTimeout(() => { setCopied(false); setCopyFading(false); }, 1900);
   }, [walletAddress, copied]);
 
-  const isReady = result?.polymarketReady ?? polymarketReady ?? false;
-
-  // Determine which step we're on
-  const fundingPassed = result?.balances
-    ? result.balances.polSufficient && result.balances.usdcSufficient
-    : polymarketStatus === "ready" || polymarketStatus === "approving";
-  // Never advance to step 2 if wallet isn't assigned
-  const currentStep: 1 | 2 = (fundingPassed && !!walletAddress) ? 2 : 1;
-
-  const handleVerify = useCallback(async () => {
-    setVerifying(true);
-    try {
-      const data = await api.verifyPolymarket(agentId);
-      setResult(data);
-      // When fully verified, update store so AutopilotControlCard becomes visible
-      if (data.polymarketReady && myAgent) {
-        setMyAgent({ ...myAgent, polymarket_ready: true });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Verification failed";
-      // If error is about missing private key, prompt to re-assign wallet
-      if (msg.includes("private key") || msg.includes("no wallet")) {
-        setShowWalletAssign(true);
-      }
-      setResult({
-        status: "approval_failed",
-        polymarketReady: false,
-        balances: { pol: 0, usdc: 0, polSufficient: false, usdcSufficient: false },
-        error: msg,
-      });
-    } finally {
-      setVerifying(false);
+  // Gap 3: cross-tab / background approval completion
+  const handlePolymarketReady = useCallback((data: { agentId: string }) => {
+    if (data.agentId !== agentId) return;
+    setForcedReady(true);
+    if (myAgent) {
+      setMyAgent({ ...myAgent, polymarket_ready: true, polymarket_status: "ready" });
     }
   }, [agentId, myAgent, setMyAgent]);
+
+  useSocketEvent("polymarket:ready", handlePolymarketReady);
+
+  // Derive unified "ready" from either result — but re-show if wallet balance ran out
+  const balanceLow = polymarketReady === true && wallet?.fundingStatus === "funding_required";
+  const isReady = !balanceLow && (forcedReady || (approvalResult?.polymarketReady ?? balanceResult?.polymarketReady ?? polymarketReady ?? false));
+  // Derive balances from whichever result we have
+  const shownBalances = approvalResult?.balances ?? balanceResult?.balances ?? null;
+  const shownError = approvalResult?.error ?? balanceResult?.error ?? null;
+
+  const startApprovalTimer = useCallback(() => {
+    const DURATION_MS = 90_000;
+    const start = Date.now();
+    setApprovalStartTime(start);
+    setApprovalProgress(0);
+    if (approvalTimerRef.current) clearInterval(approvalTimerRef.current);
+    approvalTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min((elapsed / DURATION_MS) * 100, 97);
+      setApprovalProgress(pct);
+      if (elapsed >= DURATION_MS) {
+        if (approvalTimerRef.current) clearInterval(approvalTimerRef.current);
+      }
+    }, 250);
+  }, []);
+
+  const stopApprovalTimer = useCallback((complete: boolean) => {
+    if (approvalTimerRef.current) clearInterval(approvalTimerRef.current);
+    approvalTimerRef.current = null;
+    if (complete) setApprovalProgress(100);
+  }, []);
+
+  useEffect(() => () => { if (approvalTimerRef.current) clearInterval(approvalTimerRef.current); }, []);
+
+  // Step 2: auto-run approvals — called after balance check passes
+  const triggerApprovals = useCallback(async () => {
+    setRunningApprovals(true);
+    startApprovalTimer();
+    try {
+      const data = await api.runApprovals(agentId);
+      setApprovalResult(data as VerifyResult);
+      stopApprovalTimer(true);
+      if (data.polymarketReady && myAgent) {
+        setMyAgent({ ...myAgent, polymarket_ready: true, polymarket_status: "ready" });
+        jsConfettiRef.current?.addConfetti({ emojis: ["🎯", "🚀", "💰", "🔥", "⚡", "✅"], emojiSize: 72, confettiNumber: 120 });
+        setTimeout(() => jsConfettiRef.current?.addConfetti({ confettiColors: ["#30d158", "#0a84ff", "#ff9f0a", "#ff453a", "#bf5af2", "#ffd60a"], confettiRadius: 5, confettiNumber: 180 }), 600);
+        setTimeout(() => jsConfettiRef.current?.addConfetti({ emojis: ["🎯", "💎", "🏆"], emojiSize: 56, confettiNumber: 60 }), 1200);
+        setSuccessToast(true);
+        setToastFading(false);
+        setTimeout(() => setToastFading(true), 3200);
+        setTimeout(() => setSuccessToast(false), 3800);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Approvals failed";
+      stopApprovalTimer(false);
+      if (msg.includes("private key") || msg.includes("no wallet")) setShowWalletAssign(true);
+      setApprovalResult({ status: "approval_failed", polymarketReady: false, balances: shownBalances ?? { pol: 0, usdc: 0, polSufficient: false, usdcSufficient: false }, error: msg });
+    } finally {
+      setRunningApprovals(false);
+    }
+  }, [agentId, myAgent, setMyAgent, startApprovalTimer, stopApprovalTimer, shownBalances]);
+
+  // Step 1: user clicks "Verify Funds" — check balance only
+  const handleVerify = useCallback(async () => {
+    setCheckingBalance(true);
+    setBalanceResult(null);
+    setApprovalResult(null);
+    try {
+      const data = await api.checkBalance(agentId);
+      setBalanceResult(data as VerifyResult);
+      if (data.status === "funding_detected" || data.polymarketReady) {
+        // Funded — auto-advance to step 2 and start approvals
+        setDisplayStep(2);
+        // Run approvals asynchronously (fire immediately after state update)
+        setTimeout(() => triggerApprovals(), 0);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Balance check failed";
+      setBalanceResult({ status: "error", polymarketReady: false, balances: { pol: 0, usdc: 0, polSufficient: false, usdcSufficient: false }, error: msg });
+    } finally {
+      setCheckingBalance(false);
+    }
+  }, [agentId, triggerApprovals]);
+
+  // Auto-trigger approvals on mount if the page was refreshed while approvals were
+  // in-flight ("approving") or balance had just passed ("funding_detected").
+  // This ensures the user never gets stuck on step 2 with no progress bar running.
+  const hasAutoTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoTriggeredRef.current) return;
+    if (!walletAddress) return;
+    if (polymarketStatus === "approving" || polymarketStatus === "funding_detected") {
+      hasAutoTriggeredRef.current = true;
+      triggerApprovals();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run once on mount only
 
   const handleAssignWallet = useCallback(async () => {
     if (!assignAddress || !/^0x[0-9a-fA-F]{40}$/.test(assignAddress)) {
@@ -301,9 +414,10 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
   // Don't render if fully ready (component disappears)
   if (isReady) return null;
 
-  const polChecked = result?.balances?.polSufficient ?? false;
-  const usdcChecked = result?.balances?.usdcSufficient ?? false;
-  const approvalsChecked = result?.approvals?.allPassed ?? false;
+  const polChecked = shownBalances?.polSufficient ?? false;
+  const usdcChecked = shownBalances?.usdcSufficient ?? false;
+  const approvalsChecked = approvalResult?.approvals?.allPassed ?? false;
+  const verifying = checkingBalance || runningApprovals;
 
   return (
     <div
@@ -375,24 +489,24 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
 
       {/* Stepper indicators */}
       <div style={{ padding: "0 22px", display: "flex", alignItems: "center", gap: 0, marginBottom: 18 }}>
-        <StepIndicator step={1} currentStep={currentStep} label={t("fundWallet")} />
+        <StepIndicator step={1} currentStep={displayStep} label={t("fundWallet")} />
         <div
           style={{
             flex: 1,
             height: 1,
             margin: "0 12px",
-            background: fundingPassed
+            background: displayStep === 2
               ? "rgba(48,209,88,0.30)"
               : "rgba(255,255,255,0.08)",
             transition: "background 400ms ease",
           }}
         />
-        <StepIndicator step={2} currentStep={currentStep} label={t("setupTitle")} />
+        <StepIndicator step={2} currentStep={displayStep} label={t("setupTitle")} />
       </div>
 
       {/* Step content */}
       <div style={{ padding: "0 22px" }}>
-        {currentStep === 1 && (
+        {displayStep === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Wallet address */}
             {walletAddress && (
@@ -510,55 +624,68 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
               label={t("polGas")}
               sublabel={t("polMin")}
               checked={polChecked}
-              value={result?.balances ? `${result.balances.pol.toFixed(4)} POL` : undefined}
+              value={shownBalances ? `${shownBalances.pol.toFixed(4)} POL` : undefined}
             />
             <CheckItem
               label={t("usdcCapital")}
               sublabel={t("usdcMin")}
               checked={usdcChecked}
-              value={result?.balances ? `$${result.balances.usdc.toFixed(2)}` : undefined}
+              value={shownBalances ? `$${shownBalances.usdc.toFixed(2)}` : undefined}
             />
           </div>
         )}
 
-        {currentStep === 2 && (
+        {displayStep === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <CheckItem
-              label={t("usdcCtf")}
-              sublabel={t("approveCtf")}
+              label={t("tradingPermissions")}
+              sublabel={t("tradingPermissionsDesc")}
               checked={approvalsChecked}
             />
-            <CheckItem
-              label={t("usdcExchange")}
-              sublabel={t("approveExchange")}
-              checked={approvalsChecked}
-            />
-            <CheckItem
-              label={t("ctfExchange")}
-              sublabel={t("approveCtfTransfers")}
-              checked={approvalsChecked}
-            />
-            <CheckItem
-              label={t("usdcNegRisk")}
-              sublabel={t("approveNegRiskUsdc")}
-              checked={approvalsChecked}
-            />
-            <CheckItem
-              label={t("ctfNegRisk")}
-              sublabel={t("approveNegRiskCtf")}
-              checked={approvalsChecked}
-            />
-            <CheckItem
-              label={t("negRiskCtf")}
-              sublabel={t("approveNegRiskCtfTokens")}
-              checked={approvalsChecked}
-            />
+            {/* Progress bar — visible while approvals are running (auto-started) */}
+            {runningApprovals && approvalStartTime !== null && (
+              <div style={{ marginTop: 4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", fontFamily: mono, letterSpacing: "0.04em" }}>
+                    {t("runningApprovals")}
+                  </span>
+                  <span style={{ fontSize: 10, color: "#ff9f0a", fontFamily: mono, fontWeight: 700 }}>
+                    {Math.round(approvalProgress)}%
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: 6,
+                    borderRadius: 99,
+                    background: "rgba(255,255,255,0.06)",
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${approvalProgress}%`,
+                      borderRadius: 99,
+                      background: "linear-gradient(90deg, rgba(255,159,10,0.9), rgba(255,69,58,0.85), rgba(255,159,10,0.9))",
+                      backgroundSize: "200% 100%",
+                      animation: "pm-progress-shimmer 1.8s linear infinite",
+                      transition: "width 400ms ease",
+                    }}
+                  />
+                </div>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", margin: "6px 0 0", fontFamily: mono, lineHeight: 1.4 }}>
+                  {t("approvalTimeHint")}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Error display */}
-      {result?.error && (
+      {shownError && (
         <div
           style={{
             margin: "12px 22px 0",
@@ -571,7 +698,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
             fontFamily: mono,
           }}
         >
-          {result.error}
+          {shownError}
         </div>
       )}
 
@@ -670,61 +797,144 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
         </div>
       )}
 
-      {/* Verify button */}
+      {/* Action area — step 1 has Verify button; step 2 is fully automatic */}
       <div style={{ padding: "16px 22px 20px" }}>
-        {!walletAddress && !showWalletAssign && (
+        {displayStep === 1 && (
+          <>
+            {!walletAddress && !showWalletAssign && (
+              <button
+                onClick={() => setShowWalletAssign(true)}
+                style={{
+                  width: "100%",
+                  marginBottom: 10,
+                  padding: "10px 24px",
+                  borderRadius: 10,
+                  background: "rgba(10,132,255,0.12)",
+                  border: "1px solid rgba(10,132,255,0.25)",
+                  color: "#0a84ff",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  cursor: "pointer",
+                  fontFamily: mono,
+                  textTransform: "uppercase",
+                }}
+              >
+                Assign Wallet
+              </button>
+            )}
+            <button
+              onClick={handleVerify}
+              disabled={checkingBalance || !walletAddress}
+              style={{
+                width: "100%",
+                padding: "12px 24px",
+                borderRadius: 12,
+                background: (checkingBalance || !walletAddress)
+                  ? "rgba(255,255,255,0.04)"
+                  : "linear-gradient(135deg, rgba(255,159,10,0.90), rgba(255,100,20,0.90))",
+                border: (checkingBalance || !walletAddress)
+                  ? "1px solid rgba(255,255,255,0.08)"
+                  : "1px solid rgba(255,159,10,0.50)",
+                color: (checkingBalance || !walletAddress) ? "rgba(255,255,255,0.30)" : "#fff",
+                fontSize: 13,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                cursor: (checkingBalance || !walletAddress) ? "not-allowed" : "pointer",
+                transition: "all 250ms ease",
+                outline: "none",
+                boxShadow: (checkingBalance || !walletAddress) ? "none" : "0 4px 20px rgba(255,159,10,0.25)",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              {checkingBalance ? (
+                <><span>{t("checkingBalances")}</span><AnimatedDots /></>
+              ) : t("verify")}
+            </button>
+          </>
+        )}
+
+        {displayStep === 2 && !runningApprovals && approvalResult?.error && (
+          // Retry button — only shown if approvals failed (step 2 error state)
           <button
-            onClick={() => setShowWalletAssign(true)}
+            onClick={triggerApprovals}
             style={{
               width: "100%",
-              marginBottom: 10,
-              padding: "10px 24px",
-              borderRadius: 10,
-              background: "rgba(10,132,255,0.12)",
-              border: "1px solid rgba(10,132,255,0.25)",
-              color: "#0a84ff",
-              fontSize: 12,
-              fontWeight: 700,
+              padding: "12px 24px",
+              borderRadius: 12,
+              background: "linear-gradient(135deg, rgba(255,159,10,0.90), rgba(255,100,20,0.90))",
+              border: "1px solid rgba(255,159,10,0.50)",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 800,
               letterSpacing: "0.04em",
               cursor: "pointer",
-              fontFamily: mono,
+              transition: "all 250ms ease",
+              outline: "none",
+              boxShadow: "0 4px 20px rgba(255,159,10,0.25)",
               textTransform: "uppercase",
             }}
           >
-            Assign Wallet
+            {t("verify")}
           </button>
         )}
-        <button
-          onClick={handleVerify}
-          disabled={verifying || !walletAddress}
+      </div>
+
+      {/* Success toast */}
+      {successToast && (
+        <div
           style={{
-            width: "100%",
-            padding: "12px 24px",
-            borderRadius: 12,
-            background: (verifying || !walletAddress)
-              ? "rgba(255,255,255,0.04)"
-              : "linear-gradient(135deg, rgba(255,159,10,0.90), rgba(255,100,20,0.90))",
-            border: (verifying || !walletAddress)
-              ? "1px solid rgba(255,255,255,0.08)"
-              : "1px solid rgba(255,159,10,0.50)",
-            color: (verifying || !walletAddress) ? "rgba(255,255,255,0.30)" : "#fff",
-            fontSize: 13,
-            fontWeight: 800,
-            letterSpacing: "0.04em",
-            cursor: (verifying || !walletAddress) ? "not-allowed" : "pointer",
-            transition: "all 250ms ease",
-            outline: "none",
-            boxShadow: (verifying || !walletAddress) ? "none" : "0 4px 20px rgba(255,159,10,0.25)",
-            textTransform: "uppercase",
+            position: "fixed",
+            top: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            pointerEvents: "none",
+            animation: toastFading
+              ? "pm-toast-out 0.5s ease forwards"
+              : "pm-toast-in 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards",
           }}
         >
-          {verifying
-            ? currentStep === 1
-              ? t("checkingBalances")
-              : t("runningApprovals")
-            : t("verify")}
-        </button>
-      </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 22px",
+              borderRadius: 100,
+              background: "rgba(48,209,88,0.12)",
+              border: "1px solid rgba(48,209,88,0.40)",
+              backdropFilter: "blur(24px) saturate(180%)",
+              WebkitBackdropFilter: "blur(24px) saturate(180%)",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(48,209,88,0.10)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🎯</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#30d158", fontFamily: mono, letterSpacing: "0.02em" }}>
+              {t("approvalSuccess")}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Animated "..." dots — cycles through . .. ...
+function AnimatedDots() {
+  const [dots, setDots] = useState(1);
+  useEffect(() => {
+    const id = setInterval(() => setDots((d) => (d % 3) + 1), 500);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span style={{ letterSpacing: "0.05em", minWidth: 18, display: "inline-block", textAlign: "left" }}>
+      {".".repeat(dots)}
+    </span>
   );
 }

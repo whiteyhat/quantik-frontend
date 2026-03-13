@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useQuantikStore } from "@/store/useQuantikStore";
@@ -19,51 +19,81 @@ function ensureParticleKeyframes() {
   const style = document.createElement("style");
   style.id = AP_STYLE_ID;
   style.textContent = `
-    @keyframes ap-particle-rise {
-      0%   { transform: translateY(0px) translateX(0px) scale(1); opacity: 0; }
-      12%  { opacity: 1; }
-      75%  { opacity: 0.7; }
-      100% { transform: translateY(-72px) translateX(var(--ap-dx, 0px)) scale(0.15); opacity: 0; }
+    @keyframes ap-emoji-float {
+      0%   {
+        transform: translate(0, 0) scale(var(--pscale)) rotate(var(--prot0));
+        opacity: 0.9;
+      }
+      30%  {
+        opacity: 0.82;
+      }
+      65%  {
+        opacity: 0.45;
+      }
+      100% {
+        transform: translate(var(--pdx), var(--pdy)) scale(calc(var(--pscale) * 0.3)) rotate(var(--prot1));
+        opacity: 0;
+        filter: blur(3px);
+      }
     }
-    @keyframes ap-particle-drift {
-      0%   { transform: translateY(0px) translateX(0px) scale(1); opacity: 0; }
-      10%  { opacity: 0.8; }
-      100% { transform: translateY(-40px) translateX(var(--ap-dx, 0px)) scale(0.4); opacity: 0; }
+    @keyframes ap-emoji-burst {
+      0%   {
+        transform: translate(0, 0) scale(0.15) rotate(var(--prot0));
+        opacity: 0;
+      }
+      15%  {
+        opacity: 0.95;
+        transform: translate(calc(var(--pdx)*0.12), calc(var(--pdy)*0.12)) scale(var(--pscale)) rotate(calc(var(--prot0) * 0.4));
+      }
+      60%  {
+        opacity: 0.55;
+      }
+      100% {
+        transform: translate(var(--pdx), var(--pdy)) scale(calc(var(--pscale) * 0.08)) rotate(var(--prot1));
+        opacity: 0;
+        filter: blur(4px);
+      }
     }
   `;
   document.head.appendChild(style);
 }
 
-// Deterministic particle configs — no Math.random to avoid SSR/hydration mismatch
-const PARTICLE_CONFIGS = Array.from({ length: 22 }, (_, i) => ({
-  id: i,
-  left: `${4 + ((i * 4.37 + 1.8) % 91)}%`,
-  top: `${6 + ((i * 8.13 + 3.7) % 84)}%`,
-  size: 2 + (i % 3),
-  duration: `${3.2 + (i % 6) * 0.65}s`,
-  delay: `${(i * 0.31) % 3.5}s`,
-  anim: i % 2 === 0 ? "ap-particle-rise" : "ap-particle-drift",
-  dx: `${-18 + (i % 8) * 5.5}px`,
-  color:
-    i % 4 === 0
-      ? "rgba(255,122,69,0.65)"
-      : i % 4 === 1
-      ? "rgba(10,132,255,0.50)"
-      : i % 4 === 2
-      ? "rgba(255,159,10,0.55)"
-      : "rgba(255,255,255,0.20)",
-}));
+const MONEY_EMOJIS = ["💸", "💰", "🤑", "💎"];
 
-const panelStyle: React.CSSProperties = {
-  background:
-    "radial-gradient(circle at top left, rgba(255,122,69,0.22), transparent 42%), linear-gradient(135deg, rgba(20,33,61,0.96), rgba(14,18,28,0.94))",
-  border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 18,
-  padding: 20,
-  boxShadow: "0 18px 48px rgba(0,0,0,0.28)",
-  position: "relative",
-  overflow: "hidden",
-};
+// Weighted distribution: 💸 is most common, 💎 is rarest
+const EMOJI_WEIGHTS = [
+  { emoji: "💸", weight: 40 },
+  { emoji: "💰", weight: 28 },
+  { emoji: "🤑", weight: 22 },
+  { emoji: "💎", weight: 10 },
+];
+
+function pickWeightedEmoji(): string {
+  const total = EMOJI_WEIGHTS.reduce((s, e) => s + e.weight, 0);
+  let r = Math.random() * total;
+  for (const e of EMOJI_WEIGHTS) {
+    r -= e.weight;
+    if (r <= 0) return e.emoji;
+  }
+  return MONEY_EMOJIS[0];
+}
+
+interface EmojiParticle {
+  id: number;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  fontSize: number;
+  emoji: string;
+  duration: number;
+  anim: string;
+  rot0: number;
+  rot1: number;
+  scale: number;
+}
+
+let _particleId = 0;
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -103,6 +133,9 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [emojiParticles, setEmojiParticles] = useState<EmojiParticle[]>([]);
+  const lastSpawnRef = useRef(0);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [showPulse, setShowPulse] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(AUTOPILOT_PULSE_KEY) !== "true";
@@ -110,11 +143,86 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
   useEffect(ensureParticleKeyframes, []);
 
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    // Burst a few emojis on enter for a delightful pop
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const burst: EmojiParticle[] = Array.from({ length: 3 }, (_, i) => {
+      const angle = (i / 5) * Math.PI * 2 + Math.random() * 0.6;
+      const speed = 30 + Math.random() * 40;
+      const fontSize = 16 + Math.random() * 44; // 16–60px
+      const scale = 0.7 + Math.random() * 0.5;
+      const rot0 = (Math.random() - 0.5) * 30;
+      const rot1 = rot0 + (Math.random() - 0.5) * 120;
+      return {
+        id: ++_particleId,
+        x: cx + (Math.random() - 0.5) * 80,
+        y: cy + (Math.random() - 0.5) * 40,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed - 20,
+        fontSize,
+        emoji: pickWeightedEmoji(),
+        duration: 1800 + Math.random() * 1200,
+        anim: "ap-emoji-burst",
+        rot0,
+        rot1,
+        scale,
+      };
+    });
+    setEmojiParticles(burst);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const now = Date.now();
+    // Throttle: spawn every 160ms → ~6 events/s, sparse and intentional
+    if (now - lastSpawnRef.current < 160) return;
+    lastSpawnRef.current = now;
+
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // always just 1 per event
+    const count = 1;
+    const newParticles: EmojiParticle[] = Array.from({ length: count }, () => {
+      // Mostly upward + slight horizontal drift
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
+      const speed = 18 + Math.random() * 28; // slower travel
+      const fontSize = 10 + Math.random() * 50; // 10–60px — wide range
+      const scale = 0.5 + Math.random() * 0.7;
+      const rot0 = (Math.random() - 0.5) * 20;
+      const rot1 = rot0 + (Math.random() - 0.5) * 140;
+      const duration = 1600 + Math.random() * 1400; // 1.6s–3s
+      return {
+        id: ++_particleId,
+        x: x + (Math.random() - 0.5) * 18,
+        y: y + (Math.random() - 0.5) * 12,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        fontSize,
+        emoji: pickWeightedEmoji(),
+        duration,
+        anim: "ap-emoji-float",
+        rot0,
+        rot1,
+        scale,
+      };
+    });
+
+    setEmojiParticles((prev) => [...prev.slice(-28), ...newParticles]); // cap at 28 alive
+  }, []);
+
+  const removeParticle = useCallback((id: number) => {
+    setEmojiParticles((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
   const fundingReady = useMemo(() => {
-    const pol = wallet?.pol ?? 0;
-    const usdc = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
     const status = wallet?.fundingStatus ?? defaultFundingStatus;
-    return status === "ready" && pol > 0 && usdc > 0;
+    return status === "ready";
   }, [wallet, defaultFundingStatus]);
 
   if (!myAgent) return null;
@@ -187,12 +295,28 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
   return (
     <div
-      style={panelStyle}
+      ref={cardRef}
+      style={{
+        background:
+          "radial-gradient(circle at top left, rgba(255,122,69,0.22), transparent 42%), linear-gradient(135deg, rgba(20,33,61,0.96), rgba(14,18,28,0.94))",
+        border: isHovered
+          ? "1px solid rgba(255,159,10,0.28)"
+          : "1px solid rgba(255,255,255,0.10)",
+        borderRadius: 18,
+        padding: 20,
+        boxShadow: isHovered
+          ? "0 18px 48px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,159,10,0.10) inset"
+          : "0 18px 48px rgba(0,0,0,0.28)",
+        position: "relative",
+        overflow: "hidden",
+        transition: "border 0.35s ease, box-shadow 0.35s ease",
+      }}
       data-testid="autopilot-control-card"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => { setIsHovered(false); setEmojiParticles([]); }}
+      onMouseMove={handleMouseMove}
     >
-      {/* Particle layer — visible on hover, pointer-events none */}
+      {/* Emoji particle layer */}
       <div
         aria-hidden="true"
         style={{
@@ -202,30 +326,33 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
           zIndex: 0,
           borderRadius: 18,
           overflow: "hidden",
-          transition: "opacity 400ms ease",
-          opacity: isHovered ? 1 : 0,
         }}
       >
-        {PARTICLE_CONFIGS.map((p) => (
+        {emojiParticles.map((p) => (
           <div
             key={p.id}
+            onAnimationEnd={() => removeParticle(p.id)}
             style={
               {
                 position: "absolute",
-                left: p.left,
-                top: p.top,
-                width: p.size,
-                height: p.size,
-                borderRadius: "50%",
-                background: p.color,
-                boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
-                "--ap-dx": p.dx,
-                animation: isHovered
-                  ? `${p.anim} ${p.duration} ${p.delay} ease-out infinite`
-                  : "none",
+                left: p.x,
+                top: p.y,
+                fontSize: p.fontSize,
+                lineHeight: 1,
+                userSelect: "none",
+                pointerEvents: "none",
+                transformOrigin: "center center",
+                "--pdx": `${p.dx}px`,
+                "--pdy": `${p.dy}px`,
+                "--pscale": p.scale,
+                "--prot0": `${p.rot0}deg`,
+                "--prot1": `${p.rot1}deg`,
+                animation: `${p.anim} ${p.duration}ms cubic-bezier(0.22, 0.68, 0, 1.2) forwards`,
               } as React.CSSProperties
             }
-          />
+          >
+            {p.emoji}
+          </div>
         ))}
       </div>
 
@@ -298,6 +425,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
             onChange={handleToggle}
             disabled={isSaving || myAgent.status === "terminated"}
             pulse={showPulse && !autopilotEnabled}
+            loading={isSaving}
           />
         </div>
 
