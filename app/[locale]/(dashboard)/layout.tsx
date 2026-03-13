@@ -575,7 +575,7 @@ export default function DashboardLayout({
           style={{
             flex: 1,
             padding: "20px 20px 40px",
-            overflowX: "hidden",
+            overflowX: "clip",
           }}
         >
           {children}

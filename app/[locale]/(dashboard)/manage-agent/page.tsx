@@ -294,21 +294,23 @@ export default function ManageAgentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-5">
           {/* LEFT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-            <AgentIdentityHeader
-              wallet={storeWallet}
-              timePeriod={timePeriod}
-              onPeriodChange={setTimePeriod}
-            />
-            <EquityCurveChart
-              wallet={storeWallet}
-              trades={trades}
-              timePeriod={timePeriod}
-            />
-            <MetricsRow
-              wallet={storeWallet}
-              performance={performance}
-              loading={loading}
-            />
+            <div style={{ position: "sticky", top: 20, zIndex: 5, display: "flex", flexDirection: "column", gap: 16 }}>
+              <AgentIdentityHeader
+                wallet={storeWallet}
+                timePeriod={timePeriod}
+                onPeriodChange={setTimePeriod}
+              />
+              <EquityCurveChart
+                wallet={storeWallet}
+                trades={trades}
+                timePeriod={timePeriod}
+              />
+              <MetricsRow
+                wallet={storeWallet}
+                performance={performance}
+                loading={loading}
+              />
+            </div>
             {(loading || positions.length > 0) && (
               <LivePositionsTable
                 positions={positions}

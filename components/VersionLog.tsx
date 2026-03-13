@@ -225,35 +225,71 @@ function VersionLogPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+const SEEN_KEY = "quantik_changelog_seen";
+
 export function VersionLogButton() {
   const t = useTranslations("changelog");
   const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    const seen = localStorage.getItem(SEEN_KEY);
+    setHasUnread(seen !== CURRENT_RELEASE.version);
+  }, []);
+
+  function handleOpen() {
+    setOpen((previous) => {
+      const next = !previous;
+      if (next && hasUnread) {
+        localStorage.setItem(SEEN_KEY, CURRENT_RELEASE.version);
+        setHasUnread(false);
+      }
+      return next;
+    });
+  }
 
   return (
     <>
-      <button
-        onClick={() => setOpen((previous) => !previous)}
-        title={t("viewChangelog", { version: CURRENT_RELEASE.version })}
-        aria-label={t("openChangelog")}
-        style={{
-          background: open ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.05)",
-          border: `1px solid ${open ? "rgba(10,132,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-          borderRadius: 7,
-          cursor: "pointer",
-          width: 26,
-          height: 26,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 13,
-          color: open ? "#0a84ff" : "rgba(255,255,255,0.35)",
-          transition: "all 160ms ease",
-          flexShrink: 0,
-        }}
-      >
-        📋
-      </button>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <button
+          onClick={handleOpen}
+          title={t("viewChangelog", { version: CURRENT_RELEASE.version })}
+          aria-label={t("openChangelog")}
+          style={{
+            background: open ? "rgba(10,132,255,0.15)" : "rgba(255,255,255,0.05)",
+            border: `1px solid ${open ? "rgba(10,132,255,0.3)" : "rgba(255,255,255,0.08)"}`,
+            borderRadius: 7,
+            cursor: "pointer",
+            width: 26,
+            height: 26,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            color: open ? "#0a84ff" : "rgba(255,255,255,0.35)",
+            transition: "all 160ms ease",
+          }}
+        >
+          📋
+        </button>
+
+        {hydrated && hasUnread ? (
+          <span
+            style={{
+              position: "absolute",
+              top: -3,
+              right: -3,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "#0a84ff",
+              border: "1.5px solid rgba(5,5,10,1)",
+              pointerEvents: "none",
+            }}
+          />
+        ) : null}
+      </div>
 
       {hydrated && open ? createPortal(<VersionLogPanel onClose={() => setOpen(false)} />, document.body) : null}
     </>

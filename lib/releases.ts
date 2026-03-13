@@ -8,6 +8,29 @@ export interface ReleaseEntry {
 
 export const RELEASES: ReleaseEntry[] = [
   {
+    version: "v0.11.0",
+    date: "2026-03-13",
+    highlight: "ScannerFeed redesign, PolymarketStatus deep metrics, relay pipeline streaming, market scanner upgrades, and live dashboard data binding.",
+    features: [
+      "📡 ScannerFeed overhaul — full UI redesign with live market scanning, category filters, confidence scoring, probability bars, and real-time Socket.io updates",
+      "📊 PolymarketStatusCard — expanded with wallet balance, active positions, P&L tracking, volume metrics, and richer connection states",
+      "💬 RelayChatSidebar — improved message rendering, typing indicators, and agent pipeline display",
+      "🏠 DashboardPageClient — live stats queries and real-time data bindings via React Query",
+      "🔌 Providers — ReactQuery and SocketContext wired at app root for global real-time state",
+      "🔁 agentChat relay pipeline — full AURA→FLUX→CLAUSE→ORACLE→EDGE→LUCIFER→SIGMA streaming with SSE and per-message token tracking",
+      "🔍 Market scanner — real-time scanning with category tagging, confidence scoring, and Polymarket API integration",
+      "⚖️ Risk routes — refined position sizing logic and L3 risk assessment endpoints",
+      "🧩 Linked agent utilities — pipeline wiring and resolution helpers updated",
+    ],
+    fixes: [
+      "🎛️ AutopilotControlCard — toggle animation improvements and status feedback polish",
+      "🔧 polymarket-prep service — better market data normalization, volume/liquidity enrichment, and error handling",
+      "🗑️ db/seed.ts — removed legacy seed data, now fully handled by migrations",
+      "📦 lib/api.ts + lib/dashboard.ts — new endpoint helpers for dashboard metrics",
+      "🌐 i18n — all 4 locales (en/es/fr/de) updated with new translation keys for scanner and status cards",
+    ],
+  },
+  {
     version: "v0.10.0",
     date: "2026-03-12",
     highlight: "Full i18n rollout, Polymarket status card, Playwright E2E migration, and component polish pass.",

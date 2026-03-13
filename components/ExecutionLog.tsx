@@ -146,7 +146,7 @@ export function ExecutionLog() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {trades.map((trade, i) => {
-            const id = trade.id ?? `${trade.slug}-${i}`;
+            const id = trade.id || `${trade.slug}-${i}`;
             const color = STATUS_COLOR[trade.status] ?? "rgba(255,255,255,0.4)";
             const icon = STATUS_ICON[trade.status] ?? "·";
             return (

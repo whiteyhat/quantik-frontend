@@ -132,6 +132,13 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [telegramConfigured, setTelegramConfigured] = useState(false);
+
+  useEffect(() => {
+    api.getTelegramSettings().then((s) => {
+      setTelegramConfigured(Boolean(s.chatId && s.botToken));
+    }).catch(() => {});
+  }, []);
   const [isHovered, setIsHovered] = useState(false);
   const [emojiParticles, setEmojiParticles] = useState<EmojiParticle[]>([]);
   const lastSpawnRef = useRef(0);
@@ -531,7 +538,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
                 gap: 10,
               }}
             >
-              <ExecutionLog />
+              {telegramConfigured && <ExecutionLog />}
               <TelegramWebhookEditor />
             </div>
           </div>
