@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Bot, MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -12,8 +13,11 @@ import {
   StatusBadge,
 } from "@/components/dashboard/DashboardPrimitives";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { api } from "@/lib/api";
 import type { DashboardSummarySnapshot } from "@/lib/dashboard";
 import type { MyAgent } from "@/store/useQuantikStore";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 function statusTone(status: string | null | undefined) {
   if (status === "connected" || status === "active") return "good" as const;
@@ -33,6 +37,8 @@ export function DashboardPilotDeck({
   const t = useTranslations("dashboard.pilotDeck");
   const isByo = agent?.agent_type === "byo";
   const healthScoreQuery = useDashboardAgentHealthScoreQuery(agent?.id, isByo);
+  const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (agentLoading) {
     return (
@@ -67,6 +73,24 @@ export function DashboardPilotDeck({
       </CommandCenterCard>
     );
   }
+
+  const autopilotEnabled = Boolean(agent.autopilot_enabled);
+
+  const handleAutopilotToggle = async (enabled: boolean) => {
+    setIsSaving(true);
+    try {
+      const result = await api.updateAutopilot(agent.id, enabled);
+      setMyAgent({
+        ...agent,
+        autopilot_enabled: result.autopilot_enabled,
+        autopilot_updated_at: result.autopilot_updated_at,
+      });
+    } catch {
+      // revert silently on error
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fundingTone =
     summary?.fundingStatus === "ready"
@@ -103,32 +127,57 @@ export function DashboardPilotDeck({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <MetricBlock
-          label={t("autopilot")}
-          value={agent.autopilot_enabled ? t("engaged") : t("manual")}
-          hint={agent.autopilot_enabled ? t("automationCanDeployCapital") : t("tradesRequireManualAction")}
-          tone={agent.autopilot_enabled ? "good" : "neutral"}
-        />
-        <MetricBlock
-          label={isByo ? t("connection") : t("funding")}
-          value={
-            isByo
-              ? (agent.connection_status ?? t("pending"))
-              : summary?.fundingStatus === "ready"
-                ? t("ready")
-                : summary?.fundingStatus === "funding_required"
-                  ? t("needsFunds")
-                  : t("pending")
-          }
-          hint={
-            isByo
-              ? (agent.description ?? "External runtime linked into Quantik.")
-              : (summary?.fundingMessage ?? summary?.balanceMessage ?? t("walletTelemetryPending"))
-          }
-          tone={isByo ? statusTone(agent.connection_status) : fundingTone}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "8px 12px",
+        borderRadius: 12,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.88)",
+          }}>
+            {t("autopilot")}
+          </span>
+          <span style={{
+            fontSize: 11,
+            color: autopilotEnabled ? "rgba(48,209,88,0.85)" : "rgba(255,255,255,0.45)",
+            lineHeight: 1.4,
+          }}>
+            {autopilotEnabled ? t("automationCanDeployCapital") : t("tradesRequireManualAction")}
+          </span>
+        </div>
+        <ToggleSwitch
+          checked={autopilotEnabled}
+          onChange={handleAutopilotToggle}
+          disabled={isSaving || agent.status === "terminated"}
+          loading={isSaving}
         />
       </div>
+
+      <MetricBlock
+        label={isByo ? t("connection") : t("funding")}
+        value={
+          isByo
+            ? (agent.connection_status ?? t("pending"))
+            : summary?.fundingStatus === "ready"
+              ? t("ready")
+              : summary?.fundingStatus === "funding_required"
+                ? t("needsFunds")
+                : t("pending")
+        }
+        hint={
+          isByo
+            ? (agent.description ?? "External runtime linked into Quantik.")
+            : (summary?.fundingMessage ?? summary?.balanceMessage ?? t("walletTelemetryPending"))
+        }
+        tone={isByo ? statusTone(agent.connection_status) : fundingTone}
+      />
 
       <div className="pilot-deck-panel">
         {isByo ? (
@@ -164,7 +213,7 @@ export function DashboardPilotDeck({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <StatusBadge tone={agent.autopilot_enabled ? "good" : "neutral"} label={agent.autopilot_enabled ? t("autopilotEngaged") : t("autopilotIdle")} />
+        <StatusBadge tone={autopilotEnabled ? "good" : "neutral"} label={autopilotEnabled ? t("autopilotEngaged") : t("autopilotIdle")} />
         <StatusBadge tone={fundingTone} label={summary?.fundingStatus?.replace(/_/g, " ") ?? t("fundingPending")} />
       </div>
 

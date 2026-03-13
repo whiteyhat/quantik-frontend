@@ -59,7 +59,8 @@
     "dAgo": "vor {d}t",
     "copyToClipboard": "In die Zwischenablage kopieren",
     "sAgo": "vor {s}s",
-    "unsaved": "NICHT GESPEICHERT"
+    "unsaved": "NICHT GESPEICHERT",
+    "never": "Nie"
   },
   "manageAgent": {
     "title": "Mein Agent",
@@ -555,7 +556,8 @@
     "waitingForAgent": "Warte auf nachsten Agenten...",
     "oracleBullish": "Unser Modell glaubt, dass dies wahrscheinlicher ist als der Markt — eine potenzielle Kaufgelegenheit.",
     "oracleBearish": "Unser Modell sieht dies als weniger wahrscheinlich als der Markt bewertet — Vorsicht empfohlen.",
-    "oracleNeutral": "Unser Modell stimmt mit dem Marktpreis überein — derzeit kein klarer Vorteil in irgendeiner Richtung."
+    "oracleNeutral": "Unser Modell stimmt mit dem Marktpreis überein — derzeit kein klarer Vorteil in irgendeiner Richtung.",
+    "oracleConfidence": "Konfidenz"
   },
   "pnlTicker": {
     "todayPnl": "P&L Heute",
@@ -600,7 +602,9 @@
     "marketsApi": "Markte-API",
     "ok": "OK",
     "degraded": "Beeintrachtigt",
-    "checking": "Prufung..."
+    "checking": "Prufung...",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {count}m"
   },
   "telegram": {
     "title": "Telegram-Benachrichtigungen",
@@ -678,7 +682,8 @@
       "howToQuestion5": "Wie filtert Quantiks Pipeline Falsch-Positiv-Signale heraus?",
       "fallbackQuestion1": "Wie hoch ist der erwartete Nettowert, wenn ich jetzt auf JA wette?",
       "fallbackQuestion2": "Bei welcher Wahrscheinlichkeit wurde dieses Signal auf barisch umschlagen?"
-    }
+    },
+    "pipelineSummaryPrompt": "Pipeline abgeschlossen fur den Markt \"{slug}\". Anhand der bereitgestellten Agentendaten, gib mir eine praegnante 50-Wort-Zusammenfassung des Signals und ob gewettet werden sollte. Nenne Zahlen. Beende mit einem Satz, der den Benutzer einlaedt, Folgefragen zu stellen. Antworte auf Deutsch."
   },
   "alerts": {
     "title": "Aktive Alarme",
@@ -1166,6 +1171,10 @@
     "clickToOpen": "Zum Offnen klicken ↗",
     "synthesizedInsight": "Synthetisierte Erkenntnis",
     "relaySynthesizing": "Relay synthetisiert...",
+    "depthHigh": "Hoch",
+    "insightFallbackEdge": "Unser Modell gibt diesem eine {conf}%-Chance auf JA, hoher als der aktuelle Marktpreis — was darauf hindeutet, dass es unterbewertet sein konnte.",
+    "insightFallbackProb": "Unser Modell setzt die Wahrscheinlichkeit bei {conf}% — prufen Sie die Details unten, bevor Sie eine Entscheidung treffen.",
+    "insightFallbackDefault": "Pipeline abgeschlossen. Uberprufen Sie die Agenten-Karten oben fur die vollstandige Aufschlusselung.",
     "alphaSignal": "Alpha-Signal",
     "expectedValue": "Erwarteter Wert",
     "kellySize": "Kelly-Grosse",
@@ -1425,7 +1434,12 @@
       "idle": "Inaktiv",
       "degraded": "Beeintrachtigt",
       "down": "Ausgefallen",
-      "specialistAgents": "7 Spezialagenten",
+      "specialistAgents": "Spezialagenten",
+      "pipelineActive": "Pipeline aktiv",
+      "standbyMode": "BEREITSCHAFT",
+      "agentsStandby": "Agenten in Bereitschaft",
+      "agentsNeedAttention": "Agenten benotigen Aufmerksamkeit",
+      "telemetryRecorded": "Telemetrie aufgezeichnet",
       "runtimeTelemetryLive": "Runtime-Telemetrie live",
       "agentsCurrentlyIdle": "Agenten derzeit inaktiv",
       "awaitingRuntimeTraffic": "Warte auf Runtime-Traffic",

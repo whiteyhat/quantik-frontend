@@ -732,6 +732,10 @@ button.mission-rail-link {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .command-center-badge--neutral {
@@ -785,9 +789,13 @@ button.mission-rail-link {
 
 .command-center-metric-value {
   font-size: clamp(1.15rem, 2.4vw, 1.9rem);
-  line-height: 1;
+  line-height: 1.15;
   letter-spacing: -0.05em;
   color: rgba(255,255,255,0.96);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .command-center-metric-hint {
@@ -1183,6 +1191,11 @@ a.command-center-list-row:focus-visible,
   z-index: 1;
 }
 
+.dashboard-mini-map-sweep--slow {
+  animation-duration: 20s;
+  opacity: 0.35;
+}
+
 .dashboard-mini-map-core {
   position: absolute;
   inset: 50% auto auto 50%;
@@ -1280,6 +1293,16 @@ a.command-center-list-row:focus-visible,
   filter: saturate(0.9);
 }
 
+.dashboard-mini-map-node--idle {
+  opacity: 0.72;
+  border-color: rgba(255,255,255,0.06);
+}
+
+.dashboard-mini-map-node--idle::before {
+  border-style: dashed;
+  opacity: 0.4;
+}
+
 .dashboard-mini-map-node--bad {
   opacity: 0.62;
   filter: grayscale(0.2);
@@ -1330,6 +1353,10 @@ a.command-center-list-row:focus-visible,
   font-weight: 700;
   color: rgba(255,255,255,0.9);
 }
+
+.dashboard-mini-map-stat-value--good { color: rgba(126,240,177,0.92); }
+.dashboard-mini-map-stat-value--warn { color: rgba(255,200,80,0.92); }
+.dashboard-mini-map-stat-value--bad  { color: rgba(255,100,100,0.92); }
 
 .pilot-deck-identity {
   display: flex;

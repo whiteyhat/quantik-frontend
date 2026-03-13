@@ -59,7 +59,8 @@
     "dAgo": "{d}d ago",
     "copyToClipboard": "Copy to clipboard",
     "sAgo": "{s}s ago",
-    "unsaved": "UNSAVED"
+    "unsaved": "UNSAVED",
+    "never": "Never"
   },
   "manageAgent": {
     "title": "My Agent",
@@ -597,7 +598,8 @@
     "waitingForAgent": "Waiting for next agent...",
     "oracleBullish": "Our model thinks this is more likely than the market does — a potential buying opportunity.",
     "oracleBearish": "Our model sees this as less likely than what the market prices — caution advised.",
-    "oracleNeutral": "Our model agrees with the market price — no clear advantage either way right now."
+    "oracleNeutral": "Our model agrees with the market price — no clear advantage either way right now.",
+    "oracleConfidence": "Confidence"
   },
   "pnlTicker": {
     "todayPnl": "Today P&L",
@@ -642,7 +644,9 @@
     "marketsApi": "Markets API",
     "ok": "OK",
     "degraded": "Degraded",
-    "checking": "Checking..."
+    "checking": "Checking...",
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago"
   },
   "telegram": {
     "title": "Telegram Notifications",
@@ -720,7 +724,8 @@
       "howToQuestion5": "How does Quantik's pipeline filter out false-positive signals?",
       "fallbackQuestion1": "What's the net expected value if I bet YES right now?",
       "fallbackQuestion2": "At what probability would this signal flip to bearish?"
-    }
+    },
+    "pipelineSummaryPrompt": "Pipeline complete for market \"{slug}\". Using the agent data provided, give me a sharp 50-word summary of the signal and whether to bet. Name numbers. End with one sentence welcoming the user to ask follow-up questions."
   },
   "alerts": {
     "title": "Active Alerts",
@@ -1206,7 +1211,11 @@
       "riskFeedOffline": "Risk feed offline",
       "candidates": "Candidates",
       "scanned": "Scanned {time}",
-      "noRecentScan": "No recent scan"
+      "noRecentScan": "No recent scan",
+      "apiHealth_healthy": "API Healthy",
+      "apiHealth_degraded": "API Degraded",
+      "apiHealth_critical": "API Critical",
+      "apiHealth_checking": "API Checking"
     },
     "missionRail": {
       "refreshCadence": "Refresh cadence",
@@ -1286,7 +1295,11 @@
       "alphaDecay": "Alpha Decay",
       "detected": "Detected",
       "clear": "Clear",
-      "alphaDecayRecommendation": "Alpha Decay Recommendation"
+      "alphaDecayRecommendation": "Alpha Decay Recommendation",
+      "recommendation_insufficient_data": "Insufficient data (need 10 resolved trades for decay detection).",
+      "recommendation_decay_detected": "Alpha decay detected. Consider pausing trades, reviewing model calibration, and checking for market regime change.",
+      "recommendation_no_decay": "No alpha decay detected. Model performance within acceptable range.",
+      "recommendation_none": "No recommendation yet."
     },
     "orchestrator": {
       "eyebrow": "Scanner Control",
@@ -1326,7 +1339,14 @@
       "noAgentTrafficTitle": "No agent traffic yet",
       "noAgentTrafficDetail": "Pipeline agents will appear here after the next live execution cycle.",
       "lastActive": "Last active {time}",
-      "noRecentTraffic": "No recent runtime traffic"
+      "noRecentTraffic": "No recent runtime traffic",
+      "healthLabel_healthy": "Healthy",
+      "healthLabel_degraded": "Degraded",
+      "healthLabel_critical": "Critical",
+      "healthLabel_checking": "Checking",
+      "agentDetail_awaitingFirstRun": "Awaiting first pipeline run",
+      "agentDetail_standingBy": "Standing by for the next pipeline cycle",
+      "agentDetail_errorRate": "{rate}% error rate"
     },
     "recentSignals": {
       "eyebrow": "Decision Feed",
@@ -1368,7 +1388,12 @@
       "idle": "Idle",
       "degraded": "Degraded",
       "down": "Down",
-      "specialistAgents": "7 specialist agents",
+      "specialistAgents": "specialist agents",
+      "pipelineActive": "Pipeline active",
+      "standbyMode": "STANDBY",
+      "agentsStandby": "Agents on standby",
+      "agentsNeedAttention": "Agents need attention",
+      "telemetryRecorded": "Telemetry recorded",
       "runtimeTelemetryLive": "Runtime telemetry live",
       "agentsCurrentlyIdle": "Agents currently idle",
       "awaitingRuntimeTraffic": "Awaiting runtime traffic",
@@ -1455,6 +1480,10 @@
     "clickToOpen": "Click to open ↗",
     "synthesizedInsight": "Synthesized Insight",
     "relaySynthesizing": "Relay synthesizing...",
+    "depthHigh": "High",
+    "insightFallbackEdge": "Our model gives this a {conf}% chance of resolving YES, which is higher than what the market currently prices in — suggesting there may be an opportunity here.",
+    "insightFallbackProb": "Our model puts the probability at {conf}% — review the details below before making any decision.",
+    "insightFallbackDefault": "Pipeline complete. Check the agent cards above for the full breakdown.",
     "alphaSignal": "Alpha Signal",
     "expectedValue": "Expected Value",
     "kellySize": "Kelly Size",

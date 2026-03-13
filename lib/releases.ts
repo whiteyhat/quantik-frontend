@@ -1,5 +1,5 @@
 /** Current version — used for the notification dot logic in VersionLog. */
-export const CURRENT_VERSION = "v0.11.0";
+export const CURRENT_VERSION = "v1.3.0";
 
 /** Localized release entry returned by GET /api/versions */
 export interface ReleaseEntry {

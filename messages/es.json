@@ -59,7 +59,8 @@
     "dAgo": "hace {d}d",
     "copyToClipboard": "Copiar al portapapeles",
     "sAgo": "hace {s}s",
-    "unsaved": "SIN GUARDAR"
+    "unsaved": "SIN GUARDAR",
+    "never": "Nunca"
   },
   "manageAgent": {
     "title": "Mi Agente",
@@ -597,7 +598,8 @@
     "waitingForAgent": "Esperando al siguiente agente...",
     "oracleBullish": "Nuestro modelo cree que esto es más probable de lo que indica el mercado — una posible oportunidad de compra.",
     "oracleBearish": "Nuestro modelo lo ve como menos probable de lo que el mercado valora — precaución recomendada.",
-    "oracleNeutral": "Nuestro modelo coincide con el precio del mercado — sin ventaja clara en ninguna dirección por ahora."
+    "oracleNeutral": "Nuestro modelo coincide con el precio del mercado — sin ventaja clara en ninguna dirección por ahora.",
+    "oracleConfidence": "Confianza"
   },
   "pnlTicker": {
     "todayPnl": "P&L de Hoy",
@@ -642,7 +644,9 @@
     "marketsApi": "API de Mercados",
     "ok": "OK",
     "degraded": "Degradado",
-    "checking": "Verificando..."
+    "checking": "Verificando...",
+    "justNow": "ahora mismo",
+    "minutesAgo": "hace {count}m"
   },
   "telegram": {
     "title": "Notificaciones de Telegram",
@@ -720,7 +724,8 @@
       "howToQuestion5": "¿Como filtra el pipeline de Quantik las Señales de falsos positivos?",
       "fallbackQuestion1": "¿Cual es el valor esperado neto si apuesto SI ahora mismo?",
       "fallbackQuestion2": "¿A que probabilidad esta Señal cambiaria a bajista?"
-    }
+    },
+    "pipelineSummaryPrompt": "Pipeline completo para el mercado \"{slug}\". Usando los datos de los agentes proporcionados, dame un resumen conciso de 50 palabras sobre la señal y si apostar o no. Menciona numeros. Termina con una oracion dando la bienvenida al usuario a hacer preguntas de seguimiento. Responde en español."
   },
   "alerts": {
     "title": "Alertas Activas",
@@ -1206,7 +1211,11 @@
       "riskFeedOffline": "Feed de riesgo offline",
       "candidates": "Candidatos",
       "scanned": "Escaneado {time}",
-      "noRecentScan": "Sin escaneo reciente"
+      "noRecentScan": "Sin escaneo reciente",
+      "apiHealth_healthy": "API Saludable",
+      "apiHealth_degraded": "API Degradada",
+      "apiHealth_critical": "API Critica",
+      "apiHealth_checking": "Verificando API"
     },
     "missionRail": {
       "refreshCadence": "Cadencia de actualizacion",
@@ -1368,7 +1377,12 @@
       "idle": "Inactivo",
       "degraded": "Degradado",
       "down": "Caido",
-      "specialistAgents": "7 agentes especializados",
+      "specialistAgents": "agentes especializados",
+      "pipelineActive": "Pipeline activo",
+      "standbyMode": "EN ESPERA",
+      "agentsStandby": "Agentes en espera",
+      "agentsNeedAttention": "Agentes necesitan atencion",
+      "telemetryRecorded": "Telemetria registrada",
       "runtimeTelemetryLive": "Telemetria de runtime en vivo",
       "agentsCurrentlyIdle": "Agentes actualmente inactivos",
       "awaitingRuntimeTraffic": "Esperando trafico de runtime",
@@ -1455,6 +1469,10 @@
     "clickToOpen": "Clic para abrir ↗",
     "synthesizedInsight": "Perspectiva Sintetizada",
     "relaySynthesizing": "Relay sintetizando...",
+    "depthHigh": "Alto",
+    "insightFallbackEdge": "Nuestro modelo le da un {conf}% de probabilidad de resolverse SI, mas alto de lo que el mercado esta valorando — lo que sugiere que podria estar infravalorado.",
+    "insightFallbackProb": "Nuestro modelo situa la probabilidad en {conf}% — revisa los detalles abajo antes de tomar cualquier decision.",
+    "insightFallbackDefault": "Pipeline completo. Revisa las tarjetas de agentes arriba para el desglose completo.",
     "alphaSignal": "Señal Alpha",
     "expectedValue": "Valor Esperado",
     "kellySize": "Tamaño Kelly",

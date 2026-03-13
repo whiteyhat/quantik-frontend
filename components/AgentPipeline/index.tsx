@@ -350,7 +350,7 @@ function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
   const gradeColor = gradeColors[data?.liquidity_grade ?? ""] ?? "var(--text-tertiary)";
   const spread = num(data?.spread);
   const depth = num(data?.depth_score);
-  const depthLabel = depth > 0.7 ? "High (K)" : depth > 0.4 ? t("validator.medium") : depth > 0 ? t("validator.low") : "—";
+  const depthLabel = depth > 0.7 ? `${t("depthHigh")} (K)` : depth > 0.4 ? t("validator.medium") : depth > 0 ? t("validator.low") : "—";
 
   return (
     <div className="glass-card" style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}>
@@ -437,7 +437,7 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
             {Math.round(prob * 100)}%
           </div>
           <div style={{ fontSize: 11, color: "var(--ios-purple)", textAlign: "center", marginBottom: 2 }}>
-            {"±"}{conf.toFixed(1)}% Confidence
+            {"±"}{conf.toFixed(1)}% {t("oracleConfidence")}
           </div>
           <ProbabilityRing prob={prob} market={market} />
           {showTooltip && (
@@ -600,10 +600,10 @@ function SynthesizedInsight({
     const ev = num(edge?.net_ev);
     if (sigma.thesis) return sigma.thesis;
     if (conf > 0 && ev > 0)
-      return `Our model gives this a ${conf.toFixed(0)}% chance of resolving YES, which is higher than what the market currently prices in — suggesting there may be an opportunity here.`;
+      return t("insightFallbackEdge", { conf: conf.toFixed(0) });
     if (conf > 0)
-      return `Our model puts the probability at ${conf.toFixed(0)}% — review the details below before making any decision.`;
-    return "Pipeline complete. Check the agent cards above for the full breakdown.";
+      return t("insightFallbackProb", { conf: conf.toFixed(0) });
+    return t("insightFallbackDefault");
   })();
 
   const displayText = insightText || fallback;

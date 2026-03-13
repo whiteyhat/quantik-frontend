@@ -59,7 +59,8 @@
     "dAgo": "il y a {d}j",
     "copyToClipboard": "Copier dans le presse-papiers",
     "sAgo": "il y a {s}s",
-    "unsaved": "NON SAUVEGARDE"
+    "unsaved": "NON SAUVEGARDE",
+    "never": "Jamais"
   },
   "manageAgent": {
     "title": "Mon Agent",
@@ -555,7 +556,8 @@
     "waitingForAgent": "En attente du prochain agent...",
     "oracleBullish": "Notre modèle pense que c'est plus probable que ce que le marché indique — une opportunité d'achat potentielle.",
     "oracleBearish": "Notre modèle le voit comme moins probable que ce que le marché valorise — prudence conseillée.",
-    "oracleNeutral": "Notre modèle s'accorde avec le prix du marché — aucun avantage clair dans les deux sens pour l'instant."
+    "oracleNeutral": "Notre modèle s'accorde avec le prix du marché — aucun avantage clair dans les deux sens pour l'instant.",
+    "oracleConfidence": "Confiance"
   },
   "pnlTicker": {
     "todayPnl": "P&L du Jour",
@@ -600,7 +602,9 @@
     "marketsApi": "API Marches",
     "ok": "OK",
     "degraded": "Degrade",
-    "checking": "Verification..."
+    "checking": "Verification...",
+    "justNow": "a l'instant",
+    "minutesAgo": "il y a {count}m"
   },
   "telegram": {
     "title": "Notifications Telegram",
@@ -678,7 +682,8 @@
       "howToQuestion5": "Comment le pipeline de Quantik filtre-t-il les faux signaux positifs?",
       "fallbackQuestion1": "Quelle est la valeur esperee nette si je parie OUI maintenant?",
       "fallbackQuestion2": "A quelle probabilite ce signal passerait-il en baissier?"
-    }
+    },
+    "pipelineSummaryPrompt": "Pipeline termine pour le marche \"{slug}\". En utilisant les donnees des agents fournies, donne-moi un resume precis de 50 mots sur le signal et s il faut parier. Cite des chiffres. Termine par une phrase accueillant l utilisateur a poser des questions de suivi. Reponds en francais."
   },
   "alerts": {
     "title": "Alertes Actives",
@@ -1322,7 +1327,12 @@
       "idle": "Inactif",
       "degraded": "Degrade",
       "down": "Hors ligne",
-      "specialistAgents": "7 agents specialises",
+      "specialistAgents": "agents specialises",
+      "pipelineActive": "Pipeline actif",
+      "standbyMode": "EN VEILLE",
+      "agentsStandby": "Agents en veille",
+      "agentsNeedAttention": "Agents necessitent attention",
+      "telemetryRecorded": "Telemetrie enregistree",
       "runtimeTelemetryLive": "Telemetrie runtime en direct",
       "agentsCurrentlyIdle": "Agents actuellement inactifs",
       "awaitingRuntimeTraffic": "En attente du trafic runtime",
@@ -1409,6 +1419,10 @@
     "clickToOpen": "Cliquez pour ouvrir ↗",
     "synthesizedInsight": "Perspective Synthetisee",
     "relaySynthesizing": "Relay synthetise...",
+    "depthHigh": "Eleve",
+    "insightFallbackEdge": "Notre modele donne {conf}% de chances de se resoudre OUI, plus eleve que ce que le marche valorise actuellement — suggerant qu il pourrait etre sous-evalue.",
+    "insightFallbackProb": "Notre modele situe la probabilite a {conf}% — examinez les details ci-dessous avant de prendre toute decision.",
+    "insightFallbackDefault": "Pipeline termine. Consultez les cartes d agents ci-dessus pour le detail complet.",
     "alphaSignal": "Signal Alpha",
     "expectedValue": "Valeur Attendue",
     "kellySize": "Taille Kelly",

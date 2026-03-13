@@ -262,7 +262,7 @@ export function RelayChat({ slug }: RelayChatProps) {
       overviewSent.current = true;
       setPipelineDone(true);
       sendMessage(
-        `Pipeline complete for market "${slug}". Using the agent data provided, give me a sharp 50-word summary of the signal and whether to bet. Name numbers. End with one sentence welcoming the user to ask follow-up questions.`,
+        t("pipelineSummaryPrompt", { slug: slug ?? "" }),
         { silent: true, pipelineData: pipelineResult }
       );
     }

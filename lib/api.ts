@@ -364,11 +364,13 @@ export interface AlertStatus {
 }
 
 export interface TradeRequest {
-  slug: string;
   tokenId: string;
-  direction: "YES" | "NO";
-  size_usd: number;
-  limit_price?: number;
+  side: "buy" | "sell";
+  price: number;
+  size: number;
+  marketSlug?: string;
+  netEv?: number;
+  evGrade?: string;
 }
 
 // ── Monitoring types (L5) ───────────────────────────────────────────────────
@@ -658,7 +660,10 @@ export const api = {
         slug: String(item?.slug ?? ""),
         question: String(item?.question ?? ""),
         decision: String(item?.decision ?? ""),
-        confidence: Number(item?.confidence ?? 0),
+        confidence: (() => {
+          const raw = Number(item?.confidence ?? 0);
+          return raw > 1 ? raw : raw * 100;
+        })(),
         edge: Number(item?.edge ?? 0),
         timestamp: Number(item?.timestamp ?? 0),
         status: (validStatuses.has(rawStatus) ? rawStatus : "SKIP") as Signal["status"],

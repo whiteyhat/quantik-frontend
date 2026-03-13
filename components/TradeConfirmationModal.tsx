@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { api, fmtUSDC } from "@/lib/api";
+import { api } from "@/lib/api";
 import { usePaperMode } from "@/context/PaperModeContext";
+
+const DEFAULT_TRADE_SIZE = 10; // USDC
 
 export function TradeConfirmationModal() {
   const t = useTranslations("tradeConfirm");
@@ -15,6 +17,7 @@ export function TradeConfirmationModal() {
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [tradeAmount, setTradeAmount] = useState(DEFAULT_TRADE_SIZE);
   const { paperMode } = usePaperMode();
 
   const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
@@ -33,14 +36,43 @@ export function TradeConfirmationModal() {
   const sigma = pending?.sigma;
   const edge = pending?.edge;
   const slug = pending?.slug;
+  const tokenId = pending?.tokenId;
   const market = pending?.market;
   const direction = sigma?.decision === "BET_YES" ? "YES" : "NO";
+
+  // Reset trade amount when modal opens with new pending trade
+  const pendingSlug = pending?.slug;
+  const prevSlugRef = useState<string | null>(null);
+  if (open && pendingSlug && pendingSlug !== prevSlugRef[0]) {
+    prevSlugRef[1](pendingSlug);
+    // Use sigma size if available, otherwise default to 10 USDC
+    setTradeAmount(sigma?.size_usd && sigma.size_usd > 0 ? sigma.size_usd : DEFAULT_TRADE_SIZE);
+  }
 
   async function handleConfirm() {
     if (!slug || !sigma) return;
     setLoading(true);
     try {
-      await api.placeOrder(slug, direction, sigma.size_usd);
+      const size = tradeAmount > 0 ? tradeAmount : DEFAULT_TRADE_SIZE;
+
+      if (paperMode) {
+        // Paper mode → use paper engine endpoint
+        await api.placeOrder(slug, direction, size);
+      } else {
+        // Live mode → use real trade execution with private key signing
+        const side = direction === "YES" ? "buy" : "sell";
+        const price = direction === "YES" ? market?.yesPrice ?? 0.5 : market?.noPrice ?? 0.5;
+        await api.executeTrade({
+          tokenId: tokenId ?? slug,
+          side,
+          price,
+          size,
+          marketSlug: slug,
+          netEv: edge?.net_ev,
+          evGrade: edge?.ev_grade,
+        });
+      }
+
       showToast(paperMode ? t("orderPlacedPaper") : t("orderPlaced"));
       close();
     } catch {
@@ -162,11 +194,39 @@ export function TradeConfirmationModal() {
                   {t("buy", { direction })} · {Math.round((sigma.entry_price ?? 0) * 100)}¢
                 </span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("sizeUsdc")}</span>
-                <span className="font-mono-data text-subhead" data-testid="modal-size" style={{ color: "var(--text-primary)" }}>
-                  {fmtUSDC(sigma.size_usd)} ({sigma.size_pct}%)
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="font-mono-data text-subhead" style={{ color: "var(--text-tertiary)" }}>$</span>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={tradeAmount}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val) && val > 0) setTradeAmount(val);
+                    }}
+                    data-testid="modal-size-input"
+                    style={{
+                      width: 80,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "var(--text-primary)",
+                      fontSize: "var(--text-subhead)",
+                      fontFamily: "var(--font-mono, 'SF Mono', monospace)",
+                      fontWeight: 600,
+                      textAlign: "right",
+                      outline: "none",
+                      transition: "border-color 200ms ease",
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = "var(--ios-blue)"; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+                  />
+                  <span className="font-mono-data text-subhead" style={{ color: "var(--text-tertiary)" }}>USDC</span>
+                </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span className="text-subhead" style={{ color: "var(--text-secondary)" }}>{t("confidence")}</span>

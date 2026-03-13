@@ -55,7 +55,8 @@ export interface DashboardAgentRow {
   status: DashboardRuntimeStatus;
   latencyMs: number;
   errorRate: number;
-  detail: string;
+  detailKey: string;
+  detailParams?: Record<string, string | number>;
   lastActiveAt: number | null;
 }
 
@@ -205,17 +206,17 @@ export function normalizeDashboardHealth(raw: {
   const checkedAt = coerceNullableNumber(raw?.checkedAt ?? raw?.checked_at ?? raw?.timestamp ?? raw?.updatedAt);
 
   let severity: DashboardHealthSnapshot["severity"] = "warn";
-  let label = "Checking";
+  let label = "checking";
 
   if (status === "ok" || status === "healthy") {
     severity = "good";
-    label = "Healthy";
+    label = "healthy";
   } else if (status === "degraded" || status === "warning") {
     severity = "warn";
-    label = "Degraded";
+    label = "degraded";
   } else if (status === "critical" || status === "down" || status === "error") {
     severity = "bad";
-    label = "Critical";
+    label = "critical";
   }
 
   const rawServices =
@@ -268,29 +269,42 @@ export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
       status: entry.status,
       latencyMs: coerceNumber(entry.latencyMs),
       errorRate: coerceNumber(entry.errorRate),
-      detail:
+      detailKey:
         coerceNumber(entry.lastActiveAt) <= 0
-          ? "Awaiting first pipeline run"
+          ? "awaitingFirstRun"
           : entry.status === "idle"
-            ? "Standing by for the next pipeline cycle"
-            : `${Math.round(coerceNumber(entry.errorRate) * 100)}% error rate`,
+            ? "standingBy"
+            : "errorRate",
+      detailParams:
+        coerceNumber(entry.lastActiveAt) > 0 && entry.status !== "idle"
+          ? { rate: Math.round(coerceNumber(entry.errorRate) * 100) }
+          : undefined,
       lastActiveAt: coerceNumber(entry.lastActiveAt) > 0 ? coerceNumber(entry.lastActiveAt) : null,
     }));
 }
 
-export function formatRelativeTime(timestamp: number | null | undefined, now: number) {
-  if (!timestamp) return "Never";
+/**
+ * Localized relative time formatter.
+ * Pass a translator bound to `common` (with keys: justNow, sAgo, mAgo, hAgo, dAgo, never).
+ * Without a translator, falls back to English.
+ */
+export function formatRelativeTime(
+  timestamp: number | null | undefined,
+  now: number,
+  t?: (key: string, params?: Record<string, string | number>) => string,
+) {
+  if (!timestamp) return t ? t("never") : "Never";
   const diff = Math.max(0, now - timestamp);
   const seconds = Math.floor(diff / 1_000);
 
-  if (seconds < 10) return "Just now";
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 10) return t ? t("justNow") : "Just now";
+  if (seconds < 60) return t ? t("sAgo", { s: seconds }) : `${seconds}s ago`;
 
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return t ? t("mAgo", { m: minutes }) : `${minutes}m ago`;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t ? t("hAgo", { h: hours }) : `${hours}h ago`;
 
-  return `${Math.floor(hours / 24)}d ago`;
+  return t ? t("dAgo", { d: Math.floor(hours / 24) }) : `${Math.floor(hours / 24)}d ago`;
 }

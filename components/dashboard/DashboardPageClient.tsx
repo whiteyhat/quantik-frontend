@@ -128,6 +128,7 @@ function MissionControlHero({
   now: number;
 }) {
   const t = useTranslations("dashboard.hero");
+  const tRel = useTranslations("common");
 
   const statusText = summary?.fundingStatus === "ready"
     ? t("capitalArmed")
@@ -146,7 +147,7 @@ function MissionControlHero({
             />
             <StatusBadge
               tone={healthTone(health)}
-              label={health ? `API ${health.label}` : t("apiChecking")}
+              label={health ? t(`apiHealth_${health.label}`) : t("apiChecking")}
             />
             <StatusBadge
               tone={orchestrator?.status.status === "scanning" ? "info" : "neutral"}
@@ -176,7 +177,7 @@ function MissionControlHero({
             <div className="flex items-center gap-2">
               <RefreshCw className="size-4 text-[rgba(255,255,255,0.35)]" />
               <span>
-                {t("updated", { time: updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : t("syncing") })}
+                {t("updated", { time: updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now, tRel) : t("syncing") })}
               </span>
             </div>
           </div>
@@ -210,7 +211,7 @@ function MissionControlHero({
             value={orchestrator ? orchestrator.candidates.length : "—"}
             hint={
               orchestrator?.status.lastScanAt
-                ? t("scanned", { time: formatRelativeTime(orchestrator.status.lastScanAt, now) })
+                ? t("scanned", { time: formatRelativeTime(orchestrator.status.lastScanAt, now, tRel) })
                 : t("noRecentScan")
             }
             tone={orchestrator && orchestrator.candidates.length > 0 ? "good" : "neutral"}
@@ -540,7 +541,7 @@ function PerformanceCard({
           {summary.alphaDecay ? (
             <div className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-[rgba(255,255,255,0.68)]">
               <div className="mb-1 text-xs uppercase tracking-[0.14em] text-[rgba(255,255,255,0.38)]">{t("alphaDecayRecommendation")}</div>
-              <div>{summary.alphaDecay.recommendation || "No recommendation yet."}</div>
+              <div>{t(`recommendation_${summary.alphaDecay.recommendation || "none"}`)}</div>
             </div>
           ) : null}
         </div>
@@ -567,6 +568,7 @@ function OrchestratorCard({
   now: number;
 }) {
   const t = useTranslations("dashboard.orchestrator");
+  const tRel = useTranslations("common");
 
   return (
     <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card">
@@ -599,7 +601,7 @@ function OrchestratorCard({
           <div className="command-center-stat-strip">
             <div>
               <div className="command-center-stat-label">{t("lastScan")}</div>
-              <div className="command-center-stat-value">{formatRelativeTime(orchestrator.status.lastScanAt, now)}</div>
+              <div className="command-center-stat-value">{formatRelativeTime(orchestrator.status.lastScanAt, now, tRel)}</div>
             </div>
             <div>
               <div className="command-center-stat-label">{t("marketsScanned")}</div>
@@ -683,6 +685,7 @@ function SystemStatusCard({
   now: number;
 }) {
   const t = useTranslations("dashboard.systemStatus");
+  const tRel = useTranslations("common");
   const services = health?.services ?? [];
 
   return (
@@ -704,7 +707,7 @@ function SystemStatusCard({
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
               label={t("apiHealth")}
-              value={health ? health.label : healthLoading ? t("checking") : t("unknown")}
+              value={health ? t(`healthLabel_${health.label}`) : healthLoading ? t("checking") : t("unknown")}
               hint={
                 health
                   ? t("latency", { ms: health.latencyMs })
@@ -774,10 +777,10 @@ function SystemStatusCard({
                       <div className="truncate text-sm font-medium text-white">{agent.name}</div>
                       <div className="text-xs text-[rgba(255,255,255,0.45)]">
                         {agent.lastActiveAt
-                          ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now) })
+                          ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now, tRel) })
                           : t("noRecentTraffic")}
                       </div>
-                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{agent.detail}</div>
+                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{t(`agentDetail_${agent.detailKey}`, agent.detailParams)}</div>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
@@ -803,6 +806,7 @@ function RecentSignalsCard({
   now: number;
 }) {
   const t = useTranslations("dashboard.recentSignals");
+  const tRel = useTranslations("common");
   const signalsQuery = useDashboardSignalsQuery();
 
   return (
@@ -856,7 +860,7 @@ function RecentSignalsCard({
                   {(signal.edge * 100).toFixed(1)}%
                 </div>
                 <div className="text-xs text-[rgba(255,255,255,0.32)]">
-                  {formatRelativeTime(signal.timestamp ?? 0, now)}
+                  {formatRelativeTime(signal.timestamp ?? 0, now, tRel)}
                 </div>
               </div>
             </Link>
