@@ -41,6 +41,7 @@
     "reset": "REINICIAR",
     "close": "Cerrar",
     "copy": "Copiar",
+    "copied": "Copiado",
     "back": "Volver",
     "backToDashboard": "Volver al Panel",
     "yes": "SI",
@@ -87,6 +88,7 @@
     "vol": "vol",
     "livePositions": "Posiciones Abiertas",
     "noOpenPositions": "Sin posiciones abiertas",
+    "source": "Origen",
     "marketTitle": "Titulo del Mercado",
     "outcome": "Resultado",
     "shares": "Acciones",
@@ -97,6 +99,10 @@
     "resolutionDate": "Fecha de Resolucion",
     "wdkWallet": "Wallet WDK: ",
     "balance": "Saldo:",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "viewOnPolygonscan": "Ver en Polygonscan",
+    "viewOnPolymarket": "Ver en Polymarket",
     "chatWithAgent": "CHATEAR CON {name}",
     "architecture": {
       "infoBadgeTitle": "Arquitectura Empresarial: Red Neural",
@@ -514,7 +520,39 @@
     "depositAddress": "Direccion de Deposito",
     "noWalletAddress": "Sin direccion de wallet disponible",
     "addressCopied": "Direccion Copiada",
-    "copyWalletAddress": "Copiar Direccion de Wallet"
+    "copyWalletAddress": "Copiar Direccion de Wallet",
+    "policyTitle": "Politica de Autopilot",
+    "policyDesc": "Derivada de los rasgos del agente con guardrails opcionales por agente para cadencia, cooldown, limite diario de trades y tamano maximo por apuesta.",
+    "policyClosed": "Los controles de politica permanecen cerrados hasta que autopilot este armado.",
+    "policyHidden": "Cerrado",
+    "policyLoading": "Cargando politica",
+    "policyUnsaved": "Sin guardar",
+    "policySynced": "Sincronizado",
+    "cadenceLabel": "Cadencia",
+    "cadenceHint": "Base del rasgo: {derived} minutos",
+    "cooldownLabel": "Cooldown por mercado",
+    "cooldownHint": "Base del rasgo: {derived} minutos",
+    "maxTradesLabel": "Max Trades / Dia",
+    "maxTradesHint": "Base del rasgo: {derived}",
+    "maxBetLabel": "Apuesta Max (USDC)",
+    "maxBetHint": "Base del rasgo: ${derived}",
+    "minSigmaLabel": "Sigma Min",
+    "minSigmaHint": "Piso de confianza derivado del estilo de decision.",
+    "minKellyLabel": "Kelly Min",
+    "minKellyHint": "Piso de Kelly derivado de la personalidad.",
+    "kellyMultiplierLabel": "Multiplicador Kelly",
+    "kellyMultiplierHint": "Dimensiona posiciones usando el capital disponible en la wallet.",
+    "maxPositionLabel": "Posicion Max",
+    "maxPositionHint": "Tope por trade como porcentaje del USDC disponible.",
+    "dailyLossLabel": "Pausa por perdida diaria",
+    "dailyLossHint": "Autopilot se pausa al alcanzar este limite de perdida diaria.",
+    "auraModeLabel": "Modo Aura",
+    "auraModeHint": "Controla si el sentimiento puede amplificar o redirigir trades.",
+    "auraEnabled": "Sentimiento activado",
+    "auraDisabled": "Solo reglas fijas",
+    "savePolicy": "Guardar Politica",
+    "savingPolicy": "Guardando...",
+    "resetPolicy": "Resetear"
   },
   "executionLog": {
     "title": "Registro de Ejecucion",
@@ -651,8 +689,10 @@
   "telegram": {
     "title": "Notificaciones de Telegram",
     "chatId": "Chat ID",
+    "chatIdHelp": "Agrega tu bot al chat de destino, envia un mensaje alli y luego abre api.telegram.org/botYOUR_BOT_TOKEN/getUpdates para copiar el valor chat.id.",
     "chatIdPlaceholder": "-100...",
     "botToken": "Token del Bot",
+    "botTokenHelp": "Abre @BotFather en Telegram y copia el token API de tu bot.",
     "botTokenPlaceholder": "123456:ABC...",
     "saved": "Configuracion guardada exitosamente",
     "saveError": "Error al guardar configuracion",
@@ -760,6 +800,37 @@
     "maxPositionDesc": "Capital maximo por trade individual",
     "kellyMultiplier": "Multiplicador Kelly",
     "kellyDesc": "Fraccion del criterio Kelly a aplicar",
+    "cadence": "Cadencia",
+    "cadenceDesc": "Minutos minimos entre entradas de autopilot para este agente",
+    "cooldown": "Cooldown por mercado",
+    "cooldownDesc": "Minutos minimos antes de reentrar en el mismo mercado",
+    "maxTradesPerDay": "Max Trades / Dia",
+    "maxTradesPerDayDesc": "Tope diario de trades tras rasgos y overrides",
+    "maxBetUsdc": "Apuesta Max (USDC)",
+    "maxBetUsdcDesc": "Techo duro para una sola orden de autopilot",
+    "minSigma": "Sigma Min",
+    "minSigmaDesc": "Piso de confianza requerido antes de entrar",
+    "minKelly": "Kelly Min",
+    "minKellyDesc": "Fraccion Kelly minima requerida antes de entrar",
+    "auraMode": "Modo Aura",
+    "auraModeDesc": "Si el sentimiento puede amplificar o redirigir la ejecucion",
+    "auraEnabled": "Sentimiento activado",
+    "auraDisabled": "Solo reglas fijas",
+    "behaviorMapTitle": "Mapa de Comportamiento",
+    "behaviorMapDesc": "Un perfil de anillos multiples de como se comporta este agente cuando autopilot esta armado.",
+    "behaviorMapHoverHint": "Pasa el cursor sobre un anillo para inspeccionar ese eje de comportamiento.",
+    "rings": {
+      "tempo": "Tempo",
+      "tempoDesc": "Que tan rapido y con que frecuencia el agente esta dispuesto a disparar.",
+      "selectivity": "Selectividad",
+      "selectivityDesc": "Cuanta confianza exige el agente antes de entrar.",
+      "exposure": "Exposicion",
+      "exposureDesc": "Cuanto capital de wallet esta dispuesto a concentrar.",
+      "protection": "Proteccion",
+      "protectionDesc": "Que tan agresivamente se pausa despues del dano diario.",
+      "sentiment": "Sentimiento",
+      "sentimentDesc": "Si Aura puede doblar la direccion y la conviccion."
+    },
     "loadingRisk": "Cargando configuracion de riesgo...",
     "riskProfiles": {
       "guardian": "Guardian",
@@ -1133,6 +1204,29 @@
       "walletGenerating": "Generando...",
       "walletError": "Error",
       "walletGeneratingMsg": "Generando wallet...",
+      "foundry": {
+        "badge": "Forja de Boveda Segura",
+        "title": "Forjando tu boveda WDK",
+        "subtitle": "Estamos creando la wallet, sellando el paquete de recuperacion y conectandolo al kit de lanzamiento de {name}.",
+        "distractionLabel": "Mientras esperas",
+        "phases": {
+          "provision": "Preparando el firmador seguro",
+          "mint": "Generando la direccion publica de la wallet",
+          "encrypt": "Cifrando el paquete de recuperacion",
+          "stage": "Preparando la exportacion unica del respaldo"
+        },
+        "distractions": {
+          "signals": "{name} esta ensayando senales de entrada",
+          "backup": "Empaquetando un archivo de respaldo de un solo uso para exportacion segura",
+          "approvals": "Conectando aprobaciones automatizadas sin exponer tu clave"
+        },
+        "highlights": {
+          "agent": "Agente",
+          "instinct": "Instinto",
+          "market": "Enfoque de Mercado",
+          "money": "Estilo de Capital"
+        }
+      },
       "walletFailed": "Error al generar",
       "copyAddress": "Copiar direccion",
       "keySecured": "Clave Privada Asegurada",
@@ -1295,7 +1389,11 @@
       "alphaDecay": "Decay Alpha",
       "detected": "Detectado",
       "clear": "Limpio",
-      "alphaDecayRecommendation": "Recomendacion de Decay Alpha"
+      "alphaDecayRecommendation": "Recomendacion de Decay Alpha",
+      "recommendation_insufficient_data": "Datos insuficientes (se necesitan 10 operaciones resueltas para la deteccion de decay).",
+      "recommendation_decay_detected": "Decay alpha detectado. Considera pausar operaciones, revisar la calibracion del modelo y verificar cambios de regimen de mercado.",
+      "recommendation_no_decay": "Sin decay alpha detectado. Rendimiento del modelo dentro del rango aceptable.",
+      "recommendation_none": "Sin recomendacion aun."
     },
     "orchestrator": {
       "eyebrow": "Control del Scanner",
@@ -1335,7 +1433,14 @@
       "noAgentTrafficTitle": "Sin trafico de agentes aun",
       "noAgentTrafficDetail": "Los agentes del pipeline apareceran aqui despues del proximo ciclo de ejecucion en vivo.",
       "lastActive": "Ultimo activo {time}",
-      "noRecentTraffic": "Sin trafico de runtime reciente"
+      "noRecentTraffic": "Sin trafico de runtime reciente",
+      "healthLabel_healthy": "Saludable",
+      "healthLabel_degraded": "Degradado",
+      "healthLabel_critical": "Critico",
+      "healthLabel_checking": "Verificando",
+      "agentDetail_awaitingFirstRun": "Esperando primera ejecucion del pipeline",
+      "agentDetail_standingBy": "En espera del proximo ciclo del pipeline",
+      "agentDetail_errorRate": "{rate}% tasa de error"
     },
     "recentSignals": {
       "eyebrow": "Feed de Decisiones",
@@ -1506,7 +1611,9 @@
       "depthScore": "Puntuacion de Profundidad",
       "daScore": "Puntuacion AD",
       "biasFlags": "Banderas de Sesgo",
-      "counterThesis": "Contra-tesis"
+      "counterThesis": "Contra-tesis",
+      "summary": "Resumen",
+      "dataSources": "Fuentes de Datos"
     },
     "validator": {
       "title": "Validador",
@@ -1540,7 +1647,8 @@
       "betYes": "APOSTAR SI",
       "betNo": "APOSTAR NO",
       "hold": "MANTENER",
-      "skipVerdict": "OMITIR"
+      "skipVerdict": "OMITIR",
+      "lowEdge": "Valor esperado bajo — proceda con precaucion."
     }
   },
   "relaySidebar": {

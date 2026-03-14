@@ -242,6 +242,8 @@ export default function MarketPage({ params }: PageProps) {
             ? {
                 slug: market.slug,
                 tokenId: market.tokenId,
+                yesTokenId: market.yesTokenId,
+                noTokenId: market.noTokenId,
                 question: market.question,
                 yesPrice: market.yesPrice,
                 noPrice: market.noPrice,

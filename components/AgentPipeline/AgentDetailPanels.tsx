@@ -28,6 +28,13 @@ function stripMd(text: string): string {
     .trim();
 }
 
+// Sanitize HTML to only allow safe inline tags (strong, em, br)
+function sanitizeHtml(text: string): string {
+  return text
+    .replace(/<(?!\/?(?:strong|em|br)\b)[^>]*>/gi, "")
+    .trim();
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <span
@@ -94,9 +101,25 @@ export function AuraPanel({ data }: { data: AuraResult }) {
   const score = num(data.sentiment_score);
   const isPositive = score >= 0;
   const barWidth = Math.min(Math.abs(score) * 100, 100);
+  const sourceStatus = data.sourceStatus ?? {};
+  const allSources = Object.keys(sourceStatus).filter((s) => s !== "news" && s !== "telegram");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Summary */}
+      {data.summary && (
+        <Section>
+          <Label>{t("panels.summary")}</Label>
+          <p style={{
+            fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.55,
+            margin: 0, padding: "6px 10px", borderRadius: 8,
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+          }}>
+            {data.summary}
+          </p>
+        </Section>
+      )}
+
       {/* Sentiment delta bar */}
       <Section>
         <Label>{t("panels.sentimentDelta")}</Label>
@@ -151,7 +174,7 @@ export function AuraPanel({ data }: { data: AuraResult }) {
 
       {/* News source pills */}
       {data.newsArticles && data.newsArticles.length > 0 && (
-        <Section mb={0}>
+        <Section>
           <Label>{t("panels.sentimentSources")}</Label>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 4 }}>
             {data.newsArticles.map((article, i) => (
@@ -178,16 +201,14 @@ export function AuraPanel({ data }: { data: AuraResult }) {
                   (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
                 }}
               >
-                {article.source && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: "var(--ios-blue)",
-                    background: "rgba(10,132,255,0.12)", border: "1px solid rgba(10,132,255,0.20)",
-                    padding: "1px 7px", borderRadius: 6, whiteSpace: "nowrap",
-                    fontFamily: '"SF Mono","JetBrains Mono",monospace', flexShrink: 0,
-                  }}>
-                    {article.source}
-                  </span>
-                )}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: "var(--ios-blue)",
+                  background: "rgba(10,132,255,0.12)", border: "1px solid rgba(10,132,255,0.20)",
+                  padding: "1px 7px", borderRadius: 6, whiteSpace: "nowrap",
+                  fontFamily: '"SF Mono","JetBrains Mono",monospace', flexShrink: 0,
+                }}>
+                  {article.source || "News"}
+                </span>
                 <span style={{
                   fontSize: 12, color: "rgba(255,255,255,0.70)", lineHeight: 1.4,
                   overflow: "hidden", display: "-webkit-box",
@@ -200,6 +221,34 @@ export function AuraPanel({ data }: { data: AuraResult }) {
                 )}
               </a>
             ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Data sources status */}
+      {allSources.length > 0 && (
+        <Section mb={0}>
+          <Label>{t("panels.dataSources")}</Label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+            {allSources.map((s) => {
+              const st = sourceStatus[s] ?? "unavailable";
+              const color = st === "ok" ? "var(--ios-green)" : st === "timeout" ? "var(--ios-orange)" : "var(--text-tertiary)";
+              return (
+                <span
+                  key={s}
+                  style={{
+                    fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
+                    padding: "2px 8px", borderRadius: 6,
+                    fontFamily: '"SF Mono","JetBrains Mono",monospace',
+                    color,
+                    background: `color-mix(in srgb, ${color} 12%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${color} 22%, transparent)`,
+                  }}
+                >
+                  {st === "ok" ? "●" : st === "timeout" ? "◌" : "○"} {s}
+                </span>
+              );
+            })}
           </div>
         </Section>
       )}
@@ -452,9 +501,10 @@ export function LuciferPanel({ data }: { data: LuciferResult }) {
               lineHeight: 1.5,
               fontStyle: "italic",
             }}
-          >
-            &ldquo;{stripMd(data.counter_thesis ?? "")}&rdquo;
-          </p>
+            dangerouslySetInnerHTML={{
+              __html: `\u201C${sanitizeHtml(data.counter_thesis)}\u201D`,
+            }}
+          />
         </Section>
       )}
     </div>

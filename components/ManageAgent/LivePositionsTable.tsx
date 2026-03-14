@@ -1,13 +1,26 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { fmtUSDC, fmtPrice, type Position } from "@/lib/api";
 import {
   useSocketEvent,
   type PositionUpdateEvent,
 } from "@/context/SocketContext";
+import { useQuantikStore } from "@/store/useQuantikStore";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function fmtCountdown(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "Ended";
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  if (days > 0) return `${days}d ${hours}h`;
+  const mins = Math.floor((ms % 3_600_000) / 60_000);
+  return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+}
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -27,6 +40,12 @@ interface LivePositionsTableProps {
 export function LivePositionsTable({ positions, loading, onPositionUpdate }: LivePositionsTableProps) {
   const t = useTranslations("manageAgent");
   const tc = useTranslations("common");
+  const myAgent = useQuantikStore((s) => s.myAgent);
+  const agentEmoji = myAgent?.avatar_emoji ?? "\u{1F916}";
+  const agentName = myAgent?.name ?? "Agent";
+  const router = useRouter();
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+
   const handleUpdate = useCallback(
     (data: PositionUpdateEvent) => {
       onPositionUpdate(data.slug, data.currentPrice, data.pnl, data.pnlPct);
@@ -88,40 +107,77 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
+          {/* Keyframe for the bouncing arrow */}
+          <style>{`
+            @keyframes bounceRight {
+              0%, 100% { transform: translateX(0); }
+              50% { transform: translateX(4px); }
+            }
+          `}</style>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {[t("marketTitle"), t("outcome"), t("shares"), t("avgEntryPrice"), t("currentPrice"), t("currentValue"), t("pnlPercent"), t("resolutionDate")].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: "left",
-                        padding: "8px 10px",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "rgba(255,255,255,0.30)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+                {[
+                  t("source") ?? "Source",
+                  t("marketTitle"),
+                  t("outcome"),
+                  t("shares"),
+                  t("currentPrice"),
+                  t("currentValue"),
+                  t("pnlPercent"),
+                  t("resolutionDate"),
+                  "", // arrow column
+                ].map((h, i) => (
+                  <th
+                    key={`${h}-${i}`}
+                    style={{
+                      textAlign: "left",
+                      padding: "8px 10px",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.30)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {positions.map((pos) => {
                 const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
                 const currentValue = pos.size * pos.currentPrice;
+                const isHovered = hoveredRow === pos.id;
+                const isAutopilot = pos.source === "autopilot";
                 return (
-                  <tr key={pos.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <tr
+                    key={pos.id}
+                    onMouseEnter={() => setHoveredRow(pos.id)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                    onClick={() => router.push(`/market/${encodeURIComponent(pos.slug)}`)}
+                    style={{
+                      borderBottom: "1px solid rgba(255,255,255,0.04)",
+                      cursor: "pointer",
+                      background: isHovered ? "rgba(255,255,255,0.04)" : "transparent",
+                      transition: "background 0.15s ease",
+                    }}
+                  >
+                    {/* Source: agent emoji for autopilot, human for manual */}
+                    <td
+                      style={{ padding: "10px", whiteSpace: "nowrap" }}
+                      title={isAutopilot ? agentName : "Manual"}
+                    >
+                      <span style={{ fontSize: 16 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
+                    </td>
+                    {/* Market */}
                     <td style={{ padding: "10px", fontSize: 13, color: "rgba(255,255,255,0.80)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {pos.market}
                     </td>
+                    {/* Outcome */}
                     <td style={{ padding: "10px" }}>
                       <span
                         style={{
@@ -136,23 +192,40 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
                         {pos.direction}
                       </span>
                     </td>
+                    {/* Shares */}
                     <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
                       {pos.size.toFixed(1)}
                     </td>
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-                      {fmtPrice(pos.entryPrice)}
-                    </td>
+                    {/* Current Price */}
                     <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
                       {fmtPrice(pos.currentPrice)}
                     </td>
+                    {/* Current Value */}
                     <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
                       {fmtUSDC(currentValue)}
                     </td>
+                    {/* PnL */}
                     <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: pnlColor, fontWeight: 600 }}>
                       {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)} / {pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%
                     </td>
-                    <td style={{ padding: "10px", fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
-                      —
+                    {/* Resolution Date */}
+                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
+                      {fmtCountdown(pos.resolutionDate)}
+                    </td>
+                    {/* Hover arrow */}
+                    <td style={{ padding: "10px 8px", width: 28 }}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          opacity: isHovered ? 1 : 0,
+                          transition: "opacity 0.15s ease",
+                          animation: isHovered ? "bounceRight 0.8s ease-in-out infinite" : "none",
+                          fontSize: 14,
+                          color: "rgba(255,255,255,0.50)",
+                        }}
+                      >
+                        →
+                      </span>
                     </td>
                   </tr>
                 );

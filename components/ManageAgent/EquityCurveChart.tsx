@@ -12,6 +12,11 @@ import {
   CartesianGrid,
 } from "recharts";
 import { fmtUSDC, type Trade, type WalletBalance } from "@/lib/api";
+import {
+  buildEquityCurve,
+  formatEquityAxisLabel,
+  formatEquityTooltipLabel,
+} from "@/lib/equityCurve";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -28,8 +33,17 @@ interface EquityCurveChartProps {
   timePeriod: "7D" | "30D" | "All";
 }
 
-function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+function GlassTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: number | string;
+}) {
   if (!active || !payload?.length) return null;
+  const timestamp = typeof label === "number" ? label : Number(label);
   return (
     <div
       style={{
@@ -40,7 +54,9 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
         padding: "8px 12px",
       }}
     >
-      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", marginBottom: 4 }}>
+        {Number.isFinite(timestamp) ? formatEquityTooltipLabel(timestamp) : label}
+      </div>
       <div style={{ fontFamily: '"SF Mono", monospace', fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>
         {fmtUSDC(payload[0].value)}
       </div>
@@ -52,60 +68,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
   const t = useTranslations("equityCurve");
   const currentBalance = wallet?.totalValue ?? null;
   const chartData = useMemo(() => {
-    if (currentBalance == null) return [];
-    const now = Date.now();
-    const periodMs =
-      timePeriod === "7D" ? 7 * 86400000 :
-      timePeriod === "30D" ? 30 * 86400000 :
-      365 * 86400000;
-    const startTime = now - periodMs;
-
-    // Filter and sort trades within the period
-    const periodTrades = trades
-      .filter((t) => t.timestamp >= startTime)
-      .sort((a, b) => a.timestamp - b.timestamp);
-
-    if (periodTrades.length === 0) {
-      // Generate a flat line
-      const days = timePeriod === "7D" ? 7 : timePeriod === "30D" ? 30 : 90;
-      return Array.from({ length: days }, (_, i) => {
-        const d = new Date(now - (days - 1 - i) * 86400000);
-        return {
-          date: d.toLocaleDateString("en-US", { weekday: "short" }),
-          value: currentBalance,
-        };
-      });
-    }
-
-    // Build equity curve by walking through trades
-    let runningBalance = currentBalance;
-    // Walk backward to get starting balance
-    for (let i = periodTrades.length - 1; i >= 0; i--) {
-      runningBalance -= periodTrades[i].pnl ?? 0;
-    }
-
-    const points: { date: string; value: number }[] = [];
-    const startBalance = runningBalance;
-    points.push({
-      date: new Date(startTime).toLocaleDateString("en-US", { weekday: "short" }),
-      value: startBalance,
-    });
-
-    for (const trade of periodTrades) {
-      runningBalance += trade.pnl ?? 0;
-      points.push({
-        date: new Date(trade.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        value: runningBalance,
-      });
-    }
-
-    // Add current point
-    points.push({
-      date: t("now"),
-      value: currentBalance,
-    });
-
-    return points;
+    return buildEquityCurve(currentBalance, trades, timePeriod);
   }, [currentBalance, trades, timePeriod]);
 
   const periodPnl = useMemo(() => {
@@ -181,10 +144,18 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis
-            dataKey="date"
+            dataKey="timestamp"
+            type="number"
+            scale="time"
+            domain={["dataMin", "dataMax"]}
             axisLine={false}
             tickLine={false}
             tick={{ fill: "rgba(255,255,255,0.25)", fontSize: 10 }}
+            minTickGap={24}
+            tickFormatter={(value: number) => {
+              const isCurrentPoint = value === chartData[chartData.length - 1]?.timestamp;
+              return isCurrentPoint ? t("now") : formatEquityAxisLabel(value, timePeriod);
+            }}
           />
           <YAxis
             axisLine={false}
@@ -198,7 +169,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
           />
           <Tooltip content={<GlassTooltip />} />
           <Area
-            type="monotone"
+            type="monotoneX"
             dataKey="value"
             stroke={isPositive ? "#30d158" : "#ff453a"}
             strokeWidth={2}

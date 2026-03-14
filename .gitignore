@@ -9,3 +9,4 @@ node_modules
 /.clerk/
 CLAUDE.md
 /test-results
+.next-stale*

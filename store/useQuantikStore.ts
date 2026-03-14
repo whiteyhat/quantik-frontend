@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import {
+  AutopilotPolicyEnvelope,
   PipelineResult,
   PipelineEvent,
   SigmaResult,
@@ -44,6 +45,7 @@ export interface MyAgent {
   description?: string | null;
   autopilot_enabled?: boolean;
   autopilot_updated_at?: number | null;
+  autopilot_policy?: AutopilotPolicyEnvelope;
   // Polymarket wallet preparation
   polymarket_ready?: boolean;
   polymarket_status?: "pending_funding" | "funding_detected" | "approving" | "approval_failed" | "ready";
@@ -104,6 +106,8 @@ interface QuantikStore {
   pendingTrade: {
     slug: string;
     tokenId: string;
+    yesTokenId?: string;
+    noTokenId?: string;
     sigma: SigmaResult;
     edge: EdgeResult;
     market: { question: string; yesPrice: number; noPrice: number };

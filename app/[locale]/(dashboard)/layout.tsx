@@ -77,6 +77,28 @@ function AuthSync() {
   return null;
 }
 
+// ─── Wallet Sync ─────────────────────────────────────────────────────────────
+// Keeps the global wallet store fresh on every dashboard page (market, pipeline, etc.)
+function WalletSync() {
+  const setWallet = useQuantikStore((s) => s.setWallet);
+  const myAgent = useQuantikStore((s) => s.myAgent);
+
+  useEffect(() => {
+    if (!myAgent) return;
+    let active = true;
+    const fetchWallet = () => {
+      api.getBalance().then((w) => {
+        if (active && w) setWallet(w);
+      }).catch(() => {});
+    };
+    fetchWallet();
+    const iv = setInterval(fetchWallet, 30_000);
+    return () => { active = false; clearInterval(iv); };
+  }, [myAgent, setWallet]);
+
+  return null;
+}
+
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: { labelKey: "dashboard" | "myAgent" | "tradeHistory" | "agentFactory" | "settings"; href: string; icon: string; isFactory?: boolean }[] = [
@@ -537,6 +559,7 @@ export default function DashboardLayout({
   return (
     <>
       <AuthSync />
+      <WalletSync />
 
       {/* Animated gradient background */}
       <div className="crystal-bg" />
@@ -575,7 +598,6 @@ export default function DashboardLayout({
           style={{
             flex: 1,
             padding: "20px 20px 40px",
-            overflowX: "clip",
           }}
         >
           {children}

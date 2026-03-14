@@ -403,7 +403,6 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
       }
       setShowWalletAssign(false);
       setAssignPrivateKey("");
-      setResult(null);
     } catch (err) {
       setAssignError(err instanceof Error ? err.message : "Failed to assign wallet");
     } finally {

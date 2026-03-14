@@ -131,6 +131,48 @@ test.describe('Manage Agent — Dashboard', () => {
     await expect(page.getByText('AI Insights')).toBeVisible();
   });
 
+  test('opens the scanned market from the featured AI insight and reveals the hover arrow', async ({ page }) => {
+    await page.route('**/api/markets/btc-100k', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          slug: 'btc-100k',
+          tokenId: 'token-btc-100k',
+          yesTokenId: 'yes-btc-100k',
+          noTokenId: 'no-btc-100k',
+          question: 'Will Bitcoin reach $100k by year end?',
+          resolutionDate: '2026-12-31T00:00:00.000Z',
+          yesPrice: 0.78,
+          noPrice: 0.22,
+          volume: 125000,
+          liquidity: 54000,
+          liquidityGrade: 'A',
+        }),
+      });
+    });
+    await page.route('**/api/markets/*/price-history*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    });
+    await page.route('**/api/markets/*/book*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ bids: [], asks: [] }) });
+    });
+
+    await page.goto('/manage-agent');
+
+    const featuredInsight = page.getByTestId('ai-insight-link-sig-1');
+    const arrow = featuredInsight.locator('[data-arrow]');
+
+    await expect(featuredInsight).toBeVisible();
+    await expect(arrow).toHaveCSS('opacity', '0');
+
+    await featuredInsight.hover();
+    await expect(arrow).toHaveCSS('opacity', '1');
+
+    await featuredInsight.click();
+    await expect(page).toHaveURL(/\/market\/btc-100k$/);
+  });
+
   test('displays signal decision badges (TRADE/WATCH/SKIP)', async ({ page }) => {
     await page.goto('/manage-agent');
     await expect(page.getByText('AI Insights')).toBeVisible();

@@ -10,7 +10,6 @@ import {
   type Position,
   type Trade,
   type Signal,
-  type RiskConfig,
   type PerformanceSummary,
 } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +31,6 @@ import { MetricsRow } from "@/components/ManageAgent/MetricsRow";
 import { LivePositionsTable } from "@/components/ManageAgent/LivePositionsTable";
 import { AiInsightCard } from "@/components/ManageAgent/AiInsightCard";
 import { AgentConfigPanel } from "@/components/ManageAgent/AgentConfigPanel";
-import { ActiveAlertsPanel } from "@/components/ManageAgent/ActiveAlertsPanel";
 import { SystemLogFeed } from "@/components/ManageAgent/SystemLogFeed";
 import { ApiKeyPanel } from "@/components/ManageAgent/ApiKeyPanel";
 import { ConnectionStatusPanel } from "@/components/ManageAgent/ConnectionStatusPanel";
@@ -90,7 +88,6 @@ export default function ManageAgentPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [riskConfig, setRiskConfig] = useState<RiskConfig | null>(null);
   const [performance, setPerformance] = useState<PerformanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<"7D" | "30D" | "All">("7D");
@@ -107,21 +104,19 @@ export default function ManageAgentPage() {
 
     async function fetchAll() {
       try {
-        const [walletData, posData, signalData, riskData, perfData, tradeData] = await Promise.allSettled([
+        const [walletData, posData, signalData, perfData, tradeData] = await Promise.allSettled([
           api.getBalance(),
           api.getPositions(),
           api.getSignals(),
-          api.getRiskConfig(),
           api.getPerformanceSummary(),
           api.getTrades(),
         ]);
 
         if (!active) return;
 
-        if (walletData.status === "fulfilled") storeSetWallet(walletData.value);
+        if (walletData.status === "fulfilled" && walletData.value) storeSetWallet(walletData.value);
         if (posData.status === "fulfilled") setPositions(posData.value);
         if (signalData.status === "fulfilled") setSignals(signalData.value);
-        if (riskData.status === "fulfilled" && riskData.value) setRiskConfig(riskData.value);
         if (perfData.status === "fulfilled") setPerformance(perfData.value);
         if (tradeData.status === "fulfilled") setTrades(tradeData.value);
       } catch {
@@ -294,7 +289,7 @@ export default function ManageAgentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-5">
           {/* LEFT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-            <div style={{ position: "sticky", top: 20, zIndex: 5, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <AgentIdentityHeader
                 wallet={storeWallet}
                 timePeriod={timePeriod}
@@ -361,11 +356,8 @@ export default function ManageAgentPage() {
                 />
               </>
             ) : (
-              <AgentConfigPanel
-                riskConfig={riskConfig}
-              />
+              <AgentConfigPanel />
             )}
-            <ActiveAlertsPanel riskConfig={riskConfig} />
             <SystemLogFeed />
           </div>
         </div>

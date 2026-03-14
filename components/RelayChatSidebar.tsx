@@ -775,7 +775,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     agentMessageIdRef.current = null;
   }, []);
 
-  const toggleContextExpansion = useCallback((messageId: number) => {
+  const toggleContextExpansion = useCallback((messageId: string) => {
     setExpandedContextIds((prev) => ({
       ...prev,
       [messageId]: !prev[messageId],
@@ -816,9 +816,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tokenId: confirmation.slug,
-          side: confirmation.direction === "YES" ? "buy" : "sell",
-          price: 0.5,
+          direction: confirmation.direction,
           size: confirmation.size,
           marketSlug: confirmation.slug,
         }),

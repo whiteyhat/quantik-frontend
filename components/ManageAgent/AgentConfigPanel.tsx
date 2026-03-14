@@ -1,8 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { type RiskConfig } from "@/lib/api";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.06)",
@@ -87,13 +87,13 @@ function riskLevelColor(level: number): string {
   return "#ff453a";
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
-interface AgentConfigPanelProps {
-  riskConfig: RiskConfig | null;
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
-export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function AgentConfigPanel() {
   const t = useTranslations("agentConfig");
   const myAgent = useQuantikStore((s) => s.myAgent);
 
@@ -101,6 +101,7 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
 
   const riskLevel = deriveRiskLevel(myAgent.protection_mindset);
   const rlColor = riskLevelColor(riskLevel);
+  const autopilotPolicy = myAgent.autopilot_policy?.effective ?? null;
 
   const personalityChip = PERSONALITY_LABELS[myAgent.personality];
   const decisionChip = DECISION_LABELS[myAgent.decision_style];
@@ -108,6 +109,61 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
   const timeChip = TIME_LABELS[myAgent.time_patience];
   const moneyChip = MONEY_LABELS[myAgent.money_approach];
   const assetChip = ASSET_LABELS[myAgent.asset_love];
+  const chartMetrics = useMemo(() => {
+    if (!autopilotPolicy) return [];
+
+    const tempoScore = clamp01(
+      (
+        clamp01(1 - ((autopilotPolicy.cadenceMinutes - 15) / (240 - 15))) +
+        clamp01(autopilotPolicy.maxTradesPerDay / 16)
+      ) / 2
+    );
+
+    return [
+      {
+        key: "tempo",
+        label: t("rings.tempo"),
+        value: `${autopilotPolicy.cadenceMinutes}m · ${autopilotPolicy.maxTradesPerDay}/day`,
+        score: tempoScore,
+        color: "#5ac8fa",
+        hint: t("rings.tempoDesc"),
+      },
+      {
+        key: "selectivity",
+        label: t("rings.selectivity"),
+        value: `${(autopilotPolicy.minSigma * 100).toFixed(0)}% sigma`,
+        score: clamp01((autopilotPolicy.minSigma - 0.6) / 0.22),
+        color: "#bf5af2",
+        hint: t("rings.selectivityDesc"),
+      },
+      {
+        key: "exposure",
+        label: t("rings.exposure"),
+        value: `${(autopilotPolicy.maxPositionFraction * 100).toFixed(0)}% max`,
+        score: clamp01(autopilotPolicy.maxPositionFraction / 0.15),
+        color: "#ff9f0a",
+        hint: t("rings.exposureDesc"),
+      },
+      {
+        key: "protection",
+        label: t("rings.protection"),
+        value: `${(autopilotPolicy.dailyLossLimitPct * 100).toFixed(0)}% pause`,
+        score: clamp01(1 - ((autopilotPolicy.dailyLossLimitPct - 0.05) / 0.07)),
+        color: "#ff453a",
+        hint: t("rings.protectionDesc"),
+      },
+      {
+        key: "sentiment",
+        label: t("rings.sentiment"),
+        value: autopilotPolicy.useAuraSentiment ? t("auraEnabled") : t("auraDisabled"),
+        score: autopilotPolicy.useAuraSentiment ? 1 : 0.28,
+        color: "#ffd60a",
+        hint: t("rings.sentimentDesc"),
+      },
+    ];
+  }, [autopilotPolicy, t]);
+  const [hoveredRing, setHoveredRing] = useState<number | null>(null);
+  const tooltipMetric = hoveredRing == null ? null : chartMetrics[hoveredRing] ?? null;
 
   return (
     <div style={panelStyle}>
@@ -192,25 +248,109 @@ export function AgentConfigPanel({ riskConfig }: AgentConfigPanelProps) {
         </div>
       </div>
 
-      {/* Risk parameters — read-only, derived from agent personality */}
-      {riskConfig ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
-          {[
-            { label: t("maxDrawdownLimit"), hint: t("maxDrawdownDesc"), value: `${(riskConfig.drawdownLimit * 100).toFixed(0)}%`, color: "#ff453a", pct: riskConfig.drawdownLimit / 0.50 },
-            { label: t("maxPositionSize"), hint: t("maxPositionDesc"), value: `${(riskConfig.maxPositionSize * 100).toFixed(0)}%`, color: "#0a84ff", pct: riskConfig.maxPositionSize / 0.30 },
-            { label: t("kellyMultiplier"), hint: t("kellyDesc"), value: `${riskConfig.kellyMultiplier.toFixed(2)}x`, color: "#bf5af2", pct: riskConfig.kellyMultiplier },
-          ].map((param) => (
-            <div key={param.label} style={{ padding: "8px 0" }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>{param.label}</span>
-                <span style={{ fontFamily: '"SF Mono", monospace', fontSize: 13, fontWeight: 700, color: param.color }}>{param.value}</span>
-              </div>
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(param.pct * 100, 100)}%`, borderRadius: 2, background: param.color, opacity: 0.6, transition: "width 300ms ease" }} />
-              </div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 3 }}>{param.hint}</div>
+      {/* Agent behavior map — same data as autopilot policy, but visualized instead of duplicated as another form */}
+      {autopilotPolicy ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
+            <div
+              style={{
+                position: "relative",
+                width: 220,
+                height: 220,
+                margin: "0 auto",
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle at center, rgba(9,12,20,0.98) 0 36%, rgba(255,255,255,0.04) 36%, rgba(255,255,255,0.02) 100%)",
+              }}
+            >
+              <svg width="220" height="220" viewBox="0 0 220 220" style={{ transform: "rotate(-90deg)" }}>
+                {chartMetrics.map((metric, index) => {
+                  const radius = 92 - index * 16;
+                  const strokeWidth = 10;
+                  const circumference = 2 * Math.PI * radius;
+                  const dash = circumference * metric.score;
+                  return (
+                    <g key={metric.key}>
+                      <circle
+                        cx="110"
+                        cy="110"
+                        r={radius}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.08)"
+                        strokeWidth={strokeWidth}
+                      />
+                      <circle
+                        cx="110"
+                        cy="110"
+                        r={radius}
+                        fill="none"
+                        stroke={metric.color}
+                        strokeWidth={strokeWidth}
+                        strokeLinecap="round"
+                        strokeDasharray={`${dash} ${circumference - dash}`}
+                        style={{
+                          cursor: "pointer",
+                          filter: hoveredRing === index ? `drop-shadow(0 0 8px ${metric.color})` : "none",
+                          opacity: hoveredRing == null ? 0.82 : hoveredRing === index ? 1 : 0.38,
+                          transition: "opacity 180ms ease, filter 180ms ease",
+                        }}
+                        onMouseEnter={() => setHoveredRing(index)}
+                        onMouseLeave={() => setHoveredRing(null)}
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+
             </div>
-          ))}
+
+            <div
+              style={{
+                width: "100%",
+                minHeight: 110,
+                borderRadius: 16,
+                border: tooltipMetric ? `1px solid ${tooltipMetric.color}` : "1px solid rgba(255,255,255,0.08)",
+                background: tooltipMetric ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 8,
+                transition: "border-color 180ms ease, background 180ms ease",
+              }}
+            >
+              {tooltipMetric ? (
+                <>
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.94)",
+                    }}
+                  >
+                    {tooltipMetric.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: tooltipMetric.color,
+                    }}
+                  >
+                    {tooltipMetric.value}
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", lineHeight: 1.55 }}>
+                    {tooltipMetric.hint}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.48)", lineHeight: 1.55 }}>
+                  {t("behaviorMapHoverHint")}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         <div

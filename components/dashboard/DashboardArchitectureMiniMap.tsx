@@ -7,7 +7,6 @@ import { AGENT_ANGLES, AGENT_META } from "@/components/ArchitectureView/data/arc
 import {
   CommandCenterCard,
   CommandCenterHeader,
-  PanelEmptyState,
   StatusBadge,
 } from "@/components/dashboard/DashboardPrimitives";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +17,7 @@ function nodeTone(status: DashboardAgentRow["status"] | undefined) {
   if (status === "live") return "good";
   if (status === "degraded") return "warn";
   if (status === "down") return "bad";
+  if (status === "idle") return "idle";
   return "neutral";
 }
 
@@ -39,7 +39,8 @@ export function DashboardArchitectureMiniMap({
   const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
   const downAgents = agents.filter((agent) => agent.status === "down").length;
   const hasTraffic = agents.some((agent) => agent.lastActiveAt);
-  const hasRecentRuntime = agents.some((agent) => agent.status !== "idle" && agent.lastActiveAt);
+  const hasActiveAgents = liveAgents > 0 || degradedAgents > 0;
+  const allIdle = agents.length > 0 && idleAgents === agents.length;
   const t = useTranslations("dashboard.architectureMiniMap");
 
   return (
@@ -72,25 +73,31 @@ export function DashboardArchitectureMiniMap({
             <div className="dashboard-mini-map-ambient" />
             <div className="dashboard-mini-map-ring dashboard-mini-map-ring--outer" />
             <div className="dashboard-mini-map-ring dashboard-mini-map-ring--inner" />
-            {hasTraffic ? (
+            {hasActiveAgents ? (
               <>
                 <div className="dashboard-mini-map-pulse dashboard-mini-map-pulse--outer" />
                 <div className="dashboard-mini-map-pulse dashboard-mini-map-pulse--inner" />
                 <div className="dashboard-mini-map-sweep" />
               </>
+            ) : allIdle ? (
+              <div className="dashboard-mini-map-sweep dashboard-mini-map-sweep--slow" />
             ) : null}
 
             <div className="dashboard-mini-map-core">
               <div className="dashboard-mini-map-core-emoji">{myAgent?.avatar_emoji ?? "◆"}</div>
               <div className="dashboard-mini-map-core-label">{myAgent?.name ?? "Quantik Core"}</div>
               <div className="dashboard-mini-map-core-subtitle">
-                {myAgent?.agent_code ?? t("missionControl")}
+                {hasActiveAgents
+                  ? t("pipelineActive")
+                  : allIdle
+                    ? t("standbyMode")
+                    : myAgent?.agent_code ?? t("missionControl")}
               </div>
             </div>
 
             {Object.entries(AGENT_ANGLES).map(([agentKey, angle]) => {
               const meta = AGENT_META[agentKey];
-              const status = statusMap.get(agentKey);
+              const agentRow = statusMap.get(agentKey);
               const radians = (angle * Math.PI) / 180;
               const left = 50 + Math.cos(radians) * 36;
               const top = 50 + Math.sin(radians) * 36;
@@ -98,33 +105,25 @@ export function DashboardArchitectureMiniMap({
               return (
                 <div
                   key={agentKey}
-                  className={`dashboard-mini-map-node dashboard-mini-map-node--${nodeTone(status?.status)}`}
+                  className={`dashboard-mini-map-node dashboard-mini-map-node--${nodeTone(agentRow?.status)}`}
                   style={{
                     left: `${left}%`,
                     top: `${top}%`,
                     ["--mini-map-accent" as string]: meta.color,
                   }}
+                  title={`${meta.label} — ${agentRow?.status ?? "unknown"}`}
                 >
                   <span className="dashboard-mini-map-node-emoji">{meta.emoji}</span>
                   <span className="dashboard-mini-map-node-label">{meta.label}</span>
                 </div>
               );
             })}
-
-            {!hasTraffic ? (
-              <div className="dashboard-mini-map-overlay">
-                <PanelEmptyState
-                  title={t("noTrafficTitle")}
-                  detail={t("noTrafficDetail")}
-                />
-              </div>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">{t("live")}</div>
-              <div className="dashboard-mini-map-stat-value">{liveAgents}</div>
+              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--good">{liveAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">{t("idle")}</div>
@@ -132,25 +131,34 @@ export function DashboardArchitectureMiniMap({
             </div>
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">{t("degraded")}</div>
-              <div className="dashboard-mini-map-stat-value">{degradedAgents}</div>
+              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--warn">{degradedAgents}</div>
             </div>
             <div className="dashboard-mini-map-stat">
               <div className="dashboard-mini-map-stat-label">{t("down")}</div>
-              <div className="dashboard-mini-map-stat-value">{downAgents}</div>
+              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--bad">{downAgents}</div>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <StatusBadge tone="info" label={t("specialistAgents")} />
             <StatusBadge
-              tone={hasTraffic ? (hasRecentRuntime ? "good" : "neutral") : "warn"}
+              tone={hasActiveAgents ? "good" : allIdle ? "neutral" : "warn"}
+              label={`${agents.length} ${t("specialistAgents")}`}
+            />
+            <StatusBadge
+              tone={hasActiveAgents ? "good" : allIdle ? "neutral" : "warn"}
               label={
-                hasTraffic
-                  ? (hasRecentRuntime ? t("runtimeTelemetryLive") : t("agentsCurrentlyIdle"))
-                  : t("awaitingRuntimeTraffic")
+                hasActiveAgents
+                  ? t("pipelineActive")
+                  : allIdle
+                    ? t("agentsStandby")
+                    : downAgents > 0
+                      ? t("agentsNeedAttention")
+                      : t("agentsStandby")
               }
             />
-            <StatusBadge tone="neutral" label={t("tapThroughForFullArchitecture")} />
+            {hasTraffic ? (
+              <StatusBadge tone="info" label={t("telemetryRecorded")} />
+            ) : null}
           </div>
         </>
       )}

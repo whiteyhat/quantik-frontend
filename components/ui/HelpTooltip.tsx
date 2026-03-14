@@ -6,9 +6,10 @@ import { useHydrated } from "@/hooks/useHydrated";
 
 interface HelpTooltipProps {
   text: string;
+  width?: number;
 }
 
-export function HelpTooltip({ text }: HelpTooltipProps) {
+export function HelpTooltip({ text, width = 220 }: HelpTooltipProps) {
   const hydrated = useHydrated();
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -18,7 +19,7 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
   function showTooltip() {
     if (!iconRef.current) return;
     const rect = iconRef.current.getBoundingClientRect();
-    const TOOLTIP_W = 220;
+    const TOOLTIP_W = width;
     const TOOLTIP_H_ESTIMATE = 60;
     const MARGIN = 8;
     // Center horizontally, clamp to viewport edges
@@ -69,7 +70,7 @@ export function HelpTooltip({ text }: HelpTooltipProps) {
             top: coords.top,
             left: coords.left,
             transform: flipped ? "none" : "translateY(-100%)",
-            width: 220,
+            width,
             padding: "5px 10px",
             background: "#27272a",
             border: "1px solid rgba(255,255,255,0.1)",

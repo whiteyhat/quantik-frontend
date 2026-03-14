@@ -6,9 +6,10 @@ const expiresAt = now + 15 * 60 * 1000;
 const sessionId = 'session-byo-1';
 const onboardingUrl = 'http://localhost:3001/api/v1/agents/byo/claim/token-abc';
 
-async function setupByoSession(page: Page) {
+async function setupByoSession(page: Page, options?: { walletReadyOnClaim?: boolean }) {
   let sessionPolls = 0;
   let walletDownloaded = false;
+  const walletReadyOnClaim = options?.walletReadyOnClaim ?? true;
 
   await page.route('**/api/v1/agents/byo/onboarding', (route) => {
     if (route.request().method() === 'POST') {
@@ -72,7 +73,7 @@ async function setupByoSession(page: Page) {
         api_key_prefix: 'qtk_live_1234',
         wallet_address: '0x2222222222222222222222222222222222222222',
         connection_status: 'connected',
-        wallet_download_ready: !walletDownloaded,
+        wallet_download_ready: walletDownloaded ? false : walletReadyOnClaim,
         wallet_downloaded_at: walletDownloaded ? now + 31_000 : null,
         last_error: null,
       }),
@@ -338,6 +339,19 @@ test.describe('Agent Factory — BYO Agent', () => {
     await expect(page.getByRole('button', { name: 'Activate BYO Agent' })).toBeDisabled();
     await page.getByText('Download OpenClaw Wallet Backup').click();
     await expect(page.getByText('Wallet Backup Secured')).toBeVisible();
+  });
+
+  test('shows the wallet foundry experience while the BYO backup is still being prepared', async ({ page }) => {
+    await page.clock.install({ time: new Date(now) });
+    await setupByoSession(page, { walletReadyOnClaim: false });
+
+    await page.goto('/agent-factory/byo');
+    await page.getByText('Generate Onboarding Link').click();
+
+    await page.clock.fastForward(3000);
+
+    await expect(page.getByText('Packaging the WDK backup')).toBeVisible();
+    await expect(page.getByText('Meanwhile')).toBeVisible();
   });
 
   test('shows expired status when countdown reaches zero', async ({ page }) => {

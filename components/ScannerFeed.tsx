@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HelpTooltip } from "./ui/HelpTooltip";
 
@@ -126,6 +127,7 @@ const VISIBLE_MAX = 10;
 
 export function ScannerFeed() {
   const t = useTranslations("scannerFeed");
+  const router = useRouter();
   const [results, setResults] = useState<ScannerResult[]>([]);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState(false);
@@ -220,9 +222,13 @@ export function ScannerFeed() {
                 <div
                   key={id}
                   data-testid="scanner-row"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => router.push(`/market/${r.slug}`)}
+                  onKeyDown={(e) => { if (e.key === "Enter") router.push(`/market/${r.slug}`); }}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "auto 1fr auto",
+                    gridTemplateColumns: "auto 1fr auto auto",
                     alignItems: "center",
                     gap: "8px 10px",
                     padding: "8px 10px",
@@ -230,6 +236,24 @@ export function ScannerFeed() {
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.06)",
                     animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
+                    cursor: "pointer",
+                    transition: "background 180ms ease, border-color 180ms ease, transform 180ms ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget;
+                    el.style.background = "rgba(255,255,255,0.08)";
+                    el.style.borderColor = "rgba(255,255,255,0.14)";
+                    el.style.transform = "translateX(2px)";
+                    const arrow = el.querySelector<HTMLSpanElement>("[data-arrow]");
+                    if (arrow) { arrow.style.opacity = "1"; arrow.style.transform = "translateX(0)"; }
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget;
+                    el.style.background = "rgba(255,255,255,0.04)";
+                    el.style.borderColor = "rgba(255,255,255,0.06)";
+                    el.style.transform = "translateX(0)";
+                    const arrow = el.querySelector<HTMLSpanElement>("[data-arrow]");
+                    if (arrow) { arrow.style.opacity = "0"; arrow.style.transform = "translateX(-6px)"; }
                   }}
                 >
                   {/* Recommendation badge */}
@@ -282,6 +306,21 @@ export function ScannerFeed() {
                       </span>
                     )}
                   </div>
+
+                  {/* Arrow indicator */}
+                  <span
+                    data-arrow
+                    style={{
+                      fontSize: 14,
+                      color: "rgba(255,255,255,0.50)",
+                      opacity: 0,
+                      transform: "translateX(-6px)",
+                      transition: "opacity 180ms ease, transform 180ms ease",
+                      flexShrink: 0,
+                    }}
+                  >
+                    →
+                  </span>
                 </div>
               );
             })}
@@ -310,9 +349,13 @@ export function ScannerFeed() {
                       <div
                         key={id}
                         data-testid="scanner-row"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(`/market/${r.slug}`)}
+                        onKeyDown={(e) => { if (e.key === "Enter") router.push(`/market/${r.slug}`); }}
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "auto 1fr auto",
+                          gridTemplateColumns: "auto 1fr auto auto",
                           alignItems: "center",
                           gap: "8px 10px",
                           padding: "8px 10px",
@@ -320,6 +363,24 @@ export function ScannerFeed() {
                           background: "rgba(255,255,255,0.04)",
                           border: "1px solid rgba(255,255,255,0.06)",
                           animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
+                          cursor: "pointer",
+                          transition: "background 180ms ease, border-color 180ms ease, transform 180ms ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = "rgba(255,255,255,0.08)";
+                          el.style.borderColor = "rgba(255,255,255,0.14)";
+                          el.style.transform = "translateX(2px)";
+                          const arrow = el.querySelector<HTMLSpanElement>("[data-arrow]");
+                          if (arrow) { arrow.style.opacity = "1"; arrow.style.transform = "translateX(0)"; }
+                        }}
+                        onMouseLeave={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = "rgba(255,255,255,0.04)";
+                          el.style.borderColor = "rgba(255,255,255,0.06)";
+                          el.style.transform = "translateX(0)";
+                          const arrow = el.querySelector<HTMLSpanElement>("[data-arrow]");
+                          if (arrow) { arrow.style.opacity = "0"; arrow.style.transform = "translateX(-6px)"; }
                         }}
                       >
                         <span
@@ -352,6 +413,19 @@ export function ScannerFeed() {
                             </span>
                           )}
                         </div>
+                        <span
+                          data-arrow
+                          style={{
+                            fontSize: 14,
+                            color: "rgba(255,255,255,0.50)",
+                            opacity: 0,
+                            transform: "translateX(-6px)",
+                            transition: "opacity 180ms ease, transform 180ms ease",
+                            flexShrink: 0,
+                          }}
+                        >
+                          →
+                        </span>
                       </div>
                     );
                   })}

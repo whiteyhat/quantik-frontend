@@ -41,6 +41,7 @@
     "reset": "REINITIALISER",
     "close": "Fermer",
     "copy": "Copier",
+    "copied": "Copie",
     "back": "Retour",
     "backToDashboard": "Retour au Tableau de bord",
     "yes": "OUI",
@@ -87,6 +88,7 @@
     "vol": "vol",
     "livePositions": "Positions Ouvertes",
     "noOpenPositions": "Aucune position ouverte",
+    "source": "Source",
     "marketTitle": "Titre du Marche",
     "outcome": "Resultat",
     "shares": "Parts",
@@ -97,6 +99,10 @@
     "resolutionDate": "Date de Resolution",
     "wdkWallet": "Wallet WDK: ",
     "balance": "Solde:",
+    "copy": "Copier",
+    "copied": "Copie",
+    "viewOnPolygonscan": "Voir sur Polygonscan",
+    "viewOnPolymarket": "Voir sur Polymarket",
     "chatWithAgent": "DISCUTER AVEC {name}",
     "agentWorld": {
       "loading": "INITIALISATION DU MONDE QUANTIK",
@@ -468,7 +474,39 @@
     "depositAddress": "Adresse de Depot",
     "noWalletAddress": "Aucune adresse de wallet disponible",
     "addressCopied": "Adresse Copiee",
-    "copyWalletAddress": "Copier l'Adresse du Wallet"
+    "copyWalletAddress": "Copier l'Adresse du Wallet",
+    "policyTitle": "Politique Autopilot",
+    "policyDesc": "Derivee des traits de l'agent avec des garde-fous optionnels par agent pour la cadence, le cooldown, la limite quotidienne de trades et la taille maximale de mise.",
+    "policyClosed": "Les controles de politique restent fermes tant qu'Autopilot n'est pas arme.",
+    "policyHidden": "Ferme",
+    "policyLoading": "Chargement de la politique",
+    "policyUnsaved": "Non enregistre",
+    "policySynced": "Synchronise",
+    "cadenceLabel": "Cadence",
+    "cadenceHint": "Base du trait : {derived} minutes",
+    "cooldownLabel": "Cooldown par marche",
+    "cooldownHint": "Base du trait : {derived} minutes",
+    "maxTradesLabel": "Max Trades / Jour",
+    "maxTradesHint": "Base du trait : {derived}",
+    "maxBetLabel": "Mise Max (USDC)",
+    "maxBetHint": "Base du trait : ${derived}",
+    "minSigmaLabel": "Sigma Min",
+    "minSigmaHint": "Seuil de confiance derive du style de decision.",
+    "minKellyLabel": "Kelly Min",
+    "minKellyHint": "Seuil Kelly derive de la personnalite.",
+    "kellyMultiplierLabel": "Multiplicateur Kelly",
+    "kellyMultiplierHint": "Dimensionne les positions avec le capital disponible du wallet.",
+    "maxPositionLabel": "Position Max",
+    "maxPositionHint": "Plafond par trade comme part de l'USDC disponible.",
+    "dailyLossLabel": "Pause perte journaliere",
+    "dailyLossHint": "Autopilot se met en pause a ce seuil de perte quotidienne.",
+    "auraModeLabel": "Mode Aura",
+    "auraModeHint": "Controle si le sentiment peut amplifier ou rediriger les trades.",
+    "auraEnabled": "Sentiment active",
+    "auraDisabled": "Regles fixes uniquement",
+    "savePolicy": "Enregistrer",
+    "savingPolicy": "Enregistrement...",
+    "resetPolicy": "Reset"
   },
   "executionLog": {
     "title": "Journal d'Execution",
@@ -609,8 +647,10 @@
   "telegram": {
     "title": "Notifications Telegram",
     "chatId": "Chat ID",
+    "chatIdHelp": "Ajoutez votre bot au chat cible, envoyez-y un message, puis ouvrez api.telegram.org/botYOUR_BOT_TOKEN/getUpdates et copiez la valeur chat.id.",
     "chatIdPlaceholder": "-100...",
     "botToken": "Token du Bot",
+    "botTokenHelp": "Ouvrez @BotFather dans Telegram et copiez le token API de votre bot.",
     "botTokenPlaceholder": "123456:ABC...",
     "saved": "Parametres enregistres avec succes",
     "saveError": "Erreur lors de l'enregistrement",
@@ -718,6 +758,37 @@
     "maxPositionDesc": "Capital maximum par trade individuel",
     "kellyMultiplier": "Multiplicateur Kelly",
     "kellyDesc": "Fraction du critere Kelly a appliquer",
+    "cadence": "Cadence",
+    "cadenceDesc": "Minutes minimales entre les entrees autopilot de cet agent",
+    "cooldown": "Cooldown par marche",
+    "cooldownDesc": "Minutes minimales avant de re-rentrer sur le meme marche",
+    "maxTradesPerDay": "Max Trades / Jour",
+    "maxTradesPerDayDesc": "Plafond quotidien apres traits et overrides",
+    "maxBetUsdc": "Mise Max (USDC)",
+    "maxBetUsdcDesc": "Plafond strict pour un ordre autopilot",
+    "minSigma": "Sigma Min",
+    "minSigmaDesc": "Seuil de confiance requis avant d'entrer",
+    "minKelly": "Kelly Min",
+    "minKellyDesc": "Fraction Kelly minimale requise avant d'entrer",
+    "auraMode": "Mode Aura",
+    "auraModeDesc": "Si le sentiment peut amplifier ou rediriger l'execution",
+    "auraEnabled": "Sentiment active",
+    "auraDisabled": "Regles fixes uniquement",
+    "behaviorMapTitle": "Carte de Comportement",
+    "behaviorMapDesc": "Un profil multi-anneaux de la facon dont cet agent se comporte quand Autopilot est arme.",
+    "behaviorMapHoverHint": "Survolez un anneau pour inspecter cet axe de comportement.",
+    "rings": {
+      "tempo": "Tempo",
+      "tempoDesc": "La vitesse et la frequence avec lesquelles l'agent accepte d'entrer.",
+      "selectivity": "Selectivite",
+      "selectivityDesc": "Le niveau de confiance exige avant une entree.",
+      "exposure": "Exposition",
+      "exposureDesc": "La part du wallet que l'agent accepte de concentrer.",
+      "protection": "Protection",
+      "protectionDesc": "La rapidite avec laquelle l'agent se met en pause apres des pertes.",
+      "sentiment": "Sentiment",
+      "sentimentDesc": "Si Aura peut influer sur la direction et la conviction."
+    },
     "loadingRisk": "Chargement de la configuration de risque...",
     "riskProfiles": {
       "guardian": "Gardien",
@@ -1087,6 +1158,29 @@
       "walletGenerating": "Generation...",
       "walletError": "Erreur",
       "walletGeneratingMsg": "Generation du wallet...",
+      "foundry": {
+        "badge": "Forge de Coffre Securise",
+        "title": "Creation de votre coffre WDK",
+        "subtitle": "Nous creons le wallet, scellons le paquet de recuperation et l'integrons au kit de lancement de {name}.",
+        "distractionLabel": "Pendant l'attente",
+        "phases": {
+          "provision": "Preparation du signataire securise",
+          "mint": "Generation de l'adresse publique du wallet",
+          "encrypt": "Chiffrement du paquet de recuperation",
+          "stage": "Preparation de l'export unique de sauvegarde"
+        },
+        "distractions": {
+          "signals": "{name} repete ses signaux d'entree",
+          "backup": "Preparation d'un fichier de sauvegarde a usage unique pour une exportation securisee",
+          "approvals": "Connexion des approbations automatisees sans exposer votre cle"
+        },
+        "highlights": {
+          "agent": "Agent",
+          "instinct": "Instinct",
+          "market": "Focus Marche",
+          "money": "Style de Capital"
+        }
+      },
       "walletFailed": "Echec de la generation",
       "copyAddress": "Copier l'adresse",
       "keySecured": "Cle Privee Securisee",
@@ -1165,7 +1259,11 @@
       "riskFeedOffline": "Feed de risque hors ligne",
       "candidates": "Candidats",
       "scanned": "Scanne {time}",
-      "noRecentScan": "Aucun scan recent"
+      "noRecentScan": "Aucun scan recent",
+      "apiHealth_healthy": "API Saine",
+      "apiHealth_degraded": "API Degradee",
+      "apiHealth_critical": "API Critique",
+      "apiHealth_checking": "Verification API"
     },
     "missionRail": {
       "refreshCadence": "Cadence de rafraichissement",
@@ -1245,7 +1343,11 @@
       "alphaDecay": "Declin Alpha",
       "detected": "Detecte",
       "clear": "Sain",
-      "alphaDecayRecommendation": "Recommandation de Declin Alpha"
+      "alphaDecayRecommendation": "Recommandation de Declin Alpha",
+      "recommendation_insufficient_data": "Donnees insuffisantes (10 trades resolus necessaires pour la detection du declin).",
+      "recommendation_decay_detected": "Declin alpha detecte. Envisagez de suspendre les trades, de revoir la calibration du modele et de verifier les changements de regime de marche.",
+      "recommendation_no_decay": "Aucun declin alpha detecte. Performance du modele dans la plage acceptable.",
+      "recommendation_none": "Aucune recommandation pour l'instant."
     },
     "orchestrator": {
       "eyebrow": "Controle du Scanner",
@@ -1285,7 +1387,14 @@
       "noAgentTrafficTitle": "Aucun trafic d'agents encore",
       "noAgentTrafficDetail": "Les agents du pipeline apparaitront ici apres le prochain cycle d'execution en direct.",
       "lastActive": "Dernier actif {time}",
-      "noRecentTraffic": "Aucun trafic runtime recent"
+      "noRecentTraffic": "Aucun trafic runtime recent",
+      "healthLabel_healthy": "Sain",
+      "healthLabel_degraded": "Degrade",
+      "healthLabel_critical": "Critique",
+      "healthLabel_checking": "Verification",
+      "agentDetail_awaitingFirstRun": "En attente de la premiere execution du pipeline",
+      "agentDetail_standingBy": "En attente du prochain cycle du pipeline",
+      "agentDetail_errorRate": "{rate}% taux d'erreur"
     },
     "recentSignals": {
       "eyebrow": "Feed de Decisions",
@@ -1456,7 +1565,9 @@
       "depthScore": "Score de Profondeur",
       "daScore": "Score AD",
       "biasFlags": "Drapeaux de Biais",
-      "counterThesis": "Contre-these"
+      "counterThesis": "Contre-these",
+      "summary": "Résumé",
+      "dataSources": "Sources de Données"
     },
     "validator": {
       "title": "Validateur",
@@ -1490,7 +1601,8 @@
       "betYes": "PARIER OUI",
       "betNo": "PARIER NON",
       "hold": "MAINTENIR",
-      "skipVerdict": "PASSER"
+      "skipVerdict": "PASSER",
+      "lowEdge": "Valeur attendue faible — procedez avec prudence."
     }
   },
   "relaySidebar": {

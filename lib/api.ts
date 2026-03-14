@@ -21,6 +21,8 @@ export function getAuthToken(): string | null {
 export interface Market {
   slug: string;
   tokenId: string;
+  yesTokenId?: string;
+  noTokenId?: string;
   question: string;
   resolutionDate: string;
   yesPrice: number;
@@ -86,6 +88,10 @@ export interface Position {
   currentPrice: number;
   pnl: number;
   pnlPct: number;
+  /** "autopilot" if the agent executed it, "manual" if the user did */
+  source?: "autopilot" | "manual";
+  /** ISO date string of when the market resolves */
+  resolutionDate?: string | null;
 }
 
 export interface Trade {
@@ -93,6 +99,7 @@ export interface Trade {
   market: string;
   slug: string;
   direction: "YES" | "NO";
+  source?: "autopilot" | "manual";
   size: number;
   price: number;
   outcome: "WIN" | "LOSS" | "OPEN" | "PENDING";
@@ -125,9 +132,17 @@ export interface PipelineResult {
 }
 
 export interface AuraResult {
-  sentiment_score: number; // -1 to +1
-  echo_chamber: boolean;
-  echo_chamber_strength?: number;
+  sentiment_score: number; // -1 to +1 (normalized from sentimentDelta)
+  echo_chamber: boolean;   // normalized from shiftDetected
+  echo_chamber_strength?: number; // normalized from echoChamberRisk
+  summary?: string;
+  confidence?: number;
+  breakingNews?: boolean;
+  shiftDirection?: "YES" | "NO" | "NEUTRAL";
+  shiftTrend?: "ACCELERATING" | "STEADY" | "DECELERATING" | "REVERSING";
+  whalePositioning?: "LONG" | "SHORT" | "NEUTRAL" | "MIXED";
+  searchTrendSpike?: boolean;
+  dataSufficiency?: number;
   newsHeadlines?: string[];
   newsArticles?: { title: string; url: string; source: string }[];
   sourcesUsed?: string[];
@@ -148,7 +163,7 @@ export interface OracleResult {
 }
 
 export interface EdgeResult {
-  ev_grade: "A" | "B" | "C" | "PASS";
+  ev_grade: "A" | "B" | "C" | "SKIP" | "PASS";
   net_ev: number; // percent
   kelly: number;  // percent
   recommended_size: number; // percent bankroll
@@ -230,6 +245,48 @@ export interface RiskConfig {
   kellyMultiplier: number;
   drawdownLimit: number;
   agentVarThreshold: number;
+}
+
+export interface AutopilotPolicyOverrides {
+  cadenceMinutes: number | null;
+  cooldownMinutes: number | null;
+  maxTradesPerDay: number | null;
+  maxBetUsdc: number | null;
+  updatedAt: number | null;
+}
+
+export interface AutopilotPolicyEffective {
+  cadenceMinutes: number;
+  cooldownMinutes: number;
+  maxTradesPerDay: number;
+  maxBetUsdc: number;
+  minSigma: number;
+  minKelly: number;
+  kellyMultiplier: number;
+  maxPositionFraction: number;
+  dailyLossLimitPct: number;
+  useAuraSentiment: boolean;
+}
+
+export interface AutopilotPolicyEnvelope {
+  derived: AutopilotPolicyEffective;
+  overrides: AutopilotPolicyOverrides;
+  effective: AutopilotPolicyEffective;
+}
+
+export interface AutopilotDecision {
+  id: string;
+  agent_id: string;
+  user_id: string | null;
+  slug: string;
+  direction: "YES" | "NO";
+  decision: "executed" | "skipped" | "failed";
+  reason_code: string;
+  size_usdc: number | null;
+  scanned_at: number;
+  policy_snapshot: AutopilotPolicyEnvelope;
+  signal_snapshot: Record<string, unknown> | null;
+  error: string | null;
 }
 
 export interface LiquidationAsset {
@@ -364,9 +421,10 @@ export interface AlertStatus {
 }
 
 export interface TradeRequest {
-  tokenId: string;
-  side: "buy" | "sell";
-  price: number;
+  direction: "YES" | "NO";
+  tokenId?: string;
+  side?: "buy" | "sell";
+  price?: number;
   size: number;
   marketSlug?: string;
   netEv?: number;
@@ -627,6 +685,7 @@ export const api = {
           market: String(item?.market ?? item?.slug ?? ""),
           slug: String(item?.slug ?? ""),
           direction: (String(item?.direction ?? "YES").toUpperCase() === "NO" ? "NO" : "YES") as "YES" | "NO",
+          source: String(item?.source ?? "").toLowerCase() === "autopilot" ? "autopilot" : "manual",
           size: Number(item?.size ?? item?.sizeUsdc ?? 0),
           price: Number(item?.price ?? item?.entryPrice ?? 0),
           outcome: (["WIN", "LOSS", "OPEN", "PENDING"].includes(String(item?.outcome ?? "").toUpperCase())
@@ -1011,6 +1070,30 @@ export const api = {
       throw error;
     }
     return res.json();
+  },
+
+  getAutopilotPolicy: async (agentId: string): Promise<AutopilotPolicyEnvelope> => {
+    return apiFetch(`/api/v1/agents/${agentId}/autopilot-policy`);
+  },
+
+  updateAutopilotPolicy: async (
+    agentId: string,
+    patch: {
+      cadenceMinutes?: number | null;
+      cooldownMinutes?: number | null;
+      maxTradesPerDay?: number | null;
+      maxBetUsdc?: number | null;
+    }
+  ): Promise<AutopilotPolicyEnvelope> => {
+    return apiFetch(`/api/v1/agents/${agentId}/autopilot-policy`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+  },
+
+  getAutopilotDecisions: async (agentId: string, limit = 50): Promise<AutopilotDecision[]> => {
+    const response = await apiFetch<{ decisions?: AutopilotDecision[] }>(`/api/v1/agents/${agentId}/autopilot-decisions?limit=${limit}`);
+    return Array.isArray(response.decisions) ? response.decisions : [];
   },
 
   updateRiskConfig: async (config: RiskConfig): Promise<void> => {

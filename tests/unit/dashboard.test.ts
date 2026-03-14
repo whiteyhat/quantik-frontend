@@ -71,7 +71,7 @@ describe("dashboard normalizers", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.name).toBe("Agent 1");
     expect(rows[0]?.status).toBe("idle");
-    expect(rows[0]?.detail).toBe("Awaiting first pipeline run");
+    expect(rows[0]?.detailKey).toBe("awaitingFirstRun");
   });
 
   it("keeps stale agents idle instead of forcing them down", () => {
@@ -87,7 +87,7 @@ describe("dashboard normalizers", () => {
 
     expect(rows[0]?.name).toBe("Oracle");
     expect(rows[0]?.status).toBe("idle");
-    expect(rows[0]?.detail).toBe("Standing by for the next pipeline cycle");
+    expect(rows[0]?.detailKey).toBe("standingBy");
   });
 
   it("normalizes structured health services for the mission rail", () => {
@@ -109,7 +109,7 @@ describe("dashboard normalizers", () => {
       },
     });
 
-    expect(health.label).toBe("Degraded");
+    expect(health.label).toBe("degraded");
     expect(health.services[0]?.name).toBe("Backend");
     expect(health.services[0]?.status).toBe("healthy");
     expect(health.services[1]?.name).toBe("Pipeline Agents");

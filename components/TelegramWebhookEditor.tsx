@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
 
 const panelStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
@@ -50,14 +51,17 @@ export function TelegramWebhookEditor() {
 
   return (
     <div style={panelStyle}>
-      <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-        {t("title")}
-      </h3>
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          {t("title")}
+        </h3>
+      </div>
       
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
-          <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
-            {t("chatId")}
+          <label style={{ display: "flex", alignItems: "center", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
+            <span>{t("chatId")}</span>
+            <HelpTooltip text={t("chatIdHelp")} width={360} />
           </label>
           <input
             type="text"
@@ -78,8 +82,9 @@ export function TelegramWebhookEditor() {
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
-            {t("botToken")}
+          <label style={{ display: "flex", alignItems: "center", fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4, textTransform: "uppercase" }}>
+            <span>{t("botToken")}</span>
+            <HelpTooltip text={t("botTokenHelp")} />
           </label>
           <input
             type="text"

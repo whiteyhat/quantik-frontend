@@ -160,7 +160,7 @@ test.describe('Dashboard', () => {
     });
 
     await page.goto('/dashboard');
-    await expect(page.getByText('No agent traffic yet')).toBeVisible();
+    await expect(page.getByText('Agents on standby')).toBeVisible();
   });
 
   test('renders the architecture mini-map and pilot deck', async ({ page }) => {

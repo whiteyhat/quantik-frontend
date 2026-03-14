@@ -47,6 +47,7 @@ export function DashboardMissionRail({
   now: number;
 }) {
   const t = useTranslations("dashboard.missionRail");
+  const tRel = useTranslations("common");
   const liveAgents = agents.filter((agent) => agent.status === "live").length;
   const idleAgents = agents.filter((agent) => agent.status === "idle").length;
   const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
@@ -68,10 +69,10 @@ export function DashboardMissionRail({
         <div className="mission-rail-copy">
           <div className="mission-rail-label">{t("refreshCadence")}</div>
           <div className="mission-rail-value">
-            {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now) : t("liveSync")}
+            {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now, tRel) : t("liveSync")}
           </div>
           <div className="mission-rail-subtle">
-            {health?.checkedAt ? t("healthSnapshot", { time: formatRelativeTime(health.checkedAt, now) }) : t("queriesShareRefresh")}
+            {health?.checkedAt ? t("healthSnapshot", { time: formatRelativeTime(health.checkedAt, now, tRel) }) : t("queriesShareRefresh")}
           </div>
         </div>
       </article>

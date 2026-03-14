@@ -12,6 +12,7 @@ export interface ExecutedTrade {
   amount: number;
   confidence: number; // 0-1
   status: "PLACED" | "FAILED" | "PAPER";
+  source?: "autopilot" | "manual";
   executedAt?: string;
 }
 
@@ -86,6 +87,7 @@ export function ExecutionLog() {
           direction: trade.direction,
           amount: trade.size,
           confidence: 0,
+          source: trade.source,
           status:
             trade.outcome === "LOSS" ? "FAILED" :
             trade.outcome === "PENDING" ? "PAPER" :
@@ -176,6 +178,12 @@ export function ExecutionLog() {
                   }}
                 >
                   {trade.slug}
+                </span>
+                <span
+                  title={trade.source === "autopilot" ? "Autopilot" : "Manual"}
+                  style={{ fontSize: 12, flexShrink: 0, opacity: 0.8 }}
+                >
+                  {trade.source === "autopilot" ? "\u{1F916}" : "\u{1F9D1}"}
                 </span>
                 <span
                   style={{

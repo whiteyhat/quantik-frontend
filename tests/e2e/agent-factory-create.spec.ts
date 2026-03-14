@@ -151,6 +151,28 @@ test.describe('Agent Factory — Create Agent', () => {
     await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
   });
 
+  test('shows the wallet foundry experience while the WDK wallet is still generating', async ({ page }) => {
+    const wallet = {
+      address: '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333',
+      privateKey: '0xslowwallet',
+      seedPhrase: 'alpha beta gamma delta epsilon',
+    };
+
+    await page.route('**/api/wallet/generate', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(wallet) });
+    });
+
+    await page.goto('/agent-factory');
+    await page.getByText('Create from Scratch').click();
+    await page.getByPlaceholder('e.g. Tiger the Fast').fill('Slow Forge');
+    await page.getByText('Skip (Randomize)').click();
+
+    await expect(page.getByText('Forging your WDK vault')).toBeVisible();
+    await expect(page.getByText('While you wait')).toBeVisible();
+    await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
+  });
+
   test('downloads private key file and shows secured state', async ({ page }) => {
     const walletFixture = await loadFixture('wallet.json');
     await page.route('**/api/wallet/generate', (route) =>

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
 import { buildWalletDownloadContent } from "@/lib/agentFactory";
@@ -914,6 +915,12 @@ function StepLaunch({
   }, [config.name]);
 
   const displayName = config.name || t("launch.unnamedAgent");
+  const walletLoaderHighlights = [
+    { label: t("launch.foundry.highlights.agent"), value: displayName },
+    { label: t("launch.foundry.highlights.instinct"), value: t(`launch.instinctLabels.${config.tradingInstinct}` as const) },
+    { label: t("launch.foundry.highlights.market"), value: t(`launch.assetLabels.${config.assetLove}` as const) },
+    { label: t("launch.foundry.highlights.money"), value: t(`launch.moneyLabels.${config.moneyApproach}` as const) },
+  ];
 
   return (
     <div
@@ -1111,63 +1118,88 @@ function StepLaunch({
             </span>
           </div>
         </div>
-        <div
-          style={{
-            ...panelStyle,
-            padding: "14px 18px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-              }}
-            >
-              🔐
-            </div>
-            <span
-              style={{
-                fontSize: BODY_SIZE,
-                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                color: "rgba(255,255,255,0.65)",
-              }}
-            >
-              {isGeneratingWallet
-                ? t("launch.walletGeneratingMsg")
-                : walletAddress
+        {isGeneratingWallet ? (
+          <WalletFoundryLoader
+            badge={t("launch.foundry.badge")}
+            title={t("launch.foundry.title")}
+            subtitle={t("launch.foundry.subtitle", { name: displayName })}
+            statusLabel={t("launch.walletGenerating")}
+            accentEmoji={config.avatar}
+            tone="emerald"
+            orbitLabels={["WDK", "Vault", "Launch"]}
+            phases={[
+              t("launch.foundry.phases.provision"),
+              t("launch.foundry.phases.mint"),
+              t("launch.foundry.phases.encrypt"),
+              t("launch.foundry.phases.stage"),
+            ]}
+            highlights={walletLoaderHighlights}
+            distractions={[
+              t("launch.foundry.distractions.signals", { name: displayName }),
+              t("launch.foundry.distractions.backup"),
+              t("launch.foundry.distractions.approvals"),
+            ]}
+            distractionLabel={t("launch.foundry.distractionLabel")}
+            note={t("launch.keyBackupNote")}
+            sceneHeight={332}
+          />
+        ) : (
+          <div
+            style={{
+              ...panelStyle,
+              padding: "14px 18px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
+                }}
+              >
+                🔐
+              </div>
+              <span
+                style={{
+                  fontSize: BODY_SIZE,
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  color: "rgba(255,255,255,0.65)",
+                }}
+              >
+                {walletAddress
                   ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-4)}`
                   : walletError ?? t("launch.walletFailed")}
-            </span>
+              </span>
+            </div>
+            {walletAddress && (
+              <button
+                onClick={() => navigator.clipboard?.writeText(walletAddress)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 4,
+                  color: "rgba(255,255,255,0.30)",
+                  fontSize: 16,
+                  outline: "none",
+                }}
+                title={t("launch.copyAddress")}
+              >
+                📋
+              </button>
+            )}
           </div>
-          {walletAddress && (
-            <button
-              onClick={() => navigator.clipboard?.writeText(walletAddress)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 4,
-                color: "rgba(255,255,255,0.30)",
-                fontSize: 16,
-                outline: "none",
-              }}
-              title={t("launch.copyAddress")}
-            >
-              📋
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Divider */}

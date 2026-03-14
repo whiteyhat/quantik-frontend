@@ -291,7 +291,8 @@ export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
 export function formatRelativeTime(
   timestamp: number | null | undefined,
   now: number,
-  t?: (key: string, params?: Record<string, string | number>) => string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t?: (key: any, params?: any) => string,
 ) {
   if (!timestamp) return t ? t("never") : "Never";
   const diff = Math.max(0, now - timestamp);

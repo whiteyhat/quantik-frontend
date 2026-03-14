@@ -289,6 +289,10 @@ export function RelayChat({ slug }: RelayChatProps) {
     sendMessage(q);
   }
 
+  const hasStreamingRelayMessage = messages.some(
+    (message) => message.role === "relay" && message.streaming
+  );
+
   return (
     <div
       data-testid="relay-chat-panel"
@@ -649,7 +653,7 @@ export function RelayChat({ slug }: RelayChatProps) {
         ))}
 
         {/* Typing indicator */}
-        {sending && (
+        {sending && !hasStreamingRelayMessage && (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
             <div
               style={{

@@ -34,7 +34,9 @@ function getAgentSummary(key: string, data: unknown, t: any): string {
   const d = data as Record<string, unknown>;
   const num = (v: unknown) => { const n = Number(v); return isNaN(n) ? 0 : n; };
   switch (key) {
-    case "aura":    return `${t("sentiment")} ${num(d.sentiment_score) >= 0 ? "+" : ""}${num(d.sentiment_score).toFixed(2)}  ${t("conf")} ${Math.round(num(d.confidence)*100)}%`;
+    case "aura":    return typeof d.summary === "string" && d.summary
+      ? d.summary
+      : `${t("sentiment")} ${num(d.sentiment_score) >= 0 ? "+" : ""}${num(d.sentiment_score).toFixed(2)}  ${t("conf")} ${Math.round(num(d.confidence)*100)}%`;
     case "flux":    return `${t("liquidityLabel")} ${d.liquidity_grade ?? "C"}  ${t("spread")} ${num(d.spread).toFixed(3)}  ${t("whaleSignals")} ${d.whale_signals ?? 0}`;
     case "oracle":  return `${t("est")} ${Math.round(num(d.prob_estimate)*100)}%  ${t("market")} ${Math.round(num(d.market_implied)*100)}%  ${t("conf")} ${Math.round(num(d.confidence)*100)}%`;
     case "edge":    return `${t("grade")} ${d.ev_grade}  ${t("netEv")} +${num(d.net_ev).toFixed(1)}%  ${t("kelly")} ${num(d.kelly ?? d.kelly_fraction)*100 > 1 ? num(d.kelly ?? d.kelly_fraction).toFixed(0) : (num(d.kelly ?? d.kelly_fraction)*100).toFixed(0)}%`;

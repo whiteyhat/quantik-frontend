@@ -22,6 +22,11 @@ function num(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Sanitize HTML to only allow safe inline tags (strong, em, br)
+function sanitizeInlineHtml(text: string): string {
+  return text.replace(/<(?!\/?(?:strong|em|br)\b)[^>]*>/gi, "").trim();
+}
+
 /* ── Shared primitives ──────────────────────────────────────────────────────── */
 
 function CardBadge({ label, color }: { label: string; color: string }) {
@@ -306,6 +311,8 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
     score >= 0.1 ? "var(--ios-purple)" : score <= -0.1 ? "var(--ios-red)" : "var(--ios-orange)";
   const scoreColor = score >= 0 ? "var(--ios-green)" : "var(--ios-red)";
   const articles = data?.newsArticles?.slice(0, 5) ?? [];
+  const sourceStatus = data?.sourceStatus ?? {};
+  const allSources = Object.keys(sourceStatus).filter((s) => s !== "news" && s !== "telegram");
 
   return (
     <div className="glass-card" style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}>
@@ -324,11 +331,49 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
             {score >= 0 ? "+" : ""}{score.toFixed(2)}
           </div>
 
+          {/* Summary */}
+          {data.summary && (
+            <p style={{
+              fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.5,
+              margin: "0 0 8px", padding: 0,
+            }}>
+              {data.summary}
+            </p>
+          )}
+
+          {/* News article pills */}
           {articles.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
               {articles.map((a, i) => (
                 <SourcePill key={i} article={a} />
               ))}
+            </div>
+          )}
+
+          {/* All source statuses */}
+          {allSources.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+              {allSources.map((s) => {
+                const st = sourceStatus[s];
+                const isOk = st === "ok";
+                const isTimeout = st === "timeout";
+                return (
+                  <span
+                    key={s}
+                    title={`${s}: ${st}`}
+                    style={{
+                      fontSize: 9, fontWeight: 600, letterSpacing: "0.04em",
+                      padding: "1px 6px", borderRadius: 4,
+                      fontFamily: '"SF Mono","JetBrains Mono",monospace',
+                      color: isOk ? "var(--ios-green)" : isTimeout ? "var(--ios-orange)" : "var(--text-tertiary)",
+                      background: isOk ? "rgba(48,209,88,0.10)" : isTimeout ? "rgba(255,160,0,0.08)" : "rgba(255,255,255,0.05)",
+                      border: `1px solid ${isOk ? "rgba(48,209,88,0.20)" : isTimeout ? "rgba(255,160,0,0.15)" : "rgba(255,255,255,0.08)"}`,
+                    }}
+                  >
+                    {isOk ? "●" : isTimeout ? "◌" : "○"} {s}
+                  </span>
+                );
+              })}
             </div>
           )}
         </>
@@ -742,9 +787,10 @@ function LuciferCriticCard({ data }: { data?: LuciferResult }) {
                 overflow: "hidden", display: "-webkit-box",
                 WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
               }}
-            >
-              &ldquo;{data.counter_thesis}&rdquo;
-            </p>
+              dangerouslySetInnerHTML={{
+                __html: `\u201C${sanitizeInlineHtml(data.counter_thesis)}\u201D`,
+              }}
+            />
           )}
         </>
       ) : (
@@ -760,6 +806,8 @@ interface AgentPipelineProps {
   market?: {
     slug: string;
     tokenId: string;
+    yesTokenId?: string;
+    noTokenId?: string;
     question: string;
     yesPrice: number;
     noPrice: number;

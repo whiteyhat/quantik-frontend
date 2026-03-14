@@ -108,7 +108,7 @@ export function SystemStatus({ onClose }: SystemStatusProps) {
               {balance !== null ? fmtUSDC(balance) : "—"}
             </span>
             <div className="text-caption" style={{ color: "var(--text-tertiary)" }}>
-              {t("lastSynced")}{syncAgo < 1 ? "just now" : `${syncAgo}m ago`}
+              {t("lastSynced")}{syncAgo < 1 ? t("justNow") : t("minutesAgo", { count: syncAgo })}
             </div>
           </div>
         </div>

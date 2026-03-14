@@ -7,6 +7,9 @@ import { toWalletBalance } from "@/lib/dashboard";
 import { EquityCurveChart } from "@/components/ManageAgent/EquityCurveChart";
 import {
   ArrowRight,
+  Copy,
+  CopyCheck,
+  ExternalLink,
   Radar,
   RefreshCw,
   Search,
@@ -112,6 +115,98 @@ function isLiveHealth(services: DashboardHealthSnapshot["services"]) {
   return services.length > 0;
 }
 
+function trimWalletAddress(wallet: string) {
+  if (wallet.length <= 12) return wallet;
+  return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+function PolymarketGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4">
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M8 15V9h4.3a2.7 2.7 0 0 1 0 5.4H8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12.2 12.1 16 15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="mission-wallet-card">
+      <div className="mission-wallet-orb" />
+      <div className="flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <div className="mission-wallet-kicker">WDK Wallet</div>
+          <div className="mission-wallet-address-row">
+            <div className="mission-wallet-address">
+              {trimWalletAddress(walletAddress)}
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleCopy()}
+              className="mission-wallet-action mission-wallet-action--copy"
+              title={copied ? "Copied" : "Copy wallet"}
+              aria-label={copied ? "Wallet copied" : "Copy wallet"}
+            >
+              {copied ? <CopyCheck className="size-4 text-[#34d399]" /> : <Copy className="size-4" />}
+            </button>
+          </div>
+          <div className="mission-wallet-caption">Direct wallet controls for explorer, profile, and secure copy.</div>
+        </div>
+
+        <div className="mission-wallet-actions">
+          <a
+            href={`https://polygonscan.com/address/${walletAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mission-wallet-action"
+            title="Open on Polygonscan"
+            aria-label="Open wallet on Polygonscan"
+          >
+            <ExternalLink className="size-4 transition-transform duration-200 group-hover:rotate-6" />
+          </a>
+          <a
+            href={`https://polymarket.com/profile/${walletAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mission-wallet-action"
+            title="Open on Polymarket"
+            aria-label="Open wallet on Polymarket"
+          >
+            <PolymarketGlyph />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MissionControlHero({
   summary,
   riskStatus,
@@ -119,6 +214,7 @@ function MissionControlHero({
   orchestrator,
   updatedAt,
   now,
+  walletAddress,
 }: {
   summary: DashboardSummarySnapshot | null;
   riskStatus: ReturnType<typeof useDashboardRiskStatusQuery>["data"];
@@ -126,6 +222,7 @@ function MissionControlHero({
   orchestrator: ReturnType<typeof useDashboardOrchestratorQuery>["data"];
   updatedAt: number;
   now: number;
+  walletAddress: string | null | undefined;
 }) {
   const t = useTranslations("dashboard.hero");
   const tRel = useTranslations("common");
@@ -147,7 +244,7 @@ function MissionControlHero({
             />
             <StatusBadge
               tone={healthTone(health)}
-              label={health ? t(`apiHealth_${health.label}`) : t("apiChecking")}
+              label={health ? t(`apiHealth_${health.label}` as any) : t("apiChecking")}
             />
             <StatusBadge
               tone={orchestrator?.status.status === "scanning" ? "info" : "neutral"}
@@ -200,22 +297,20 @@ function MissionControlHero({
             hint={summary?.pnlTodayPct != null ? t("pnlToday", { pct: summary.pnlTodayPct.toFixed(1) }) : t("noDailyDelta")}
             tone={summary ? pnlTone(summary.pnlToday) : "neutral"}
           />
-          <MetricBlock
-            label={t("exposure")}
-            value={riskStatus ? `${riskStatus.exposurePct.toFixed(1)}%` : "—"}
-            hint={riskStatus ? t("deployable", { amount: fmtUSDC(riskStatus.availableCapital) }) : t("riskFeedOffline")}
-            tone={riskStatus ? numberTone(riskStatus.exposurePct, 45, 75) : "neutral"}
-          />
-          <MetricBlock
-            label={t("candidates")}
-            value={orchestrator ? orchestrator.candidates.length : "—"}
-            hint={
-              orchestrator?.status.lastScanAt
-                ? t("scanned", { time: formatRelativeTime(orchestrator.status.lastScanAt, now, tRel) })
-                : t("noRecentScan")
-            }
-            tone={orchestrator && orchestrator.candidates.length > 0 ? "good" : "neutral"}
-          />
+          {walletAddress ? (
+            <MissionWalletBadge walletAddress={walletAddress} />
+          ) : (
+            <MetricBlock
+              label={t("candidates")}
+              value={orchestrator ? orchestrator.candidates.length : "—"}
+              hint={
+                orchestrator?.status.lastScanAt
+                  ? t("scanned", { time: formatRelativeTime(orchestrator.status.lastScanAt, now, tRel) })
+                  : t("noRecentScan")
+              }
+              tone={orchestrator && orchestrator.candidates.length > 0 ? "good" : "neutral"}
+            />
+          )}
         </div>
       </div>
     </CommandCenterCard>
@@ -392,6 +487,86 @@ function PositionsCard({
   );
 }
 
+function RiskArcGauge({
+  value,
+  maxValue,
+  label,
+  hint,
+  tone,
+}: {
+  value: number;
+  maxValue: number;
+  label: string;
+  hint: string;
+  tone: "good" | "warn" | "bad";
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const R = 32;
+  const arcLen = Math.PI * R;
+  const pct = Math.min(Math.abs(value) / maxValue, 1);
+  const dashOffset = mounted ? arcLen * (1 - pct) : arcLen;
+
+  const angle = -Math.PI + pct * Math.PI;
+  const dotX = 40 + R * Math.cos(angle);
+  const dotY = 44 + R * Math.sin(angle);
+
+  const color =
+    tone === "good" ? "#7ef0b1" :
+    tone === "warn" ? "#ffd07a" :
+    "#ffb4ac";
+
+  return (
+    <div className="risk-arc">
+      <div className="risk-arc-ring">
+        <svg viewBox="0 0 80 48" fill="none" aria-hidden="true">
+          <path
+            d="M 8 44 A 32 32 0 0 1 72 44"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 8 44 A 32 32 0 0 1 72 44"
+            stroke={color}
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeDasharray={arcLen}
+            strokeDashoffset={dashOffset}
+            style={{
+              transition: "stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              filter: `drop-shadow(0 0 8px ${color}40)`,
+            }}
+          />
+          {pct > 0.01 && (
+            <circle
+              cx={dotX}
+              cy={dotY}
+              r="3.5"
+              fill={color}
+              className="risk-arc-dot"
+              style={{
+                opacity: mounted ? 1 : 0,
+                transition: "opacity 0.4s 1.1s ease-out",
+                filter: `drop-shadow(0 0 5px ${color}90)`,
+              }}
+            />
+          )}
+        </svg>
+        <div className="risk-arc-val" style={{ color }}>
+          {Math.abs(value).toFixed(1)}%
+        </div>
+      </div>
+      <div className="risk-arc-label">{label}</div>
+      <div className="risk-arc-hint">{hint}</div>
+    </div>
+  );
+}
+
 function RiskPostureCard({
   riskStatus,
   riskConfig,
@@ -409,63 +584,69 @@ function RiskPostureCard({
 
   if (error) {
     return (
-      <CommandCenterCard accent="orange">
-        <PanelErrorState
-          title={t("errorTitle")}
-          detail={t("errorDetail")}
-          onRetry={onRetry}
-        />
-      </CommandCenterCard>
+      <div className="risk-posture-zone">
+        <CommandCenterCard accent="orange" className="risk-posture-sticky">
+          <PanelErrorState
+            title={t("errorTitle")}
+            detail={t("errorDetail")}
+            onRetry={onRetry}
+          />
+        </CommandCenterCard>
+      </div>
     );
   }
 
   return (
-    <CommandCenterCard accent="orange">
-      <CommandCenterHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        subtitle={t("subtitle")}
-      />
+    <div className="risk-posture-zone">
+      <CommandCenterCard accent="orange" className="risk-posture-sticky">
+        <CommandCenterHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          subtitle={t("subtitle")}
+        />
 
-      {loading || !riskStatus || !riskConfig ? (
-        <div className="grid gap-3">
-          <Skeleton width="100%" height={82} borderRadius={16} />
-          <Skeleton width="100%" height={82} borderRadius={16} />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <MetricBlock
-              label={t("exposure")}
-              value={`${riskStatus.exposurePct.toFixed(1)}%`}
-              hint={t("available", { amount: fmtUSDC(riskStatus.availableCapital) })}
-              tone={numberTone(riskStatus.exposurePct, 45, 75)}
-            />
-            <MetricBlock
-              label={t("drawdown")}
-              value={`${riskStatus.dailyPnlPct.toFixed(1)}%`}
-              hint={t("drawdownLimit", { pct: Math.round(riskConfig.drawdownLimit * 100) })}
-              tone={numberTone(Math.abs(riskStatus.dailyPnlPct), riskConfig.drawdownLimit * 50, riskConfig.drawdownLimit * 100)}
-            />
+        {loading || !riskStatus || !riskConfig ? (
+          <div className="grid gap-3">
+            <Skeleton width="100%" height={120} borderRadius={16} />
+            <Skeleton width="100%" height={54} borderRadius={16} />
           </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <RiskArcGauge
+                value={riskStatus.exposurePct}
+                maxValue={100}
+                label={t("exposure")}
+                hint={t("available", { amount: fmtUSDC(riskStatus.availableCapital) })}
+                tone={numberTone(riskStatus.exposurePct, 45, 75)}
+              />
+              <RiskArcGauge
+                value={Math.abs(riskStatus.dailyPnlPct)}
+                maxValue={Math.round(riskConfig.drawdownLimit * 100)}
+                label={t("drawdown")}
+                hint={t("drawdownLimit", { pct: Math.round(riskConfig.drawdownLimit * 100) })}
+                tone={numberTone(Math.abs(riskStatus.dailyPnlPct), riskConfig.drawdownLimit * 50, riskConfig.drawdownLimit * 100)}
+              />
+            </div>
 
-          <div className="command-center-stat-strip">
-            <div>
-              <div className="command-center-stat-label">{t("circuit")}</div>
-              <div className="command-center-stat-value">{riskStatus.circuitBreaker}</div>
-            </div>
-            <div>
-              <div className="command-center-stat-label">{t("maxPosition")}</div>
-              <div className="command-center-stat-value">{Math.round(riskConfig.maxPositionSize * 100)}%</div>
-            </div>
-            <div>
-              <div className="command-center-stat-label">{t("kelly")}</div>
-              <div className="command-center-stat-value">{riskConfig.kellyMultiplier}×</div>
+            <div className="command-center-stat-strip risk-posture-stats">
+              <div>
+                <div className="command-center-stat-label">{t("circuit")}</div>
+                <div className="command-center-stat-value">{riskStatus.circuitBreaker}</div>
+              </div>
+              <div>
+                <div className="command-center-stat-label">{t("maxPosition")}</div>
+                <div className="command-center-stat-value">{Math.round(riskConfig.maxPositionSize * 100)}%</div>
+              </div>
+              <div>
+                <div className="command-center-stat-label">{t("kelly")}</div>
+                <div className="command-center-stat-value">{riskConfig.kellyMultiplier}×</div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </CommandCenterCard>
+        )}
+      </CommandCenterCard>
+    </div>
   );
 }
 
@@ -541,7 +722,7 @@ function PerformanceCard({
           {summary.alphaDecay ? (
             <div className="rounded-2xl border border-white/8 bg-white/4 px-4 py-3 text-sm text-[rgba(255,255,255,0.68)]">
               <div className="mb-1 text-xs uppercase tracking-[0.14em] text-[rgba(255,255,255,0.38)]">{t("alphaDecayRecommendation")}</div>
-              <div>{t(`recommendation_${summary.alphaDecay.recommendation || "none"}`)}</div>
+              <div>{t(`recommendation_${summary.alphaDecay.recommendation || "none"}` as any)}</div>
             </div>
           ) : null}
         </div>
@@ -707,7 +888,7 @@ function SystemStatusCard({
           <div className="grid grid-cols-2 gap-3">
             <MetricBlock
               label={t("apiHealth")}
-              value={health ? t(`healthLabel_${health.label}`) : healthLoading ? t("checking") : t("unknown")}
+              value={health ? t(`healthLabel_${health.label}` as any) : healthLoading ? t("checking") : t("unknown")}
               hint={
                 health
                   ? t("latency", { ms: health.latencyMs })
@@ -780,7 +961,7 @@ function SystemStatusCard({
                           ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now, tRel) })
                           : t("noRecentTraffic")}
                       </div>
-                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{t(`agentDetail_${agent.detailKey}`, agent.detailParams)}</div>
+                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{t(`agentDetail_${agent.detailKey}` as any, agent.detailParams as any)}</div>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
@@ -1157,6 +1338,9 @@ function RecentTradesCard() {
                     <div className="truncate text-sm font-medium text-white">{trade.market}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[rgba(255,255,255,0.45)]">
                       <StatusBadge tone={trade.direction === "YES" ? "good" : "bad"} label={trade.direction} />
+                      <span title={trade.source === "autopilot" ? "Autopilot" : "Manual"}>
+                        {trade.source === "autopilot" ? "\u{1F916}" : "\u{1F9D1}"}
+                      </span>
                       <span className="font-mono">{dateStr} {timeStr}</span>
                     </div>
                   </div>
@@ -1211,6 +1395,7 @@ export function DashboardPageClient() {
         orchestrator={orchestratorQuery.data}
         updatedAt={lastUpdatedAt}
         now={now}
+        walletAddress={myAgent?.wallet_address}
       />
 
       <DashboardMissionRail

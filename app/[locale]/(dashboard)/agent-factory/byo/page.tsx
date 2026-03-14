@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import JSConfetti from "js-confetti";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import { api, type ByoOnboardingSession } from "@/lib/api";
 import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
 import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } from "@/lib/byoImport";
@@ -542,6 +543,10 @@ function StepReview({
   const isAllEvents = webhookEvents.length === 1 && webhookEvents[0] === "*";
   const walletBackedUp = Boolean(session.wallet_downloaded_at);
   const walletDownloadDisabled = !session.wallet_download_ready || walletBackedUp || isDownloadingWallet;
+  const walletDownloadPending = !walletBackedUp && !session.wallet_download_ready;
+  const walletPreviewLabel = session.wallet_address
+    ? `${session.wallet_address.slice(0, 8)}...${session.wallet_address.slice(-4)}`
+    : "Pending";
   const webhookStateTone: "ready" | "pending" | "muted" =
     webhookDirty || webhookSaving
       ? "pending"
@@ -749,38 +754,81 @@ function StepReview({
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
           OpenClaw already received the runtime wallet credentials during claim. This dashboard gives the owner one secure download so the WDK private key and seed phrase are backed up outside Quantik.
         </p>
-        <button
-          onClick={onDownloadWallet}
-          disabled={walletDownloadDisabled}
-          style={{
-            width: "100%",
-            padding: "14px 20px",
-            borderRadius: 12,
-            border: "none",
-            background: walletBackedUp
-              ? "rgba(48,209,88,0.16)"
-              : walletDownloadDisabled
-                ? "rgba(255,255,255,0.06)"
-                : "linear-gradient(135deg, rgba(255,128,94,0.95), rgba(86,157,255,0.95))",
-            color: walletBackedUp
-              ? "#64dd8c"
-              : walletDownloadDisabled
-                ? "rgba(255,255,255,0.28)"
-                : "#fff",
-            fontSize: BODY_SIZE,
-            fontWeight: 700,
-            cursor: walletDownloadDisabled ? "not-allowed" : "pointer",
-            outline: "none",
-            boxShadow: walletBackedUp ? "none" : walletDownloadDisabled ? "none" : "0 16px 48px rgba(76,128,215,0.20)",
-          }}
-        >
-          {walletBackedUp ? "✓ Wallet Backup Secured" : isDownloadingWallet ? "Preparing Download..." : "Download OpenClaw Wallet Backup"}
-        </button>
+        {(walletDownloadPending || isDownloadingWallet) ? (
+          <WalletFoundryLoader
+            badge={isDownloadingWallet ? "Secure Export" : "OpenClaw Handoff"}
+            title={isDownloadingWallet ? "Exporting secure wallet backup" : "Packaging the WDK backup"}
+            subtitle={isDownloadingWallet
+              ? "We are streaming the wallet bundle into your one-time download. Keep this tab open for a moment while the export is sealed."
+              : "The claim is complete. Quantik is assembling the one-time WDK wallet backup so you can export the private key and seed phrase securely."}
+            statusLabel={isDownloadingWallet ? "Preparing Download" : "Generating Backup"}
+            accentEmoji={session.identity.avatar}
+            tone="azure"
+            orbitLabels={isDownloadingWallet ? ["Export", "WDK", "Backup"] : ["OpenClaw", "WDK", "Vault"]}
+            phases={isDownloadingWallet
+              ? [
+                  "Fetching encrypted wallet material",
+                  "Building the recovery file",
+                  "Signing off the secure export",
+                ]
+              : [
+                  "Verifying the imported wallet address",
+                  "Encrypting the backup bundle",
+                  "Staging the one-time download",
+                ]}
+            highlights={[
+              { label: "Agent", value: session.identity.name },
+              { label: "Runtime", value: session.connection_status ?? "Syncing" },
+              { label: "Wallet", value: walletPreviewLabel },
+              { label: "Webhook", value: webhookUrl.trim() ? "Configured" : "Optional" },
+            ]}
+            distractions={[
+              "You can finish webhook settings while the vault is being sealed.",
+              "OpenClaw already has the runtime credentials from the completed claim.",
+              "Activation unlocks as soon as this backup is exported once.",
+            ]}
+            distractionLabel="Meanwhile"
+            note="This backup appears exactly once so the private key and recovery phrase stay cleanly in your custody."
+            sceneHeight={308}
+          />
+        ) : (
+          <button
+            onClick={onDownloadWallet}
+            disabled={walletDownloadDisabled}
+            style={{
+              width: "100%",
+              padding: "14px 20px",
+              borderRadius: 12,
+              border: "none",
+              background: walletBackedUp
+                ? "rgba(48,209,88,0.16)"
+                : walletDownloadDisabled
+                  ? "rgba(255,255,255,0.06)"
+                  : "linear-gradient(135deg, rgba(255,128,94,0.95), rgba(86,157,255,0.95))",
+              color: walletBackedUp
+                ? "#64dd8c"
+                : walletDownloadDisabled
+                  ? "rgba(255,255,255,0.28)"
+                  : "#fff",
+              fontSize: BODY_SIZE,
+              fontWeight: 700,
+              cursor: walletDownloadDisabled ? "not-allowed" : "pointer",
+              outline: "none",
+              boxShadow: walletBackedUp ? "none" : walletDownloadDisabled ? "none" : "0 16px 48px rgba(76,128,215,0.20)",
+            }}
+          >
+            {walletBackedUp ? "✓ Wallet Backup Secured" : "Download OpenClaw Wallet Backup"}
+          </button>
+        )}
         <div style={{ marginTop: 10, fontSize: 12, color: walletDownloadError ? "#ff6b60" : walletBackedUp ? "#64dd8c" : "rgba(255,255,255,0.40)", lineHeight: 1.6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
           {walletDownloadError
             ?? (walletBackedUp
               ? `Downloaded ${session.wallet_downloaded_at ? new Date(session.wallet_downloaded_at).toLocaleString() : "just now"}.`
-              : session.wallet_download_ready
+              : isDownloadingWallet
+                ? "Streaming the one-time wallet export into your download."
+                : walletDownloadPending
+                  ? "Quantik is still packaging the wallet backup. You can finish the rest of the review while it locks in."
+                  : session.wallet_download_ready
                 ? "Activation stays locked until the wallet backup has been downloaded."
                 : "Wallet backup is not available yet. Finish the claim handshake first.")}
         </div>

@@ -17,6 +17,8 @@ interface SigmaDecisionProps {
   market: {
     slug: string;
     tokenId: string;
+    yesTokenId?: string;
+    noTokenId?: string;
     question: string;
     yesPrice: number;
     noPrice: number;
@@ -76,9 +78,10 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
     : market.yesPrice;
   const estReturn = sizeUsd * (ev / 100);
 
-  const signalReady = Boolean(
-    edge && (edge.ev_grade === "A" || edge.ev_grade === "B") && isExecute
+  const highConviction = Boolean(
+    edge && (edge.ev_grade === "A" || edge.ev_grade === "B")
   );
+  const signalReady = Boolean(edge && isExecute);
   const canExecute = signalReady && walletFunded;
 
   return (
@@ -209,6 +212,28 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
         </div>
       </div>
 
+      {/* Low-conviction warning */}
+      {signalReady && !highConviction && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            borderRadius: 10,
+            background: "rgba(255,159,10,0.08)",
+            border: "1px solid rgba(255,159,10,0.20)",
+            flexBasis: "100%",
+            order: 9,
+          }}
+        >
+          <span style={{ fontSize: 14, flexShrink: 0 }}>{"\u26A0"}</span>
+          <span style={{ fontSize: 12, color: "var(--ios-orange)", lineHeight: 1.4 }}>
+            {t("sigma.lowEdge")}
+          </span>
+        </div>
+      )}
+
       {/* Wallet funding warning */}
       {signalReady && !walletFunded && (
         <div
@@ -244,6 +269,8 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           openTradeModal({
             slug: market.slug,
             tokenId: market.tokenId,
+            yesTokenId: market.yesTokenId,
+            noTokenId: market.noTokenId,
             sigma,
             edge,
             market: {

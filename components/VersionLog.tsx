@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getReleases, type ReleaseEntry } from "@/lib/api";
-import { CURRENT_VERSION } from "@/lib/releases";
+import { getReleases } from "@/lib/api";
+import { CURRENT_VERSION, type ReleaseEntry } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 
 type SupportedLocale = "en" | "es" | "fr" | "de";
