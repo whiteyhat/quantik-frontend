@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -27,12 +27,83 @@ interface Endpoint {
   method: "GET" | "POST";
   path: string;
   description: string;
-  scope: "read" | "trade" | "analysis" | "none";
+  scope: "read" | "trade" | "analysis" | "config" | "none";
   params?: { name: string; type: string; required: boolean; description: string }[];
   exampleBody?: string;
   exampleResponse: string;
   rateLimit: string;
+  streaming?: boolean;
+  deprecated?: boolean;
+  responseFormat?: string;
 }
+
+interface SkillManifestTool {
+  name: string;
+  description: string;
+  method: "GET" | "POST";
+  path: string;
+  parameters: {
+    properties?: Record<string, { type: string; description: string; enum?: string[] }>;
+    required?: string[];
+  };
+  scope: Endpoint["scope"];
+  rate_limit_bucket: "read" | "trade" | "analysis" | "config" | "heartbeat" | "chat";
+  streaming?: boolean;
+  response_format?: string;
+  deprecated?: boolean;
+}
+
+interface SkillManifestPayload {
+  tools: SkillManifestTool[];
+  rate_limits: Record<string, { max: number; window_ms: number }>;
+  scopes: string[];
+  error_codes: string[];
+}
+
+const RATE_LIMIT_ORDER = ["read", "analysis", "trade", "config", "heartbeat", "chat"] as const;
+
+const ERROR_CODE_DESCRIPTIONS: Record<string, { desc: string; status: number }> = {
+  UNAUTHORIZED: { desc: "Invalid or revoked API key", status: 401 },
+  RATE_LIMITED: { desc: "Too many requests — check Retry-After header", status: 429 },
+  SCOPE_DENIED: { desc: "API key missing required scope for this endpoint", status: 403 },
+  CIRCUIT_BREAKER: { desc: "Risk circuit breaker is tripped, trading paused", status: 503 },
+  AGENT_PAUSED: { desc: "Your agent has been paused by its owner", status: 403 },
+  AGENT_TERMINATED: { desc: "Your agent has been terminated", status: 403 },
+  INVALID_PARAMS: { desc: "Missing or invalid request parameters", status: 400 },
+  INTERNAL_ERROR: { desc: "Server-side error — retry with backoff", status: 500 },
+  TIMEOUT: { desc: "Tool execution exceeded the server timeout", status: 408 },
+};
+
+const SCOPE_DESCRIPTIONS: Record<string, { desc: string; endpoints: string }> = {
+  read: {
+    desc: "Read-only data access plus conversational chat",
+    endpoints: "get_portfolio, get_risk_status, get_trade_history, search_markets, get_scanner_signals, get_pipeline_history, get_agent_status, get_market_price, get_risk_config, get_health_score, get_polymarket_status, usage, agent_chat",
+  },
+  analysis: {
+    desc: "Trigger scanner and 7-agent pipeline analysis",
+    endpoints: "run_analysis, trigger_scanner",
+  },
+  trade: {
+    desc: "Execute and close market positions",
+    endpoints: "place_trade, close_position",
+  },
+  config: {
+    desc: "Update operational settings and Polymarket approvals",
+    endpoints: "update_risk_config, update_webhook_config, run_polymarket_approvals",
+  },
+};
+
+const FALLBACK_RATE_LIMITS: Record<string, { max: number; window_ms: number }> = {
+  read: { max: 120, window_ms: 60_000 },
+  analysis: { max: 5, window_ms: 60_000 },
+  trade: { max: 10, window_ms: 60_000 },
+  config: { max: 10, window_ms: 60_000 },
+  heartbeat: { max: 60, window_ms: 60_000 },
+  chat: { max: 30, window_ms: 60_000 },
+};
+
+const FALLBACK_ERROR_CODES = Object.keys(ERROR_CODE_DESCRIPTIONS);
+const FALLBACK_SCOPES = Object.keys(SCOPE_DESCRIPTIONS);
 
 const ENDPOINTS: Endpoint[] = [
   {
@@ -233,6 +304,76 @@ const ENDPOINTS: Endpoint[] = [
   },
 ];
 
+const ENDPOINT_EXAMPLES = Object.fromEntries(ENDPOINTS.map((endpoint) => [endpoint.name, endpoint]));
+
+function resolveEndpointPath(path: string): string {
+  return path.startsWith("/api/") ? path : `/api/v1/tools${path}`;
+}
+
+function formatRateLimit(rateLimit: { max: number; window_ms: number } | undefined): string {
+  if (!rateLimit) return "n/a";
+  return `${rateLimit.max}/${Math.round(rateLimit.window_ms / 60_000)}min`;
+}
+
+function buildExampleBody(tool: SkillManifestTool): string | undefined {
+  const required = tool.parameters.required ?? [];
+  const properties = tool.parameters.properties ?? {};
+  if (required.length === 0) return undefined;
+
+  const exampleBody = Object.fromEntries(required.map((key) => {
+    const schema = properties[key];
+    if (schema?.enum?.length) return [key, schema.enum[0]];
+    if (schema?.type === "number") return [key, key === "size" ? 10 : 1];
+    if (key === "slug") return [key, "will-bitcoin-hit-100k"];
+    if (key === "session_id") return [key, "session-123"];
+    return [key, "example"];
+  }));
+
+  return JSON.stringify(exampleBody, null, 2);
+}
+
+function buildDefaultResponse(tool: SkillManifestTool): string {
+  if (tool.response_format === "text/event-stream" || tool.streaming) {
+    return `event: heartbeat\ndata: {"type":"heartbeat"}\n\nevent: done\ndata: {"type":"done","reply":"Streaming response complete."}`;
+  }
+
+  return `{
+  "success": true,
+  "data": {
+    "tool": "${tool.name}",
+    "status": "ok"
+  }
+}`;
+}
+
+function toManifestEndpoint(tool: SkillManifestTool, rateLimits: SkillManifestPayload["rate_limits"]): Endpoint {
+  const fallback = ENDPOINT_EXAMPLES[tool.name];
+  const properties = tool.parameters.properties ?? {};
+  const required = new Set(tool.parameters.required ?? []);
+
+  return {
+    name: tool.name,
+    method: tool.method,
+    path: tool.path,
+    description: tool.description,
+    scope: tool.scope,
+    params: Object.entries(properties).map(([name, schema]) => ({
+      name,
+      type: schema.type,
+      required: required.has(name),
+      description: schema.enum?.length
+        ? `${schema.description} Allowed: ${schema.enum.join(", ")}.`
+        : schema.description,
+    })),
+    exampleBody: fallback?.exampleBody ?? buildExampleBody(tool),
+    exampleResponse: fallback?.exampleResponse ?? buildDefaultResponse(tool),
+    rateLimit: formatRateLimit(rateLimits[tool.rate_limit_bucket]),
+    streaming: tool.streaming,
+    deprecated: tool.deprecated,
+    responseFormat: tool.response_format,
+  };
+}
+
 // ─── Scope badge ─────────────────────────────────────────────────────────────
 
 function ScopeBadge({ scope }: { scope: string }) {
@@ -322,7 +463,7 @@ function TryItPanel({ endpoint }: { endpoint: Endpoint }) {
     setLoading(true);
     setResult(null);
     try {
-      let url = `${API_BASE}${endpoint.path}`;
+      let url = `${BASE_URL}${resolveEndpointPath(endpoint.path)}`;
       const headers: Record<string, string> = { Authorization: `Bearer ${apiKey}` };
 
       if (endpoint.method === "GET" && endpoint.params) {
@@ -437,6 +578,20 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
             {endpoint.name}
           </span>
           <ScopeBadge scope={endpoint.scope} />
+          {endpoint.deprecated && (
+            <span style={{
+              ...mono,
+              fontSize: 8,
+              fontWeight: 700,
+              padding: "2px 6px",
+              borderRadius: 999,
+              background: "rgba(255,159,10,0.12)",
+              color: "#ff9f0a",
+              textTransform: "uppercase",
+            }}>
+              Deprecated
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.25)" }}>{endpoint.rateLimit}</span>
@@ -455,7 +610,7 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
 
           {/* Endpoint URL */}
           <div style={{ ...mono, fontSize: 11, color: "#0a84ff", padding: "6px 10px", borderRadius: 6, background: "rgba(10,132,255,0.06)", marginBottom: 10 }}>
-            {endpoint.method} {API_BASE}{endpoint.path}
+            {endpoint.method} {BASE_URL}{resolveEndpointPath(endpoint.path)}
           </div>
 
           {/* Parameters */}
@@ -493,8 +648,24 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
             <CodeBlock code={endpoint.exampleResponse} lang="json" />
           </div>
 
-          {/* Try It */}
-          <TryItPanel endpoint={endpoint} />
+          {endpoint.streaming ? (
+            <div style={{
+              marginTop: 12,
+              padding: 14,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}>
+              <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.40)", textTransform: "uppercase", marginBottom: 8 }}>
+                Streaming Response
+              </div>
+              <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+                This endpoint returns <code style={mono}>{endpoint.responseFormat ?? "text/event-stream"}</code>. Use the Examples tab or the generated <code style={mono}>skill.md</code> for a client that can consume SSE frames.
+              </p>
+            </div>
+          ) : (
+            <TryItPanel endpoint={endpoint} />
+          )}
         </div>
       )}
     </div>
@@ -607,6 +778,39 @@ export default function ByoDocsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DocTab>("endpoints");
   const [exampleLang, setExampleLang] = useState<"python" | "typescript" | "curl">("python");
+  const [skillManifest, setSkillManifest] = useState<SkillManifestPayload | null>(null);
+  const [manifestLoaded, setManifestLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch(`${BASE_URL}/api/skill.json`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Failed to load skill manifest");
+        return response.json() as Promise<SkillManifestPayload>;
+      })
+      .then((payload) => {
+        if (!active) return;
+        setSkillManifest(payload);
+        setManifestLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setManifestLoaded(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const renderedEndpoints = (skillManifest?.tools ?? [])
+    .filter((tool) => tool.name !== "relay_stream_legacy")
+    .map((tool) => toManifestEndpoint(tool, skillManifest?.rate_limits ?? FALLBACK_RATE_LIMITS));
+  const endpointCards = renderedEndpoints.length > 0 ? renderedEndpoints : ENDPOINTS;
+  const referenceRateLimits = skillManifest?.rate_limits ?? FALLBACK_RATE_LIMITS;
+  const referenceErrorCodes = skillManifest?.error_codes ?? FALLBACK_ERROR_CODES;
+  const referenceScopes = skillManifest?.scopes ?? FALLBACK_SCOPES;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -705,9 +909,14 @@ export default function ByoDocsPage() {
             <code style={{ ...mono, display: "block", fontSize: 12, color: "#0a84ff", marginTop: 8, padding: "8px 12px", borderRadius: 6, background: "rgba(0,0,0,0.25)" }}>
               Authorization: Bearer qk_live_your_key_here
             </code>
+            <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>
+              {manifestLoaded && skillManifest
+                ? "Endpoint cards below are synced from the live skill.json manifest."
+                : "If skill.json is unavailable, this page falls back to the checked-in endpoint catalog."}
+            </div>
           </div>
 
-          {ENDPOINTS.map(ep => (
+          {endpointCards.map(ep => (
             <EndpointCard key={ep.name} endpoint={ep} />
           ))}
         </div>
@@ -817,16 +1026,11 @@ X-Quantik-Timestamp: 1709000000000
               Error Codes
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[
-                { code: "UNAUTHORIZED", desc: "Invalid or revoked API key", status: 401 },
-                { code: "RATE_LIMITED", desc: "Too many requests — check Retry-After header", status: 429 },
-                { code: "SCOPE_DENIED", desc: "API key missing required scope for this endpoint", status: 403 },
-                { code: "CIRCUIT_BREAKER", desc: "Risk circuit breaker is tripped, trading paused", status: 503 },
-                { code: "AGENT_PAUSED", desc: "Your agent has been paused by its owner", status: 403 },
-                { code: "AGENT_TERMINATED", desc: "Your agent has been terminated", status: 403 },
-                { code: "INVALID_PARAMS", desc: "Missing or invalid request parameters", status: 400 },
-                { code: "INTERNAL_ERROR", desc: "Server-side error — retry with backoff", status: 500 },
-              ].map(err => (
+              {referenceErrorCodes.map((code) => ({
+                code,
+                desc: ERROR_CODE_DESCRIPTIONS[code]?.desc ?? "See skill.md for details",
+                status: ERROR_CODE_DESCRIPTIONS[code]?.status ?? 500,
+              })).map((err) => (
                 <div key={err.code} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.25)", width: 24, textAlign: "right" }}>{err.status}</span>
                   <code style={{ ...mono, fontSize: 11, color: "#ff453a", minWidth: 140 }}>{err.code}</code>
@@ -842,17 +1046,31 @@ X-Quantik-Timestamp: 1709000000000
               Rate Limits
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { type: "Read (GET tools)", limit: "120 requests/minute", color: "#0a84ff" },
-                { type: "Analysis (run_analysis)", limit: "5 requests/minute", color: "#ff9f0a" },
-                { type: "Trade (place_trade)", limit: "10 requests/minute", color: "#ff453a" },
-                { type: "Heartbeat", limit: "60 requests/minute", color: "#30d158" },
-              ].map(rl => (
-                <div key={rl.type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{rl.type}</span>
-                  <span style={{ ...mono, fontSize: 12, fontWeight: 600, color: rl.color }}>{rl.limit}</span>
-                </div>
-              ))}
+              {RATE_LIMIT_ORDER
+                .filter((bucket) => referenceRateLimits[bucket])
+                .map((bucket) => {
+                  const labelMap: Record<string, { type: string; color: string }> = {
+                    read: { type: "Read (GET tools, usage)", color: "#0a84ff" },
+                    analysis: { type: "Analysis (run_analysis, trigger_scanner)", color: "#ff9f0a" },
+                    trade: { type: "Trade (place_trade, close_position)", color: "#ff453a" },
+                    config: { type: "Config (risk, webhook, approvals)", color: "#64d2ff" },
+                    heartbeat: { type: "Heartbeat", color: "#30d158" },
+                    chat: { type: "Conversational chat (agent/chat)", color: "#ffd60a" },
+                  };
+                  const meta = labelMap[bucket];
+                  const limit = referenceRateLimits[bucket];
+                  return {
+                    type: meta.type,
+                    limit: `${limit.max} requests/${Math.round(limit.window_ms / 60_000)} minute`,
+                    color: meta.color,
+                  };
+                })
+                .map((rl) => (
+                  <div key={rl.type} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{rl.type}</span>
+                    <span style={{ ...mono, fontSize: 12, fontWeight: 600, color: rl.color }}>{rl.limit}</span>
+                  </div>
+                ))}
             </div>
             <div style={{ marginTop: 12, fontSize: 11, color: "rgba(255,255,255,0.30)", lineHeight: 1.6 }}>
               Rate limit headers on every response: <code style={{ ...mono, color: "rgba(255,255,255,0.40)" }}>X-RateLimit-Limit</code>, <code style={{ ...mono, color: "rgba(255,255,255,0.40)" }}>X-RateLimit-Remaining</code>, <code style={{ ...mono, color: "rgba(255,255,255,0.40)" }}>X-RateLimit-Reset</code>. On 429 responses: <code style={{ ...mono, color: "rgba(255,255,255,0.40)" }}>Retry-After</code>.
@@ -892,19 +1110,21 @@ X-Quantik-Timestamp: 1709000000000
               Your API key is generated with all scopes by default. Scopes determine which endpoints your key can access.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[
-                { scope: "read", endpoints: "get_portfolio, get_risk_status, get_trade_history, search_markets, get_scanner_signals, get_pipeline_history, get_agent_status", desc: "Read-only data access" },
-                { scope: "analysis", endpoints: "run_analysis", desc: "Trigger 7-agent pipeline analysis" },
-                { scope: "trade", endpoints: "place_trade", desc: "Execute trades autonomously" },
-              ].map(s => (
-                <div key={s.scope} style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <ScopeBadge scope={s.scope} />
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{s.desc}</span>
+              {referenceScopes.map((scope) => {
+                const details = SCOPE_DESCRIPTIONS[scope] ?? {
+                  desc: "Scope published by skill.json",
+                  endpoints: "See skill.md / skill.json for endpoint mapping",
+                };
+                return (
+                  <div key={scope} style={{ padding: "8px 10px", borderRadius: 6, background: "rgba(255,255,255,0.02)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <ScopeBadge scope={scope} />
+                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{details.desc}</span>
+                    </div>
+                    <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.30)" }}>{details.endpoints}</div>
                   </div>
-                  <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.30)" }}>{s.endpoints}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

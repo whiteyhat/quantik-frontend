@@ -233,7 +233,7 @@ export default function MarketPage({ params }: PageProps) {
       </div>
 
       {/* LIVE PIPELINE FEED */}
-      <PipelineLog />
+      <PipelineLog slug={slug} />
 
       {/* AGENT PIPELINE — compact grid + insight + execute bar */}
       <AgentPipeline

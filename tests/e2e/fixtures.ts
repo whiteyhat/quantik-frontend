@@ -12,7 +12,7 @@ export const STANDARD_AGENT = {
   name: 'Signal Scout',
   avatar_emoji: '🦊',
   animal_type: 'fox',
-  agent_type: 'standard',
+  agent_type: 'created',
   avatar_image: null,
   personality: 'balanced',
   decision_style: 'analyst',
@@ -29,6 +29,50 @@ export const STANDARD_AGENT = {
   updated_at: Date.now(),
   deployed_at: Date.now(),
   autopilot_enabled: false,
+  autopilot_updated_at: Date.now(),
+  connection_status: 'connected',
+  last_heartbeat: Date.now(),
+  endpoint_url: null,
+  agent_url: null,
+  webhook_events: ['*'],
+  api_key_prefix: null,
+  description: null,
+  polymarket_ready: true,
+  polymarket_status: 'ready',
+};
+
+export const DEFAULT_AUTOPILOT_POLICY = {
+  derived: {
+    cadenceMinutes: 15,
+    cooldownMinutes: 45,
+    maxTradesPerDay: 5,
+    maxBetUsdc: 10,
+    minSigma: 0.72,
+    minKelly: 0.4,
+    kellyMultiplier: 0.25,
+    maxPositionFraction: 0.1,
+    dailyLossLimitPct: 0.15,
+    useAuraSentiment: true,
+  },
+  overrides: {
+    cadenceMinutes: null,
+    cooldownMinutes: null,
+    maxTradesPerDay: null,
+    maxBetUsdc: null,
+    updatedAt: null,
+  },
+  effective: {
+    cadenceMinutes: 15,
+    cooldownMinutes: 45,
+    maxTradesPerDay: 5,
+    maxBetUsdc: 10,
+    minSigma: 0.72,
+    minKelly: 0.4,
+    kellyMultiplier: 0.25,
+    maxPositionFraction: 0.1,
+    dailyLossLimitPct: 0.15,
+    useAuraSentiment: true,
+  },
 };
 
 export const DEFAULT_WALLET = {
@@ -66,7 +110,11 @@ export function suppressKnownErrors(page: Page) {
 // ─── Mock helpers ───────────────────────────────────────────────────────────
 
 export async function mockAgent(page: Page, overrides: Record<string, unknown> = {}) {
-  const agent = { ...STANDARD_AGENT, ...overrides };
+  const agent = {
+    ...STANDARD_AGENT,
+    autopilot_policy: DEFAULT_AUTOPILOT_POLICY,
+    ...overrides,
+  };
   await page.route('**/api/v1/agent/me', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(agent) })
   );
@@ -172,9 +220,21 @@ export async function setupAuth(page: Page) {
     page,
     emailAddress: 'carlosroldan26396@gmail.com',
   });
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForURL((url) => !url.pathname.includes('sign-in') && !url.pathname.includes('sign-up'), { timeout: 10000 }).catch(() => {});
 }
 
 export async function mockManageAgentApis(page: Page) {
+  await page.route('**/api/v1/agents/*/autopilot-policy*', async (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(DEFAULT_AUTOPILOT_POLICY) })
+  );
+  await page.route('**/api/v1/settings/telegram*', async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ chatId: '', botToken: '', hasToken: false }),
+    })
+  );
   await page.route('**/api/wallet/balance*', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loadFixture('balance.json')) })
   );

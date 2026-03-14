@@ -171,7 +171,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
               type="button"
               onClick={() => void handleCopy()}
               className="mission-wallet-action mission-wallet-action--copy"
-              title={copied ? "Copied" : "Copy wallet"}
+              data-tooltip={copied ? "Copied!" : "Copy address"}
               aria-label={copied ? "Wallet copied" : "Copy wallet"}
             >
               {copied ? <CopyCheck className="size-4 text-[#34d399]" /> : <Copy className="size-4" />}
@@ -186,7 +186,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
             target="_blank"
             rel="noopener noreferrer"
             className="mission-wallet-action"
-            title="Open on Polygonscan"
+            data-tooltip="Polygonscan"
             aria-label="Open wallet on Polygonscan"
           >
             <ExternalLink className="size-4 transition-transform duration-200 group-hover:rotate-6" />
@@ -196,7 +196,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
             target="_blank"
             rel="noopener noreferrer"
             className="mission-wallet-action"
-            title="Open on Polymarket"
+            data-tooltip="Polymarket"
             aria-label="Open wallet on Polymarket"
           >
             <PolymarketGlyph />

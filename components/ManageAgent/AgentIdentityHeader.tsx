@@ -399,6 +399,8 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
           <div style={{ position: "relative", display: "inline-flex" }}>
             <button
               onClick={() => setDeleteModalOpen(true)}
+              aria-label="Delete Agent"
+              title="Delete Agent"
               style={{
                 padding: "7px 12px",
                 borderRadius: 8,

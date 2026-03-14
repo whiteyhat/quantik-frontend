@@ -558,7 +558,10 @@
     "title": "Registro de Ejecucion",
     "trades": "operaciones",
     "noTrades": "Sin operaciones aun — primera señal entrante",
-    "bet": "APOSTAR "
+    "bet": "APOSTAR ",
+    "sent": "ENVIADO",
+    "approved": "APROBADO",
+    "vetoed": "VETADO"
   },
   "panic": {
     "title": "PROTOCOLO DE EMERGENCIA ACTIVADO",
@@ -637,7 +640,10 @@
     "oracleBullish": "Nuestro modelo cree que esto es más probable de lo que indica el mercado — una posible oportunidad de compra.",
     "oracleBearish": "Nuestro modelo lo ve como menos probable de lo que el mercado valora — precaución recomendada.",
     "oracleNeutral": "Nuestro modelo coincide con el precio del mercado — sin ventaja clara en ninguna dirección por ahora.",
-    "oracleConfidence": "Confianza"
+    "oracleConfidence": "Confianza",
+    "telegramSent": "Alerta enviada — Conf {confidence}%",
+    "telegramApproved": "Alerta aprobada — Conf {confidence}%",
+    "telegramVetoed": "Alerta vetada"
   },
   "pnlTicker": {
     "todayPnl": "P&L de Hoy",

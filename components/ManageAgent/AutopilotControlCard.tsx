@@ -808,7 +808,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
                 gap: 10,
               }}
             >
-              {telegramConfigured && <ExecutionLog />}
+              <ExecutionLog />
               <TelegramWebhookEditor />
             </div>
           </div>

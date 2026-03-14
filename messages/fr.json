@@ -512,7 +512,10 @@
     "title": "Journal d'Execution",
     "trades": "trades",
     "noTrades": "Aucun trade encore — premier signal en approche",
-    "bet": "PARIER "
+    "bet": "PARIER ",
+    "sent": "ENVOYE",
+    "approved": "APPROUVE",
+    "vetoed": "REJETE"
   },
   "panic": {
     "title": "PROTOCOLE D'URGENCE ACTIVE",
@@ -595,7 +598,10 @@
     "oracleBullish": "Notre modèle pense que c'est plus probable que ce que le marché indique — une opportunité d'achat potentielle.",
     "oracleBearish": "Notre modèle le voit comme moins probable que ce que le marché valorise — prudence conseillée.",
     "oracleNeutral": "Notre modèle s'accorde avec le prix du marché — aucun avantage clair dans les deux sens pour l'instant.",
-    "oracleConfidence": "Confiance"
+    "oracleConfidence": "Confiance",
+    "telegramSent": "Alerte envoy\u00e9e — Conf {confidence}%",
+    "telegramApproved": "Alerte approuv\u00e9e — Conf {confidence}%",
+    "telegramVetoed": "Alerte rejet\u00e9e"
   },
   "pnlTicker": {
     "todayPnl": "P&L du Jour",

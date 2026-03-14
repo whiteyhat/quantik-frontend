@@ -418,6 +418,7 @@ export interface AlertStatus {
   alerts: AlertEntry[];
   muted: boolean;
   mutedUntil: number | null;
+  telegramConfigured?: boolean;
 }
 
 export interface TradeRequest {
@@ -1121,6 +1122,31 @@ export const api = {
           : [],
         muted: Boolean(raw?.muted),
         mutedUntil: typeof raw?.mutedUntil === "number" ? raw.mutedUntil : null,
+        telegramConfigured: Boolean(raw?.telegramConfigured),
+      };
+    } catch {
+      return { alerts: [], muted: false, mutedUntil: null };
+    }
+  },
+
+  getLastMarketAlert: async (slug: string): Promise<AlertStatus> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>(`/api/alerts/status?slug=${encodeURIComponent(slug)}`);
+      return {
+        alerts: Array.isArray(raw?.alerts)
+          ? (raw.alerts as Record<string, unknown>[]).map((a) => ({
+              id: String(a.id ?? ""),
+              slug: String(a.slug ?? ""),
+              question: String(a.question ?? ""),
+              confidence: Number(a.confidence ?? 0),
+              signal_state: (["TRADE", "WATCH", "SKIP"].includes(String(a.signal_state)) ? String(a.signal_state) : null) as AlertEntry["signal_state"],
+              alert_sent: Number(a.alert_sent ?? 0),
+              created_at: Number(a.created_at ?? 0),
+            }))
+          : [],
+        muted: Boolean(raw?.muted),
+        mutedUntil: typeof raw?.mutedUntil === "number" ? raw.mutedUntil : null,
+        telegramConfigured: Boolean(raw?.telegramConfigured),
       };
     } catch {
       return { alerts: [], muted: false, mutedUntil: null };

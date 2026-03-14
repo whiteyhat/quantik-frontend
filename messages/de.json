@@ -512,7 +512,10 @@
     "title": "Ausfuhrungsprotokoll",
     "trades": "Trades",
     "noTrades": "Noch keine Trades — erstes Signal kommt",
-    "bet": "WETTEN "
+    "bet": "WETTEN ",
+    "sent": "GESENDET",
+    "approved": "GENEHMIGT",
+    "vetoed": "ABGELEHNT"
   },
   "panic": {
     "title": "NOTFALLPROTOKOLL AKTIVIERT",
@@ -595,7 +598,10 @@
     "oracleBullish": "Unser Modell glaubt, dass dies wahrscheinlicher ist als der Markt — eine potenzielle Kaufgelegenheit.",
     "oracleBearish": "Unser Modell sieht dies als weniger wahrscheinlich als der Markt bewertet — Vorsicht empfohlen.",
     "oracleNeutral": "Unser Modell stimmt mit dem Marktpreis überein — derzeit kein klarer Vorteil in irgendeiner Richtung.",
-    "oracleConfidence": "Konfidenz"
+    "oracleConfidence": "Konfidenz",
+    "telegramSent": "Alarm gesendet — Konf {confidence}%",
+    "telegramApproved": "Alarm genehmigt — Konf {confidence}%",
+    "telegramVetoed": "Alarm abgelehnt"
   },
   "pnlTicker": {
     "todayPnl": "P&L Heute",

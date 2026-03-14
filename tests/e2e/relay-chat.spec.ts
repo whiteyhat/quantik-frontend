@@ -355,7 +355,7 @@ test.describe('Relay Agent Chat', () => {
         'data: {"type":"token","token":"analysis complete."}\n\n',
         'data: {"type":"done","reply":"Market analysis complete.","latencyMs":120,"model":"llama4:maverick","routedTo":["oracle","edge"]}\n\n',
       ].join('');
-      await page.route('**/api/relay/stream', (route) =>
+      await page.route('**/api/v1/agent/chat', (route) =>
         route.fulfill({ status: 200, headers: { 'content-type': 'text/event-stream' }, body: sseBody })
       );
     });
@@ -363,7 +363,7 @@ test.describe('Relay Agent Chat', () => {
     test('relay panel shows header with model badge', async ({ page }) => {
       const sseBody =
         'data: {"type":"done","reply":"Analysis ready.","latencyMs":90,"model":"llama4:maverick","routedTo":["oracle"],"agentData":{"confidence":0.78}}\n\n';
-      await page.route('**/api/relay/stream', (route) =>
+      await page.route('**/api/v1/agent/chat', (route) =>
         route.fulfill({ status: 200, headers: { 'content-type': 'text/event-stream' }, body: sseBody })
       );
     });

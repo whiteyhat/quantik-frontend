@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { getAuthToken } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -91,19 +92,26 @@ export function RelayChat({ slug }: RelayChatProps) {
         content: m.text,
       }));
 
+      const sessionId = getSessionId();
+      const token = getAuthToken();
       const reqBody = JSON.stringify({
         message: msg,
         history,
         slug: slug ?? undefined,
+        sessionId,
         ...(opts?.pipelineData ? { pipelineData: opts.pipelineData } : {}),
       });
-      const headers = { "Content-Type": "application/json", "X-Session-Id": getSessionId() };
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Session-Id": sessionId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
       // Placeholder message for streaming
       const placeholderId = nextId();
 
       try {
-        const res = await fetch(`${API_URL}/api/relay/stream`, {
+        const res = await fetch(`${API_URL}/api/v1/agent/chat`, {
           method: "POST",
           headers,
           body: reqBody,

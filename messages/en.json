@@ -558,7 +558,10 @@
     "title": "Execution Log",
     "trades": "trades",
     "noTrades": "No trades yet — first signal incoming",
-    "bet": "BET "
+    "bet": "BET ",
+    "sent": "SENT",
+    "approved": "APPROVED",
+    "vetoed": "VETOED"
   },
   "panic": {
     "title": "EMERGENCY PROTOCOL ACTIVATED",
@@ -637,7 +640,10 @@
     "oracleBullish": "Our model thinks this is more likely than the market does — a potential buying opportunity.",
     "oracleBearish": "Our model sees this as less likely than what the market prices — caution advised.",
     "oracleNeutral": "Our model agrees with the market price — no clear advantage either way right now.",
-    "oracleConfidence": "Confidence"
+    "oracleConfidence": "Confidence",
+    "telegramSent": "Alert sent — Conf {confidence}%",
+    "telegramApproved": "Alert approved — Conf {confidence}%",
+    "telegramVetoed": "Alert vetoed"
   },
   "pnlTicker": {
     "todayPnl": "Today P&L",

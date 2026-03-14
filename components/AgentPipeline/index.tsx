@@ -6,6 +6,7 @@ import { useQuantikStore } from "@/store/useQuantikStore";
 import { SigmaDecision } from "./SigmaDecision";
 import { SignalValidator } from "./SignalValidator";
 import {
+  getAuthToken,
   type SigmaResult,
   type EdgeResult,
   type AuraResult,
@@ -834,6 +835,8 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
   useEffect(() => {
     if (!sigmaData || insightFiredRef.current) return;
     insightFiredRef.current = true;
+    const token = getAuthToken();
+    const sessionId = `pipeline-${crypto.randomUUID()}`;
 
     const pipelineData = {
       sigma: sigmaData,
@@ -844,12 +847,16 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
 
     setInsightLoading(true);
 
-    fetch(`${API_URL}/api/relay/stream`, {
+    fetch(`${API_URL}/api/v1/agent/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Session-Id": sessionId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         message: `Given this trading pipeline analysis, write exactly 1 sentence (under 35 words) for someone with no finance background. Say something like: "Our model thinks there's a 58% chance this happens, but the market only says 45% — that gap means it might be underpriced right now." Use plain English, no jargon.`,
-        history: [],
+        sessionId,
         pipelineData,
       }),
     })

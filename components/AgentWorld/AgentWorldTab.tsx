@@ -32,6 +32,17 @@ export function AgentWorldTab() {
     return () => { bridge.off("ui:room-detail", onDetail); };
   }, [bridge]);
 
+  useEffect(() => {
+    const onLegacyNpcClick = (event: Event) => {
+      const detail = (event as CustomEvent<{ agentId?: string; roomId?: string }>).detail;
+      const target = detail?.agentId ?? detail?.roomId;
+      if (target) setDetailAgent(target);
+    };
+
+    window.addEventListener("phaser:npc-clicked", onLegacyNpcClick as EventListener);
+    return () => window.removeEventListener("phaser:npc-clicked", onLegacyNpcClick as EventListener);
+  }, []);
+
   const initGame = useCallback(async () => {
     if (!containerRef.current || gameRef.current) return;
 
@@ -72,6 +83,7 @@ export function AgentWorldTab() {
 
   return (
     <div
+      data-testid="agent-world-shell"
       style={{
         position: "relative",
         width: "100%",
@@ -127,6 +139,7 @@ export function AgentWorldTab() {
 
       {/* Phaser canvas container */}
       <div
+        data-testid="agent-world-stage"
         ref={containerRef}
         style={{
           width: "100%",
@@ -209,6 +222,7 @@ function AgentDetailPanel({
 
   return (
     <div
+      data-testid="agent-world-detail-panel"
       onClick={onClose}
       onKeyDown={(e) => e.key === "Escape" && onClose()}
       style={{
@@ -521,4 +535,3 @@ function PipelinePositionIndicator({
     </div>
   );
 }
-

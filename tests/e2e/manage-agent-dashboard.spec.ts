@@ -19,7 +19,7 @@ test.describe('Manage Agent — Dashboard', () => {
     await page.goto('/manage-agent');
     await expect(page.getByText(/WDK Wallet/)).toBeVisible();
     await expect(page.getByText(/0x1111/)).toBeVisible();
-    await expect(page.getByText('📋')).toBeVisible();
+    await expect(page.getByRole('button', { name: /copy/i })).toBeVisible();
   });
 
   test('switches between Dashboard, Architecture, and Agent World tabs', async ({ page }) => {

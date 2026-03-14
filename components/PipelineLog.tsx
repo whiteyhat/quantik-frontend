@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { api, type AlertEntry } from "@/lib/api";
 
 const AGENT_META: Record<string, { emoji: string; name: string }> = {
   aura:   { emoji: "\u{1F30A}", name: "Aura" },
@@ -47,7 +48,7 @@ function getAgentSummary(key: string, data: unknown, t: any): string {
   }
 }
 
-export function PipelineLog() {
+export function PipelineLog({ slug }: { slug?: string } = {}) {
   const t = useTranslations("pipelineLog");
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [expanded, setExpanded] = useState(false);
@@ -57,6 +58,8 @@ export function PipelineLog() {
   const startTime = useRef<number | null>(null);
   const prevStatuses = useRef<Record<string, string>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [telegramConfigured, setTelegramConfigured] = useState(false);
+  const [lastTelegramAlert, setLastTelegramAlert] = useState<AlertEntry | null>(null);
 
   // Drain queue one entry every 220ms
   function drainQueue() {
@@ -157,7 +160,23 @@ export function PipelineLog() {
     }
   }, [visibleLogs]);
 
-  if (visibleLogs.length === 0 && !pipeline.running) return null;
+  // Fetch last Telegram alert for this market (only when slug is provided)
+  useEffect(() => {
+    if (!slug) return;
+    api.getLastMarketAlert(slug).then((data) => {
+      setTelegramConfigured(Boolean(data.telegramConfigured));
+      const alert = data.alerts[0] ?? null;
+      setLastTelegramAlert(alert);
+      // Auto-expand when there's a telegram alert and no pipeline logs
+      if (alert && data.telegramConfigured && visibleLogs.length === 0) {
+        setExpanded(true);
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, pipeline.running]);
+
+  const hasTelegramEntry = telegramConfigured && !!lastTelegramAlert;
+  if (visibleLogs.length === 0 && !pipeline.running && !hasTelegramEntry) return null;
 
   return (
     <div
@@ -260,6 +279,44 @@ export function PipelineLog() {
           {pipeline.running && pendingQueue.current.length === 0 && visibleLogs.length > 0 && (
             <div style={{ fontSize: 11, color: "var(--text-tertiary)", padding: "6px 0", fontStyle: "italic" }}>
               {t("waitingForAgent")}
+            </div>
+          )}
+          {/* Last Telegram notification — only when configured */}
+          {telegramConfigured && lastTelegramAlert && !pipeline.running && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "6px 0",
+                fontSize: 12,
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                lineHeight: 1.6,
+                borderTop: "1px solid rgba(0,136,255,0.15)",
+                marginTop: 4,
+              }}
+            >
+              <span style={{ color: "var(--text-tertiary)", flexShrink: 0, fontSize: 10, paddingTop: 1 }}>
+                {new Date(lastTelegramAlert.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+              <span style={{ flexShrink: 0, minWidth: 80, fontWeight: 600, color: "var(--text-secondary)" }}>
+                {"\u{1F4E9}"} Telegram
+              </span>
+              <span style={{ color: "var(--text-tertiary)", flexShrink: 0 }}>{"\u2192"}</span>
+              <span style={{
+                color: lastTelegramAlert.alert_sent === 2 ? "#30d158"
+                     : lastTelegramAlert.alert_sent === -1 ? "#ff453a"
+                     : "var(--ios-blue)",
+                fontWeight: 500,
+                flex: 1,
+                wordBreak: "break-word",
+              }}>
+                {lastTelegramAlert.alert_sent === 2
+                  ? `\u2713 ${t("telegramApproved", { confidence: Math.round(lastTelegramAlert.confidence * 100) })}`
+                  : lastTelegramAlert.alert_sent === -1
+                    ? `\u2717 ${t("telegramVetoed")}`
+                    : `\u2713 ${t("telegramSent", { confidence: Math.round(lastTelegramAlert.confidence * 100) })}`}
+              </span>
             </div>
           )}
         </div>
