@@ -179,7 +179,6 @@ export class AgentNPC {
         this.playWorkingAnimation();
         this.setGlowColor(this.room.theme.accentColor, 0.6);
         this.startWorkingParticles();
-        this.showBubble("working", 3000);
         this.setPointLightAlpha(0.3);
         break;
 
@@ -187,7 +186,6 @@ export class AgentNPC {
         this.playCelebrateAnimation();
         this.setGlowColor(0x30d158, 0.5);
         this.flashEffect(0x30d158);
-        this.showBubble("done", 2500);
         // Auto-return to idle after 3s
         this.scene.time.delayedCall(3000, () => {
           if (this.state === "done_success") this.setState("idle");
@@ -199,7 +197,6 @@ export class AgentNPC {
         this.setGlowColor(0xff453a, 0.5);
         this.shakeEffect();
         this.errorExplosion();
-        this.showBubble("error", 2500);
         // Auto-return to idle after 3s
         this.scene.time.delayedCall(3000, () => {
           if (this.state === "done_error") {
@@ -349,21 +346,25 @@ export class AgentNPC {
 
   // ── Speech Bubbles ─────────────────────────────────────────────────
 
-  private showBubble(event: "working" | "done" | "error" | "idle", duration: number): void {
+  showDialogue(
+    event: "working" | "done" | "error" | "idle",
+    duration: number,
+    text?: string
+  ): void {
     // Destroy previous bubble
     if (this.currentBubble) {
       this.currentBubble.destroy();
       this.currentBubble = null;
     }
 
-    const text = getRandomLine(this.agentKey, event);
-    if (!text) return;
+    const content = text ?? getRandomLine(this.agentKey, event);
+    if (!content) return;
 
     this.currentBubble = new SpeechBubble(
       this.scene,
       this.sprite.x,
       this.sprite.y,
-      text,
+      content,
       this.room.theme.accentColor,
       duration
     );
@@ -531,7 +532,7 @@ export class AgentNPC {
           this.idleChatInterval = 20000 + Math.random() * 20000;
           if (canShowBubbleGlobally()) {
             recordBubble();
-            this.showBubble("idle", 5000);
+            this.showDialogue("idle", 5000);
           }
         }
 

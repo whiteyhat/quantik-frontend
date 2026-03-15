@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { routing, type Locale } from "@/i18n/routing";
 import { Providers } from "@/components/Providers";
+import { themeBootstrapScript } from "@/context/ThemeContext";
 import "../globals.css";
 
 type Props = {
@@ -41,6 +42,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body className="antialiased" style={{ minHeight: "100dvh" }}>
         <NextIntlClientProvider messages={messages}>

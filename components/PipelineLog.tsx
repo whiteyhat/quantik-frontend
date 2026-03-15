@@ -82,18 +82,28 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
     drainQueue();
   }
 
-  // Reset on pipeline start
+  // Reset the feed when a new live run starts or a replay snapshot is loaded.
   useEffect(() => {
-    if (pipeline.running && !startTime.current) {
+    setVisibleLogs([]);
+    pendingQueue.current = [];
+    draining.current = false;
+    prevStatuses.current = {};
+
+    if (pipeline.running) {
       setExpanded(true);
-      setVisibleLogs([]);
-      pendingQueue.current = [];
-      draining.current = false;
       startTime.current = Date.now();
-      prevStatuses.current = {};
+      return;
     }
+
+    startTime.current = null;
+    if (pipeline.source === "replay") {
+      setExpanded(true);
+    }
+  }, [pipeline.version]);
+
+  // Add a completion marker for live runs that finish normally.
+  useEffect(() => {
     if (!pipeline.running && startTime.current) {
-      // Pipeline completed — add final entry
       const elapsed = ((Date.now() - startTime.current) / 1000).toFixed(1);
       enqueue({
         id: "done",

@@ -8,9 +8,11 @@ import {
   AGENT_META,
   SERVICES,
   SERVICE_DETAILS,
+  INFRA_NODES,
   type MainNodeData,
   type SubAgentNodeData,
   type ServiceNodeData,
+  type InfraNodeData,
 } from "../data/architectureData";
 
 interface NodeDetailPanelProps {
@@ -695,6 +697,307 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
   );
 }
 
+// ─── Infrastructure Details ──────────────────────────────────────────────────
+
+const CATEGORY_COLORS: Record<string, string> = {
+  compute: "#64D2FF",
+  data: "#30D158",
+  messaging: "#FF9F0A",
+  auth: "#BF5AF2",
+  monitoring: "#FFD60A",
+};
+
+function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData; nodeId: string; onNavigateToNode?: (nodeId: string) => void }) {
+  const t = useTranslations("manageAgent.architecture");
+  const [logsOpen, setLogsOpen] = useState(false);
+  const details = SERVICE_DETAILS[nodeId] || null;
+  const infraDef = INFRA_NODES.find((n) => n.id === nodeId);
+  const accent = CATEGORY_COLORS[data.category] || "#64D2FF";
+
+  const statusColor =
+    data.status === "online" ? "var(--ios-green)"
+    : data.status === "degraded" ? "var(--ios-orange)"
+    : "rgba(255,255,255,0.30)";
+
+  return (
+    <>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: 4, paddingTop: 8 }}>
+        <span style={{ fontSize: 32, display: "block", marginBottom: 6 }}>{data.icon}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.80)", fontFamily: '"SF Mono", monospace' }}>
+          {data.label}
+        </span>
+        <div style={{ marginTop: 6, display: "flex", justifyContent: "center", gap: 6 }}>
+          <StatusBadge status={data.status} color={statusColor} />
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              padding: "3px 8px",
+              borderRadius: 6,
+              background: `color-mix(in srgb, ${accent} 15%, transparent)`,
+              border: `1px solid color-mix(in srgb, ${accent} 25%, transparent)`,
+              color: accent,
+              fontFamily: '"SF Mono", monospace',
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            {data.category}
+          </span>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Info */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <DetailRow label={t("protocol")} value={details?.protocol || "Internal"} />
+        {details && (
+          <DetailRow label={t("endpoint")} value={details.endpoint.length > 24 ? details.endpoint.slice(0, 24) + "..." : details.endpoint} />
+        )}
+      </div>
+
+      {details && (
+        <>
+          <Separator />
+          <div>
+            <span style={sectionLabelStyle}>{t("about")}</span>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, marginTop: 6, marginBottom: 0 }}>
+              {details.description}
+            </p>
+          </div>
+        </>
+      )}
+
+      <Separator />
+
+      {/* Connected Agents */}
+      {infraDef && infraDef.connectedTo.length > 0 && (
+        <>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={sectionLabelStyle}>{t("connectedAgents")}</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 6,
+                  background: `color-mix(in srgb, ${accent} 15%, transparent)`,
+                  color: accent,
+                  fontFamily: '"SF Mono", monospace',
+                }}
+              >
+                {infraDef.connectedTo.length}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {infraDef.connectedTo.map((conn) => {
+                const meta = AGENT_META[conn.target];
+                const isFenrir = conn.target === "fenrir";
+                const label = isFenrir ? "FENRIR-01" : meta?.label || conn.target;
+                const emoji = isFenrir ? "🐺" : meta?.emoji || "?";
+                const color = isFenrir ? "#007AFF" : meta?.color || "#999";
+                return (
+                  <span
+                    key={conn.target}
+                    onClick={onNavigateToNode ? () => onNavigateToNode(conn.target) : undefined}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      background: `color-mix(in srgb, ${color} 15%, transparent)`,
+                      border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
+                      color,
+                      fontFamily: '"SF Mono", monospace',
+                      cursor: onNavigateToNode ? "pointer" : "default",
+                      transition: "background 200ms",
+                    }}
+                  >
+                    {emoji} {label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <Separator />
+        </>
+      )}
+
+      {details && (
+        <>
+          {/* Live Feed */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={sectionLabelStyle}>{t("liveFeed")}</span>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: accent, animation: "pulse-ring 1.2s ease-out infinite" }} />
+            </div>
+            <div
+              style={{
+                maxHeight: 140,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                borderRadius: 10,
+                background: "rgba(0,0,0,0.20)",
+                border: "1px solid rgba(255,255,255,0.04)",
+                padding: 8,
+              }}
+              className="scrollbar-hide"
+            >
+              {details.feed.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < details.feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: '"SF Mono", monospace', flexShrink: 0, marginTop: 1 }}>
+                    {item.time}
+                  </span>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
+                    {item.message}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Sources */}
+          <div>
+            <span style={sectionLabelStyle}>{t("dataSources")}</span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+              {details.sources.map((src, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.50)",
+                    fontFamily: '"SF Mono", monospace',
+                  }}
+                >
+                  {src}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Collapsible Logs */}
+          <div>
+            <button
+              onClick={() => setLogsOpen(!logsOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 0",
+                color: "inherit",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={sectionLabelStyle}>{t("systemLogs")}</span>
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "rgba(255,255,255,0.06)",
+                    color: "rgba(255,255,255,0.30)",
+                    fontFamily: '"SF Mono", monospace',
+                  }}
+                >
+                  {details.logs.length}
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "rgba(255,255,255,0.25)",
+                  transform: logsOpen ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 200ms ease",
+                }}
+              >
+                &#x25B8;
+              </span>
+            </button>
+
+            <div
+              style={{
+                maxHeight: logsOpen ? 300 : 0,
+                overflow: "hidden",
+                transition: "max-height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              }}
+            >
+              <div
+                style={{
+                  marginTop: 8,
+                  borderRadius: 10,
+                  background: "rgba(0,0,0,0.30)",
+                  border: "1px solid rgba(255,255,255,0.04)",
+                  padding: 8,
+                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                }}
+              >
+                {details.logs.map((log, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      padding: "3px 0",
+                      borderBottom: i < details.logs.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", flexShrink: 0, marginTop: 1 }}>
+                      {log.time}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        padding: "1px 4px",
+                        borderRadius: 3,
+                        flexShrink: 0,
+                        marginTop: 1,
+                        background:
+                          log.level === "error" ? "rgba(255,69,58,0.15)"
+                          : log.level === "warn" ? "rgba(255,159,10,0.15)"
+                          : "rgba(0,122,255,0.10)",
+                        color:
+                          log.level === "error" ? "var(--ios-red)"
+                          : log.level === "warn" ? "var(--ios-orange)"
+                          : "var(--ios-blue)",
+                      }}
+                    >
+                      {log.level.toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+                      {log.message}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getServiceId(data: ServiceNodeData): string {
@@ -810,6 +1113,13 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailP
         )}
         {nodeType === "service" && (
           <ServiceDetails data={visibleNode.data as unknown as ServiceNodeData} />
+        )}
+        {nodeType === "infra" && (
+          <InfraDetails
+            data={visibleNode.data as unknown as InfraNodeData}
+            nodeId={visibleNode.id}
+            onNavigateToNode={onNavigateToNode}
+          />
         )}
       </div>
     </>

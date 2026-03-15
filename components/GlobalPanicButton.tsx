@@ -1,15 +1,31 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
+import { useSocketEvent, type PanicCooldownEvent } from "@/context/SocketContext";
+import { api, type PanicModeStatus } from "@/lib/api";
 
-// ─── Font sizes — L003 compliant ──────────────────────────────────────────────
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
+const CONFIRM_TEXT = "CONFIRM";
 
-// ─── SlideToConfirm ───────────────────────────────────────────────────────────
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "00:00";
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function formatTimestamp(ts: number | null | undefined): string {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 function SlideToConfirm({
   label,
@@ -27,6 +43,10 @@ function SlideToConfirm({
   const [confirmed, setConfirmed] = useState(false);
   const startXRef = useRef(0);
   const currentXRef = useRef(0);
+  const draggingRef = useRef(false);
+  const maxXRef = useRef(0);
+  const onConfirmedRef = useRef(onConfirmed);
+  onConfirmedRef.current = onConfirmed;
   const THUMB_SIZE = 48;
 
   useEffect(() => {
@@ -42,39 +62,49 @@ function SlideToConfirm({
   }, []);
 
   const maxX = trackWidth - THUMB_SIZE - 4;
+  maxXRef.current = maxX;
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
+    (event: React.PointerEvent) => {
       if (disabled || confirmed) return;
-      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+      event.preventDefault();
+      draggingRef.current = true;
       setDragging(true);
-      startXRef.current = e.clientX - currentXRef.current;
-    },
-    [disabled, confirmed]
-  );
+      startXRef.current = event.clientX - currentXRef.current;
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging) return;
-      const newX = Math.max(0, Math.min(e.clientX - startXRef.current, maxX));
-      currentXRef.current = newX;
-      setThumbX(newX);
-    },
-    [dragging, maxX]
-  );
+      const onMove = (e: PointerEvent) => {
+        if (!draggingRef.current) return;
+        const nextX = Math.max(
+          0,
+          Math.min(e.clientX - startXRef.current, maxXRef.current)
+        );
+        currentXRef.current = nextX;
+        setThumbX(nextX);
+      };
 
-  const handlePointerUp = useCallback(() => {
-    if (!dragging) return;
-    setDragging(false);
-    if (currentXRef.current >= maxX * 0.85) {
-      setThumbX(maxX);
-      setConfirmed(true);
-      onConfirmed();
-    } else {
-      currentXRef.current = 0;
-      setThumbX(0);
-    }
-  }, [dragging, maxX, onConfirmed]);
+      const onUp = () => {
+        if (!draggingRef.current) return;
+        draggingRef.current = false;
+        setDragging(false);
+        if (currentXRef.current >= maxXRef.current * 0.85) {
+          setThumbX(maxXRef.current);
+          setConfirmed(true);
+          onConfirmedRef.current();
+        } else {
+          currentXRef.current = 0;
+          setThumbX(0);
+        }
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+      };
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
+    },
+    [confirmed, disabled]
+  );
 
   const progress = maxX > 0 ? thumbX / maxX : 0;
 
@@ -89,12 +119,19 @@ function SlideToConfirm({
         border: `1px solid ${confirmed ? "rgba(255,69,58,0.50)" : "rgba(255,69,58,0.25)"}`,
         overflow: "hidden",
         userSelect: "none",
+        touchAction: "none",
         cursor: disabled ? "not-allowed" : "default",
         transition: "background 300ms, border-color 300ms",
       }}
-      onClick={() => { if (typeof window !== "undefined" && (window as any).Cypress) onConfirmed(); }}
+      onClick={() => {
+        if (
+          typeof window !== "undefined" &&
+          (window as Window & { Cypress?: unknown }).Cypress
+        ) {
+          onConfirmed();
+        }
+      }}
     >
-      {/* Fill */}
       <div
         style={{
           position: "absolute",
@@ -107,9 +144,7 @@ function SlideToConfirm({
           borderRadius: "inherit",
         }}
       />
-      {/* Label */}
       <div
-        onClick={() => { if (typeof window !== "undefined" && (window as any).Cypress) onConfirmed(); }}
         style={{
           position: "absolute",
           inset: 0,
@@ -135,13 +170,9 @@ function SlideToConfirm({
           {confirmed ? "CONFIRMED" : label}
         </span>
       </div>
-      {/* Thumb */}
       {!confirmed && (
         <div
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
           style={{
             position: "absolute",
             left: 2 + thumbX,
@@ -173,8 +204,6 @@ function SlideToConfirm({
   );
 }
 
-// ─── PanicCheckbox ────────────────────────────────────────────────────────────
-
 function PanicCheckbox({
   checked,
   label,
@@ -185,7 +214,7 @@ function PanicCheckbox({
   checked: boolean;
   label: string;
   sublabel: string;
-  onChange: (v: boolean) => void;
+  onChange: (value: boolean) => void;
   disabled?: boolean;
 }) {
   return (
@@ -198,7 +227,9 @@ function PanicCheckbox({
         width: "100%",
         padding: "14px 16px",
         borderRadius: 12,
-        border: `1px solid ${checked ? "rgba(255,69,58,0.35)" : "rgba(255,255,255,0.07)"}`,
+        border: `1px solid ${
+          checked ? "rgba(255,69,58,0.35)" : "rgba(255,255,255,0.07)"
+        }`,
         background: checked ? "rgba(255,69,58,0.08)" : "rgba(255,255,255,0.02)",
         cursor: disabled ? "not-allowed" : "pointer",
         textAlign: "left",
@@ -211,7 +242,9 @@ function PanicCheckbox({
           width: 22,
           height: 22,
           borderRadius: 6,
-          border: `2px solid ${checked ? "#ff453a" : "rgba(255,255,255,0.20)"}`,
+          border: `2px solid ${
+            checked ? "#ff453a" : "rgba(255,255,255,0.20)"
+          }`,
           background: checked ? "rgba(255,69,58,0.25)" : "transparent",
           flexShrink: 0,
           display: "flex",
@@ -221,9 +254,9 @@ function PanicCheckbox({
           marginTop: 1,
         }}
       >
-        {checked && (
+        {checked ? (
           <span style={{ fontSize: 13, color: "#ff453a", lineHeight: 1 }}>✓</span>
-        )}
+        ) : null}
       </div>
       <div>
         <div
@@ -237,7 +270,13 @@ function PanicCheckbox({
         >
           {label}
         </div>
-        <div style={{ fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", lineHeight: 1.5 }}>
+        <div
+          style={{
+            fontSize: LABEL_SIZE,
+            color: "rgba(255,255,255,0.30)",
+            lineHeight: 1.5,
+          }}
+        >
           {sublabel}
         </div>
       </div>
@@ -245,104 +284,141 @@ function PanicCheckbox({
   );
 }
 
-// ─── PanicModal ───────────────────────────────────────────────────────────────
-
-type PanicStatus = "idle" | "activating" | "activated" | "error";
+type ModalState =
+  | "loading"
+  | "idle"
+  | "activating"
+  | "activated"
+  | "rearming"
+  | "error";
 
 function PanicModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations("panic");
   const [cancelOrders, setCancelOrders] = useState(true);
   const [liquidatePositions, setLiquidatePositions] = useState(false);
-  const [panicStatus, setPanicStatus] = useState<PanicStatus>("idle");
-  const [errorMsg, setErrorMsg] = useState<string | undefined>();
+  const [confirmationText, setConfirmationText] = useState("");
+  const [rearmConfirmation, setRearmConfirmation] = useState("");
+  const [modalState, setModalState] = useState<ModalState>("loading");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [panicStatus, setPanicStatus] = useState<PanicModeStatus | null>(null);
   const [slideKey, setSlideKey] = useState(0);
 
-  const neitherSelected = !cancelOrders && !liquidatePositions;
-  const isDisabled = panicStatus === "activating" || panicStatus === "activated";
+  const loadStatus = useCallback(async () => {
+    const status = await api.getPanicModeStatus();
+    setPanicStatus(status);
+    setModalState(status.active ? "activated" : "idle");
+  }, []);
 
-  // Close on Escape key
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isDisabled) onClose();
+    void loadStatus().catch((error: Error) => {
+      setErrorMsg(error.message);
+      setModalState("error");
+    });
+  }, [loadStatus]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && modalState !== "activating" && modalState !== "rearming") {
+        onClose();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isDisabled, onClose]);
+  }, [modalState, onClose]);
 
-  // Redirect to dashboard after activation
   useEffect(() => {
-    if (panicStatus === "activated") {
-      const t = setTimeout(() => onClose(), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [panicStatus, onClose]);
+    if (!panicStatus?.active || !panicStatus.cooldownEndsAt) return;
+    const interval = setInterval(() => {
+      setPanicStatus((current) => {
+        if (!current?.cooldownEndsAt) return current;
+        const remaining = Math.max(0, current.cooldownEndsAt - Date.now());
+        return {
+          ...current,
+          cooldownRemainingMs: remaining,
+          canRearm: current.active && remaining === 0,
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [panicStatus?.active, panicStatus?.cooldownEndsAt]);
 
-  const handleConfirmed = useCallback(async () => {
-    if (neitherSelected) return;
-    setPanicStatus("activating");
-    setErrorMsg(undefined);
+  useSocketEvent<PanicCooldownEvent>("panic:cooldown", (event) => {
+    setPanicStatus((current) => ({
+      active: event.active,
+      cooldownEndsAt: event.cooldownEndsAt ?? null,
+      cooldownRemainingMs:
+        event.cooldownEndsAt != null
+          ? Math.max(0, event.cooldownEndsAt - Date.now())
+          : 0,
+      canRearm: event.canRearm,
+      latestEvent: current?.latestEvent
+        ? {
+            ...current.latestEvent,
+            reportId: event.reportId ?? current.latestEvent.reportId,
+            reason: event.reason ?? current.latestEvent.reason,
+            cooldownEndsAt: event.cooldownEndsAt ?? current.latestEvent.cooldownEndsAt,
+          }
+        : null,
+    }));
+    setModalState(event.active ? "activated" : "idle");
+  });
+
+  const neitherSelected = !cancelOrders && !liquidatePositions;
+  const canActivate =
+    !neitherSelected &&
+    confirmationText.trim().toUpperCase() === CONFIRM_TEXT &&
+    !panicStatus?.active &&
+    modalState !== "activating";
+  const canRearm =
+    panicStatus?.canRearm === true &&
+    rearmConfirmation.trim().toUpperCase() === CONFIRM_TEXT &&
+    modalState !== "rearming";
+
+  const cooldownLabel = useMemo(() => {
+    if (!panicStatus?.active) return null;
+    if (!panicStatus.cooldownEndsAt) return "Cooldown unavailable";
+    if (panicStatus.cooldownRemainingMs > 0) {
+      return `Re-arm unlocks in ${formatCountdown(panicStatus.cooldownRemainingMs)}`;
+    }
+    return "Cooldown complete. System can be re-armed.";
+  }, [panicStatus]);
+
+  const handleActivate = useCallback(async () => {
+    if (!canActivate) return;
+    setModalState("activating");
+    setErrorMsg(null);
     try {
-      await api.activatePanicMode({ cancelOrders, liquidatePositions });
-      setPanicStatus("activated");
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
-      setPanicStatus("error");
-      setSlideKey((k) => k + 1);
-      setTimeout(() => setPanicStatus("idle"), 6000);
+      await api.activatePanicMode({
+        cancelOrders,
+        liquidatePositions,
+        reason: "Manual panic activation",
+      });
+      await loadStatus();
+      setModalState("activated");
+      setSlideKey((value) => value + 1);
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Unknown error");
+      setModalState("error");
+      setSlideKey((value) => value + 1);
     }
-  }, [cancelOrders, liquidatePositions, neitherSelected]);
+  }, [canActivate, cancelOrders, liquidatePositions, loadStatus]);
 
-  if (panicStatus === "activated") {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          background: "rgba(0,0,0,0.92)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        <div
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            border: "1px solid rgba(255,69,58,0.30)",
-            borderRadius: 20,
-            padding: "48px 56px",
-            textAlign: "center",
-            maxWidth: 460,
-          }}
-        >
-          <div style={{ fontSize: 56, marginBottom: 20 }}>🚨</div>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: "#ff453a",
-              fontFamily: '"SF Mono", monospace',
-              letterSpacing: "0.06em",
-              marginBottom: 10,
-            }}
-          >
-            {t("title")}
-          </div>
-          <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
-            {cancelOrders && "All open orders are being cancelled. "}
-            {liquidatePositions && "All positions are being liquidated. "}
-            {t("closingIn")}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleRearm = useCallback(async () => {
+    if (!canRearm) return;
+    setModalState("rearming");
+    setErrorMsg(null);
+    try {
+      await api.rearmPanicMode(CONFIRM_TEXT);
+      setRearmConfirmation("");
+      await loadStatus();
+      onClose();
+    } catch (error) {
+      setErrorMsg(error instanceof Error ? error.message : "Unknown error");
+      setModalState("error");
+    }
+  }, [canRearm, loadStatus, onClose]);
 
   return (
-    /* Full-screen backdrop */
     <div
       style={{
         position: "fixed",
@@ -356,14 +432,20 @@ function PanicModal({ onClose }: { onClose: () => void }) {
         justifyContent: "center",
         padding: 20,
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !isDisabled) onClose();
+      onClick={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          modalState !== "activating" &&
+          modalState !== "rearming"
+        ) {
+          onClose();
+        }
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: 560,
+          maxWidth: 620,
           maxHeight: "90vh",
           overflowY: "auto",
           display: "flex",
@@ -371,14 +453,14 @@ function PanicModal({ onClose }: { onClose: () => void }) {
           gap: 16,
         }}
       >
-        {/* WARNING HEADER */}
         <div
           style={{
             background: "rgba(255,69,58,0.12)",
             border: "2px solid rgba(255,69,58,0.50)",
             borderRadius: 16,
             padding: "20px 24px",
-            boxShadow: "0 0 60px rgba(255,69,58,0.15), inset 0 0 40px rgba(255,69,58,0.04)",
+            boxShadow:
+              "0 0 60px rgba(255,69,58,0.15), inset 0 0 40px rgba(255,69,58,0.04)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -410,10 +492,9 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 ⚠ {t("irreversible")} ⚠
               </div>
             </div>
-            {/* Close button */}
             <button
               onClick={onClose}
-              disabled={isDisabled}
+              disabled={modalState === "activating" || modalState === "rearming"}
               style={{
                 marginLeft: "auto",
                 background: "rgba(255,255,255,0.07)",
@@ -421,7 +502,10 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 borderRadius: 8,
                 padding: "5px 10px",
                 color: "rgba(255,255,255,0.50)",
-                cursor: isDisabled ? "not-allowed" : "pointer",
+                cursor:
+                  modalState === "activating" || modalState === "rearming"
+                    ? "not-allowed"
+                    : "pointer",
                 fontSize: 18,
                 lineHeight: 1,
               }}
@@ -429,12 +513,18 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               ✕
             </button>
           </div>
-          <p style={{ margin: 0, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: BODY_SIZE,
+              color: "rgba(255,255,255,0.50)",
+              lineHeight: 1.6,
+            }}
+          >
             {t("confirmDesc")}
           </p>
         </div>
 
-        {/* ACTION SELECTION */}
         <div
           style={{
             background: "rgba(255,255,255,0.05)",
@@ -455,110 +545,282 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               marginBottom: 14,
             }}
           >
-            {t("selectActions")}
+            Status
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <PanicCheckbox
-              checked={cancelOrders}
-              label={t("cancelOrders")}
-              sublabel={t("cancelOrdersDesc")}
-              onChange={setCancelOrders}
-              disabled={isDisabled}
-            />
-            <PanicCheckbox
-              checked={liquidatePositions}
-              label={t("liquidatePositions")}
-              sublabel={t("liquidateDesc")}
-              onChange={setLiquidatePositions}
-              disabled={isDisabled}
-            />
-          </div>
-          {neitherSelected && (
-            <div
-              style={{
-                marginTop: 12,
-                padding: "8px 14px",
-                borderRadius: 8,
-                background: "rgba(255,159,10,0.08)",
-                border: "1px solid rgba(255,159,10,0.20)",
-                fontSize: LABEL_SIZE,
-                color: "#ff9f0a",
-                fontFamily: "monospace",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {t("selectAtLeastOne")}
+          {modalState === "loading" ? (
+            <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.45)" }}>
+              Loading panic status...
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  border: `1px solid ${
+                    panicStatus?.active
+                      ? "rgba(255,69,58,0.30)"
+                      : "rgba(48,209,88,0.20)"
+                  }`,
+                  background: panicStatus?.active
+                    ? "rgba(255,69,58,0.08)"
+                    : "rgba(48,209,88,0.08)",
+                  color: panicStatus?.active ? "#ff453a" : "#30d158",
+                  fontSize: BODY_SIZE,
+                  fontWeight: 700,
+                }}
+              >
+                {panicStatus?.active ? "PANIC MODE ACTIVE" : "System armed"}
+              </div>
+              {panicStatus?.latestEvent ? (
+                <div style={{ display: "grid", gap: 6, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.62)" }}>
+                  <div>Reason: {panicStatus.latestEvent.reason ?? "—"}</div>
+                  <div>Request Code: {panicStatus.latestEvent.requestCode}</div>
+                  <div>Started: {formatTimestamp(panicStatus.latestEvent.initiatedAt)}</div>
+                  <div>{cooldownLabel}</div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
 
-        {/* SLIDE TO CONFIRM */}
-        <div
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            border: "1px solid rgba(255,69,58,0.15)",
-            borderRadius: 14,
-            padding: "18px 20px",
-          }}
-        >
+        {!panicStatus?.active ? (
+          <>
+            <div
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                backdropFilter: "blur(24px) saturate(180%)",
+                WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                borderRadius: 14,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: LABEL_SIZE,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.30)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  marginBottom: 14,
+                }}
+              >
+                {t("selectActions")}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <PanicCheckbox
+                  checked={cancelOrders}
+                  label={t("cancelOrders")}
+                  sublabel={t("cancelOrdersDesc")}
+                  onChange={setCancelOrders}
+                  disabled={modalState === "activating"}
+                />
+                <PanicCheckbox
+                  checked={liquidatePositions}
+                  label={t("liquidatePositions")}
+                  sublabel={t("liquidateDesc")}
+                  onChange={setLiquidatePositions}
+                  disabled={modalState === "activating"}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                backdropFilter: "blur(24px) saturate(180%)",
+                WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                borderRadius: 14,
+                padding: 20,
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              <label style={{ display: "grid", gap: 8 }}>
+                <span
+                  style={{
+                    fontSize: LABEL_SIZE,
+                    fontWeight: 700,
+                    color: "rgba(255,255,255,0.30)",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Type {CONFIRM_TEXT} to arm the slider
+                </span>
+                <input
+                  value={confirmationText}
+                  onChange={(event) => setConfirmationText(event.target.value)}
+                  placeholder={CONFIRM_TEXT}
+                  style={{
+                    width: "100%",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "rgba(255,255,255,0.88)",
+                    padding: "12px 14px",
+                    fontSize: BODY_SIZE,
+                    outline: "none",
+                    fontFamily: '"SF Mono", monospace',
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                />
+              </label>
+            </div>
+
+            <div
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                backdropFilter: "blur(24px) saturate(180%)",
+                WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                border: "1px solid rgba(255,69,58,0.15)",
+                borderRadius: 14,
+                padding: "18px 20px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: LABEL_SIZE,
+                  fontWeight: 700,
+                  color: "rgba(255,69,58,0.55)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  marginBottom: 14,
+                }}
+              >
+                {t("slideToConfirm")}
+              </div>
+              <SlideToConfirm
+                key={slideKey}
+                label={`${t("slideToActivate")} →`}
+                onConfirmed={handleActivate}
+                disabled={!canActivate}
+              />
+            </div>
+          </>
+        ) : (
           <div
             style={{
-              fontSize: LABEL_SIZE,
-              fontWeight: 700,
-              color: "rgba(255,69,58,0.55)",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              marginBottom: 14,
+              background: "rgba(255,255,255,0.05)",
+              backdropFilter: "blur(24px) saturate(180%)",
+              WebkitBackdropFilter: "blur(24px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              borderRadius: 14,
+              padding: 20,
+              display: "grid",
+              gap: 14,
             }}
           >
-            {t("slideToConfirm")}
-          </div>
-          <SlideToConfirm
-            key={slideKey}
-            label={`${t("slideToActivate")} →`}
-            onConfirmed={handleConfirmed}
-            disabled={neitherSelected || isDisabled}
-          />
-          {panicStatus === "activating" && (
             <div
               style={{
-                marginTop: 12,
-                fontSize: META_SIZE,
-                color: "#ff9f0a",
-                fontFamily: "monospace",
-                letterSpacing: "0.08em",
-                textAlign: "center",
-              }}
-            >
-              ⏳ {t("activating")}
-            </div>
-          )}
-          {panicStatus === "error" && (
-            <div
-              style={{
-                marginTop: 12,
-                padding: "8px 14px",
-                borderRadius: 8,
-                background: "rgba(255,69,58,0.08)",
-                border: "1px solid rgba(255,69,58,0.25)",
                 fontSize: LABEL_SIZE,
-                color: "#ff453a",
-                fontFamily: "monospace",
-                letterSpacing: "0.06em",
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.30)",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
               }}
             >
-              ❌ {t("activationFailed", { error: errorMsg ?? "Unknown error" })}
+              Re-arm Gate
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.58)", lineHeight: 1.6 }}>
+              Panic mode remains locked for 60 seconds after activation. When the
+              cooldown finishes, type {CONFIRM_TEXT} to re-arm the circuit breaker.
+            </div>
+            <label style={{ display: "grid", gap: 8 }}>
+              <span
+                style={{
+                  fontSize: LABEL_SIZE,
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.30)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Type {CONFIRM_TEXT} to re-arm
+              </span>
+              <input
+                value={rearmConfirmation}
+                onChange={(event) => setRearmConfirmation(event.target.value)}
+                placeholder={CONFIRM_TEXT}
+                style={{
+                  width: "100%",
+                  borderRadius: 10,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "rgba(255,255,255,0.88)",
+                  padding: "12px 14px",
+                  fontSize: BODY_SIZE,
+                  outline: "none",
+                  fontFamily: '"SF Mono", monospace',
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              />
+            </label>
+            <button
+              onClick={handleRearm}
+              disabled={!canRearm}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                border: "1px solid rgba(48,209,88,0.24)",
+                background: canRearm
+                  ? "rgba(48,209,88,0.12)"
+                  : "rgba(255,255,255,0.04)",
+                color: canRearm ? "#30d158" : "rgba(255,255,255,0.28)",
+                fontSize: BODY_SIZE,
+                fontWeight: 700,
+                cursor: canRearm ? "pointer" : "not-allowed",
+                fontFamily: '"SF Mono", monospace',
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              {modalState === "rearming" ? "Re-arming..." : "Re-arm system"}
+            </button>
+          </div>
+        )}
+
+        {modalState === "activating" ? (
+          <div
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,159,10,0.20)",
+              background: "rgba(255,159,10,0.08)",
+              color: "#ff9f0a",
+              fontSize: META_SIZE,
+              fontFamily: '"SF Mono", monospace',
+              letterSpacing: "0.06em",
+            }}
+          >
+            ⏳ {t("activating")}
+          </div>
+        ) : null}
+
+        {errorMsg ? (
+          <div
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,69,58,0.25)",
+              background: "rgba(255,69,58,0.08)",
+              color: "#ff453a",
+              fontSize: META_SIZE,
+              fontFamily: '"SF Mono", monospace',
+              letterSpacing: "0.06em",
+            }}
+          >
+            {errorMsg}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
-
-// ─── GlobalPanicButton ────────────────────────────────────────────────────────
 
 export function GlobalPanicButton() {
   const t = useTranslations("panic");
@@ -568,9 +830,14 @@ export function GlobalPanicButton() {
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
 
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("open-panic", handler as EventListener);
+    return () => window.removeEventListener("open-panic", handler as EventListener);
+  }, []);
+
   return (
     <>
-      {/* Floating button — fixed bottom-right */}
       <button
         onClick={open}
         onMouseEnter={() => setHovered(true)}
@@ -597,7 +864,7 @@ export function GlobalPanicButton() {
         }}
       >
         <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🚨</span>
-        {hovered && (
+        {hovered ? (
           <span
             style={{
               fontSize: 12,
@@ -610,11 +877,10 @@ export function GlobalPanicButton() {
           >
             {t("panicButton")}
           </span>
-        )}
+        ) : null}
       </button>
 
-      {/* Modal */}
-      {isOpen && <PanicModal onClose={close} />}
+      {isOpen ? <PanicModal onClose={close} /> : null}
     </>
   );
 }

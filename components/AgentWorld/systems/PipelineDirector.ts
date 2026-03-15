@@ -4,6 +4,7 @@ import type { PhaserBridge, AgentWorldEvent } from "../PhaserBridge";
 import type { MainAgent } from "../entities/MainAgent";
 import type { AgentNPC } from "../entities/AgentNPC";
 import type { WorldScene } from "../scenes/WorldScene";
+import { FloatingText, formatAgentResult } from "../entities/FloatingText";
 import {
   PARALLEL_PHASE_ROOMS,
   getRoomByAgentKey,
@@ -77,6 +78,7 @@ export class PipelineDirector {
     switch (event.type) {
       case "agent:start":
         npc.setState("working");
+        npc.showDialogue("working", 2400);
         // Flash room glow
         (this.scene as WorldScene).flashRoomGlow?.(event.agent);
 
@@ -88,6 +90,16 @@ export class PipelineDirector {
 
       case "agent:complete":
         npc.setState("done_success");
+        {
+          const formatted = formatAgentResult(event.agent, event.data);
+          new FloatingText(this.scene, {
+            text: formatted.text,
+            color: formatted.color,
+            x: npc.sprite.x,
+            y: npc.sprite.y - 18,
+            duration: 2800,
+          });
+        }
         // Flash room glow
         (this.scene as WorldScene).flashRoomGlow?.(event.agent);
         // Track parallel phase completion
@@ -101,6 +113,7 @@ export class PipelineDirector {
 
       case "agent:error":
         npc.setState("done_error");
+        npc.showDialogue("error", 2400);
         break;
     }
   };

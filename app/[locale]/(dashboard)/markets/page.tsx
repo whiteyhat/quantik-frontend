@@ -1,421 +1,336 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { api, fmtUSDC, streamPrices, type Market } from "@/lib/api";
-import { Skeleton, SkeletonCard } from "@/components/ui/skeleton";
-
-// ─── Style constants ──────────────────────────────────────────────────────────
+import { api, fmtUSDC, streamPrices, type Market, type MarketAlertItem, type WatchlistItem } from "@/lib/api";
+import { SkeletonCard } from "@/components/ui/skeleton";
+import { MarketAlertEditor } from "@/components/markets/MarketAlertEditor";
 
 const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
+  background: "var(--glass-surface)",
   backdropFilter: "blur(24px) saturate(180%)",
   WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.09)",
-  borderRadius: 14,
+  border: "1px solid var(--glass-border)",
+  borderRadius: 18,
   padding: 20,
 };
-
-const LABEL_SIZE = 11;
-const META_SIZE = 12;
-const BODY_SIZE = 13;
-
-const CATEGORIES = ["Trending \u{1F525}", "All", "Crypto", "Politics", "Sports", "Pop Culture", "Science", "World Events", "Business"] as const;
-type Category = (typeof CATEGORIES)[number];
-
-
-
-// ─── Market card ──────────────────────────────────────────────────────────────
 
 function MarketCard({
   market,
   livePrice,
+  isWatchlisted,
+  alert,
+  onToggleWatchlist,
+  onEditAlert,
 }: {
   market: Market;
   livePrice?: { yes: number; no: number };
+  isWatchlisted: boolean;
+  alert?: MarketAlertItem | null;
+  onToggleWatchlist: () => void;
+  onEditAlert: () => void;
 }) {
   const t = useTranslations("markets");
   const yes = livePrice?.yes ?? market.yesPrice ?? 0;
-  const no = livePrice?.no ?? market.noPrice ?? 0;
+  const no = livePrice?.no ?? market.noPrice ?? Math.max(0, 1 - yes);
   const yesPct = Math.round(yes * 100);
-  const noPct = Math.round(no * 100) || 100 - yesPct;
-  const [hovered, setHovered] = useState(false);
+  const noPct = Math.round(no * 100);
 
   return (
-    <Link
-      href={`/market/${market.slug}`}
-      style={{ textDecoration: "none", color: "inherit" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div
+      style={{
+        ...panelStyle,
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        height: "100%",
+      }}
     >
-      <div
-        style={{
-          ...panelStyle,
-          padding: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-          height: "100%",
-          transition: "border-color 200ms, background 200ms",
-          borderColor: hovered ? "rgba(10,132,255,0.35)" : "rgba(255,255,255,0.09)",
-          background: hovered ? "rgba(10,132,255,0.04)" : "rgba(255,255,255,0.05)",
-          cursor: "pointer",
-        }}
-      >
-        {/* Question */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: "var(--text-secondary)", padding: "4px 8px", borderRadius: 999, border: "1px solid var(--glass-border)" }}>
+            {market.category ?? "All"}
+          </span>
+          {alert?.enabled ? (
+            <span style={{ fontSize: 11, color: "var(--ios-orange)", padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(255,159,10,0.35)" }}>
+              ALERT {alert.direction.toUpperCase()} {Math.round(alert.threshold * 100)}¢
+            </span>
+          ) : null}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={onToggleWatchlist}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 12,
+              border: "1px solid var(--glass-border)",
+              background: isWatchlisted ? "rgba(255,159,10,0.18)" : "transparent",
+              color: isWatchlisted ? "var(--ios-orange)" : "var(--text-secondary)",
+              cursor: "pointer",
+            }}
+          >
+            ★
+          </button>
+          <button
+            onClick={onEditAlert}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 12,
+              border: "1px solid var(--glass-border)",
+              background: alert?.enabled ? "rgba(10,132,255,0.16)" : "transparent",
+              color: alert?.enabled ? "var(--ios-blue)" : "var(--text-secondary)",
+              cursor: "pointer",
+            }}
+          >
+            ⏰
+          </button>
+        </div>
+      </div>
+
+      <Link href={`/market/${market.slug}`} style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
         <h3
           style={{
             margin: 0,
-            fontSize: BODY_SIZE,
-            fontWeight: 600,
-            color: "rgba(255,255,255,0.85)",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--text-primary)",
             lineHeight: 1.45,
-            minHeight: "2.8em",
           }}
         >
           {market.question}
         </h3>
 
-        {/* YES / NO bar */}
-        <div style={{ display: "flex", gap: 2, borderRadius: 6, overflow: "hidden", height: 26 }}>
-          <div
-            style={{
-              width: `${yesPct}%`,
-              background: "rgba(48,209,88,0.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 38,
-              transition: "width 300ms ease",
-            }}
-          >
-            <span
-              style={{
-                fontSize: LABEL_SIZE,
-                fontWeight: 700,
-                color: "#30d158",
-                fontFamily: "monospace",
-              }}
-            >
-              YES {yesPct}¢
-            </span>
+        <div style={{ display: "flex", gap: 2, borderRadius: 10, overflow: "hidden", height: 28 }}>
+          <div style={{ width: `${yesPct}%`, minWidth: 46, background: "rgba(48,209,88,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-green)", fontSize: 11, fontWeight: 700 }}>
+            YES {yesPct}¢
           </div>
-          <div
-            style={{
-              width: `${noPct}%`,
-              background: "rgba(255,69,58,0.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 38,
-              transition: "width 300ms ease",
-            }}
-          >
-            <span
-              style={{
-                fontSize: LABEL_SIZE,
-                fontWeight: 700,
-                color: "#ff453a",
-                fontFamily: "monospace",
-              }}
-            >
-              {noPct}¢ NO
-            </span>
+          <div style={{ width: `${Math.max(noPct, 100 - yesPct)}%`, minWidth: 46, background: "rgba(255,69,58,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-red)", fontSize: 11, fontWeight: 700 }}>
+            NO {noPct}¢
           </div>
         </div>
 
-        {/* Meta row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span
-            style={{
-              fontSize: LABEL_SIZE,
-              color: "rgba(255,255,255,0.35)",
-              fontFamily: "monospace",
-              padding: "2px 7px",
-              borderRadius: 5,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            {t("vol")} {fmtUSDC(market.volume)}
-          </span>
-          <span
-            style={{
-              fontSize: LABEL_SIZE,
-              color: "rgba(255,255,255,0.35)",
-              fontFamily: "monospace",
-              padding: "2px 7px",
-              borderRadius: 5,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            {t("liq")} {market.liquidityGrade}
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--text-secondary)", fontSize: 12 }}>
+          <span>{t("vol")} {fmtUSDC(market.volume)}</span>
+          <span>{t("liq")} {market.liquidityGrade}</span>
+          <span>{market.resolutionDate ? new Date(market.resolutionDate).toLocaleDateString() : "—"}</span>
         </div>
-
-        {/* Hover CTA */}
-        <div
-          style={{
-            overflow: "hidden",
-            maxHeight: hovered ? 28 : 0,
-            opacity: hovered ? 1 : 0,
-            transition: "all 240ms cubic-bezier(0.34,1.56,0.64,1)",
-          }}
-        >
-          <span style={{ fontSize: META_SIZE, fontWeight: 600, color: "#0a84ff" }}>
-            {t("viewMarket")} →
-          </span>
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
-
-// ─── Markets Page ─────────────────────────────────────────────────────────────
 
 export default function MarketsPage() {
   const t = useTranslations("markets");
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<Category>("Trending \u{1F525}");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [minLiquidity, setMinLiquidity] = useState("");
+  const [minVolume, setMinVolume] = useState("");
+  const [expiryDays, setExpiryDays] = useState("");
+  const [minProbability, setMinProbability] = useState(0);
+  const [maxProbability, setMaxProbability] = useState(100);
+  const [watchlistOnly, setWatchlistOnly] = useState(false);
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [alerts, setAlerts] = useState<MarketAlertItem[]>([]);
+  const [alertMarket, setAlertMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  const isTrending = activeCategory === "Trending \u{1F525}";
+  async function refreshOperatorState() {
+    const [nextWatchlist, nextAlerts] = await Promise.all([
+      api.getWatchlist().catch(() => []),
+      api.getMarketAlerts().catch(() => []),
+    ]);
+    setWatchlist(nextWatchlist);
+    setAlerts(nextAlerts);
+  }
 
   useEffect(() => {
-    console.log("FETCHING MARKETS", search, isTrending); setLoading(true);
-    if (isTrending && !search) {
-      api.getTrendingMarkets()
-        .then(res => {
-          if (res.markets.length === 0) {
-            // Fallback to All
-            setActiveCategory("All");
-            return;
-          }
-          setMarkets(res.markets);
-        })
-        .catch(() => setActiveCategory("All"))
-        .finally(() => setLoading(false));
-    } else {
-      api.getMarkets(search || undefined)
-        .then(res => setMarkets(res.markets))
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }
-  }, [search, isTrending]);
+    void refreshOperatorState();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    const load = !search.trim() && selectedCategory === "all"
+      ? api.getTrendingMarkets()
+      : api.getMarkets(search.trim() || undefined, selectedCategory !== "all" ? selectedCategory : undefined, 80, 0);
+
+    load.then((response) => {
+      if (active) setMarkets(response.markets);
+    }).catch(() => {
+      if (active) setMarkets([]);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [search, selectedCategory]);
 
   useEffect(() => {
     if (markets.length === 0) return;
     cleanupRef.current?.();
-    const tokens = markets.map((m) => m.tokenId).filter(Boolean);
+    const tokens = markets.map((market) => market.tokenId).filter(Boolean);
     if (tokens.length === 0) return;
-    const unsub = streamPrices(tokens, (prices) => {
-      setLivePrices((prev) => ({ ...prev, ...prices }));
+    const unsubscribe = streamPrices(tokens, (prices) => {
+      setLivePrices((previous) => ({ ...previous, ...prices }));
     });
-    cleanupRef.current = unsub;
-    return () => unsub();
+    cleanupRef.current = unsubscribe;
+    return () => unsubscribe();
   }, [markets]);
 
-  // Category filtering — markets don't have a "category" field in the API type yet,
-  // so we match against the question text as a best-effort until backend wires it.
-  const CATEGORY_KEYWORDS: Record<string, string[]> = {
-    Crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "sol", "defi", "token"],
-    Politics: ["election", "president", "congress", "senate", "vote", "democrat", "republican", "trump", "biden", "political"],
-    Sports: ["nfl", "nba", "mlb", "nhl", "super bowl", "championship", "team", "game", "sport", "cup", "league"],
-    "Pop Culture": ["oscars", "grammy", "celebrity", "movie", "show", "album", "award", "film"],
-    Science: ["nasa", "space", "science", "climate", "research", "discovery", "ai", "model"],
-    "World Events": ["war", "conflict", "ceasefire", "united nations", "global", "international", "country"],
-    Business: ["earnings", "ipo", "merger", "acquisition", "revenue", "market cap", "stock"],
-  };
+  const categories = useMemo(() => {
+    const values = Array.from(new Set(markets.map((market) => market.category).filter(Boolean))) as string[];
+    return ["all", ...values];
+  }, [markets]);
 
-  const filtered = markets.filter((m) => {
-    if (activeCategory === "All" || isTrending) return true;
-    const keywords = CATEGORY_KEYWORDS[activeCategory] ?? [];
-    const q = m.question.toLowerCase();
-    return keywords.some((kw) => q.includes(kw));
+  const watchlistSlugs = new Set(watchlist.map((item) => item.slug));
+  const alertMap = new Map(alerts.filter((alert) => alert.enabled).map((alert) => [alert.slug, alert]));
+
+  const filtered = markets.filter((market) => {
+    if (watchlistOnly && !watchlistSlugs.has(market.slug)) return false;
+    if (Number(minLiquidity) > 0 && (market.liquidity ?? 0) < Number(minLiquidity)) return false;
+    if (Number(minVolume) > 0 && (market.volume ?? 0) < Number(minVolume)) return false;
+    const yes = livePrices[market.tokenId]?.yes ?? market.probability ?? market.yesPrice ?? 0;
+    const yesPct = yes * 100;
+    if (yesPct < minProbability || yesPct > maxProbability) return false;
+    if (Number(expiryDays) > 0 && market.resolutionDate) {
+      const ms = new Date(market.resolutionDate).getTime() - Date.now();
+      const days = ms / 86_400_000;
+      if (days > Number(expiryDays)) return false;
+    }
+    return true;
   });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Header */}
       <div>
         <h1
           style={{
             margin: 0,
             fontSize: 20,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text-primary)",
             fontFamily: '"SF Mono", "JetBrains Mono", monospace',
             letterSpacing: "0.04em",
           }}
         >
           {t("title")}
         </h1>
-        <p style={{ margin: "4px 0 0", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.30)" }}>
-          {t("subtitle")}
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+          Server-normalized market discovery with watchlists and alert thresholds.
         </p>
       </div>
 
-      {/* Trending micro-label */}
-      {isTrending && (
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.03em" }}>
-          {"\u{1F4E1}"} {t("liveBadge")}
+      <div style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid var(--glass-border)", background: "var(--glass-surface)", color: "var(--text-primary)" }}
+          />
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+            style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid var(--glass-border)", background: "var(--glass-surface)", color: "var(--text-primary)" }}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category === "all" ? "All categories" : category}
+              </option>
+            ))}
+          </select>
+          <input
+            value={minLiquidity}
+            onChange={(event) => setMinLiquidity(event.target.value)}
+            placeholder="Min liquidity"
+            type="number"
+            style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid var(--glass-border)", background: "var(--glass-surface)", color: "var(--text-primary)" }}
+          />
+          <input
+            value={minVolume}
+            onChange={(event) => setMinVolume(event.target.value)}
+            placeholder="Min volume"
+            type="number"
+            style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid var(--glass-border)", background: "var(--glass-surface)", color: "var(--text-primary)" }}
+          />
+          <input
+            value={expiryDays}
+            onChange={(event) => setExpiryDays(event.target.value)}
+            placeholder="Resolve within N days"
+            type="number"
+            style={{ padding: "12px 14px", borderRadius: 14, border: "1px solid var(--glass-border)", background: "var(--glass-surface)", color: "var(--text-primary)" }}
+          />
+          <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-secondary)", fontSize: 12 }}>
+            <input type="checkbox" checked={watchlistOnly} onChange={(event) => setWatchlistOnly(event.target.checked)} />
+            Watchlist only
+          </label>
         </div>
-      )}
 
-      {/* Search + Filter bar */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input
-          type="text"
-          placeholder={t("searchPlaceholder")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: "11px 16px",
-            fontSize: BODY_SIZE,
-            width: "100%",
-            maxWidth: 420,
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            borderRadius: 10,
-            color: "rgba(255,255,255,0.85)",
-            outline: "none",
-            fontFamily: "inherit",
-          }}
-        />
-
-        {/* Category pills */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                style={{
-                  padding: "5px 14px",
-                  borderRadius: 100,
-                  border: isActive
-                    ? "1px solid rgba(10,132,255,0.60)"
-                    : "1px solid rgba(255,255,255,0.10)",
-                  background: isActive ? "rgba(10,132,255,0.18)" : "rgba(255,255,255,0.04)",
-                  color: isActive ? "#0a84ff" : "rgba(255,255,255,0.45)",
-                  fontSize: META_SIZE,
-                  fontWeight: isActive ? 600 : 400,
-                  cursor: "pointer",
-                  transition: "all 160ms ease",
-                  fontFamily: "inherit",
-                }}
-              >
-                {cat}
-              </button>
-            );
-          })}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "var(--text-secondary)", fontSize: 12 }}>
+            Min YES probability: {minProbability}¢
+            <input type="range" min={0} max={100} value={minProbability} onChange={(event) => setMinProbability(Number(event.target.value))} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "var(--text-secondary)", fontSize: 12 }}>
+            Max YES probability: {maxProbability}¢
+            <input type="range" min={0} max={100} value={maxProbability} onChange={(event) => setMaxProbability(Number(event.target.value))} />
+          </label>
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          padding: "10px 16px",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: 10,
-          fontSize: META_SIZE,
-          color: "rgba(255,255,255,0.35)",
-          fontFamily: "monospace",
-        }}
-      >
-        <span>
-          <span style={{ color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>{filtered.length}</span>
-          {" "}{t("marketsCount")}
-        </span>
-        <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
-        <span>
-          {t("totalVol")}{" "}
-          <span style={{ color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>
-            {fmtUSDC(filtered.reduce((acc, m) => acc + (m.volume ?? 0), 0))}
-          </span>
-        </span>
-        {activeCategory !== "All" && (
-          <>
-            <span style={{ color: "rgba(255,255,255,0.15)" }}>·</span>
-            <span>
-              {t("filter")}{" "}
-              <span style={{ color: "#0a84ff", fontWeight: 600 }}>{activeCategory}</span>
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Grid */}
       {loading ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 14,
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <SkeletonCard key={i} height={160} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {[1, 2, 3, 4, 5, 6].map((item) => (
+            <SkeletonCard key={item} />
           ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div
-          style={{
-            ...panelStyle,
-            padding: 40,
-            textAlign: "center",
-            fontSize: BODY_SIZE,
-            color: "rgba(255,255,255,0.25)",
-          }}
-        >
-          {t("noMarkets")}
-          {activeCategory !== "All" && (
-            <span>
-              {" "}in <strong style={{ color: "#0a84ff" }}>{activeCategory}</strong>
-            </span>
-          )}
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 14,
-          }}
-        >
-          {filtered.map((m) => (
-            <MarketCard key={m.slug} market={m} livePrice={livePrices[m.tokenId]} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {filtered.map((market) => (
+            <MarketCard
+              key={market.slug}
+              market={market}
+              livePrice={livePrices[market.tokenId]}
+              isWatchlisted={watchlistSlugs.has(market.slug)}
+              alert={alertMap.get(market.slug) ?? null}
+              onToggleWatchlist={async () => {
+                if (watchlistSlugs.has(market.slug)) {
+                  await api.removeWatchlistItem(market.slug);
+                } else {
+                  await api.addWatchlistItem(market.slug, market.question);
+                }
+                await refreshOperatorState();
+              }}
+              onEditAlert={() => setAlertMarket(market)}
+            />
           ))}
         </div>
       )}
 
-      {/* Footer label */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: LABEL_SIZE,
-          color: "rgba(255,255,255,0.15)",
-          fontFamily: "monospace",
-          letterSpacing: "0.06em",
-          padding: "8px 0",
-        }}
-      >
-        {t("source")}
-      </div>
+      {!loading && filtered.length === 0 ? (
+        <div style={{ ...panelStyle, textAlign: "center", color: "var(--text-secondary)" }}>
+          No markets matched the current filters.
+        </div>
+      ) : null}
+
+      <MarketAlertEditor
+        open={alertMarket != null}
+        slug={alertMarket?.slug ?? ""}
+        question={alertMarket?.question ?? ""}
+        initialPrice={alertMarket ? livePrices[alertMarket.tokenId]?.yes ?? alertMarket.yesPrice ?? 0.5 : 0.5}
+        existingAlert={alertMarket ? alerts.find((alert) => alert.slug === alertMarket.slug) ?? null : null}
+        onClose={() => setAlertMarket(null)}
+        onSaved={() => void refreshOperatorState()}
+      />
     </div>
   );
 }

@@ -3,11 +3,14 @@ import {
   AutopilotPolicyEnvelope,
   PipelineResult,
   PipelineEvent,
+  PipelineHistoryRun,
+  PipelineReplayFrame,
   SigmaResult,
   EdgeResult,
   WalletBalance,
   Position,
   Trade,
+  normalizeAgentData,
 } from "@/lib/api";
 
 // ─── My Agent (user's configured trading agent) ──────────────────────────────
@@ -67,6 +70,10 @@ export interface PipelineState {
   running: boolean;
   agents: Record<string, AgentCardState>;
   result: PipelineResult | null;
+  source: "idle" | "live" | "replay";
+  runId: string | null;
+  frames: PipelineReplayFrame[];
+  version: number;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -99,6 +106,7 @@ interface QuantikStore {
   pipelineStart: () => void;
   pipelineAgentEvent: (event: PipelineEvent) => void;
   pipelineComplete: (result: PipelineResult) => void;
+  pipelineLoadReplay: (run: PipelineHistoryRun, frames: PipelineReplayFrame[]) => void;
   pipelineReset: () => void;
 
   // Trade modal
@@ -116,10 +124,129 @@ interface QuantikStore {
   closeTradeModal: () => void;
 }
 
-const AGENT_NAMES = ["aura", "flux", "oracle", "edge", "clause", "lucifer", "sigma"];
+const AGENT_NAMES = ["aura", "flux", "oracle", "edge", "clause", "lucifer", "sigma"] as const;
+type PipelineAgentKey = (typeof AGENT_NAMES)[number];
+
+const AGENT_OUTPUT_KEYS: Record<PipelineAgentKey, keyof PipelineHistoryRun> = {
+  aura: "aura_output",
+  flux: "flux_output",
+  oracle: "oracle_output",
+  edge: "edge_output",
+  clause: "clause_output",
+  lucifer: "lucifer_output",
+  sigma: "sigma_output",
+};
+
+let pipelineVersion = 0;
+
+function nextPipelineVersion(): number {
+  pipelineVersion += 1;
+  return pipelineVersion;
+}
 
 function defaultAgents(): Record<string, AgentCardState> {
   return Object.fromEntries(AGENT_NAMES.map((a) => [a, { status: "idle" }]));
+}
+
+function isPipelineAgentKey(agent: string): agent is PipelineAgentKey {
+  return AGENT_NAMES.includes(agent as PipelineAgentKey);
+}
+
+function normalizeStoredAgentOutput(agent: PipelineAgentKey, raw: unknown): unknown {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return normalizeAgentData(agent, raw as Record<string, unknown>);
+  }
+  return raw;
+}
+
+function buildReplayState(
+  run: PipelineHistoryRun,
+  frames: PipelineReplayFrame[]
+): PipelineState {
+  const agents = defaultAgents();
+  const result: PipelineResult = {};
+  let hasResult = false;
+
+  for (const frame of frames) {
+    if (!frame.agent || !isPipelineAgentKey(frame.agent)) continue;
+
+    const agent = frame.agent;
+    const prev = agents[agent];
+    const startedAt =
+      frame.startedAt ?? prev.startedAt ?? (frame.type === "agent:start" ? frame.timestamp : undefined);
+
+    if (frame.type === "agent:start") {
+      agents[agent] = { ...prev, status: "running", startedAt };
+      continue;
+    }
+
+    if (frame.type === "agent:complete") {
+      const normalized = normalizeStoredAgentOutput(agent, frame.data);
+      const completedAt = frame.completedAt ?? frame.timestamp;
+      agents[agent] = {
+        status: "done",
+        data: normalized,
+        startedAt,
+        latencyMs: startedAt != null ? Math.max(completedAt - startedAt, 0) : undefined,
+      };
+      if (normalized !== undefined) {
+        (result as Record<string, unknown>)[agent] = normalized;
+        hasResult = true;
+      }
+      continue;
+    }
+
+    if (frame.type === "agent:error") {
+      const completedAt = frame.completedAt ?? frame.timestamp;
+      agents[agent] = {
+        status: "error",
+        error: frame.error ?? undefined,
+        startedAt,
+        latencyMs: startedAt != null ? Math.max(completedAt - startedAt, 0) : undefined,
+      };
+    }
+  }
+
+  for (const agent of AGENT_NAMES) {
+    const outputKey = AGENT_OUTPUT_KEYS[agent];
+    const normalized = normalizeStoredAgentOutput(agent, run[outputKey]);
+    if (normalized == null) continue;
+
+    if (agents[agent].status === "idle") {
+      agents[agent] = { status: "done", data: normalized };
+    } else if (agents[agent].status === "done" && agents[agent].data === undefined) {
+      agents[agent] = { ...agents[agent], data: normalized };
+    }
+
+    (result as Record<string, unknown>)[agent] = normalized;
+    hasResult = true;
+  }
+
+  if (!result.sigma && (run.decision || run.confidence != null)) {
+    const sigmaFallback = normalizeStoredAgentOutput("sigma", {
+      decision: run.decision ?? "SKIP",
+      confidence: run.confidence ?? 0,
+      thesis: "",
+      size_pct: 0,
+      size_usd: 0,
+      entry_price: 0,
+    });
+    result.sigma = sigmaFallback as PipelineResult["sigma"];
+    if (agents.sigma.status === "idle") {
+      agents.sigma = { status: "done", data: sigmaFallback };
+    }
+    hasResult = true;
+  }
+
+  return {
+    running: false,
+    agents,
+    result: hasResult || frames.length > 0 ? result : null,
+    source: "replay",
+    runId: run.id,
+    frames,
+    version: nextPipelineVersion(),
+  };
 }
 
 export const useQuantikStore = create<QuantikStore>((set) => ({
@@ -145,6 +272,10 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
     running: false,
     agents: defaultAgents(),
     result: null,
+    source: "idle",
+    runId: null,
+    frames: [],
+    version: nextPipelineVersion(),
   },
 
   pipelineStart: () =>
@@ -153,6 +284,10 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
         running: true,
         agents: defaultAgents(),
         result: null,
+        source: "live",
+        runId: null,
+        frames: [],
+        version: nextPipelineVersion(),
       },
     }),
 
@@ -190,12 +325,21 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
       },
     })),
 
+  pipelineLoadReplay: (run, frames) =>
+    set({
+      pipeline: buildReplayState(run, frames),
+    }),
+
   pipelineReset: () =>
     set({
       pipeline: {
         running: false,
         agents: defaultAgents(),
         result: null,
+        source: "idle",
+        runId: null,
+        frames: [],
+        version: nextPipelineVersion(),
       },
     }),
 

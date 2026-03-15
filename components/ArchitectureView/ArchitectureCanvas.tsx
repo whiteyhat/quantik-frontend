@@ -20,6 +20,7 @@ import "@xyflow/react/dist/style.css";
 import { AgentNode } from "./nodes/AgentNode";
 import { SubAgentNode } from "./nodes/SubAgentNode";
 import { ServiceNode } from "./nodes/ServiceNode";
+import { InfraNode } from "./nodes/InfraNode";
 import { AnimatedDataEdge } from "./edges/AnimatedDataEdge";
 import { NodeDetailPanel } from "./panels/NodeDetailPanel";
 import { useArchitectureState } from "./hooks/useArchitectureState";
@@ -28,6 +29,7 @@ const nodeTypes: NodeTypes = {
   agentNode: AgentNode,
   subAgentNode: SubAgentNode,
   serviceNode: ServiceNode,
+  infraNode: InfraNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -129,6 +131,7 @@ export function ArchitectureCanvas() {
               const color = (node.data as { accentColor?: string })?.accentColor;
               return color || "rgba(255,255,255,0.20)";
             }
+            if (type === "infra") return "#64D2FF";
             return "rgba(255,255,255,0.10)";
           }}
           maskColor="rgba(0,0,0,0.70)"

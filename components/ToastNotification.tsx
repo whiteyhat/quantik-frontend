@@ -40,7 +40,7 @@ export function ToastNotification() {
 
   // Watch for pipeline completion
   useEffect(() => {
-    if (!pipeline.running && pipeline.result) {
+    if (pipeline.source === "live" && !pipeline.running && pipeline.result) {
       const sigma = pipeline.result.sigma;
       if (sigma) {
         if (sigma.decision === "PASS") {
@@ -53,7 +53,7 @@ export function ToastNotification() {
         }
       }
     }
-  }, [pipeline.running, pipeline.result, addToast]);
+  }, [pipeline.running, pipeline.result, pipeline.source, addToast]);
 
   if (toasts.length === 0) return null;
 

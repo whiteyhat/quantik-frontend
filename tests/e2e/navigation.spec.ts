@@ -3,6 +3,7 @@ import { setupAuth, mockAgent, mockDashboardApis, mockManageAgentApis } from './
 
 const routes = [
   { path: '/dashboard', name: 'Home / Dashboard' },
+  { path: '/arena', name: 'Arena' },
   { path: '/markets', name: 'Markets' },
   { path: '/trade-history', name: 'Trade History' },
   { path: '/settings', name: 'Settings' },

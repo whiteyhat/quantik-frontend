@@ -17,6 +17,7 @@ import { CURRENT_VERSION } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationCenterPanel } from "@/components/NotificationCenter";
 
 // ─── Auth Sync ────────────────────────────────────────────────────────────────
 // Keeps the API client's Bearer token in sync with Clerk's session token
@@ -101,11 +102,12 @@ function WalletSync() {
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS: { labelKey: "dashboard" | "myAgent" | "tradeHistory" | "agentFactory" | "settings"; href: string; icon: string; isFactory?: boolean }[] = [
+const NAV_ITEMS: { labelKey: "dashboard" | "arena" | "myAgent" | "tradeHistory" | "agentFactory" | "settings"; href: string; icon: string; isFactory?: boolean }[] = [
   { labelKey: "dashboard", href: "/dashboard", icon: "🏠" },
   { labelKey: "myAgent", href: "/manage-agent", icon: "🤖" },
-  { labelKey: "tradeHistory", href: "/trade-history", icon: "📈" },
+  { labelKey: "tradeHistory", href: "/reports", icon: "📈" },
   { labelKey: "agentFactory", href: "/agent-factory", icon: "🏭", isFactory: true },
+  { labelKey: "arena", href: "/arena", icon: "⚔️" },
   { labelKey: "settings", href: "/settings", icon: "⚙️" },
 ];
 
@@ -214,7 +216,9 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
             </div>
           )}
         </div>
-        <VersionLogButton />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <VersionLogButton />
+        </div>
       </div>
 
       {/* Divider */}
@@ -576,6 +580,8 @@ export default function DashboardLayout({
         onToggle={handleToggleRelay}
         onFirstOpen={handleRelayFirstOpen}
       />
+
+      <NotificationCenterPanel />
 
       {/* Toast notifications */}
       <ToastNotification />

@@ -30,6 +30,9 @@ export interface Market {
   volume: number;
   liquidity: number;
   liquidityGrade: "A" | "B" | "C" | "D";
+  probability?: number;
+  category?: string;
+  tags?: string[];
   spread?: number;
 }
 
@@ -80,8 +83,13 @@ export interface WalletBalance {
 
 export interface Position {
   id: string;
+  executionId?: number;
   market: string;
+  question?: string;
   slug: string;
+  tokenId?: string | null;
+  yesTokenId?: string | null;
+  noTokenId?: string | null;
   direction: "YES" | "NO";
   size: number;
   entryPrice: number;
@@ -92,6 +100,8 @@ export interface Position {
   source?: "autopilot" | "manual";
   /** ISO date string of when the market resolves */
   resolutionDate?: string | null;
+  executedAt?: number;
+  status?: string;
 }
 
 export interface Trade {
@@ -105,6 +115,156 @@ export interface Trade {
   outcome: "WIN" | "LOSS" | "OPEN" | "PENDING";
   timestamp: number;
   pnl?: number;
+  orderId?: string | null;
+  mode?: string;
+  pipelineRunId?: string | null;
+}
+
+export interface NotificationItem {
+  id: string;
+  level: "info" | "success" | "warning" | "error";
+  title: string;
+  message: string;
+  category?: string | null;
+  timestamp: number;
+  readAt?: number | null;
+  action?: {
+    label: string;
+    href: string;
+  } | null;
+}
+
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  slug: string;
+  question: string | null;
+  created_at: number;
+}
+
+export interface MarketAlertItem {
+  id: string;
+  user_id: string;
+  slug: string;
+  question: string | null;
+  direction: "above" | "below";
+  threshold: number;
+  enabled: boolean;
+  last_state?: string | null;
+  last_triggered_at?: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface TradeReportBucket {
+  timestamp: number;
+  pnl: number;
+  trades: number;
+  label: string;
+}
+
+export interface TradeReportsResponse {
+  trades: Trade[];
+  count: number;
+  period: "day" | "week" | "month" | "all";
+  filters: {
+    outcome: Trade["outcome"] | null;
+    source: "autopilot" | "manual" | null;
+    search: string;
+  };
+  summary: {
+    totalTrades: number;
+    totalPnl: number;
+    wins: number;
+    losses: number;
+    open: number;
+    pending: number;
+    winRate: number;
+  };
+  buckets: TradeReportBucket[];
+  bestTrade: Trade | null;
+  worstTrade: Trade | null;
+  agentAttribution: Array<{
+    agent: string;
+    weight: number;
+    brierScore: number | null;
+    trend: "improving" | "degrading" | "stable";
+  }>;
+}
+
+export type ArenaWindow = "day" | "week" | "all";
+
+export interface ArenaLeaderboardEntry {
+  rank: number;
+  agentId: string;
+  agentCode: string;
+  name: string;
+  avatarEmoji: string;
+  animalType: string | null;
+  agentType: string;
+  connectionStatus: string | null;
+  autopilotEnabled: boolean;
+  polymarketReady: boolean;
+  selectedPnl: number;
+  selectedRealizedPnl: number;
+  selectedUnrealizedPnl: number;
+  allTimePnl: number;
+  totalTrades: number;
+  winRate: number;
+  openPositions: number;
+  currentStreak: number;
+  lastTradeAt: number | null;
+  bestTradeSlug: string | null;
+  bestTradePnl: number;
+}
+
+export interface ArenaViewerContext {
+  agentId: string | null;
+  eligible: boolean;
+  ranked: boolean;
+  rank: number | null;
+  entry: ArenaLeaderboardEntry | null;
+  referencePnl: number;
+  gapToTop10: number;
+  gapToPodium: number;
+  gapToCrown: number;
+  reason: "no_agent" | "inactive" | "no_activity" | "ranked";
+}
+
+export interface ArenaLeaderboardResponse {
+  window: ArenaWindow;
+  updatedAt: number;
+  meta: {
+    rankedAgents: number;
+    activeAgents: number;
+    totalSelectedPnlPool: number;
+    totalRealizedPnlPool: number;
+    totalUnrealizedPnlPool: number;
+    lastTradeAt: number | null;
+  };
+  leaders: ArenaLeaderboardEntry[];
+  viewer: ArenaViewerContext;
+}
+
+function normalizeTradeRecord(input: unknown): Trade {
+  const item = input as Record<string, unknown>;
+  return {
+    id: String(item?.id ?? ""),
+    market: String(item?.market ?? item?.slug ?? ""),
+    slug: String(item?.slug ?? ""),
+    direction: (String(item?.direction ?? "YES").toUpperCase() === "NO" ? "NO" : "YES") as "YES" | "NO",
+    source: String(item?.source ?? "").toLowerCase() === "autopilot" ? "autopilot" : "manual",
+    size: Number(item?.size ?? item?.sizeUsdc ?? 0),
+    price: Number(item?.price ?? item?.entryPrice ?? 0),
+    outcome: (["WIN", "LOSS", "OPEN", "PENDING"].includes(String(item?.outcome ?? "").toUpperCase())
+      ? String(item?.outcome).toUpperCase()
+      : "OPEN") as Trade["outcome"],
+    timestamp: Number(item?.timestamp ?? item?.created_at ?? 0),
+    pnl: Number(item?.pnl ?? 0),
+    orderId: item?.orderId != null ? String(item.orderId) : null,
+    mode: item?.mode != null ? String(item.mode) : undefined,
+    pipelineRunId: item?.pipelineRunId != null ? String(item.pipelineRunId) : null,
+  };
 }
 
 export interface Order {
@@ -184,6 +344,7 @@ export interface SigmaResult {
   decision: "BET_YES" | "BET_NO" | "PASS" | "SKIP" | "VETO" | "TRADE" | "WATCH";
   confidence: number; // percent
   thesis: string;
+  plain_summary?: string;
   size_pct: number;
   size_usd: number;
   entry_price: number;
@@ -313,6 +474,81 @@ export interface LiquidationReport {
   assets: LiquidationAsset[];
   timeline: TimelineEvent[];
   status: "complete" | "partial" | "failed";
+  reason?: string | null;
+  cooldownEndsAt?: number | null;
+  rearmedAt?: number | null;
+}
+
+export interface PipelineHistoryRun {
+  id: string;
+  market_slug: string;
+  market_question: string;
+  created_at: number;
+  completed_at: number | null;
+  decision: string | null;
+  confidence: number | null;
+  source?: "pipeline" | "scanner";
+  available_agents?: string[];
+  aura_output?: unknown;
+  flux_output?: unknown;
+  oracle_output?: unknown;
+  edge_output?: unknown;
+  sigma_output?: unknown;
+  clause_output?: unknown;
+  lucifer_output?: unknown;
+}
+
+export interface PipelineReplayStep {
+  id: string;
+  run_id: string;
+  step_order: number;
+  step: string;
+  agent: string | null;
+  status: string;
+  startedAt: number | null;
+  completedAt: number | null;
+  data: unknown;
+  error: string | null;
+  created_at: number;
+}
+
+export interface PipelineReplayFrame {
+  index: number;
+  type:
+    | "pipeline:start"
+    | "pipeline:complete"
+    | "agent:start"
+    | "agent:complete"
+    | "agent:error"
+    | "trade:executed"
+    | "trade:rejected"
+    | "trade:error";
+  step: string;
+  agent: string | null;
+  status: string;
+  timestamp: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  data?: unknown;
+  error?: string | null;
+}
+
+export interface PanicModeStatus {
+  active: boolean;
+  cooldownEndsAt: number | null;
+  cooldownRemainingMs: number;
+  canRearm: boolean;
+  latestEvent: {
+    id: string;
+    requestCode: string;
+    reason: string | null;
+    status: string;
+    initiatedAt: number;
+    completedAt: number | null;
+    reportId: string | null;
+    cooldownEndsAt: number | null;
+    rearmedAt: number | null;
+  } | null;
 }
 
 export type ByoOnboardingStatus = "pending_claim" | "claimed" | "expired" | "failed" | "cancelled";
@@ -562,7 +798,17 @@ export const api = {
 
   getPositions: async (signal?: AbortSignal): Promise<Position[]> => {
     const res = await apiFetch<Position[]>("/api/wallet/positions", { signal });
-    return Array.isArray(res) ? res : [];
+    const positions = Array.isArray(res) ? res : [];
+    return positions.map((position) => ({
+      ...position,
+      id: String(position.id ?? ""),
+      executionId: position.executionId != null ? Number(position.executionId) : undefined,
+      tokenId: position.tokenId ?? null,
+      yesTokenId: position.yesTokenId ?? null,
+      noTokenId: position.noTokenId ?? null,
+      executedAt: position.executedAt != null ? Number(position.executedAt) : undefined,
+      status: position.status ? String(position.status) : undefined,
+    }));
   },
 
   getOrders: async (): Promise<Order[]> => {
@@ -583,6 +829,23 @@ export const api = {
 
   cancelAll: () =>
     apiFetch<{ cancelled: number }>("/api/trade/cancel-all", { method: "POST" }),
+
+  closePosition: async (executionId: number): Promise<{
+    ok: boolean;
+    executionId: number;
+    slug: string;
+    direction: "YES" | "NO";
+    size: number;
+    entryPrice: number;
+    exitPrice: number;
+    pnl: number;
+    closedAt: number;
+    status: string;
+  }> =>
+    apiFetch("/api/trade/close-position", {
+      method: "POST",
+      body: JSON.stringify({ executionId }),
+    }),
 
   // Execution engine
   placeOrder: (slug: string, direction: string, sizeUsdc: number) =>
@@ -649,11 +912,7 @@ export const api = {
   },
 
   // Pipeline history (for system log feed)
-  getPipelineHistory: async (): Promise<{
-    id: string; market_slug: string; market_question: string;
-    created_at: number; completed_at: number | null;
-    decision: string | null; confidence: number | null;
-  }[]> => {
+  getPipelineHistory: async (): Promise<PipelineHistoryRun[]> => {
     try {
       const raw = await apiFetch<unknown[]>("/api/pipeline/history");
       const arr = Array.isArray(raw) ? raw : [];
@@ -667,6 +926,17 @@ export const api = {
           completed_at: item?.completed_at != null ? Number(item.completed_at) : null,
           decision: item?.decision != null ? String(item.decision) : null,
           confidence: item?.confidence != null ? Number(item.confidence) : null,
+          source: item?.source === "scanner" ? "scanner" : "pipeline",
+          available_agents: Array.isArray(item?.available_agents)
+            ? item.available_agents.map((agent) => String(agent))
+            : undefined,
+          aura_output: item?.aura_output,
+          flux_output: item?.flux_output,
+          oracle_output: item?.oracle_output,
+          edge_output: item?.edge_output,
+          sigma_output: item?.sigma_output,
+          clause_output: item?.clause_output,
+          lucifer_output: item?.lucifer_output,
         };
       });
     } catch {
@@ -674,31 +944,186 @@ export const api = {
     }
   },
 
+  getPipelineRun: async (id: string): Promise<{
+    run: PipelineHistoryRun;
+    steps: PipelineReplayStep[];
+  }> => {
+    const raw = await apiFetch<{
+      run: PipelineHistoryRun;
+      steps: PipelineReplayStep[];
+    }>(`/api/pipeline/history/${id}`);
+    return {
+      run: raw.run,
+      steps: Array.isArray(raw.steps) ? raw.steps : [],
+    };
+  },
+
+  getPipelineReplay: async (id: string): Promise<{
+    run: PipelineHistoryRun;
+    frames: PipelineReplayFrame[];
+  }> => {
+    const raw = await apiFetch<{
+      run: PipelineHistoryRun;
+      frames: PipelineReplayFrame[];
+    }>(`/api/pipeline/history/${id}/replay`);
+    return {
+      run: raw.run,
+      frames: Array.isArray(raw.frames) ? raw.frames : [],
+    };
+  },
+
   // Trades
   getTrades: async (): Promise<Trade[]> => {
     try {
       const raw = await apiFetch<{ trades: unknown[] }>("/api/trade");
       const trades = Array.isArray(raw?.trades) ? raw.trades : Array.isArray(raw) ? (raw as unknown[]) : [];
-      return trades.map((t) => {
-        const item = t as Record<string, unknown>;
-        return {
-          id: String(item?.id ?? ""),
-          market: String(item?.market ?? item?.slug ?? ""),
-          slug: String(item?.slug ?? ""),
-          direction: (String(item?.direction ?? "YES").toUpperCase() === "NO" ? "NO" : "YES") as "YES" | "NO",
-          source: String(item?.source ?? "").toLowerCase() === "autopilot" ? "autopilot" : "manual",
-          size: Number(item?.size ?? item?.sizeUsdc ?? 0),
-          price: Number(item?.price ?? item?.entryPrice ?? 0),
-          outcome: (["WIN", "LOSS", "OPEN", "PENDING"].includes(String(item?.outcome ?? "").toUpperCase())
-            ? String(item?.outcome).toUpperCase()
-            : "OPEN") as Trade["outcome"],
-          timestamp: Number(item?.timestamp ?? item?.created_at ?? 0),
-          pnl: Number(item?.pnl ?? 0),
-        };
-      });
+      return trades.map(normalizeTradeRecord);
     } catch {
       return [];
     }
+  },
+
+  getTradeReports: async (params?: {
+    period?: "day" | "week" | "month" | "all";
+    outcome?: Trade["outcome"] | "All";
+    source?: "autopilot" | "manual" | "all";
+    search?: string;
+  }): Promise<TradeReportsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params?.period && params.period !== "all") searchParams.set("period", params.period);
+    if (params?.outcome && params.outcome !== "All") searchParams.set("outcome", params.outcome);
+    if (params?.source && params.source !== "all") searchParams.set("source", params.source);
+    if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+    const query = searchParams.toString();
+    const raw = await apiFetch<TradeReportsResponse>(`/api/performance/trades${query ? `?${query}` : ""}`);
+    return {
+      trades: Array.isArray(raw.trades) ? raw.trades.map(normalizeTradeRecord) : [],
+      count: Number(raw.count ?? 0),
+      period: raw.period ?? "all",
+      filters: {
+        outcome: raw.filters?.outcome ?? null,
+        source: raw.filters?.source ?? null,
+        search: typeof raw.filters?.search === "string" ? raw.filters.search : "",
+      },
+      summary: {
+        totalTrades: Number(raw.summary?.totalTrades ?? 0),
+        totalPnl: Number(raw.summary?.totalPnl ?? 0),
+        wins: Number(raw.summary?.wins ?? 0),
+        losses: Number(raw.summary?.losses ?? 0),
+        open: Number(raw.summary?.open ?? 0),
+        pending: Number(raw.summary?.pending ?? 0),
+        winRate: Number(raw.summary?.winRate ?? 0),
+      },
+      buckets: Array.isArray(raw.buckets) ? raw.buckets : [],
+      bestTrade: raw.bestTrade ? normalizeTradeRecord(raw.bestTrade) : null,
+      worstTrade: raw.worstTrade ? normalizeTradeRecord(raw.worstTrade) : null,
+      agentAttribution: Array.isArray(raw.agentAttribution) ? raw.agentAttribution : [],
+    };
+  },
+
+  getArenaLeaderboard: async (window: ArenaWindow = "all", signal?: AbortSignal): Promise<ArenaLeaderboardResponse> => {
+    const searchParams = new URLSearchParams();
+    if (window !== "all") searchParams.set("window", window);
+    const query = searchParams.toString();
+    const raw = await apiFetch<ArenaLeaderboardResponse>(`/api/performance/arena${query ? `?${query}` : ""}`, { signal });
+    return {
+      window: raw.window ?? "all",
+      updatedAt: Number(raw.updatedAt ?? Date.now()),
+      meta: {
+        rankedAgents: Number(raw.meta?.rankedAgents ?? 0),
+        activeAgents: Number(raw.meta?.activeAgents ?? 0),
+        totalSelectedPnlPool: Number(raw.meta?.totalSelectedPnlPool ?? 0),
+        totalRealizedPnlPool: Number(raw.meta?.totalRealizedPnlPool ?? 0),
+        totalUnrealizedPnlPool: Number(raw.meta?.totalUnrealizedPnlPool ?? 0),
+        lastTradeAt: raw.meta?.lastTradeAt != null ? Number(raw.meta.lastTradeAt) : null,
+      },
+      leaders: Array.isArray(raw.leaders)
+        ? raw.leaders.map((entry) => ({
+            rank: Number(entry.rank ?? 0),
+            agentId: String(entry.agentId ?? ""),
+            agentCode: String(entry.agentCode ?? ""),
+            name: String(entry.name ?? "Unknown Agent"),
+            avatarEmoji: String(entry.avatarEmoji ?? "🤖"),
+            animalType: entry.animalType != null ? String(entry.animalType) : null,
+            agentType: String(entry.agentType ?? "created"),
+            connectionStatus: entry.connectionStatus != null ? String(entry.connectionStatus) : null,
+            autopilotEnabled: Boolean(entry.autopilotEnabled),
+            polymarketReady: Boolean(entry.polymarketReady),
+            selectedPnl: Number(entry.selectedPnl ?? 0),
+            selectedRealizedPnl: Number(entry.selectedRealizedPnl ?? 0),
+            selectedUnrealizedPnl: Number(entry.selectedUnrealizedPnl ?? 0),
+            allTimePnl: Number(entry.allTimePnl ?? 0),
+            totalTrades: Number(entry.totalTrades ?? 0),
+            winRate: Number(entry.winRate ?? 0),
+            openPositions: Number(entry.openPositions ?? 0),
+            currentStreak: Number(entry.currentStreak ?? 0),
+            lastTradeAt: entry.lastTradeAt != null ? Number(entry.lastTradeAt) : null,
+            bestTradeSlug: entry.bestTradeSlug != null ? String(entry.bestTradeSlug) : null,
+            bestTradePnl: Number(entry.bestTradePnl ?? 0),
+          }))
+        : [],
+      viewer: {
+        agentId: raw.viewer?.agentId != null ? String(raw.viewer.agentId) : null,
+        eligible: Boolean(raw.viewer?.eligible),
+        ranked: Boolean(raw.viewer?.ranked),
+        rank: raw.viewer?.rank != null ? Number(raw.viewer.rank) : null,
+        entry: raw.viewer?.entry
+          ? {
+              rank: Number(raw.viewer.entry.rank ?? 0),
+              agentId: String(raw.viewer.entry.agentId ?? ""),
+              agentCode: String(raw.viewer.entry.agentCode ?? ""),
+              name: String(raw.viewer.entry.name ?? "Unknown Agent"),
+              avatarEmoji: String(raw.viewer.entry.avatarEmoji ?? "🤖"),
+              animalType: raw.viewer.entry.animalType != null ? String(raw.viewer.entry.animalType) : null,
+              agentType: String(raw.viewer.entry.agentType ?? "created"),
+              connectionStatus: raw.viewer.entry.connectionStatus != null ? String(raw.viewer.entry.connectionStatus) : null,
+              autopilotEnabled: Boolean(raw.viewer.entry.autopilotEnabled),
+              polymarketReady: Boolean(raw.viewer.entry.polymarketReady),
+              selectedPnl: Number(raw.viewer.entry.selectedPnl ?? 0),
+              selectedRealizedPnl: Number(raw.viewer.entry.selectedRealizedPnl ?? 0),
+              selectedUnrealizedPnl: Number(raw.viewer.entry.selectedUnrealizedPnl ?? 0),
+              allTimePnl: Number(raw.viewer.entry.allTimePnl ?? 0),
+              totalTrades: Number(raw.viewer.entry.totalTrades ?? 0),
+              winRate: Number(raw.viewer.entry.winRate ?? 0),
+              openPositions: Number(raw.viewer.entry.openPositions ?? 0),
+              currentStreak: Number(raw.viewer.entry.currentStreak ?? 0),
+              lastTradeAt: raw.viewer.entry.lastTradeAt != null ? Number(raw.viewer.entry.lastTradeAt) : null,
+              bestTradeSlug: raw.viewer.entry.bestTradeSlug != null ? String(raw.viewer.entry.bestTradeSlug) : null,
+              bestTradePnl: Number(raw.viewer.entry.bestTradePnl ?? 0),
+            }
+          : null,
+        referencePnl: Number(raw.viewer?.referencePnl ?? 0),
+        gapToTop10: Number(raw.viewer?.gapToTop10 ?? 0),
+        gapToPodium: Number(raw.viewer?.gapToPodium ?? 0),
+        gapToCrown: Number(raw.viewer?.gapToCrown ?? 0),
+        reason: (raw.viewer?.reason ?? "no_agent") as ArenaViewerContext["reason"],
+      },
+    };
+  },
+
+  downloadTradeReportsCsv: async (params?: {
+    period?: "day" | "week" | "month" | "all";
+    outcome?: Trade["outcome"] | "All";
+    source?: "autopilot" | "manual" | "all";
+    search?: string;
+  }): Promise<Blob> => {
+    const searchParams = new URLSearchParams();
+    if (params?.period && params.period !== "all") searchParams.set("period", params.period);
+    if (params?.outcome && params.outcome !== "All") searchParams.set("outcome", params.outcome);
+    if (params?.source && params.source !== "all") searchParams.set("source", params.source);
+    if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+    const query = searchParams.toString();
+    const headers: Record<string, string> = {};
+    if (_authToken) {
+      headers.Authorization = `Bearer ${_authToken}`;
+    }
+    const response = await fetch(`${BASE_URL}/api/performance/trades/export.csv${query ? `?${query}` : ""}`, {
+      headers,
+    });
+    if (!response.ok) {
+      throw new Error(`API error ${response.status}`);
+    }
+    return response.blob();
   },
 
   // Signals
@@ -1182,6 +1607,70 @@ export const api = {
     });
   },
 
+  getNotifications: async (): Promise<{ notifications: NotificationItem[]; unread: number }> => {
+    const raw = await apiFetch<{ notifications?: NotificationItem[]; unread?: number }>("/api/notifications");
+    return {
+      notifications: Array.isArray(raw.notifications) ? raw.notifications : [],
+      unread: Number(raw.unread ?? 0),
+    };
+  },
+
+  markNotificationRead: async (id: string): Promise<void> => {
+    await apiFetch(`/api/notifications/${id}/read`, { method: "POST" });
+  },
+
+  markAllNotificationsRead: async (): Promise<void> => {
+    await apiFetch("/api/notifications/read-all", { method: "POST" });
+  },
+
+  getWatchlist: async (): Promise<WatchlistItem[]> => {
+    const raw = await apiFetch<{ items?: WatchlistItem[] }>("/api/v1/watchlist");
+    return Array.isArray(raw.items) ? raw.items : [];
+  },
+
+  addWatchlistItem: async (slug: string, question?: string | null): Promise<void> => {
+    await apiFetch("/api/v1/watchlist", {
+      method: "POST",
+      body: JSON.stringify({ slug, question }),
+    });
+  },
+
+  removeWatchlistItem: async (slug: string): Promise<void> => {
+    await apiFetch(`/api/v1/watchlist/${encodeURIComponent(slug)}`, { method: "DELETE" });
+  },
+
+  getMarketAlerts: async (): Promise<MarketAlertItem[]> => {
+    const raw = await apiFetch<{ items?: MarketAlertItem[] }>("/api/v1/market-alerts");
+    return Array.isArray(raw.items) ? raw.items : [];
+  },
+
+  createMarketAlert: async (input: {
+    slug: string;
+    question?: string | null;
+    direction: "above" | "below";
+    threshold: number;
+  }): Promise<void> => {
+    await apiFetch("/api/v1/market-alerts", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+
+  updateMarketAlert: async (
+    id: string,
+    patch: Partial<{
+      question: string | null;
+      direction: "above" | "below";
+      threshold: number;
+      enabled: boolean;
+    }>
+  ): Promise<void> => {
+    await apiFetch(`/api/v1/market-alerts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+  },
+
   // ── BYO Agent ─────────────────────────────────────────────────────────────
   // Legacy direct-create endpoint — deprecated in favor of onboarding/claim.
 
@@ -1299,10 +1788,25 @@ export const api = {
   },
 
   // Emergency
-  activatePanicMode: async (options: { cancelOrders: boolean; liquidatePositions: boolean }): Promise<{ success: boolean }> => {
+  activatePanicMode: async (options: {
+    cancelOrders: boolean;
+    liquidatePositions: boolean;
+    reason: string;
+  }): Promise<{ success: boolean; reportId: string; cooldownEndsAt: number; reason: string }> => {
     return apiFetch("/api/v1/panic-mode/activate", {
       method: "POST",
       body: JSON.stringify(options),
+    });
+  },
+
+  getPanicModeStatus: async (): Promise<PanicModeStatus> => {
+    return apiFetch("/api/v1/panic-mode/status");
+  },
+
+  rearmPanicMode: async (confirmation: string): Promise<{ success: boolean; status: PanicModeStatus }> => {
+    return apiFetch("/api/v1/panic-mode/rearm", {
+      method: "POST",
+      body: JSON.stringify({ confirmation }),
     });
   },
 
@@ -1324,8 +1828,8 @@ export function normalizeAgentData(agent: string, raw: Record<string, unknown>):
     };
     case "oracle": return {
       ...raw,
-      prob_estimate: raw.calibrated_prob ?? raw.prob_estimate ?? 0,
-      market_implied: raw.market_implied ?? 0,
+      prob_estimate: raw.calibrated_prob ?? raw.prob_estimate ?? raw.estimated_true_prob ?? 0,
+      market_implied: raw.market_implied ?? raw.yes_price ?? raw.yesPrice ?? 0,
       confidence: typeof raw.confidence === "number"
         ? raw.confidence > 1 ? raw.confidence : raw.confidence * 100
         : 0,
@@ -1342,7 +1846,15 @@ export function normalizeAgentData(agent: string, raw: Record<string, unknown>):
     };
     case "clause": return {
       ...raw,
-      resolution_risk: (raw.riskLevel ?? raw.resolution_risk ?? "MED") as "LOW" | "MED" | "HIGH",
+      resolution_risk: (
+        raw.riskLevel === "MEDIUM"
+          ? "MED"
+          : raw.riskLevel === "LOW"
+            ? "LOW"
+            : raw.riskLevel === "HIGH"
+              ? "HIGH"
+              : raw.resolution_risk ?? "MED"
+      ) as "LOW" | "MED" | "HIGH",
       technicality_risks: Array.isArray(raw.technicality_risks) ? raw.technicality_risks : [],
     };
     case "sigma": return {
@@ -1374,11 +1886,40 @@ export function streamPrices(
   function connect() {
     if (!alive) return;
     es = new EventSource(url);
-    es.onmessage = (e) => {
+    const handleMessage = (e: MessageEvent<string>) => {
       try {
-        onPrice(JSON.parse(e.data));
+        const payload = JSON.parse(e.data) as
+          | Record<string, { yes: number; no: number }>
+          | { tokens?: string[]; prices?: unknown; timestamp?: number };
+
+        if (payload && "prices" in payload) {
+          const mapped: Record<string, { yes: number; no: number }> = {};
+          const priceValues = payload.prices;
+          if (Array.isArray(priceValues) && Array.isArray(payload.tokens)) {
+            payload.tokens.forEach((token, index) => {
+              const raw = priceValues[index] as Record<string, unknown> | number | undefined;
+              const yes =
+                typeof raw === "number"
+                  ? raw
+                  : Number((raw as Record<string, unknown> | undefined)?.yes ?? (raw as Record<string, unknown> | undefined)?.price ?? 0);
+              mapped[token] = { yes, no: Math.max(0, 1 - yes) };
+            });
+          } else if (priceValues && typeof priceValues === "object") {
+            Object.entries(priceValues as Record<string, unknown>).forEach(([token, raw]) => {
+              const row = raw as Record<string, unknown>;
+              const yes = Number(row?.yes ?? row?.price ?? raw ?? 0);
+              mapped[token] = { yes, no: Math.max(0, 1 - yes) };
+            });
+          }
+          onPrice(mapped);
+          return;
+        }
+
+        onPrice(payload as Record<string, { yes: number; no: number }>);
       } catch {}
     };
+    es.onmessage = handleMessage;
+    es.addEventListener("prices", handleMessage as EventListener);
     es.onerror = () => {
       es?.close();
       if (alive) setTimeout(connect, 3000);
@@ -1511,6 +2052,14 @@ export function fmtPrice(p: number | null | undefined): string {
 export function fmtUSDC(n: number | null | undefined): string {
   if (n == null || isNaN(n)) return "$0.00";
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function fmtCompact(n: number | null | undefined): string {
+  if (n == null || isNaN(n)) return "$0";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (abs >= 1_000) return `$${(n / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
+  return `$${n.toFixed(0)}`;
 }
 
 export function gradeColor(grade: string): string {

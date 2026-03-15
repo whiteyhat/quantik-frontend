@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { fmtUSDC, fmtPrice, type Position } from "@/lib/api";
 import {
   useSocketEvent,
@@ -35,15 +34,15 @@ interface LivePositionsTableProps {
   positions: Position[];
   loading: boolean;
   onPositionUpdate: (slug: string, currentPrice: number, pnl: number, pnlPct: number) => void;
+  onOpenPosition: (position: Position) => void;
 }
 
-export function LivePositionsTable({ positions, loading, onPositionUpdate }: LivePositionsTableProps) {
+export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpenPosition }: LivePositionsTableProps) {
   const t = useTranslations("manageAgent");
   const tc = useTranslations("common");
   const myAgent = useQuantikStore((s) => s.myAgent);
   const agentEmoji = myAgent?.avatar_emoji ?? "\u{1F916}";
   const agentName = myAgent?.name ?? "Agent";
-  const router = useRouter();
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const handleUpdate = useCallback(
@@ -158,7 +157,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate }: Liv
                     key={pos.id}
                     onMouseEnter={() => setHoveredRow(pos.id)}
                     onMouseLeave={() => setHoveredRow(null)}
-                    onClick={() => router.push(`/market/${encodeURIComponent(pos.slug)}`)}
+                    onClick={() => onOpenPosition(pos)}
                     style={{
                       borderBottom: "1px solid rgba(255,255,255,0.04)",
                       cursor: "pointer",

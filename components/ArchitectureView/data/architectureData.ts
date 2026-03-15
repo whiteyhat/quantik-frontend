@@ -32,6 +32,16 @@ export interface ServiceNodeData {
   [key: string]: unknown;
 }
 
+export interface InfraNodeData {
+  type: "infra";
+  label: string;
+  icon: string;
+  category: "compute" | "data" | "messaging" | "auth" | "monitoring";
+  status: "online" | "offline" | "degraded";
+  connectedAgents: string[];
+  [key: string]: unknown;
+}
+
 // ─── Agent Metadata ──────────────────────────────────────────────────────────
 
 export const AGENT_META: Record<
@@ -56,12 +66,19 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
     { id: "aura-bloomberg", label: "Bloomberg Feed", icon: "💹" },
     { id: "aura-reuters", label: "Reuters API", icon: "🗞️" },
     { id: "aura-twitter", label: "Twitter Firehose", icon: "🐦" },
+    { id: "aura-fred", label: "FRED API", icon: "🏛️" },
+    { id: "aura-metaculus", label: "Metaculus", icon: "🔮" },
+    { id: "aura-coindesk", label: "CoinDesk", icon: "₿" },
+    { id: "aura-guardian", label: "Guardian API", icon: "🗞️" },
+    { id: "aura-nyt", label: "NYT API", icon: "📰" },
   ],
   edge: [
     { id: "edge-ingestion", label: "Data Ingestion", icon: "📥" },
     { id: "edge-onchain", label: "On-chain Indexer", icon: "⛓️" },
     { id: "edge-websockets", label: "WebSockets", icon: "🔌" },
     { id: "edge-rpc", label: "RPC Nodes", icon: "🖧" },
+    { id: "edge-kelly", label: "Kelly Calculator", icon: "🎰" },
+    { id: "edge-position", label: "Position Sizer", icon: "📐" },
   ],
   oracle: [
     { id: "oracle-ensemble", label: "Ensemble Engine", icon: "🧠" },
@@ -69,6 +86,8 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
     { id: "oracle-llm", label: "LLM Engine", icon: "🤖" },
     { id: "oracle-vectordb", label: "Vector DB", icon: "💾" },
     { id: "oracle-historical", label: "Historical Models", icon: "📈" },
+    { id: "oracle-gemini", label: "Gemini AI", icon: "♊" },
+    { id: "oracle-backtester", label: "Signal Backtester", icon: "🧪" },
   ],
   lucifer: [
     { id: "lucifer-veto", label: "Risk Veto Protocol", icon: "🛡️" },
@@ -76,31 +95,168 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
     { id: "lucifer-wallet", label: "WDK Wallet", icon: "👛" },
     { id: "lucifer-bankroll", label: "Bankroll Guardian", icon: "🏦" },
     { id: "lucifer-exposure", label: "Exposure Limits", icon: "⚠️" },
+    { id: "lucifer-circuit", label: "Circuit Breaker", icon: "🔴" },
+    { id: "lucifer-correlation", label: "Portfolio Correlation", icon: "🔗" },
   ],
   flux: [
     { id: "flux-router", label: "Liquidity Router", icon: "🔀" },
     { id: "flux-uniswap", label: "Uniswap V3", icon: "🦄" },
     { id: "flux-curve", label: "Curve Pools", icon: "〰️" },
     { id: "flux-1inch", label: "1inch Agg", icon: "🔗" },
+    { id: "flux-depth", label: "Depth Analyzer", icon: "📊" },
   ],
   clause: [
     { id: "clause-contracts", label: "Smart Contracts", icon: "📝" },
     { id: "clause-solidity", label: "Solidity Verifier", icon: "✅" },
     { id: "clause-gas", label: "Gas Optimizer", icon: "⛽" },
+    { id: "clause-resolution", label: "Resolution Monitor", icon: "⏱️" },
+    { id: "clause-deadline", label: "Deadline Tracker", icon: "📅" },
   ],
   sigma: [
     { id: "sigma-statarb", label: "StatArb Core", icon: "📐" },
     { id: "sigma-meanrev", label: "Mean Reversion", icon: "↩️" },
     { id: "sigma-pairs", label: "Pairs Matrix", icon: "🔢" },
     { id: "sigma-zscore", label: "Z-Score Calc", icon: "📏" },
+    { id: "sigma-consensus", label: "Agent Consensus", icon: "🤝" },
+    { id: "sigma-execution", label: "Execution Bridge", icon: "🌉" },
   ],
 };
+
+// ─── Infrastructure nodes (outer ring) ──────────────────────────────────────
+
+export const INFRA_NODES: {
+  id: string;
+  label: string;
+  icon: string;
+  category: InfraNodeData["category"];
+  connectedTo: { target: string; intensity: "high" | "medium" | "low" }[];
+  angle: number;
+}[] = [
+  {
+    id: "infra-telegram",
+    label: "Telegram Bot",
+    icon: "📱",
+    category: "messaging",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: -64,   // midpoint Aura(-90) ↔ Oracle(-38)
+  },
+  {
+    id: "infra-scanner",
+    label: "Market Scanner",
+    icon: "📡",
+    category: "compute",
+    connectedTo: [
+      { target: "fenrir", intensity: "high" },
+      { target: "edge", intensity: "medium" },
+      { target: "sigma", intensity: "medium" },
+    ],
+    angle: -12,   // midpoint Oracle(-38) ↔ Flux(14)
+  },
+  {
+    id: "infra-autopilot",
+    label: "Autopilot Engine",
+    icon: "🤖",
+    category: "compute",
+    connectedTo: [
+      { target: "fenrir", intensity: "high" },
+      { target: "sigma", intensity: "medium" },
+    ],
+    angle: 40,    // midpoint Flux(14) ↔ Sigma(65)
+  },
+  {
+    id: "infra-byo-mcp",
+    label: "BYO MCP Server",
+    icon: "🔧",
+    category: "compute",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: 91,    // midpoint Sigma(65) ↔ Clause(116)
+  },
+  {
+    id: "infra-database",
+    label: "Database",
+    icon: "🗄️",
+    category: "data",
+    connectedTo: [{ target: "fenrir", intensity: "high" }],
+    angle: 142,   // midpoint Clause(116) ↔ Lucifer(167)
+  },
+  {
+    id: "infra-redis",
+    label: "Redis / BullMQ",
+    icon: "⚡",
+    category: "data",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: 193,   // midpoint Lucifer(167) ↔ Edge(218)
+  },
+  {
+    id: "infra-sentry",
+    label: "Sentry Monitoring",
+    icon: "🛡️",
+    category: "monitoring",
+    connectedTo: [{ target: "fenrir", intensity: "low" }],
+    angle: 244,   // midpoint Edge(218) ↔ Aura(270)
+  },
+  {
+    id: "infra-trade-exec",
+    label: "Trade Execution",
+    icon: "💰",
+    category: "compute",
+    connectedTo: [
+      { target: "sigma", intensity: "high" },
+      { target: "flux", intensity: "medium" },
+    ],
+    angle: 116,   // near Clause, between Sigma ↔ Lucifer
+  },
+  {
+    id: "infra-socketio",
+    label: "Socket.IO Layer",
+    icon: "🔌",
+    category: "messaging",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: 167,   // near Lucifer gap
+  },
+  {
+    id: "infra-wallet",
+    label: "Wallet Manager",
+    icon: "👛",
+    category: "auth",
+    connectedTo: [
+      { target: "fenrir", intensity: "medium" },
+      { target: "lucifer", intensity: "medium" },
+    ],
+    angle: 218,   // near Edge gap
+  },
+  {
+    id: "infra-gemini",
+    label: "Gemini AI",
+    icon: "♊",
+    category: "compute",
+    connectedTo: [
+      { target: "oracle", intensity: "high" },
+      { target: "sigma", intensity: "high" },
+      { target: "lucifer", intensity: "medium" },
+    ],
+    angle: -38,   // near Oracle
+  },
+  {
+    id: "infra-clerk",
+    label: "Clerk Auth",
+    icon: "🔐",
+    category: "auth",
+    connectedTo: [{ target: "fenrir", intensity: "low" }],
+    angle: 270,   // bottom, away from all agents
+  },
+];
 
 // ─── Layout helpers ──────────────────────────────────────────────────────────
 
 const CENTER = { x: 600, y: 500 };
-const AGENT_RADIUS = 300;
-const SERVICE_RADIUS = 220;
+const AGENT_RADIUS = 550;
+const INFRA_RADIUS = 1550;
+
+// Service grid layout (2 columns extending outward from each agent)
+const SVC_START = 280;    // distance from agent to first row
+const SVC_ROW_GAP = 130;  // spacing between rows
+const SVC_COL_GAP = 220;  // column center-to-center spacing
 
 // 7 agents arranged clockwise starting from top
 export const AGENT_ANGLES: Record<string, number> = {
@@ -142,7 +298,7 @@ export function getInitialNodes(): Node[] {
   nodes.push({
     id: "polymarket",
     type: "serviceNode",
-    position: { x: CENTER.x - 60, y: CENTER.y - 350 },
+    position: { x: CENTER.x - 60, y: CENTER.y - 1100 },
     data: {
       type: "service",
       label: "Polymarket CLOB",
@@ -174,19 +330,27 @@ export function getInitialNodes(): Node[] {
       draggable: true,
     });
 
-    // Service nodes fanning out from agent
+    // Service nodes in 2-column grid extending outward from agent
     const services = SERVICES[agentKey] || [];
-    const fanSpread = Math.min(40, 120 / Math.max(services.length - 1, 1));
-    const startAngle = angle - (fanSpread * (services.length - 1)) / 2;
+    const rad = (angle * Math.PI) / 180;
+    const outX = Math.cos(rad);
+    const outY = Math.sin(rad);
+    const latX = -Math.sin(rad);
+    const latY = Math.cos(rad);
 
     services.forEach((svc, i) => {
-      const svcAngle = startAngle + i * fanSpread;
-      const svcPos = polarToXY(pos.x, pos.y, svcAngle, SERVICE_RADIUS);
+      const row = Math.floor(i / 2);
+      const isLastOdd = i === services.length - 1 && services.length % 2 === 1;
+      const colOffset = isLastOdd ? 0 : (i % 2 === 0 ? -1 : 1) * (SVC_COL_GAP / 2);
+
+      const dist = SVC_START + row * SVC_ROW_GAP;
+      const svcX = pos.x + outX * dist + latX * colOffset;
+      const svcY = pos.y + outY * dist + latY * colOffset;
 
       nodes.push({
         id: svc.id,
         type: "serviceNode",
-        position: { x: svcPos.x - 60, y: svcPos.y - 25 },
+        position: { x: svcX - 60, y: svcY - 25 },
         data: {
           type: "service",
           label: svc.label,
@@ -196,6 +360,25 @@ export function getInitialNodes(): Node[] {
         } satisfies ServiceNodeData,
         draggable: true,
       });
+    });
+  }
+
+  // Infrastructure nodes (outer ring)
+  for (const infra of INFRA_NODES) {
+    const pos = polarToXY(CENTER.x, CENTER.y, infra.angle, INFRA_RADIUS);
+    nodes.push({
+      id: infra.id,
+      type: "infraNode",
+      position: { x: pos.x - 70, y: pos.y - 27 },
+      data: {
+        type: "infra",
+        label: infra.label,
+        icon: infra.icon,
+        category: infra.category,
+        status: "online",
+        connectedAgents: infra.connectedTo.map((c) => c.target),
+      } satisfies InfraNodeData,
+      draggable: true,
     });
   }
 
@@ -253,6 +436,19 @@ export function getInitialEdges(): Edge[] {
     type: "animatedDataEdge",
     data: { intensity: "medium" },
   });
+
+  // Infrastructure -> agents
+  for (const infra of INFRA_NODES) {
+    for (const conn of infra.connectedTo) {
+      edges.push({
+        id: `${infra.id}-${conn.target}`,
+        source: infra.id,
+        target: conn.target,
+        type: "animatedDataEdge",
+        data: { intensity: conn.intensity },
+      });
+    }
+  }
 
   return edges;
 }
@@ -720,6 +916,436 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
       { time: "12:06:00", level: "info", message: "Orderbook sync: 12 markets, 2,341 orders" },
       { time: "12:05:30", level: "info", message: "Order executed: 200 YES @ 0.57 — 0 slippage" },
       { time: "12:05:00", level: "info", message: "WebSocket: 847 subscriptions active" },
+    ],
+  },
+
+  // ─── New Agent Service Details ──────────────────────────────────────────────
+
+  "aura-fred": {
+    description: "Federal Reserve Economic Data (FRED) API integration pulling macro indicators — GDP, unemployment (UNRATE), CPI (CPIAUCSL), Fed Funds rate, and the T10Y2Y yield curve recession indicator.",
+    protocol: "REST API",
+    endpoint: "api.stlouisfed.org/fred",
+    sources: ["FRED Series API", "Federal Reserve", "St. Louis Fed"],
+    feed: [
+      { time: "12:04:20", message: "UNRATE: 3.7% (unchanged) — labor market stable" },
+      { time: "12:02:10", message: "T10Y2Y: -0.12 — yield curve still inverted (recession signal)" },
+      { time: "12:00:05", message: "FEDFUNDS: 5.33% — last rate decision unchanged" },
+      { time: "11:58:30", message: "CPIAUCSL: +0.2% MoM — inflation cooling trend" },
+    ],
+    logs: [
+      { time: "12:04:20", level: "info", message: "FRED batch fetch: 4 series in 890ms" },
+      { time: "12:00:05", level: "info", message: "Cache refreshed — 30min TTL on macro series" },
+      { time: "11:55:00", level: "warn", message: "BLS series delayed — fallback to cached data" },
+    ],
+  },
+  "aura-metaculus": {
+    description: "Metaculus prediction aggregation engine sourcing crowd wisdom probabilities from 30k+ forecasters on geopolitical, scientific, and economic questions.",
+    protocol: "REST API",
+    endpoint: "metaculus.com/api2/questions",
+    sources: ["Metaculus Community", "Metaculus AI", "Expert Forecaster Pool"],
+    feed: [
+      { time: "12:05:10", message: "Fed rate cut Q2: Metaculus 62% vs Polymarket 58% — 4% divergence" },
+      { time: "12:03:45", message: "BTC $150k by Dec: Metaculus 41% — crowd less bullish than markets" },
+      { time: "12:01:22", message: "US recession 2026: 28% community median — declining trend" },
+    ],
+    logs: [
+      { time: "12:05:10", level: "info", message: "Fetched 47 relevant questions in 1.2s" },
+      { time: "12:03:45", level: "info", message: "Cross-platform divergence: 3 markets above 3% threshold" },
+    ],
+  },
+  "aura-coindesk": {
+    description: "CoinDesk news API for real-time crypto industry news, regulatory updates, and market-moving events with sentiment tagging.",
+    protocol: "REST API",
+    endpoint: "api.coindesk.com/v1",
+    sources: ["CoinDesk Editorial", "CoinDesk Research", "CoinDesk Data"],
+    feed: [
+      { time: "12:04:55", message: "Breaking: Major exchange announces Polymarket integration" },
+      { time: "12:02:30", message: "Analysis: Stablecoin supply hits ATH — bullish for prediction markets" },
+      { time: "12:00:15", message: "Regulatory: EU MiCA framework update — crypto-positive signals" },
+    ],
+    logs: [
+      { time: "12:04:55", level: "info", message: "New article ingested — sentiment: positive (0.78)" },
+      { time: "12:02:30", level: "info", message: "Batch processed: 12 articles in 340ms" },
+    ],
+  },
+  "aura-guardian": {
+    description: "The Guardian Open Platform API providing mainstream news coverage for geopolitical sentiment analysis and macro event detection.",
+    protocol: "REST API",
+    endpoint: "content.guardianapis.com",
+    sources: ["Guardian World", "Guardian Business", "Guardian Politics"],
+    feed: [
+      { time: "12:04:40", message: "UK election polling shift: Labour +4pts — market implications" },
+      { time: "12:02:18", message: "Climate summit update: new carbon credit framework proposed" },
+      { time: "11:59:55", message: "Trade tensions: US-China tariff negotiations stall" },
+    ],
+    logs: [
+      { time: "12:04:40", level: "info", message: "Guardian fetch: 23 articles, 8 market-relevant" },
+      { time: "12:02:18", level: "info", message: "Entity extraction: 12 named entities across 8 articles" },
+    ],
+  },
+  "aura-nyt": {
+    description: "New York Times Article Search API for US-focused political, economic, and cultural news with deep entity extraction.",
+    protocol: "REST API",
+    endpoint: "api.nytimes.com/svc/search",
+    sources: ["NYT Politics", "NYT Business", "NYT DealBook"],
+    feed: [
+      { time: "12:05:05", message: "Presidential approval poll: 48% — steady, no market catalyst" },
+      { time: "12:03:10", message: "Fed Chair speech preview: market expects dovish tone" },
+      { time: "12:01:00", message: "Tech regulation bill advances — crypto exemption included" },
+    ],
+    logs: [
+      { time: "12:05:05", level: "info", message: "NYT search: 15 articles matching active market keywords" },
+      { time: "12:01:00", level: "info", message: "Rate limit: 8/10 requests used this minute" },
+    ],
+  },
+  "oracle-gemini": {
+    description: "Gemini AI model pool (gemini-3.1-pro-preview, gemini-2.5-flash, gemini-3.1-flash-lite) for probabilistic reasoning, thesis generation, and market interpretation.",
+    protocol: "REST API",
+    endpoint: "generativelanguage.googleapis.com",
+    sources: ["Gemini 3.1 Pro", "Gemini 2.5 Flash", "Gemini Flash Lite"],
+    feed: [
+      { time: "12:05:35", message: "Gemini Pro analysis: BTC-150K probability 0.64 based on ETF momentum" },
+      { time: "12:04:10", message: "Flash inference: fed-rate-cut confidence HIGH — dovish language detected" },
+      { time: "12:02:50", message: "Multi-model consensus: 3/3 models bullish on crypto markets" },
+    ],
+    logs: [
+      { time: "12:05:35", level: "info", message: "Gemini Pro inference: 3.2s, 1,247 tokens output" },
+      { time: "12:04:10", level: "info", message: "Flash inference: 890ms — used for latency-sensitive checks" },
+      { time: "12:02:50", level: "info", message: "Token usage: 12,847/1M daily quota (1.3%)" },
+    ],
+  },
+  "oracle-backtester": {
+    description: "Historical analogue backtester that finds past markets with similar price patterns, volume profiles, and resolution timelines to validate current signals.",
+    protocol: "Internal SQLite",
+    endpoint: "backtester.oracle.internal",
+    sources: ["Historical Polymarket Archive", "Resolution Database", "Price Trajectory Store"],
+    feed: [
+      { time: "12:05:20", message: "Backtest: BTC-150K matches 2024-Q3 pattern — 72% resolved YES" },
+      { time: "12:03:40", message: "Analogue found: fed-rate-cut similar to Dec-2024 cycle — 68% hit" },
+      { time: "12:01:15", message: "Signal validation: 4/5 current signals pass historical backtest" },
+    ],
+    logs: [
+      { time: "12:05:20", level: "info", message: "Scanned 2,847 historical markets in 450ms" },
+      { time: "12:03:40", level: "info", message: "Analogue confidence: 0.87 cosine similarity" },
+    ],
+  },
+  "edge-kelly": {
+    description: "Kelly Criterion calculator determining optimal fractional bet size based on estimated edge, bankroll, and win probability from the Oracle pipeline.",
+    protocol: "Internal Module",
+    endpoint: "kelly.edge.internal",
+    sources: ["Oracle Probabilities", "Edge Estimates", "Bankroll State"],
+    feed: [
+      { time: "12:05:40", message: "Kelly fraction: 0.12 for BTC-150K (edge: +0.04, prob: 0.62)" },
+      { time: "12:04:15", message: "Half-Kelly applied: $250 position (full Kelly would be $500)" },
+      { time: "12:02:55", message: "Negative edge detected on eth-flip: Kelly = 0 — skip trade" },
+    ],
+    logs: [
+      { time: "12:05:40", level: "info", message: "Kelly calc: 47 markets evaluated in 12ms" },
+      { time: "12:02:55", level: "warn", message: "Zero-Kelly markets: 12 out of 47 (no edge)" },
+    ],
+  },
+  "edge-position": {
+    description: "Correlation-adjusted position sizer that applies portfolio-level constraints, correlation penalties, and max-exposure checks to Kelly-derived sizes.",
+    protocol: "Internal Module",
+    endpoint: "position.edge.internal",
+    sources: ["Kelly Calculator", "Correlation Matrix", "Portfolio State"],
+    feed: [
+      { time: "12:05:38", message: "Position adjusted: BTC-150K reduced 15% (correlation with ETH-10K: 0.82)" },
+      { time: "12:04:12", message: "Max position cap applied: $500 → $400 (20% portfolio limit)" },
+      { time: "12:02:48", message: "No correlation penalty for fed-rate-cut (uncorrelated to crypto)" },
+    ],
+    logs: [
+      { time: "12:05:38", level: "info", message: "Correlation penalty: -15% on 2 positions" },
+      { time: "12:04:12", level: "warn", message: "Position cap triggered — approaching max exposure" },
+    ],
+  },
+  "lucifer-circuit": {
+    description: "Three-state circuit breaker (ARMED → WARNING → TRIGGERED) that halts all trading when portfolio drawdown exceeds thresholds. Auto-rearms after cooldown.",
+    protocol: "Internal + DB",
+    endpoint: "circuit.lucifer.internal",
+    sources: ["Drawdown Monitor", "P&L Tracker", "Portfolio State"],
+    feed: [
+      { time: "12:05:45", message: "Circuit breaker: ARMED — drawdown 2.1% (threshold: 10%)" },
+      { time: "12:04:20", message: "Health check: all 3 breakers green (daily, weekly, total)" },
+      { time: "12:02:00", message: "Historical: last trigger was 14 days ago (5min cooldown)" },
+    ],
+    logs: [
+      { time: "12:05:45", level: "info", message: "Circuit state: ARMED | drawdown: 2.1% | threshold: 10%" },
+      { time: "12:04:20", level: "info", message: "Breaker health: daily=OK, weekly=OK, total=OK" },
+    ],
+  },
+  "lucifer-correlation": {
+    description: "Real-time portfolio correlation engine tracking pairwise position correlations to prevent concentration risk and correlated drawdowns.",
+    protocol: "Internal Module",
+    endpoint: "correlation.lucifer.internal",
+    sources: ["Price Covariance Matrix", "Position Tracker", "Historical Correlation DB"],
+    feed: [
+      { time: "12:05:42", message: "Portfolio correlation heat: avg 0.34 — healthy diversification" },
+      { time: "12:04:18", message: "Alert: BTC-150K + ETH-10K correlation 0.87 — flagged for review" },
+      { time: "12:02:30", message: "Sector breakdown: crypto 58%, macro 30%, politics 12%" },
+    ],
+    logs: [
+      { time: "12:05:42", level: "info", message: "Correlation matrix: 3x3 positions recomputed in 8ms" },
+      { time: "12:04:18", level: "warn", message: "High correlation pair detected: threshold 0.80 exceeded" },
+    ],
+  },
+  "clause-resolution": {
+    description: "Polymarket resolution monitor polling the Gamma API for market resolution status, outcome reporting, and settlement triggers.",
+    protocol: "REST API",
+    endpoint: "gamma-api.polymarket.com",
+    sources: ["Gamma Markets API", "Gamma Events API", "UMA Oracle"],
+    feed: [
+      { time: "12:05:50", message: "Resolution check: 3 markets within 48h of deadline" },
+      { time: "12:04:25", message: "Market resolved: us-debt-ceiling → YES — settlement pending" },
+      { time: "12:02:40", message: "Oracle dispute: 1 market flagged for extended resolution" },
+    ],
+    logs: [
+      { time: "12:05:50", level: "info", message: "Resolution poll: 47 active markets checked in 1.1s" },
+      { time: "12:04:25", level: "info", message: "Resolution event: payout triggered for 2 positions" },
+    ],
+  },
+  "clause-deadline": {
+    description: "Time-to-resolution urgency tracker scoring markets by proximity to resolution date, affecting position sizing and risk tolerance.",
+    protocol: "Internal Module",
+    endpoint: "deadline.clause.internal",
+    sources: ["Market Metadata", "Resolution Calendar", "Urgency Scorer"],
+    feed: [
+      { time: "12:05:48", message: "Urgency: fed-rate-cut → 12 days (MEDIUM) — normal sizing" },
+      { time: "12:04:22", message: "Warning: btc-100k-march → 2 days (CRITICAL) — reduce exposure" },
+      { time: "12:02:35", message: "Calendar: 8 markets resolving this week, 23 this month" },
+    ],
+    logs: [
+      { time: "12:05:48", level: "info", message: "Urgency scores: 47 markets — 3 critical, 8 high" },
+      { time: "12:04:22", level: "warn", message: "Critical deadline: position sizing reduced by 50%" },
+    ],
+  },
+  "sigma-consensus": {
+    description: "Multi-agent consensus aggregator that collects all 6 upstream agent recommendations and synthesizes a unified TRADE/HOLD/SKIP decision with confidence scores.",
+    protocol: "Internal gRPC",
+    endpoint: "consensus.sigma.internal",
+    sources: ["Aura Output", "Flux Output", "Clause Output", "Oracle Output", "Edge Output", "Lucifer Output"],
+    feed: [
+      { time: "12:05:55", message: "Consensus: 5/6 agents BULLISH on BTC-150K — high confidence" },
+      { time: "12:04:30", message: "Split decision: 3 TRADE / 2 HOLD / 1 VETO on eth-flip" },
+      { time: "12:02:45", message: "Unanimous: all 6 agents SKIP on low-liquidity market" },
+    ],
+    logs: [
+      { time: "12:05:55", level: "info", message: "Consensus computed: 47 markets in 230ms" },
+      { time: "12:04:30", level: "warn", message: "Split decision — Lucifer VETO overrides majority" },
+    ],
+  },
+  "sigma-execution": {
+    description: "Bridge from Sigma's TRADE recommendation to the execution engine — handles order routing, timing, and confirmation before final trade placement.",
+    protocol: "Internal API",
+    endpoint: "exec-bridge.sigma.internal",
+    sources: ["Sigma Decision Engine", "Trade Execution Service", "Order Router"],
+    feed: [
+      { time: "12:05:58", message: "Trade routed: BUY 200 YES @ 0.58 on BTC-150K → execution engine" },
+      { time: "12:04:35", message: "Execution confirmed: order filled in 1.2s, 0.1% slippage" },
+      { time: "12:02:50", message: "Trade skipped: eth-flip — Lucifer veto in effect" },
+    ],
+    logs: [
+      { time: "12:05:58", level: "info", message: "Order routed to execution engine — awaiting fill" },
+      { time: "12:04:35", level: "info", message: "Fill confirmed: 200 YES @ 0.58 — P&L tracking started" },
+    ],
+  },
+  "flux-depth": {
+    description: "Orderbook depth and imbalance analyzer measuring buy/sell pressure ratios, depth at price levels, and spread dynamics for liquidity assessment.",
+    protocol: "Polymarket CLI",
+    endpoint: "depth.flux.internal",
+    sources: ["Polymarket Orderbook", "CLOB Depth Snapshots", "Imbalance Calculator"],
+    feed: [
+      { time: "12:05:52", message: "BTC-150K depth: $42k bid / $38k ask — 1.11 buy pressure ratio" },
+      { time: "12:04:28", message: "Imbalance alert: fed-rate-cut sell-heavy (0.7 ratio) — thin bids" },
+      { time: "12:02:15", message: "Spread analysis: 12 markets below 2c spread — healthy liquidity" },
+    ],
+    logs: [
+      { time: "12:05:52", level: "info", message: "Depth snapshot: 47 markets, 12,847 orders analyzed" },
+      { time: "12:04:28", level: "warn", message: "Low buy-side depth on 3 markets — sizing adjusted" },
+    ],
+  },
+
+  // ─── Infrastructure Node Details ────────────────────────────────────────────
+
+  "infra-telegram": {
+    description: "Telegram Bot API integration for real-time trade alerts, position updates, and system notifications with inline keyboard actions.",
+    protocol: "Telegram Bot API",
+    endpoint: "api.telegram.org/bot",
+    sources: ["Trade Events", "Alert Engine", "System Monitor"],
+    feed: [
+      { time: "12:05:30", message: "Alert sent: BTC-150K BUY 200 YES @ 0.58 — confirmed" },
+      { time: "12:03:15", message: "Position update: P&L +$42.50 on fed-rate-cut (unrealized)" },
+      { time: "12:01:00", message: "System alert: Autopilot scan completed — 2 opportunities" },
+    ],
+    logs: [
+      { time: "12:05:30", level: "info", message: "Telegram message sent: chat_id OK, 200ms latency" },
+      { time: "12:03:15", level: "info", message: "Inline keyboard rendered: 3 action buttons" },
+    ],
+  },
+  "infra-scanner": {
+    description: "BullMQ-scheduled market scanner running 5-minute cycles to discover trading opportunities, score markets, and feed the autopilot decision engine.",
+    protocol: "BullMQ Scheduler",
+    endpoint: "scanner.quantik.internal",
+    sources: ["Polymarket Gamma API", "Pipeline Engine", "Market Cache"],
+    feed: [
+      { time: "12:05:00", message: "Scan cycle #2,847: 124 markets scanned, 3 opportunities found" },
+      { time: "12:00:00", message: "Hot scan: real-time price update for 47 watched markets" },
+      { time: "11:55:00", message: "Opportunity: BTC-150K edge +4% — queued for autopilot review" },
+    ],
+    logs: [
+      { time: "12:05:00", level: "info", message: "Scanner cycle: 124 markets in 4.2s (5min cadence)" },
+      { time: "12:00:00", level: "info", message: "Hot scanner: 47 markets updated in 1.1s (60s cadence)" },
+    ],
+  },
+  "infra-autopilot": {
+    description: "Autonomous trading policy engine that evaluates scanner results against configurable rules — cadence, cooldown, max trades/day, and position sizing envelope.",
+    protocol: "Internal Policy Engine",
+    endpoint: "autopilot.quantik.internal",
+    sources: ["Scanner Results", "Autopilot Policy Config", "Trade History"],
+    feed: [
+      { time: "12:05:05", message: "Autopilot: APPROVED trade on BTC-150K (policy: 3/5 daily trades)" },
+      { time: "12:04:00", message: "Cooldown active: next trade eligible in 14 minutes" },
+      { time: "12:02:30", message: "Policy check: position size $250 within $500 max envelope" },
+    ],
+    logs: [
+      { time: "12:05:05", level: "info", message: "Autopilot decision: TRADE — all policy checks passed" },
+      { time: "12:04:00", level: "info", message: "Cooldown timer: 14min remaining (30min window)" },
+    ],
+  },
+  "infra-byo-mcp": {
+    description: "MCP (Model Context Protocol) tool server exposing 21+ Quantik tools to external BYO agents — read, trade, analysis, config, heartbeat, arena, and chat capabilities.",
+    protocol: "MCP / HMAC-SHA256",
+    endpoint: "mcp.quantik.internal",
+    sources: ["Tool Manifest", "API Key Scope", "Webhook Bridge"],
+    feed: [
+      { time: "12:05:15", message: "BYO agent connected: agent-ext-001 — heartbeat OK" },
+      { time: "12:03:50", message: "Tool call: read_market_data(btc-150k) — 200 OK, 45ms" },
+      { time: "12:01:20", message: "Webhook delivered: trade_executed event → agent-ext-001" },
+    ],
+    logs: [
+      { time: "12:05:15", level: "info", message: "BYO health: 1/1 agents connected, 0 circuit breaks" },
+      { time: "12:03:50", level: "info", message: "Tool call: read scope — rate limit 58/100 per min" },
+    ],
+  },
+  "infra-database": {
+    description: "Dual-mode database layer — SQLite (local development) or PostgreSQL (production) storing pipeline runs, trades, risk configs, agent health, and market cache.",
+    protocol: "SQLite / PostgreSQL",
+    endpoint: "db.quantik.internal",
+    sources: ["better-sqlite3", "pg Driver", "Migration Engine"],
+    feed: [
+      { time: "12:05:25", message: "Write: pipeline_run #4,231 — 7 agent steps logged" },
+      { time: "12:04:10", message: "Query: 847 trades fetched for performance panel (12ms)" },
+      { time: "12:02:45", message: "Cache refresh: markets_cache updated — 124 markets" },
+    ],
+    logs: [
+      { time: "12:05:25", level: "info", message: "DB write: pipeline_runs + 7 steps in single transaction" },
+      { time: "12:04:10", level: "info", message: "Query perf: trades SELECT in 12ms (indexed)" },
+      { time: "12:00:00", level: "info", message: "Cache TTL: markets_cache refreshed (10min cycle)" },
+    ],
+  },
+  "infra-redis": {
+    description: "Redis (Upstash) for in-memory caching, BullMQ job queues (scanner, orchestrator, alerts), rate limiting, and real-time state coordination.",
+    protocol: "Redis / IORedis",
+    endpoint: "upstash.redis.internal",
+    sources: ["Upstash Redis", "BullMQ Workers", "Rate Limiter"],
+    feed: [
+      { time: "12:05:20", message: "Jobs: scanner(active), orchestrator(waiting), alerts(idle)" },
+      { time: "12:04:05", message: "Rate limit: 892/1000 requests this window — healthy" },
+      { time: "12:02:30", message: "Cache hit: market_data key — saved 1.2s API call" },
+    ],
+    logs: [
+      { time: "12:05:20", level: "info", message: "BullMQ: 3 queues active, 0 failed jobs" },
+      { time: "12:04:05", level: "info", message: "Redis memory: 12.4MB used / 256MB limit" },
+    ],
+  },
+  "infra-sentry": {
+    description: "Sentry error monitoring with webhook integration for real-time error alerts, performance tracking, and issue aggregation across the Quantik backend.",
+    protocol: "Sentry SDK + Webhook",
+    endpoint: "sentry.io/quantik",
+    sources: ["Sentry SDK", "Webhook Events", "Error Aggregator"],
+    feed: [
+      { time: "12:05:10", message: "Status: 0 unresolved errors in last 24h — system healthy" },
+      { time: "12:03:30", message: "Performance: p95 API latency 340ms — within SLA" },
+      { time: "12:01:45", message: "Issue resolved: rate-limit timeout on CoinDesk API (auto-retry)" },
+    ],
+    logs: [
+      { time: "12:05:10", level: "info", message: "Sentry health: 0 errors, 2 warnings in 24h window" },
+      { time: "12:01:45", level: "info", message: "Auto-resolved: CoinDesk timeout — retry succeeded" },
+    ],
+  },
+  "infra-trade-exec": {
+    description: "Trade execution engine supporting paper mode (simulated fills) and live Polymarket CLOB orders with slippage monitoring and fill confirmation.",
+    protocol: "Polymarket CLI + REST",
+    endpoint: "exec.quantik.internal",
+    sources: ["Polymarket CLI", "Paper Trading Engine", "Fill Monitor"],
+    feed: [
+      { time: "12:05:55", message: "LIVE: BUY 200 YES @ 0.58 on BTC-150K — filled, 0.1% slippage" },
+      { time: "12:04:30", message: "Paper trade: simulated SELL 100 NO @ 0.42 — logged P&L" },
+      { time: "12:02:15", message: "Execution log: 3 trades today, avg fill time 1.4s" },
+    ],
+    logs: [
+      { time: "12:05:55", level: "info", message: "Order filled: 200 YES @ 0.58 — confirmation stored" },
+      { time: "12:04:30", level: "info", message: "Paper mode: trade simulated at mid-price (0 slippage)" },
+    ],
+  },
+  "infra-socketio": {
+    description: "Socket.IO real-time event bus delivering position updates, price ticks, agent alerts, and autopilot status to authenticated frontend clients.",
+    protocol: "Socket.IO / WebSocket",
+    endpoint: "ws.quantik.internal",
+    sources: ["Position Engine", "Price Feed", "Agent Pipeline", "Autopilot"],
+    feed: [
+      { time: "12:05:45", message: "Emit: position_update — 3 active positions refreshed" },
+      { time: "12:04:20", message: "Emit: agent_alert — pipeline complete, 7 agents done" },
+      { time: "12:02:50", message: "Emit: price_update — 47 markets, batch tick" },
+    ],
+    logs: [
+      { time: "12:05:45", level: "info", message: "Socket.IO: 1 client connected, 7 event types active" },
+      { time: "12:04:20", level: "info", message: "Event emitted: agent_alert to room user_xxx" },
+    ],
+  },
+  "infra-wallet": {
+    description: "HD wallet generator and manager for Polygon — handles key generation, encrypted storage (AES-256-GCM), balance tracking, and USDC/CTF approvals.",
+    protocol: "Ethers.js v6",
+    endpoint: "wallet.quantik.internal",
+    sources: ["HD Wallet Generator", "Polygon RPC", "AES-256-GCM Vault"],
+    feed: [
+      { time: "12:05:35", message: "Balance sync: 42,580.12 USDC | 125.5 POL — on-chain match" },
+      { time: "12:04:15", message: "Approval check: USDC spending unlimited — no action needed" },
+      { time: "12:02:40", message: "Key status: encrypted at rest, decrypted in-memory only" },
+    ],
+    logs: [
+      { time: "12:05:35", level: "info", message: "Balance query: 2 tokens in 89ms (Polygon RPC)" },
+      { time: "12:04:15", level: "info", message: "Approval verified: CTF Exchange allowance OK" },
+    ],
+  },
+  "infra-gemini": {
+    description: "Gemini AI model gateway routing requests across gemini-3.1-pro-preview, gemini-2.5-flash, and gemini-3.1-flash-lite for agent reasoning, chat, and analysis.",
+    protocol: "REST API",
+    endpoint: "generativelanguage.googleapis.com",
+    sources: ["Gemini 3.1 Pro", "Gemini 2.5 Flash", "Gemini Flash Lite"],
+    feed: [
+      { time: "12:05:40", message: "Model pool: 3/3 models available — routing by latency tier" },
+      { time: "12:04:10", message: "Pro request: Oracle reasoning — 3.1s, 1,247 tokens" },
+      { time: "12:02:25", message: "Flash request: Lucifer risk check — 890ms, 342 tokens" },
+    ],
+    logs: [
+      { time: "12:05:40", level: "info", message: "Gemini pool health: all models responding <5s" },
+      { time: "12:04:10", level: "info", message: "Daily usage: 12,847 / 1,000,000 tokens (1.3%)" },
+    ],
+  },
+  "infra-clerk": {
+    description: "Clerk authentication middleware managing user sessions, JWT validation, and API key authentication for both frontend and BYO agent access.",
+    protocol: "Clerk SDK / JWT",
+    endpoint: "clerk.quantik.internal",
+    sources: ["Clerk Dashboard", "JWT Validator", "Session Manager"],
+    feed: [
+      { time: "12:05:25", message: "Session active: user authenticated via Clerk — JWT valid" },
+      { time: "12:04:00", message: "API key auth: BYO agent request validated — scoped access" },
+      { time: "12:02:10", message: "Token refresh: JWT renewed — 15min expiry window" },
+    ],
+    logs: [
+      { time: "12:05:25", level: "info", message: "Auth check: JWT valid, user session active" },
+      { time: "12:04:00", level: "info", message: "API key: HMAC verified — scope: read,trade" },
     ],
   },
 };

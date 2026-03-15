@@ -159,7 +159,9 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
 
   return (
     <div className="mission-wallet-card">
-      <div className="mission-wallet-orb" />
+      <div className="mission-wallet-clip">
+        <div className="mission-wallet-orb" />
+      </div>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
           <div className="mission-wallet-kicker">WDK Wallet</div>
@@ -1297,7 +1299,7 @@ function RecentTradesCard() {
         subtitle={t("subtitle")}
         action={
           <Link
-            href="/trade-history"
+            href="/reports"
             className="text-xs font-medium text-[rgba(255,255,255,0.45)] hover:text-white transition-colors no-underline"
           >
             {t("viewAll")} →

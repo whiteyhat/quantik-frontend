@@ -21,9 +21,10 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
 
   const NAV_ITEMS = [
     { label: tNav("dashboard"), href: "/dashboard", icon: "🏠" },
+    { label: tNav("arena"), href: "/arena", icon: "⚔️" },
     { label: tNav("myAgent"), href: "/manage-agent", icon: "🤖" },
     { label: tNav("factory"), href: "/agent-factory", icon: "🏭", isFactory: true },
-    { label: tNav("trades"), href: "/trade-history", icon: "📈" },
+    { label: tNav("trades"), href: "/reports", icon: "📈" },
   ];
 
   return (
@@ -71,12 +72,14 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          minWidth: 56,
+          minWidth: 0,
+          flex: 1,
           minHeight: 44,
           color: isActive ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
           textDecoration: "none",
           opacity: isDisabled ? 0.35 : 1,
           transition: "opacity 180ms ease",
+          paddingInline: 4,
         };
 
         if (isDisabled) {
@@ -106,13 +109,15 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          minWidth: 56,
+          minWidth: 0,
+          flex: 1,
           minHeight: 44,
           color: relayOpen ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
           textDecoration: "none",
           position: "relative",
           background: "transparent",
           border: "none",
+          paddingInline: 4,
         }}
       >
         {relayPulsing && (

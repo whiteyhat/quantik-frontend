@@ -349,41 +349,6 @@ export function RelayChat({ slug }: RelayChatProps) {
           </div>
         </div>
 
-        {/* Model badge */}
-        {currentModel && (
-          <div
-            data-testid="relay-model-badge"
-            style={{
-              padding: "3px 10px",
-              borderRadius: 100,
-              background:
-                currentModel === "llama4:maverick"
-                  ? "rgba(48,209,88,0.15)"
-                  : currentModel === "phi4"
-                    ? "rgba(191,90,242,0.15)"
-                    : "rgba(255,255,255,0.08)",
-              border: `1px solid ${
-                currentModel === "llama4:maverick"
-                  ? "rgba(48,209,88,0.30)"
-                  : currentModel === "phi4"
-                    ? "rgba(191,90,242,0.30)"
-                    : "rgba(255,255,255,0.12)"
-              }`,
-              fontSize: 10,
-              fontWeight: 600,
-              color:
-                currentModel === "llama4:maverick"
-                  ? "#30d158"
-                  : currentModel === "phi4"
-                    ? "#bf5af2"
-                    : "rgba(255,255,255,0.60)",
-              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-              letterSpacing: "0.03em",
-            }}
-          >
-            {MODEL_LABELS[currentModel] ?? currentModel}
-          </div>
-        )}
       </div>
 
       {/* Messages */}

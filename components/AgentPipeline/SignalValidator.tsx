@@ -8,6 +8,7 @@ import {
   type FluxResult,
   type LuciferResult,
 } from "@/lib/api";
+import { AgentTooltip } from "./index";
 
 function num(v: unknown): number {
   const n = Number(v);
@@ -110,6 +111,7 @@ export function SignalValidator({
           >
             {t("validator.title")}
           </span>
+          <AgentTooltip text={t("validatorTooltip")} />
         </div>
         <span
           style={{

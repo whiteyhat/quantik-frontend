@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { PaperModeProvider } from "@/context/PaperModeContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import { useTradeNotifications } from "@/hooks/useTradeNotifications";
 
 function NotificationInit() {
@@ -77,7 +78,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <SocketProvider>
           <NotificationInit />
-          <PaperModeProvider>{children}</PaperModeProvider>
+          <ThemeProvider>
+            <PaperModeProvider>{children}</PaperModeProvider>
+          </ThemeProvider>
         </SocketProvider>
       </QueryClientProvider>
     </ClerkProvider>

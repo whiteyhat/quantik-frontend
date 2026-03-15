@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";
-import { useSocketEvent, TradeEvent, AgentAlertEvent } from "@/context/SocketContext";
+import { useSocketEvent, TradeEvent, AgentAlertEvent, NotificationEvent } from "@/context/SocketContext";
 
 /** Request browser notification permission on mount */
 function useNotificationPermission() {
@@ -62,6 +62,16 @@ export function useTradeNotifications() {
     );
   }, []);
 
+  const handleNotification = useCallback((notification: NotificationEvent) => {
+    if (!mountedRef.current) return;
+    showNotification(
+      notification.title,
+      notification.message,
+      notification.id
+    );
+  }, []);
+
   useSocketEvent<TradeEvent>("trade:executed", handleTrade);
   useSocketEvent<AgentAlertEvent>("agent:alert", handleAlert);
+  useSocketEvent<NotificationEvent>("notification:new", handleNotification);
 }

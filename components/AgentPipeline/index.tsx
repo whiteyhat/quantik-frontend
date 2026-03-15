@@ -50,14 +50,72 @@ function CardBadge({ label, color }: { label: string; color: string }) {
   );
 }
 
+export function AgentTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span
+      style={{ position: "relative", display: "inline-flex", alignItems: "center" }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <span
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.15)",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 9,
+          fontWeight: 700,
+          color: "var(--text-tertiary)",
+          cursor: "help",
+          flexShrink: 0,
+          transition: "border-color 150ms, color 150ms",
+          ...(show ? { borderColor: "rgba(255,255,255,0.35)", color: "var(--text-secondary)" } : {}),
+        }}
+      >
+        ?
+      </span>
+      {show && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 8px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(14,14,22,0.97)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 10,
+            padding: "10px 12px",
+            fontSize: 11,
+            color: "rgba(255,255,255,0.85)",
+            lineHeight: 1.5,
+            width: 220,
+            zIndex: 9999,
+            pointerEvents: "none",
+            whiteSpace: "normal",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
+          }}
+        >
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
+
 function CardHeader({
   emoji,
   name,
   badge,
+  tooltip,
 }: {
   emoji: string;
   name: string;
   badge?: React.ReactNode;
+  tooltip?: string;
 }) {
   return (
     <div
@@ -73,6 +131,7 @@ function CardHeader({
         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
           {name}
         </span>
+        {tooltip && <AgentTooltip text={tooltip} />}
       </div>
       {badge}
     </div>
@@ -305,6 +364,7 @@ function SourcePill({ article }: { article: { title: string; url: string; source
 function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
   const t = useTranslations("agentPipeline");
   const isIdle = status === "idle";
+  const [sourcesExpanded, setSourcesExpanded] = useState(false);
   const score = num(data?.sentiment_score);
   const sentimentLabel =
     score >= 0.5 ? t("sentimentBullish") : score >= 0.1 ? t("sentimentPositive") : score <= -0.5 ? t("sentimentBearish") : score <= -0.1 ? t("sentimentNegative") : t("sentimentNeutral");
@@ -312,8 +372,11 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
     score >= 0.1 ? "var(--ios-purple)" : score <= -0.1 ? "var(--ios-red)" : "var(--ios-orange)";
   const scoreColor = score >= 0 ? "var(--ios-green)" : "var(--ios-red)";
   const articles = data?.newsArticles?.slice(0, 5) ?? [];
+  const visibleArticles = articles.slice(0, 3);
+  const overflowArticles = articles.slice(3);
   const sourceStatus = data?.sourceStatus ?? {};
   const allSources = Object.keys(sourceStatus).filter((s) => s !== "news" && s !== "telegram");
+  const hasCollapsible = overflowArticles.length > 0 || allSources.length > 0;
 
   return (
     <div className="glass-card" style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}>
@@ -321,6 +384,7 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
         emoji="🌊"
         name="Aura"
         badge={data ? <CardBadge label={sentimentLabel} color={badgeColor} /> : undefined}
+        tooltip={t("auraTooltip")}
       />
       {data ? (
         <>
@@ -344,37 +408,107 @@ function AuraCard({ data, status }: { data?: AuraResult; status: string }) {
 
           {/* News article pills */}
           {articles.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 4 }}>
-              {articles.map((a, i) => (
-                <SourcePill key={i} article={a} />
-              ))}
-            </div>
-          )}
-
-          {/* All source statuses */}
-          {allSources.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-              {allSources.map((s) => {
-                const st = sourceStatus[s];
-                const isOk = st === "ok";
-                const isTimeout = st === "timeout";
-                return (
-                  <span
-                    key={s}
-                    title={`${s}: ${st}`}
+            <div style={{ marginTop: 4 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {visibleArticles.map((a, i) => (
+                  <SourcePill key={i} article={a} />
+                ))}
+                {hasCollapsible && !sourcesExpanded && (
+                  <button
+                    onClick={() => setSourcesExpanded(true)}
                     style={{
-                      fontSize: 9, fontWeight: 600, letterSpacing: "0.04em",
-                      padding: "1px 6px", borderRadius: 4,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      color: "var(--text-tertiary)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      cursor: "pointer",
                       fontFamily: '"SF Mono","JetBrains Mono",monospace',
-                      color: isOk ? "var(--ios-green)" : isTimeout ? "var(--ios-orange)" : "var(--text-tertiary)",
-                      background: isOk ? "rgba(48,209,88,0.10)" : isTimeout ? "rgba(255,160,0,0.08)" : "rgba(255,255,255,0.05)",
-                      border: `1px solid ${isOk ? "rgba(48,209,88,0.20)" : isTimeout ? "rgba(255,160,0,0.15)" : "rgba(255,255,255,0.08)"}`,
+                      letterSpacing: "0.04em",
+                      transition: "all 150ms",
                     }}
                   >
-                    {isOk ? "●" : isTimeout ? "◌" : "○"} {s}
-                  </span>
-                );
-              })}
+                    +{overflowArticles.length + allSources.length}
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none" style={{ transition: "transform 200ms ease" }}>
+                      <path d="M2 3L4 5L6 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {hasCollapsible && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateRows: sourcesExpanded ? "1fr" : "0fr",
+                    transition: "grid-template-rows 250ms ease",
+                  }}
+                >
+                  <div style={{ overflow: "hidden" }}>
+                    {overflowArticles.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, paddingTop: 5 }}>
+                        {overflowArticles.map((a, i) => (
+                          <SourcePill key={i + 3} article={a} />
+                        ))}
+                      </div>
+                    )}
+                    {allSources.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingTop: 6 }}>
+                        {allSources.map((s) => {
+                          const st = sourceStatus[s];
+                          const isOk = st === "ok";
+                          const isTimeout = st === "timeout";
+                          return (
+                            <span
+                              key={s}
+                              title={`${s}: ${st}`}
+                              style={{
+                                fontSize: 9, fontWeight: 600, letterSpacing: "0.04em",
+                                padding: "1px 6px", borderRadius: 4,
+                                fontFamily: '"SF Mono","JetBrains Mono",monospace',
+                                color: isOk ? "var(--ios-green)" : isTimeout ? "var(--ios-orange)" : "var(--text-tertiary)",
+                                background: isOk ? "rgba(48,209,88,0.10)" : isTimeout ? "rgba(255,160,0,0.08)" : "rgba(255,255,255,0.05)",
+                                border: `1px solid ${isOk ? "rgba(48,209,88,0.20)" : isTimeout ? "rgba(255,160,0,0.15)" : "rgba(255,255,255,0.08)"}`,
+                              }}
+                            >
+                              {isOk ? "●" : isTimeout ? "◌" : "○"} {s}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ paddingTop: 5 }}>
+                      <button
+                        onClick={() => setSourcesExpanded(false)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 6,
+                          color: "var(--text-tertiary)",
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          cursor: "pointer",
+                          fontFamily: '"SF Mono","JetBrains Mono",monospace',
+                          letterSpacing: "0.04em",
+                          transition: "all 150ms",
+                        }}
+                      >
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" style={{ transform: "rotate(180deg)" }}>
+                          <path d="M2 3L4 5L6 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -404,6 +538,7 @@ function FluxCard({ data, status }: { data?: FluxResult; status: string }) {
         emoji="⚡"
         name="Flux"
         badge={data ? <CardBadge label={`GRADE ${data.liquidity_grade}`} color={gradeColor} /> : undefined}
+        tooltip={t("fluxTooltip")}
       />
       {data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -452,14 +587,14 @@ function SpreadRow({ label, value, fill, color }: { label: string; value: string
 
 function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
   const t = useTranslations("pipelineLog");
+  const tAgent = useTranslations("agentPipeline");
   const isIdle = status === "idle";
   const prob = num(data?.prob_estimate);
   const conf = num(data?.confidence);
   const market = num(data?.market_implied);
-  const [showTooltip, setShowTooltip] = useState(false);
 
   const delta = prob - market;
-  const tooltipText =
+  const insightText =
     delta > 0.02
       ? t("oracleBullish")
       : delta < -0.02
@@ -469,11 +604,9 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
   return (
     <div
       className="glass-card"
-      style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms", position: "relative" }}
-      onMouseEnter={() => data && setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      style={{ padding: 16, opacity: isIdle ? 0.5 : 1, transition: "opacity 300ms" }}
     >
-      <CardHeader emoji="🔮" name="Oracle" />
+      <CardHeader emoji="🔮" name="Oracle" tooltip={tAgent("oracleTooltip")} />
       {data ? (
         <>
           <div
@@ -486,30 +619,18 @@ function OracleCard({ data, status }: { data?: OracleResult; status: string }) {
             {"±"}{conf.toFixed(1)}% {t("oracleConfidence")}
           </div>
           <ProbabilityRing prob={prob} market={market} />
-          {showTooltip && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: "calc(100% + 8px)",
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "rgba(14,14,22,0.97)",
-                border: "1px solid rgba(191,90,242,0.25)",
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 11,
-                color: "rgba(255,255,255,0.85)",
-                lineHeight: 1.5,
-                width: 230,
-                zIndex: 9999,
-                pointerEvents: "none",
-                whiteSpace: "normal",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.55)",
-              }}
-            >
-              {tooltipText}
-            </div>
-          )}
+          <div
+            style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.55)",
+              textAlign: "center",
+              lineHeight: 1.5,
+              marginTop: 6,
+              padding: "0 4px",
+            }}
+          >
+            {insightText}
+          </div>
         </>
       ) : (
         <IdlePlaceholder status={status} />
@@ -535,6 +656,7 @@ function ClauseCard({ data, status }: { data?: ClauseResult; status: string }) {
         emoji="⚖️"
         name="Clause"
         badge={data ? <CardBadge label={isClear ? t("panels.echoChamberClear") : data.resolution_risk} color={riskColor} /> : undefined}
+        tooltip={t("clauseTooltip")}
       />
       {data ? (
         <div style={{ textAlign: "center", paddingTop: 4 }}>
@@ -578,6 +700,7 @@ function EdgeCard({ data, status }: { data?: EdgeResult; status: string }) {
         emoji="📐"
         name="Edge"
         badge={data ? <CardBadge label="EVA" color="var(--ios-purple)" /> : undefined}
+        tooltip={t("edgeTooltip")}
       />
       {data ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -627,6 +750,61 @@ function IdlePlaceholder({ status }: { status: string }) {
   );
 }
 
+function buildReplayInsightText({
+  sigma,
+  oracle,
+  aura,
+  clause,
+  marketYesPrice,
+}: {
+  sigma?: SigmaResult;
+  oracle?: OracleResult;
+  aura?: AuraResult;
+  clause?: ClauseResult;
+  marketYesPrice?: number;
+}): string {
+  const storedPlainSummary =
+    typeof sigma?.plain_summary === "string" ? sigma.plain_summary.trim() : "";
+  if (storedPlainSummary) return storedPlainSummary;
+
+  const decision = sigma?.decision ?? "SKIP";
+  const confidence = num(sigma?.confidence);
+  const modelProb = num(oracle?.prob_estimate);
+  const marketProb = num(oracle?.market_implied) || num(marketYesPrice);
+  const sentiment = num(aura?.sentiment_score);
+  const resolutionRisk = clause?.resolution_risk ?? "MED";
+  const riskPhrase =
+    resolutionRisk === "HIGH"
+      ? "Contract risk was high."
+      : resolutionRisk === "LOW"
+        ? "Contract risk stayed low."
+        : "Contract risk was moderate.";
+  const sentimentPhrase =
+    sentiment > 0.15
+      ? "Sentiment also leaned positive."
+      : sentiment < -0.15
+        ? "Sentiment leaned negative."
+        : "";
+
+  if (decision === "PASS" || decision === "SKIP") {
+    if (modelProb > 0 && marketProb > 0) {
+      return `The model did not see a strong enough pricing gap to justify a trade. It estimated about ${Math.round(modelProb * 100)}% odds versus the market near ${Math.round(marketProb * 100)}%. ${riskPhrase}`;
+    }
+    return `The historical run ended without a trade because the setup was not strong enough. ${riskPhrase}`;
+  }
+
+  if (decision === "VETO") {
+    return `The setup was rejected before execution because the contract or risk checks looked too fragile. ${riskPhrase}`;
+  }
+
+  const side = decision === "BET_NO" ? "NO" : "YES";
+  if (modelProb > 0 && marketProb > 0) {
+    return `The model leaned ${side} at ${confidence.toFixed(0)}% confidence because it estimated about ${Math.round(modelProb * 100)}% odds while the market was near ${Math.round(marketProb * 100)}%. ${riskPhrase} ${sentimentPhrase}`.trim();
+  }
+
+  return `The model leaned ${side} at ${confidence.toFixed(0)}% confidence based on the stored agent outputs from this run. ${riskPhrase} ${sentimentPhrase}`.trim();
+}
+
 /* ── Synthesized Insight ──────────────────────────────────────────────────────── */
 
 function SynthesizedInsight({
@@ -644,6 +822,9 @@ function SynthesizedInsight({
   const fallback = (() => {
     const conf = num(sigma.confidence);
     const ev = num(edge?.net_ev);
+    if (typeof sigma.plain_summary === "string" && sigma.plain_summary.trim()) {
+      return sigma.plain_summary.trim();
+    }
     if (sigma.thesis) return sigma.thesis;
     if (conf > 0 && ev > 0)
       return t("insightFallbackEdge", { conf: conf.toFixed(0) });
@@ -720,6 +901,7 @@ function AlphaSignalCard({ sigma, edge }: { sigma: SigmaResult; edge?: EdgeResul
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
         <span style={{ fontSize: 16 }}>{"⚡"}</span>
         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("alphaSignal")}</span>
+        <AgentTooltip text={t("alphaSignalTooltip")} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
         <div>
@@ -764,6 +946,7 @@ function LuciferCriticCard({ data }: { data?: LuciferResult }) {
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <span style={{ fontSize: 16 }}>{"😈"}</span>
           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("luciferTitle")}</span>
+          <AgentTooltip text={t("luciferTooltip")} />
         </div>
       </div>
       {data ? (
@@ -826,6 +1009,16 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
   const luciferData = agents.lucifer?.data as LuciferResult | undefined;
   const oracleData = agents.oracle?.data as OracleResult | undefined;
   const clauseData = agents.clause?.data as ClauseResult | undefined;
+  const replayInsightText =
+    pipeline.source === "replay"
+      ? buildReplayInsightText({
+          sigma: sigmaData,
+          oracle: oracleData,
+          aura: auraData,
+          clause: clauseData,
+          marketYesPrice: market?.yesPrice,
+        })
+      : "";
 
   // Relay-generated synthesized insight
   const [insightText, setInsightText] = useState("");
@@ -833,7 +1026,13 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
   const insightFiredRef = useRef(false);
 
   useEffect(() => {
-    if (!sigmaData || insightFiredRef.current) return;
+    setInsightText("");
+    setInsightLoading(false);
+    insightFiredRef.current = false;
+  }, [pipeline.version]);
+
+  useEffect(() => {
+    if (!sigmaData || insightFiredRef.current || pipeline.source !== "live") return;
     insightFiredRef.current = true;
     const token = getAuthToken();
     const sessionId = `pipeline-${crypto.randomUUID()}`;
@@ -905,7 +1104,7 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
       .catch(() => {
         setInsightLoading(false);
       });
-  }, [sigmaData, edgeData, auraData, fluxData]);
+  }, [pipeline.source, sigmaData, edgeData, auraData, fluxData]);
 
   return (
     <div style={{ position: "relative" }}>
@@ -923,8 +1122,8 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
         <SynthesizedInsight
           sigma={sigmaData ?? ({} as SigmaResult)}
           edge={edgeData}
-          insightText={insightText}
-          insightLoading={insightLoading}
+          insightText={pipeline.source === "replay" ? replayInsightText : insightText}
+          insightLoading={pipeline.source === "live" ? insightLoading : false}
         />
       )}
 

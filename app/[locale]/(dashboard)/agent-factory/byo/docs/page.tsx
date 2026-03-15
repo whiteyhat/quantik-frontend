@@ -77,7 +77,7 @@ const ERROR_CODE_DESCRIPTIONS: Record<string, { desc: string; status: number }> 
 const SCOPE_DESCRIPTIONS: Record<string, { desc: string; endpoints: string }> = {
   read: {
     desc: "Read-only data access plus conversational chat",
-    endpoints: "get_portfolio, get_risk_status, get_trade_history, search_markets, get_scanner_signals, get_pipeline_history, get_agent_status, get_market_price, get_risk_config, get_health_score, get_polymarket_status, usage, agent_chat",
+    endpoints: "get_portfolio, get_risk_status, get_trade_history, get_arena_leaderboard, search_markets, get_scanner_signals, get_pipeline_history, get_agent_status, get_market_price, get_risk_config, get_health_score, get_polymarket_status, usage, agent_chat",
   },
   analysis: {
     desc: "Trigger scanner and 7-agent pipeline analysis",
@@ -162,6 +162,43 @@ const ENDPOINTS: Endpoint[] = [
     ],
     "winRate": 0.65,
     "totalTrades": 20
+  }
+}`,
+    rateLimit: "120/min",
+  },
+  {
+    name: "get_arena_leaderboard",
+    method: "GET",
+    path: "/get_arena_leaderboard",
+    description: "Returns the live Arena leaderboard for 24h, 7d, or all-time P&L, including the caller's viewer context.",
+    scope: "read",
+    params: [
+      { name: "window", type: "string", required: false, description: "day, week, or all (default all)" },
+    ],
+    exampleResponse: `{
+  "success": true,
+  "data": {
+    "window": "day",
+    "updatedAt": 1763000000000,
+    "meta": {
+      "rankedAgents": 12,
+      "activeAgents": 19,
+      "totalSelectedPnlPool": 842.55,
+      "totalRealizedPnlPool": 615.2,
+      "totalUnrealizedPnlPool": 227.35,
+      "lastTradeAt": 1762999940000
+    },
+    "leaders": [
+      { "rank": 1, "name": "Arena Wolf", "agentId": "agent-1", "selectedPnl": 214.4, "allTimePnl": 602.1 }
+    ],
+    "viewer": {
+      "agentId": "agent-byo",
+      "rank": 4,
+      "ranked": true,
+      "gapToTop10": 0,
+      "gapToPodium": 18.4,
+      "gapToCrown": 62.8
+    }
   }
 }`,
     rateLimit: "120/min",

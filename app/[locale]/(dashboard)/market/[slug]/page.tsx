@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { api, runPipeline } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { MarketHeader } from "@/components/MarketHeader";
@@ -12,6 +13,7 @@ import { OrderBook } from "@/components/OrderBook";
 import { AgentPipeline } from "@/components/AgentPipeline";
 import { PipelineLog } from "@/components/PipelineLog";
 import { PipelineTimeline } from "@/components/PipelineTimeline";
+import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
 import { TradeConfirmationModal } from "@/components/TradeConfirmationModal";
 import { RelayChat } from "@/components/RelayChat";
 
@@ -22,17 +24,26 @@ interface PageProps {
 export default function MarketPage({ params }: PageProps) {
   const { slug } = use(params);
   const t = useTranslations("marketDetail");
+  const searchParams = useSearchParams();
   const pipelineStart = useQuantikStore((s) => s.pipelineStart);
   const pipelineAgentEvent = useQuantikStore((s) => s.pipelineAgentEvent);
   const pipelineComplete = useQuantikStore((s) => s.pipelineComplete);
   const pipelineReset = useQuantikStore((s) => s.pipelineReset);
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [cancelPipeline, setCancelPipeline] = useState<(() => void) | null>(null);
+  const autorunFired = useRef(false);
 
   const { data: market, isError } = useQuery({
     queryKey: ["market", slug],
     queryFn: () => api.getMarket(slug),
   });
+
+  useEffect(() => {
+    if (!market || pipeline.running || autorunFired.current) return;
+    if (searchParams.get("autorun") !== "1") return;
+    autorunFired.current = true;
+    handleRunPipeline();
+  }, [market, pipeline.running, searchParams]);
 
   function handleRunPipeline() {
     pipelineReset();
@@ -118,7 +129,7 @@ export default function MarketPage({ params }: PageProps) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 320px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
           gap: 16,
           marginBottom: 20,
         }}
@@ -138,6 +149,7 @@ export default function MarketPage({ params }: PageProps) {
           <button
             onClick={handleRunPipeline}
             data-testid="run-pipeline-btn"
+            disabled={!market}
             style={{
               width: "100%",
               height: 56,
@@ -152,12 +164,13 @@ export default function MarketPage({ params }: PageProps) {
               color: "#fff",
               fontSize: 16,
               fontWeight: 700,
-              cursor: "pointer",
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               fontFamily: "inherit",
               boxShadow: "0 4px 24px rgba(0,122,255,0.35)",
               transition: "all 200ms ease",
+              opacity: market ? 1 : 0.5,
+              cursor: market ? "pointer" : "not-allowed",
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLButtonElement).style.boxShadow =
@@ -254,6 +267,8 @@ export default function MarketPage({ params }: PageProps) {
 
       {/* Pipeline duration timeline */}
       <PipelineTimeline />
+
+      <PipelineReplayPanel slug={slug} title="Replay This Market" />
 
       {/* Quantik Relay */}
       <RelayChat slug={slug} />

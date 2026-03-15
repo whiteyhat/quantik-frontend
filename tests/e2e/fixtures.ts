@@ -142,6 +142,9 @@ export async function mockDashboardApis(page: Page) {
   await page.route('**/api/performance/summary*', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loadFixture('portfolio.json')) })
   );
+  await page.route('**/api/performance/arena*', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(loadFixture('arena-leaderboard.json')) })
+  );
   await page.route('**/api/risk/status*', (route) =>
     route.fulfill({
       status: 200,

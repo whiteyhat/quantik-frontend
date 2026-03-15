@@ -6,7 +6,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, type ArenaWindow } from "@/lib/api";
 import {
   normalizeDashboardHealth,
   selectSystemAgentRows,
@@ -36,6 +36,7 @@ export const dashboardKeys = {
   health: ["dashboard", "health"] as const,
   orchestrator: ["dashboard", "orchestrator"] as const,
   trades: ["dashboard", "trades"] as const,
+  arena: (window: ArenaWindow) => ["dashboard", "arena", window] as const,
   scannerTrending: (search: string) => ["dashboard", "scanner", "trending", search] as const,
   scannerPaged: (category: ScannerCategory, search: string) => ["dashboard", "scanner", category, search] as const,
 };
@@ -189,6 +190,15 @@ export function useDashboardTradesQuery() {
     queryFn: () => api.getTrades(),
     staleTime: 30_000,
     refetchInterval: 60_000,
+  });
+}
+
+export function useArenaLeaderboardQuery(window: ArenaWindow) {
+  return useQuery({
+    queryKey: dashboardKeys.arena(window),
+    queryFn: ({ signal }) => api.getArenaLeaderboard(window, signal),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
   });
 }
 

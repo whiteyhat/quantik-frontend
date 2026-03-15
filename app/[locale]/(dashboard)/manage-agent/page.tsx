@@ -42,6 +42,9 @@ import { RiskConfigPanelByo } from "@/components/ManageAgent/RiskConfigPanelByo"
 import { AutopilotControlCard } from "@/components/ManageAgent/AutopilotControlCard";
 import { PolymarketStatusCard } from "@/components/ManageAgent/PolymarketStatusCard";
 
+import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
+import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
+
 type TabId = "dashboard" | "architecture" | "world";
 
 export default function ManageAgentPage() {
@@ -91,6 +94,7 @@ export default function ManageAgentPage() {
   const [performance, setPerformance] = useState<PerformanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<"7D" | "30D" | "All">("7D");
+  const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
   const myAgent = storeAgent;
 
@@ -311,6 +315,7 @@ export default function ManageAgentPage() {
                 positions={positions}
                 loading={loading}
                 onPositionUpdate={handlePositionUpdate}
+                onOpenPosition={setSelectedPosition}
               />
             )}
           </div>
@@ -359,6 +364,7 @@ export default function ManageAgentPage() {
               <AgentConfigPanel />
             )}
             <SystemLogFeed />
+            <PipelineReplayPanel title="Recent Pipeline Replay" />
           </div>
         </div>
       )}
@@ -383,6 +389,15 @@ export default function ManageAgentPage() {
           <ArchitectureView />
         </div>
       )}
+
+      <PositionDetailSheet
+        position={selectedPosition}
+        open={selectedPosition != null}
+        onClose={() => setSelectedPosition(null)}
+        onClosed={(executionId) => {
+          setPositions((prev) => prev.filter((position) => position.executionId !== executionId));
+        }}
+      />
     </div>
   );
 }

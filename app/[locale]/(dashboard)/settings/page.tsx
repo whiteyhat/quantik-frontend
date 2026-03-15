@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePaperMode } from "@/context/PaperModeContext";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { GlassSlider } from "@/components/ui/GlassSlider";
@@ -256,6 +257,7 @@ function PaperModePanel() {
     </div>
   );
 }
+
 
 // ─── Risk Configuration Panel ─────────────────────────────────────────────────
 
@@ -1204,6 +1206,7 @@ export default function SettingsPage() {
       </motion.div>
 
       <motion.div variants={fadeInUp}><PaperModePanel /></motion.div>
+
       <motion.div variants={fadeInUp}><RiskConfigPanel /></motion.div>
       <motion.div variants={fadeInUp}><TelegramSettingsPanel /></motion.div>
       <motion.div variants={fadeInUp}><AppInfoPanel /></motion.div>

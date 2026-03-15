@@ -44,6 +44,35 @@ export interface PositionUpdateEvent {
   timestamp: number;
 }
 
+export interface PriceUpdateEventItem {
+  slug: string;
+  yes: number;
+  no: number;
+  timestamp: number;
+}
+
+export interface NotificationEvent {
+  id: string;
+  level: "info" | "success" | "warning" | "error";
+  title: string;
+  message: string;
+  category?: string;
+  timestamp: number;
+  action?: {
+    label: string;
+    href: string;
+  };
+}
+
+export interface PanicCooldownEvent {
+  active: boolean;
+  cooldownEndsAt: number | null;
+  canRearm: boolean;
+  reportId?: string | null;
+  reason?: string | null;
+  timestamp: number;
+}
+
 type EventHandler<T = unknown> = (data: T) => void;
 
 interface SocketContextValue {
