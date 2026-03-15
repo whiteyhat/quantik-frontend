@@ -246,6 +246,78 @@ export interface ArenaLeaderboardResponse {
   viewer: ArenaViewerContext;
 }
 
+function requireObject(value: unknown, context: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Invalid ${context} payload`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function requireArenaString(value: unknown, context: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Missing ${context}`);
+  }
+  return value;
+}
+
+function readArenaOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function requireArenaNumber(value: unknown, context: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Invalid ${context}`);
+  }
+  return parsed;
+}
+
+function requireArenaBoolean(value: unknown, context: string): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === 1 || value === "1") return true;
+  if (value === 0 || value === "0") return false;
+  throw new Error(`Invalid ${context}`);
+}
+
+function requireArenaWindow(value: unknown): ArenaWindow {
+  if (value === "day" || value === "week" || value === "all") return value;
+  throw new Error("Invalid arena window");
+}
+
+function requireArenaReason(value: unknown): ArenaViewerContext["reason"] {
+  if (value === "no_agent" || value === "inactive" || value === "no_activity" || value === "ranked") {
+    return value;
+  }
+  throw new Error("Invalid arena viewer state");
+}
+
+function normalizeArenaEntry(input: unknown, context: string): ArenaLeaderboardEntry {
+  const entry = requireObject(input, context);
+  return {
+    rank: requireArenaNumber(entry.rank, `${context}.rank`),
+    agentId: requireArenaString(entry.agentId, `${context}.agentId`),
+    agentCode: requireArenaString(entry.agentCode, `${context}.agentCode`),
+    name: requireArenaString(entry.name, `${context}.name`),
+    avatarEmoji: requireArenaString(entry.avatarEmoji, `${context}.avatarEmoji`),
+    animalType: readArenaOptionalString(entry.animalType),
+    agentType: requireArenaString(entry.agentType, `${context}.agentType`),
+    connectionStatus: readArenaOptionalString(entry.connectionStatus),
+    autopilotEnabled: requireArenaBoolean(entry.autopilotEnabled, `${context}.autopilotEnabled`),
+    polymarketReady: requireArenaBoolean(entry.polymarketReady, `${context}.polymarketReady`),
+    selectedPnl: requireArenaNumber(entry.selectedPnl, `${context}.selectedPnl`),
+    selectedRealizedPnl: requireArenaNumber(entry.selectedRealizedPnl, `${context}.selectedRealizedPnl`),
+    selectedUnrealizedPnl: requireArenaNumber(entry.selectedUnrealizedPnl, `${context}.selectedUnrealizedPnl`),
+    allTimePnl: requireArenaNumber(entry.allTimePnl, `${context}.allTimePnl`),
+    totalTrades: requireArenaNumber(entry.totalTrades, `${context}.totalTrades`),
+    winRate: requireArenaNumber(entry.winRate, `${context}.winRate`),
+    openPositions: requireArenaNumber(entry.openPositions, `${context}.openPositions`),
+    currentStreak: requireArenaNumber(entry.currentStreak, `${context}.currentStreak`),
+    lastTradeAt: entry.lastTradeAt == null ? null : requireArenaNumber(entry.lastTradeAt, `${context}.lastTradeAt`),
+    bestTradeSlug: readArenaOptionalString(entry.bestTradeSlug),
+    bestTradePnl: requireArenaNumber(entry.bestTradePnl, `${context}.bestTradePnl`),
+  };
+}
+
 function normalizeTradeRecord(input: unknown): Trade {
   const item = input as Record<string, unknown>;
   return {
@@ -1026,77 +1098,34 @@ export const api = {
     if (window !== "all") searchParams.set("window", window);
     const query = searchParams.toString();
     const raw = await apiFetch<ArenaLeaderboardResponse>(`/api/performance/arena${query ? `?${query}` : ""}`, { signal });
+    const meta = requireObject(raw.meta, "arena.meta");
+    const viewer = requireObject(raw.viewer, "arena.viewer");
+
     return {
-      window: raw.window ?? "all",
-      updatedAt: Number(raw.updatedAt ?? Date.now()),
+      window: requireArenaWindow(raw.window),
+      updatedAt: requireArenaNumber(raw.updatedAt, "arena.updatedAt"),
       meta: {
-        rankedAgents: Number(raw.meta?.rankedAgents ?? 0),
-        activeAgents: Number(raw.meta?.activeAgents ?? 0),
-        totalSelectedPnlPool: Number(raw.meta?.totalSelectedPnlPool ?? 0),
-        totalRealizedPnlPool: Number(raw.meta?.totalRealizedPnlPool ?? 0),
-        totalUnrealizedPnlPool: Number(raw.meta?.totalUnrealizedPnlPool ?? 0),
-        lastTradeAt: raw.meta?.lastTradeAt != null ? Number(raw.meta.lastTradeAt) : null,
+        rankedAgents: requireArenaNumber(meta.rankedAgents, "arena.meta.rankedAgents"),
+        activeAgents: requireArenaNumber(meta.activeAgents, "arena.meta.activeAgents"),
+        totalSelectedPnlPool: requireArenaNumber(meta.totalSelectedPnlPool, "arena.meta.totalSelectedPnlPool"),
+        totalRealizedPnlPool: requireArenaNumber(meta.totalRealizedPnlPool, "arena.meta.totalRealizedPnlPool"),
+        totalUnrealizedPnlPool: requireArenaNumber(meta.totalUnrealizedPnlPool, "arena.meta.totalUnrealizedPnlPool"),
+        lastTradeAt: meta.lastTradeAt == null ? null : requireArenaNumber(meta.lastTradeAt, "arena.meta.lastTradeAt"),
       },
       leaders: Array.isArray(raw.leaders)
-        ? raw.leaders.map((entry) => ({
-            rank: Number(entry.rank ?? 0),
-            agentId: String(entry.agentId ?? ""),
-            agentCode: String(entry.agentCode ?? ""),
-            name: String(entry.name ?? "Unknown Agent"),
-            avatarEmoji: String(entry.avatarEmoji ?? "🤖"),
-            animalType: entry.animalType != null ? String(entry.animalType) : null,
-            agentType: String(entry.agentType ?? "created"),
-            connectionStatus: entry.connectionStatus != null ? String(entry.connectionStatus) : null,
-            autopilotEnabled: Boolean(entry.autopilotEnabled),
-            polymarketReady: Boolean(entry.polymarketReady),
-            selectedPnl: Number(entry.selectedPnl ?? 0),
-            selectedRealizedPnl: Number(entry.selectedRealizedPnl ?? 0),
-            selectedUnrealizedPnl: Number(entry.selectedUnrealizedPnl ?? 0),
-            allTimePnl: Number(entry.allTimePnl ?? 0),
-            totalTrades: Number(entry.totalTrades ?? 0),
-            winRate: Number(entry.winRate ?? 0),
-            openPositions: Number(entry.openPositions ?? 0),
-            currentStreak: Number(entry.currentStreak ?? 0),
-            lastTradeAt: entry.lastTradeAt != null ? Number(entry.lastTradeAt) : null,
-            bestTradeSlug: entry.bestTradeSlug != null ? String(entry.bestTradeSlug) : null,
-            bestTradePnl: Number(entry.bestTradePnl ?? 0),
-          }))
-        : [],
+        ? raw.leaders.map((entry, index) => normalizeArenaEntry(entry, `arena.leaders[${index}]`))
+        : (() => { throw new Error("Invalid arena.leaders payload"); })(),
       viewer: {
-        agentId: raw.viewer?.agentId != null ? String(raw.viewer.agentId) : null,
-        eligible: Boolean(raw.viewer?.eligible),
-        ranked: Boolean(raw.viewer?.ranked),
-        rank: raw.viewer?.rank != null ? Number(raw.viewer.rank) : null,
-        entry: raw.viewer?.entry
-          ? {
-              rank: Number(raw.viewer.entry.rank ?? 0),
-              agentId: String(raw.viewer.entry.agentId ?? ""),
-              agentCode: String(raw.viewer.entry.agentCode ?? ""),
-              name: String(raw.viewer.entry.name ?? "Unknown Agent"),
-              avatarEmoji: String(raw.viewer.entry.avatarEmoji ?? "🤖"),
-              animalType: raw.viewer.entry.animalType != null ? String(raw.viewer.entry.animalType) : null,
-              agentType: String(raw.viewer.entry.agentType ?? "created"),
-              connectionStatus: raw.viewer.entry.connectionStatus != null ? String(raw.viewer.entry.connectionStatus) : null,
-              autopilotEnabled: Boolean(raw.viewer.entry.autopilotEnabled),
-              polymarketReady: Boolean(raw.viewer.entry.polymarketReady),
-              selectedPnl: Number(raw.viewer.entry.selectedPnl ?? 0),
-              selectedRealizedPnl: Number(raw.viewer.entry.selectedRealizedPnl ?? 0),
-              selectedUnrealizedPnl: Number(raw.viewer.entry.selectedUnrealizedPnl ?? 0),
-              allTimePnl: Number(raw.viewer.entry.allTimePnl ?? 0),
-              totalTrades: Number(raw.viewer.entry.totalTrades ?? 0),
-              winRate: Number(raw.viewer.entry.winRate ?? 0),
-              openPositions: Number(raw.viewer.entry.openPositions ?? 0),
-              currentStreak: Number(raw.viewer.entry.currentStreak ?? 0),
-              lastTradeAt: raw.viewer.entry.lastTradeAt != null ? Number(raw.viewer.entry.lastTradeAt) : null,
-              bestTradeSlug: raw.viewer.entry.bestTradeSlug != null ? String(raw.viewer.entry.bestTradeSlug) : null,
-              bestTradePnl: Number(raw.viewer.entry.bestTradePnl ?? 0),
-            }
-          : null,
-        referencePnl: Number(raw.viewer?.referencePnl ?? 0),
-        gapToTop10: Number(raw.viewer?.gapToTop10 ?? 0),
-        gapToPodium: Number(raw.viewer?.gapToPodium ?? 0),
-        gapToCrown: Number(raw.viewer?.gapToCrown ?? 0),
-        reason: (raw.viewer?.reason ?? "no_agent") as ArenaViewerContext["reason"],
+        agentId: readArenaOptionalString(viewer.agentId),
+        eligible: requireArenaBoolean(viewer.eligible, "arena.viewer.eligible"),
+        ranked: requireArenaBoolean(viewer.ranked, "arena.viewer.ranked"),
+        rank: viewer.rank == null ? null : requireArenaNumber(viewer.rank, "arena.viewer.rank"),
+        entry: viewer.entry ? normalizeArenaEntry(viewer.entry, "arena.viewer.entry") : null,
+        referencePnl: requireArenaNumber(viewer.referencePnl, "arena.viewer.referencePnl"),
+        gapToTop10: requireArenaNumber(viewer.gapToTop10, "arena.viewer.gapToTop10"),
+        gapToPodium: requireArenaNumber(viewer.gapToPodium, "arena.viewer.gapToPodium"),
+        gapToCrown: requireArenaNumber(viewer.gapToCrown, "arena.viewer.gapToCrown"),
+        reason: requireArenaReason(viewer.reason),
       },
     };
   },

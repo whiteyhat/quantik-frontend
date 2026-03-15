@@ -32,7 +32,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useQuantikStore } from "@/store/useQuantikStore";
 
 const THRONE_PARTICLE_STYLE_ID = "arena-throne-particle-keyframes";
 const THRONE_PARTICLES = ["🏆", "🌟", "👑", "💯", "🎉"] as const;
@@ -625,16 +624,10 @@ function BattleLaneRow({
 function ContenderDock({
   viewer,
   viewerEntry,
-  viewerName,
-  viewerAvatar,
-  viewerCode,
   leaders,
 }: {
   viewer: ArenaViewerContext | undefined;
   viewerEntry: ArenaLeaderboardEntry | null;
-  viewerName: string;
-  viewerAvatar: string;
-  viewerCode: string;
   leaders: ArenaLeaderboardEntry[];
 }) {
   const t = useTranslations("arena");
@@ -643,6 +636,9 @@ function ContenderDock({
   const qualifierTone = viewer?.ranked ? "good" : viewer?.reason === "no_agent" ? "neutral" : "warn";
   const nextRival = findNextRival(leaders, viewer);
   const nextRivalGap = nextRival ? Math.max(0, nextRival.selectedPnl - selectedBaseline) : 0;
+  const hasViewerIdentity = Boolean(viewerEntry);
+  const viewerName = viewerEntry?.name ?? t("qualifierMissing");
+  const viewerCode = viewerEntry?.agentCode ?? null;
 
   return (
     <div className="arena-dock-stack">
@@ -669,14 +665,16 @@ function ContenderDock({
           <div className="arena-dock-target">
             <div className="arena-dock-target-glow" aria-hidden="true" />
             <div className="arena-dock-avatar-shell">
-              <div className="arena-contender-avatar arena-dock-avatar">{viewerAvatar}</div>
+              <div className="arena-contender-avatar arena-dock-avatar">
+                {viewerEntry ? viewerEntry.avatarEmoji : <Target className="size-7" />}
+              </div>
             </div>
             <div className="arena-dock-target-copy">
               <div className="arena-dock-target-name" title={viewerName}>{viewerName}</div>
-              <div className="arena-dock-target-code" title={viewerCode}>{viewerCode}</div>
+              {viewerCode ? <div className="arena-dock-target-code" title={viewerCode}>{viewerCode}</div> : null}
             </div>
-            <div className={cn("arena-dock-rank", !viewer?.ranked && "arena-dock-rank--ghost")}>
-              {viewer?.ranked ? `#${viewer.rank}` : t("outsideBoard")}
+            <div className={cn("arena-dock-rank", (!viewer?.ranked || !hasViewerIdentity) && "arena-dock-rank--ghost")}>
+              {viewer?.ranked ? `#${viewer.rank}` : hasViewerIdentity ? t("outsideBoard") : "—"}
             </div>
           </div>
           <div className="arena-dock-detail min-w-0">
@@ -822,7 +820,6 @@ export function ArenaPageClient() {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
-  const myAgent = useQuantikStore((state) => state.myAgent);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewerFocus, setViewerFocus] = useState(false);
   const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -837,9 +834,6 @@ export function ArenaPageClient() {
   const viewerEntry = viewer?.entry ?? null;
   const podiumLeaders = leaders.slice(0, 3);
   const champion = podiumLeaders[0] ?? null;
-  const viewerName = viewerEntry?.name ?? myAgent?.name ?? t("unknownAgent");
-  const viewerAvatar = viewerEntry?.avatarEmoji ?? myAgent?.avatar_emoji ?? "🤖";
-  const viewerCode = viewerEntry?.agentCode ?? myAgent?.agent_code ?? t("unknownAgent");
   const battlePool = arenaQuery.data?.meta.totalSelectedPnlPool ?? 0;
   const unrealizedPool = arenaQuery.data?.meta.totalUnrealizedPnlPool ?? 0;
   const hottestStreak = leaders.slice().sort((left, right) => Math.abs(right.currentStreak) - Math.abs(left.currentStreak))[0] ?? null;
@@ -905,8 +899,8 @@ export function ArenaPageClient() {
                 <span />
               </div>
               <div className="arena-prelude-target__core">
-                <span>{viewerAvatar}</span>
-                <strong>{viewer?.ranked ? `#${viewer.rank}` : t("outsideBoard")}</strong>
+                <span>{viewerEntry ? viewerEntry.avatarEmoji : <Target className="size-9" />}</span>
+                <strong>{viewer?.ranked ? `#${viewer.rank}` : viewerEntry ? t("outsideBoard") : "—"}</strong>
               </div>
             </div>
           </div>
@@ -1117,9 +1111,6 @@ export function ArenaPageClient() {
             <ContenderDock
               viewer={viewer}
               viewerEntry={viewerEntry}
-              viewerName={viewerName}
-              viewerAvatar={viewerAvatar}
-              viewerCode={viewerCode}
               leaders={leaders}
             />
 
