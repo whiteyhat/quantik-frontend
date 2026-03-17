@@ -9,3 +9,8 @@ export { ContenderDock } from "./ContenderDock";
 export { BattleControlsPanel } from "./BattleControlsPanel";
 export { RankChangeBadge } from "./RankChangeBadge";
 export { PnlSparkline } from "./PnlSparkline";
+export { AnimatedCounter } from "./AnimatedCounter";
+export { AchievementBadge, AchievementBadgeRow } from "./AchievementBadge";
+export { AgentHeatGlow } from "./AgentHeatGlow";
+export { AgentProfileFlyout } from "./AgentProfileFlyout";
+export { LiveActivityFeed } from "./LiveActivityFeed";

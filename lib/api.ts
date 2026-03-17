@@ -226,6 +226,8 @@ export interface ArenaLeaderboardEntry {
   bestTradePnl: number;
   rankChange: number | null;
   marketBreakdown: ArenaMarketBreakdown[];
+  badges: Array<{ id: string; name: string; description: string; tier: string; emoji: string }>;
+  heat: number;
 }
 
 export interface ArenaViewerContext {
@@ -239,6 +241,26 @@ export interface ArenaViewerContext {
   gapToPodium: number;
   gapToCrown: number;
   reason: "no_agent" | "inactive" | "no_activity" | "ranked";
+}
+
+export interface ArenaSparklinePoint {
+  timestamp: number;
+  pnl: number;
+  rank: number;
+}
+
+export interface ArenaComparisonAgent {
+  agentId: string;
+  name: string;
+  avatarEmoji: string;
+  rank: number | null;
+  selectedPnl: number;
+  allTimePnl: number;
+  winRate: number;
+  totalTrades: number;
+  openPositions: number;
+  currentStreak: number;
+  sparkline: ArenaSparklinePoint[];
 }
 
 export interface ArenaLeaderboardResponse {
@@ -334,6 +356,39 @@ function normalizeArenaEntry(input: unknown, context: string): ArenaLeaderboardE
           trades: Number(m.trades ?? 0),
           winRate: Number(m.winRate ?? 0),
           openPositions: Number(m.openPositions ?? 0),
+        }))
+      : [],
+    badges: Array.isArray(entry.badges)
+      ? (entry.badges as Record<string, unknown>[]).map((b) => ({
+          id: String(b.id ?? ""),
+          name: String(b.name ?? ""),
+          description: String(b.description ?? ""),
+          tier: String(b.tier ?? "common"),
+          emoji: String(b.emoji ?? ""),
+        }))
+      : [],
+    heat: Number(entry.heat ?? 0),
+  };
+}
+
+function normalizeComparisonAgent(input: unknown): ArenaComparisonAgent {
+  const a = requireObject(input, "comparison.agent");
+  return {
+    agentId: String(a.agentId ?? ""),
+    name: String(a.name ?? "Unknown"),
+    avatarEmoji: String(a.avatarEmoji ?? "?"),
+    rank: a.rank == null ? null : Number(a.rank),
+    selectedPnl: Number(a.selectedPnl ?? 0),
+    allTimePnl: Number(a.allTimePnl ?? 0),
+    winRate: Number(a.winRate ?? 0),
+    totalTrades: Number(a.totalTrades ?? 0),
+    openPositions: Number(a.openPositions ?? 0),
+    currentStreak: Number(a.currentStreak ?? 0),
+    sparkline: Array.isArray(a.sparkline)
+      ? (a.sparkline as Record<string, unknown>[]).map((p) => ({
+          timestamp: Number(p.timestamp ?? 0),
+          pnl: Number(p.pnl ?? 0),
+          rank: Number(p.rank ?? 0),
         }))
       : [],
   };
@@ -1150,6 +1205,48 @@ export const api = {
         reason: requireArenaReason(viewer.reason),
       },
     };
+  },
+
+  getArenaAgentHistory: async (
+    agentId: string,
+    window: ArenaWindow = "all",
+    signal?: AbortSignal,
+  ): Promise<Array<{ timestamp: number; pnl: number; rank: number }>> => {
+    const params = new URLSearchParams();
+    if (window !== "all") params.set("window", window);
+    const query = params.toString();
+    const raw = await apiFetch<unknown[]>(`/api/performance/arena/${encodeURIComponent(agentId)}/history${query ? `?${query}` : ""}`, { signal });
+    return Array.isArray(raw)
+      ? raw.map((item) => {
+          const p = item as Record<string, unknown>;
+          return { timestamp: Number(p.timestamp ?? 0), pnl: Number(p.pnl ?? 0), rank: Number(p.rank ?? 0) };
+        })
+      : [];
+  },
+
+  getArenaComparison: async (
+    a1: string,
+    a2: string,
+    window: ArenaWindow = "all",
+    signal?: AbortSignal,
+  ): Promise<{
+    window: ArenaWindow;
+    agents: [ArenaComparisonAgent, ArenaComparisonAgent];
+  } | null> => {
+    const params = new URLSearchParams({ a1, a2, window });
+    try {
+      const raw = await apiFetch<Record<string, unknown>>(`/api/performance/arena/compare?${params.toString()}`, { signal });
+      if (!raw || !Array.isArray(raw.agents) || raw.agents.length < 2) return null;
+      return {
+        window: requireArenaWindow(raw.window),
+        agents: [
+          normalizeComparisonAgent(raw.agents[0]),
+          normalizeComparisonAgent(raw.agents[1]),
+        ],
+      };
+    } catch {
+      return null;
+    }
   },
 
   downloadTradeReportsCsv: async (params?: {

@@ -7,6 +7,8 @@ import { type ArenaLeaderboardEntry } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { battleTone, formatSignedCompact, formatSignedCurrency, isOpenClawAgent } from "@/components/arena/arenaHelpers";
 import { RankChangeBadge } from "@/components/arena/RankChangeBadge";
+import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
+import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
 import { cn } from "@/lib/utils";
 
 const THRONE_PARTICLE_STYLE_ID = "arena-throne-particle-keyframes";
@@ -106,7 +108,8 @@ export function ChampionThroneCard({
 
     const cx = event.clientX - rect.left;
     const cy = event.clientY - rect.top;
-    const burst = Array.from({ length: 5 }, (_, index): ThroneEmojiParticle => {
+    const burstCount = Math.round(5 + entry.heat * 5);
+    const burst = Array.from({ length: burstCount }, (_, index): ThroneEmojiParticle => {
       const angle = -Math.PI / 2 + ((index - 2) / 4) * Math.PI * 0.95 + (Math.random() - 0.5) * 0.24;
       const speed = 48 + Math.random() * 46;
       const rot0 = (Math.random() - 0.5) * 26;
@@ -128,11 +131,12 @@ export function ChampionThroneCard({
     });
 
     setEmojiParticles(burst);
-  }, []);
+  }, [entry.heat]);
 
   const handleMouseMove = useCallback((event: MouseEvent<HTMLElement>) => {
     const nowMs = Date.now();
-    if (nowMs - lastSpawnRef.current < 140) return;
+    const spawnInterval = Math.max(60, 140 - entry.heat * 80);
+    if (nowMs - lastSpawnRef.current < spawnInterval) return;
     lastSpawnRef.current = nowMs;
 
     const rect = cardRef.current?.getBoundingClientRect();
@@ -161,13 +165,13 @@ export function ChampionThroneCard({
     };
 
     setEmojiParticles((current) => [...current.slice(-20), particle]);
-  }, []);
+  }, [entry.heat]);
 
   const handleMouseLeave = useCallback(() => {
     setEmojiParticles([]);
   }, []);
 
-  return (
+  const card = (
     <article
       ref={cardRef}
       className={cn("arena-throne-card", isViewer && "arena-throne-card--viewer")}
@@ -225,7 +229,10 @@ export function ChampionThroneCard({
         <div className="arena-throne-portrait">
           <div className="arena-throne-avatar">{entry.avatarEmoji}</div>
           <div className="arena-throne-agent">
-            <div className="arena-throne-name" title={entry.name}>{entry.name}</div>
+            <div className="arena-throne-name-row">
+              <div className="arena-throne-name" title={entry.name}>{entry.name}</div>
+              <AchievementBadgeRow badges={entry.badges} maxVisible={4} />
+            </div>
             <div className="arena-podium-code" title={entry.agentCode}>{entry.agentCode}</div>
           </div>
         </div>
@@ -278,4 +285,10 @@ export function ChampionThroneCard({
       </div>
     </article>
   );
+
+  if (entry.heat > 0.05) {
+    return <AgentHeatGlow heat={entry.heat}>{card}</AgentHeatGlow>;
+  }
+
+  return card;
 }

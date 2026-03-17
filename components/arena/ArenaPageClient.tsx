@@ -1,10 +1,12 @@
 "use client";
 
 import "./arena.css";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useRef, useState } from "react";
 import { Activity, RefreshCw, Search, Shield, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { type ArenaWindow } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
@@ -36,6 +38,9 @@ import { TelemetryStrip } from "./TelemetryStrip";
 import { BattleLaneRow } from "./BattleLaneRow";
 import { ContenderDock } from "./ContenderDock";
 import { BattleControlsPanel } from "./BattleControlsPanel";
+import { LiveActivityFeed } from "./LiveActivityFeed";
+
+const ComparisonModal = dynamic(() => import("./ComparisonModal"), { ssr: false });
 
 export function ArenaPageClient() {
   const t = useTranslations("arena");
@@ -43,12 +48,15 @@ export function ArenaPageClient() {
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewerFocus, setViewerFocus] = useState(false);
+  const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
+  const [comparisonPair, setComparisonPair] = useState<[string, string] | null>(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const windowParam = searchParams.get("window");
   const activeWindow: ArenaWindow = windowParam === "day" || windowParam === "week" ? windowParam : "all";
   const arenaQuery = useArenaLeaderboardQuery(activeWindow);
   const now = useNow(10_000);
   const keys = protocolKeys(activeWindow);
+  const hasInitiallyRendered = useRef(false);
 
   const leaders = arenaQuery.data?.leaders ?? [];
   const viewer = arenaQuery.data?.viewer;
@@ -73,6 +81,16 @@ export function ArenaPageClient() {
     : viewer?.ranked && viewerEntry && viewer.rank && viewer.rank > 10
       ? [...defaultLeaders, viewerEntry]
       : defaultLeaders;
+
+  // Runner-up gap for telemetry flip
+  const runnerUpGap = champion && podiumLeaders[1]
+    ? Math.round((champion.selectedPnl - podiumLeaders[1].selectedPnl) * 100) / 100
+    : undefined;
+
+  // Mark initial render complete for stagger animation
+  if (!hasInitiallyRendered.current && warTableLeaders.length > 0) {
+    hasInitiallyRendered.current = true;
+  }
 
   return (
     <div className="arena-shell">
@@ -247,6 +265,7 @@ export function ArenaPageClient() {
                 hottestStreak={hottestStreak}
                 bestTradeLeader={bestTradeLeader}
                 activeWindow={activeWindow}
+                runnerUpGap={runnerUpGap}
               />
             </CommandCenterCard>
 
@@ -310,14 +329,20 @@ export function ArenaPageClient() {
 
               <div className="arena-lane-list" id="arena-lane-list">
                 {warTableLeaders.length > 0 ? (
-                  warTableLeaders.map((entry) => (
-                    <BattleLaneRow
-                      key={entry.agentId}
-                      entry={entry}
-                      now={now}
-                      isViewer={viewer?.agentId === entry.agentId}
-                    />
-                  ))
+                  <AnimatePresence mode="popLayout">
+                    {warTableLeaders.map((entry, index) => (
+                      <BattleLaneRow
+                        key={entry.agentId}
+                        entry={entry}
+                        now={now}
+                        isViewer={viewer?.agentId === entry.agentId}
+                        isExpanded={expandedAgentId === entry.agentId}
+                        onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
+                        staggerIndex={hasInitiallyRendered.current ? undefined : index}
+                        activeWindow={activeWindow}
+                      />
+                    ))}
+                  </AnimatePresence>
                 ) : (
                   <PanelEmptyState
                     title={hasSearchFilters ? t("searchEmptyTitle") : t("emptyTitle")}
@@ -333,11 +358,27 @@ export function ArenaPageClient() {
               viewer={viewer}
               viewerEntry={viewerEntry}
               leaders={leaders}
+              onCompare={
+                viewerEntry && champion && viewerEntry.agentId !== champion.agentId
+                  ? () => setComparisonPair([viewerEntry.agentId, champion.agentId])
+                  : undefined
+              }
             />
 
             <BattleControlsPanel viewer={viewer} />
+
+            <LiveActivityFeed />
           </div>
         </div>
+      )}
+
+      {comparisonPair && (
+        <ComparisonModal
+          agentId1={comparisonPair[0]}
+          agentId2={comparisonPair[1]}
+          window={activeWindow}
+          onClose={() => setComparisonPair(null)}
+        />
       )}
     </div>
   );

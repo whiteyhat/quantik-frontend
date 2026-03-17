@@ -19,10 +19,12 @@ export function ContenderDock({
   viewer,
   viewerEntry,
   leaders,
+  onCompare,
 }: {
   viewer: ArenaViewerContext | undefined;
   viewerEntry: ArenaLeaderboardEntry | null;
   leaders: ArenaLeaderboardEntry[];
+  onCompare?: () => void;
 }) {
   const t = useTranslations("arena");
   const selectedBaseline = viewerEntry?.selectedPnl ?? viewer?.referencePnl ?? 0;
@@ -139,6 +141,11 @@ export function ContenderDock({
             </div>
           ) : (
             <p className="arena-dock-copy">{t("nextRivalEmpty")}</p>
+          )}
+          {onCompare && (
+            <button type="button" className="arena-compare-btn" onClick={onCompare}>
+              ⚔️ Compare with Crown
+            </button>
           )}
         </div>
 

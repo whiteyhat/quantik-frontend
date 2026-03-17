@@ -783,6 +783,13 @@
   -webkit-line-clamp: 2;
 }
 
+.arena-throne-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .arena-pylon-name {
   display: -webkit-box;
   overflow: hidden;
@@ -2377,5 +2384,668 @@
   .arena-tab {
     flex: 1;
     justify-content: center;
+  }
+
+  .arena-badge-row { display: none; }
+
+  .arena-telemetry-card:hover .arena-telemetry-flipper,
+  .arena-telemetry-card:focus-visible .arena-telemetry-flipper {
+    transform: none;
+  }
+  .arena-telemetry-back { display: none; }
+
+  .arena-flyout-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .arena-compare-agents {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .arena-compare-vs { font-size: 14px; }
+
+  .arena-feed { max-height: 160px; }
+  .arena-feed-item { font-size: 11px; padding: 6px 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Achievement Badges
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes arena-badge-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes arena-badge-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 217, 102, 0.15); }
+  50% { box-shadow: 0 0 18px rgba(255, 217, 102, 0.35); }
+}
+
+.arena-badge-row {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: 6px;
+}
+
+.arena-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: default;
+  animation: arena-badge-pop 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--badge-index, 0) * 60ms);
+}
+
+.arena-badge-emoji { font-size: 13px; line-height: 1; }
+
+.arena-badge--common { border-color: rgba(255, 255, 255, 0.15); }
+.arena-badge--rare { border-color: rgba(87, 216, 255, 0.4); }
+.arena-badge--epic { border-color: rgba(168, 85, 247, 0.4); }
+.arena-badge--legendary {
+  border-color: rgba(255, 217, 102, 0.5);
+  animation: arena-badge-pop 350ms cubic-bezier(0.16, 1, 0.3, 1) both,
+             arena-badge-glow 2s ease-in-out infinite;
+  animation-delay: calc(var(--badge-index, 0) * 60ms), 0ms;
+}
+
+.arena-badge-overflow {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-badge-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(5, 8, 18, 0.88);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-badge-tooltip-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.arena-badge-tooltip-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.arena-badge-tooltip-tier {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.arena-badge-tooltip-tier--common { color: rgba(255, 255, 255, 0.4); }
+.arena-badge-tooltip-tier--rare { color: rgba(87, 216, 255, 0.9); }
+.arena-badge-tooltip-tier--epic { color: rgba(168, 85, 247, 0.9); }
+.arena-badge-tooltip-tier--legendary { color: rgba(255, 217, 102, 0.9); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Agent Heat Glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes arena-heat-pulse {
+  0%, 100% { opacity: calc(var(--agent-heat, 0) * 0.35); }
+  50% { opacity: calc(var(--agent-heat, 0) * 0.8); }
+}
+
+.arena-heat-wrap {
+  --agent-heat: 0;
+  position: relative;
+}
+
+.arena-heat-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 22px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(87, 216, 255, calc(0.15 * (1 - var(--agent-heat, 0)))),
+    rgba(255, 217, 102, calc(0.2 * var(--agent-heat, 0))),
+    rgba(255, 107, 87, calc(0.25 * var(--agent-heat, 0)))
+  );
+  animation: arena-heat-pulse calc(2s - var(--agent-heat, 0) * 1.2s) ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Lane Expanded State
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-lane--expanded {
+  border-color: rgba(87, 216, 255, 0.22);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 16px rgba(87, 216, 255, 0.06);
+}
+
+.arena-lane[role="button"] { cursor: pointer; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Agent Profile Flyout
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-flyout {
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+  margin-top: -4px;
+}
+
+.arena-flyout-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+    rgba(5, 8, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  backdrop-filter: blur(20px);
+}
+
+.arena-flyout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.arena-flyout-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.arena-flyout-no-data {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-flyout-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  grid-column: 1 / -1;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.arena-flyout-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arena-flyout-stat span {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-flyout-stat strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-flyout-ring {
+  flex-shrink: 0;
+}
+
+.arena-flyout-markets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.arena-flyout-market-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  color: var(--text-secondary);
+}
+
+.arena-flyout-market-slug {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.arena-flyout-pnl--up { color: #34d399; font-weight: 700; }
+.arena-flyout-pnl--down { color: #f87171; font-weight: 700; }
+
+.arena-flyout-open-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(87, 216, 255, 0.12);
+  color: rgba(87, 216, 255, 0.9);
+  font-weight: 600;
+}
+
+.arena-flyout-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Telemetry Flip Cards
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-telemetry-card {
+  perspective: 800px;
+}
+
+.arena-telemetry-flipper {
+  position: relative;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+.arena-telemetry-card:hover .arena-telemetry-flipper,
+.arena-telemetry-card:focus-visible .arena-telemetry-flipper {
+  transform: rotateY(180deg);
+}
+
+.arena-telemetry-front,
+.arena-telemetry-back {
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.arena-telemetry-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  padding: 0.75rem;
+}
+
+.arena-telemetry-trend {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.arena-telemetry-trend--up { color: #34d399; }
+.arena-telemetry-trend--down { color: #f87171; }
+.arena-telemetry-trend--flat { color: var(--text-tertiary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Live Activity Feed
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes arena-feed-enter {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.arena-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 280px;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.arena-feed-header {
+  padding: 0 0.25rem;
+}
+
+.arena-feed-track {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arena-feed-track:hover {
+  animation-play-state: paused;
+}
+
+.arena-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(7, 10, 18, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  color: var(--text-secondary);
+  animation: arena-feed-enter 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.arena-feed-item--climb { border-left-color: #34d399; }
+.arena-feed-item--drop { border-left-color: #f87171; }
+.arena-feed-item--crown { border-left-color: #ffd966; }
+
+.arena-feed-emoji { font-size: 16px; flex-shrink: 0; }
+.arena-feed-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Head-to-Head Comparison Modal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-compare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 18, 0.72);
+  backdrop-filter: blur(24px);
+  padding: 2rem;
+}
+
+.arena-compare-panel {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 2rem;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(8, 12, 22, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.arena-compare-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease;
+}
+.arena-compare-close:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+
+.arena-compare-loading, .arena-compare-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.arena-compare-agents {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.arena-compare-agent {
+  flex: 1;
+  min-width: 0;
+}
+
+.arena-compare-agent-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.arena-compare-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.arena-compare-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arena-compare-rank {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-compare-vs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  align-self: center;
+}
+
+.arena-compare-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.arena-compare-chart-legend {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+}
+
+.arena-compare-sparkline { border-radius: 8px; }
+
+.arena-compare-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.arena-compare-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arena-compare-metric-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  text-align: center;
+}
+
+.arena-compare-bars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.arena-compare-bar-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.arena-compare-bar-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arena-compare-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.arena-compare-bar-track--left {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.arena-compare-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: width 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--bar-delay, 0ms);
+}
+
+.arena-compare-bar-fill--winner {
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.5), rgba(52, 211, 153, 0.8));
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.2);
+}
+
+.arena-compare-divider {
+  width: 2px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.arena-compare-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+.arena-compare-value--winner {
+  color: #34d399;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Compare Button in Dock
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-compare-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(5, 8, 18, 0.72);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.arena-compare-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(87, 216, 255, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 12px rgba(87, 216, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 4: Reduced Motion Additions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-heat-wrap::after,
+  .arena-badge--legendary,
+  .arena-feed-item,
+  .arena-badge {
+    animation: none !important;
+  }
+
+  .arena-telemetry-flipper {
+    transition: none !important;
+  }
+
+  .arena-telemetry-card:hover .arena-telemetry-flipper,
+  .arena-telemetry-card:focus-visible .arena-telemetry-flipper {
+    transform: none !important;
   }
 }

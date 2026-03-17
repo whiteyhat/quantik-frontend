@@ -32,6 +32,8 @@ function makeEntry(overrides: Partial<ArenaLeaderboardEntry> = {}): ArenaLeaderb
     bestTradePnl: 420,
     rankChange: null,
     marketBreakdown: [],
+    badges: [],
+    heat: 0,
     ...overrides,
   };
 }
