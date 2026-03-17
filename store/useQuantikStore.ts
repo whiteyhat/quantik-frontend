@@ -79,6 +79,10 @@ export interface PipelineState {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface QuantikStore {
+  // Auth
+  authReady: boolean;
+  setAuthReady: (ready: boolean) => void;
+
   // My Agent
   myAgent: MyAgent | null;
   myAgentLoading: boolean;
@@ -250,6 +254,9 @@ function buildReplayState(
 }
 
 export const useQuantikStore = create<QuantikStore>((set) => ({
+  authReady: false,
+  setAuthReady: (authReady) => set({ authReady }),
+
   myAgent: null,
   myAgentLoading: true,
   setMyAgent: (myAgent) => set({ myAgent }),

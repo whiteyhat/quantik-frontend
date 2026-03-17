@@ -56,10 +56,11 @@ export default function ManageAgentPage() {
   const setMyAgentLoading = useQuantikStore((s) => s.setMyAgentLoading);
   const storeWallet = useQuantikStore((s) => s.wallet);
   const storeSetWallet = useQuantikStore((s) => s.setWallet);
+  const authReady = useQuantikStore((s) => s.authReady);
 
   // Safety net: if store is empty and not loading, try fetching agent
   useEffect(() => {
-    if (storeAgent || myAgentLoading) return;
+    if (!authReady || storeAgent || myAgentLoading) return;
     let active = true;
     setMyAgentLoading(true);
     api.getMyAgent()
@@ -69,7 +70,7 @@ export default function ManageAgentPage() {
       .catch(() => {})
       .finally(() => { if (active) setMyAgentLoading(false); });
     return () => { active = false; };
-  }, [storeAgent, myAgentLoading, setMyAgent, setMyAgentLoading]);
+  }, [authReady, storeAgent, myAgentLoading, setMyAgent, setMyAgentLoading]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");

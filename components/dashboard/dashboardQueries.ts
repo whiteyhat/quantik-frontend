@@ -11,6 +11,7 @@ import {
   normalizeDashboardHealth,
   selectSystemAgentRows,
 } from "@/lib/dashboard";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 export const SCANNER_CATEGORIES = [
   "Trending 🔥",
@@ -48,8 +49,10 @@ function marketMatchesSearch(question: string, search: string) {
 }
 
 export function useDashboardSummaryQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.summary,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const summary = await api.getDashboardSummary(signal);
       if (!summary) throw new Error("Failed to load portfolio summary");
@@ -61,8 +64,10 @@ export function useDashboardSummaryQuery() {
 }
 
 export function useDashboardPositionsQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.positions,
+    enabled: authReady,
     queryFn: ({ signal }) => api.getPositions(signal),
     staleTime: 10_000,
     refetchInterval: 15_000,
@@ -72,8 +77,10 @@ export function useDashboardPositionsQuery() {
 }
 
 export function useDashboardRiskStatusQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.riskStatus,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const risk = await api.getRiskStatus(signal);
       if (!risk) throw new Error("Failed to load risk status");
@@ -85,8 +92,10 @@ export function useDashboardRiskStatusQuery() {
 }
 
 export function useDashboardRiskConfigQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.riskConfig,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const config = await api.getRiskConfig(signal);
       if (!config) throw new Error("Failed to load risk guardrails");
@@ -98,8 +107,10 @@ export function useDashboardRiskConfigQuery() {
 }
 
 export function useDashboardSignalsQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.signals,
+    enabled: authReady,
     queryFn: ({ signal }) => api.getSignals(signal),
     staleTime: 15_000,
     refetchInterval: 30_000,
@@ -109,8 +120,10 @@ export function useDashboardSignalsQuery() {
 }
 
 export function useDashboardSystemAgentsQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.agents,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const health = await api.getSystemAgentHealth(signal);
       if (!health) throw new Error("Failed to load pipeline agent health");
@@ -123,8 +136,10 @@ export function useDashboardSystemAgentsQuery() {
 }
 
 export function useDashboardHealthQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.health,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const startedAt = Date.now();
       const health = await api.getHealth(signal);
@@ -140,8 +155,10 @@ export function useDashboardHealthQuery() {
 }
 
 export function useDashboardOrchestratorQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.orchestrator,
+    enabled: authReady,
     queryFn: async ({ signal }) => {
       const [status, candidates] = await Promise.all([
         api.getOrchestratorStatus(signal),
@@ -187,8 +204,10 @@ export function useDashboardAgentHealthScoreQuery(agentId?: string | null, enabl
 }
 
 export function useDashboardTradesQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.trades,
+    enabled: authReady,
     queryFn: () => api.getTrades(),
     staleTime: 30_000,
     refetchInterval: 60_000,

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { type AgentDNA } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -40,8 +42,20 @@ export function StrategyDNAChart({
   size?: number;
 }) {
   const t = useTranslations("arena");
+  const reducedMotion = useReducedMotion();
   const values = AXES.map((key) => Math.min(1, Math.max(0, dna[key])));
   const compValues = comparison ? AXES.map((key) => Math.min(1, Math.max(0, comparison[key]))) : null;
+  const zeroValues = AXES.map(() => 0);
+
+  const [animated, setAnimated] = useState(!!reducedMotion);
+  useEffect(() => {
+    if (reducedMotion) return;
+    const raf = requestAnimationFrame(() => setAnimated(true));
+    return () => cancelAnimationFrame(raf);
+  }, [reducedMotion]);
+
+  const displayValues = animated ? values : zeroValues;
+  const displayCompValues = animated ? compValues : compValues ? zeroValues : null;
 
   const labelKeys: Record<keyof AgentDNA, string> = {
     volume: "dnaVolume",
@@ -86,29 +100,34 @@ export function StrategyDNAChart({
       })}
 
       {/* Comparison polygon (behind primary) */}
-      {compValues && (
+      {displayCompValues && (
         <polygon
-          points={polygonPoints(compValues)}
+          points={polygonPoints(displayCompValues)}
           className="arena-dna-polygon arena-dna-polygon--comparison"
+          style={{ transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1)" }}
         />
       )}
 
       {/* Primary polygon */}
       <polygon
-        points={polygonPoints(values)}
+        points={polygonPoints(displayValues)}
         className="arena-dna-polygon arena-dna-polygon--primary"
+        style={{ transition: "all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s" }}
       />
 
       {/* Vertex dots */}
-      {values.map((value, index) => {
+      {displayValues.map((value, index) => {
         const [x, y] = polarToCartesian(index, value);
         return (
-          <circle
+          <motion.circle
             key={index}
             cx={x}
             cy={y}
             r={3}
-            className="arena-dna-dot"
+            className="arena-dna-vertex arena-dna-vertex--primary"
+            initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4 + index * 0.08, type: "spring", stiffness: 300, damping: 15 }}
           />
         );
       })}

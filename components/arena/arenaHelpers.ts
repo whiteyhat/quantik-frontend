@@ -3,13 +3,13 @@ import { fmtCompact, fmtUSDC } from "@/lib/api";
 
 export const ARENA_WINDOW_OPTIONS: Array<{
   value: ArenaWindow;
-  label: string;
+  label: "tab24h" | "tab7d" | "tabAllTime";
   rulesKey: "rules24h" | "rules7d" | "rulesAll";
   protocolKey: "protocol24h" | "protocol7d" | "protocolAll";
 }> = [
-  { value: "day", label: "24H", rulesKey: "rules24h", protocolKey: "protocol24h" },
-  { value: "week", label: "7D", rulesKey: "rules7d", protocolKey: "protocol7d" },
-  { value: "all", label: "ALL-TIME", rulesKey: "rulesAll", protocolKey: "protocolAll" },
+  { value: "day", label: "tab24h", rulesKey: "rules24h", protocolKey: "protocol24h" },
+  { value: "week", label: "tab7d", rulesKey: "rules7d", protocolKey: "protocol7d" },
+  { value: "all", label: "tabAllTime", rulesKey: "rulesAll", protocolKey: "protocolAll" },
 ];
 
 export function formatSignedCurrency(value: number) {

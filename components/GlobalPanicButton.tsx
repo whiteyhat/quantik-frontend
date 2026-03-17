@@ -376,11 +376,11 @@ function PanicModal({ onClose }: { onClose: () => void }) {
 
   const cooldownLabel = useMemo(() => {
     if (!panicStatus?.active) return null;
-    if (!panicStatus.cooldownEndsAt) return "Cooldown unavailable";
+    if (!panicStatus.cooldownEndsAt) return t("cooldownUnavailable");
     if (panicStatus.cooldownRemainingMs > 0) {
-      return `Re-arm unlocks in ${formatCountdown(panicStatus.cooldownRemainingMs)}`;
+      return t("rearmUnlocksIn", { countdown: formatCountdown(panicStatus.cooldownRemainingMs) });
     }
-    return "Cooldown complete. System can be re-armed.";
+    return t("cooldownComplete");
   }, [panicStatus]);
 
   const handleActivate = useCallback(async () => {
@@ -545,11 +545,11 @@ function PanicModal({ onClose }: { onClose: () => void }) {
               marginBottom: 14,
             }}
           >
-            Status
+            {t("statusLabel")}
           </div>
           {modalState === "loading" ? (
             <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.45)" }}>
-              Loading panic status...
+              {t("loadingPanicStatus")}
             </div>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
@@ -570,13 +570,13 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                   fontWeight: 700,
                 }}
               >
-                {panicStatus?.active ? "PANIC MODE ACTIVE" : "System armed"}
+                {panicStatus?.active ? t("panicModeActive") : t("systemArmed")}
               </div>
               {panicStatus?.latestEvent ? (
                 <div style={{ display: "grid", gap: 6, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.62)" }}>
-                  <div>Reason: {panicStatus.latestEvent.reason ?? "—"}</div>
-                  <div>Request Code: {panicStatus.latestEvent.requestCode}</div>
-                  <div>Started: {formatTimestamp(panicStatus.latestEvent.initiatedAt)}</div>
+                  <div>{t("reasonLabel", { reason: panicStatus.latestEvent.reason ?? "—" })}</div>
+                  <div>{t("requestCodeLabel", { code: panicStatus.latestEvent.requestCode })}</div>
+                  <div>{t("startedLabel", { time: formatTimestamp(panicStatus.latestEvent.initiatedAt) })}</div>
                   <div>{cooldownLabel}</div>
                 </div>
               ) : null}
@@ -648,7 +648,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                     textTransform: "uppercase",
                   }}
                 >
-                  Type {CONFIRM_TEXT} to arm the slider
+                  {t("typeConfirmToArm")}
                 </span>
                 <input
                   value={confirmationText}
@@ -723,11 +723,10 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 textTransform: "uppercase",
               }}
             >
-              Re-arm Gate
+              {t("rearmGate")}
             </div>
             <div style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.58)", lineHeight: 1.6 }}>
-              Panic mode remains locked for 60 seconds after activation. When the
-              cooldown finishes, type {CONFIRM_TEXT} to re-arm the circuit breaker.
+              {t("rearmDesc")}
             </div>
             <label style={{ display: "grid", gap: 8 }}>
               <span
@@ -739,7 +738,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                   textTransform: "uppercase",
                 }}
               >
-                Type {CONFIRM_TEXT} to re-arm
+                {t("typeConfirmToRearm")}
               </span>
               <input
                 value={rearmConfirmation}
@@ -779,7 +778,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
                 textTransform: "uppercase",
               }}
             >
-              {modalState === "rearming" ? "Re-arming..." : "Re-arm system"}
+              {modalState === "rearming" ? t("rearming") : t("rearmSystem")}
             </button>
           </div>
         )}

@@ -3779,3 +3779,180 @@
     transition: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 5 POLISH: Profile Link Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-profile-link-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  color: rgba(87, 216, 255, 0);
+  transition: color 180ms ease, transform 180ms ease;
+  vertical-align: middle;
+}
+.arena-lane:hover .arena-profile-link-icon {
+  color: rgba(87, 216, 255, 0.35);
+}
+.arena-profile-link-icon:hover {
+  color: rgba(87, 216, 255, 0.9) !important;
+  transform: translateY(-1px);
+}
+
+.arena-podium-code--link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 180ms ease;
+}
+.arena-podium-code--link:hover {
+  color: rgba(87, 216, 255, 0.8);
+}
+
+.arena-flyout-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(87, 216, 255, 0.18);
+  background: rgba(87, 216, 255, 0.05);
+  color: rgba(87, 216, 255, 0.75);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  text-decoration: none;
+  transition: all 180ms ease;
+}
+.arena-flyout-profile-link:hover {
+  border-color: rgba(87, 216, 255, 0.4);
+  background: rgba(87, 216, 255, 0.12);
+  color: rgba(87, 216, 255, 1);
+  transform: translateY(-1px);
+}
+
+.arena-dock-share-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(87, 216, 255, 0.18);
+  background: rgba(87, 216, 255, 0.05);
+  color: rgba(87, 216, 255, 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  transition: all 200ms ease;
+}
+.arena-dock-share-link:hover {
+  border-color: rgba(87, 216, 255, 0.4);
+  background: rgba(87, 216, 255, 0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(87, 216, 255, 0.06);
+}
+
+.arena-compare-profile-link {
+  display: inline-flex;
+  margin-left: 6px;
+  color: rgba(87, 216, 255, 0.4);
+  transition: color 180ms ease;
+  vertical-align: middle;
+}
+.arena-compare-profile-link:hover {
+  color: rgba(87, 216, 255, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 5 POLISH: Enhanced Hover Effects
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arena-public-stat {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+.arena-public-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(87, 216, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(87, 216, 255, 0.06);
+}
+
+.arena-public-avatar {
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms ease;
+}
+.arena-public-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), 0 0 32px rgba(87, 216, 255, 0.15);
+}
+
+.arena-public-market-row {
+  transition: background 150ms ease;
+}
+.arena-public-market-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.arena-share-btn:active {
+  transform: scale(0.95);
+}
+
+.arena-public-cta {
+  position: relative;
+  overflow: hidden;
+}
+.arena-public-cta::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(87, 216, 255, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+.arena-public-cta:hover::before {
+  opacity: 1;
+}
+
+/* Extra hero particles (5-8) */
+.arena-public-hero__particles span:nth-child(5) { left: 25%; top: 15%; animation-delay: 0.8s; width: 3px; height: 3px; }
+.arena-public-hero__particles span:nth-child(6) { left: 60%; top: 50%; animation-delay: 2.2s; width: 1.5px; height: 1.5px; }
+.arena-public-hero__particles span:nth-child(7) { left: 10%; top: 65%; animation-delay: 3.8s; width: 2.5px; height: 2.5px; }
+.arena-public-hero__particles span:nth-child(8) { left: 90%; top: 35%; animation-delay: 5s; width: 1.5px; height: 1.5px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 5 POLISH: Draw Animations
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes arena-sparkline-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes arena-sparkline-fill {
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 5 POLISH: Reduced Motion
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-profile-link-icon,
+  .arena-flyout-profile-link,
+  .arena-dock-share-link,
+  .arena-public-stat,
+  .arena-public-avatar {
+    transition: none !important;
+  }
+
+  .arena-sparkline--animated polyline,
+  .arena-sparkline--animated path {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+  }
+}

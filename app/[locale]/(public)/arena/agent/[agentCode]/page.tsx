@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const profile = await api.getPublicAgentProfile(agentCode);
     if (profile) {
-      title = `${profile.avatarEmoji} ${profile.name} #${profile.rank ?? "—"} | Quantik Arena`;
-      description = `${profile.name} — Rank #${profile.rank ?? "—"}, PnL: $${profile.allTimePnl.toFixed(2)}, Win Rate: ${profile.winRate.toFixed(1)}%, ${profile.totalTrades} trades`;
+      title = t("publicAgentMeta", { emoji: profile.avatarEmoji, name: profile.name, rank: String(profile.rank ?? "—") });
+      description = t("publicAgentMetaDesc", { name: profile.name, rank: String(profile.rank ?? "—"), pnl: profile.allTimePnl.toFixed(2), winRate: profile.winRate.toFixed(1), trades: String(profile.totalTrades) });
     }
   } catch {
     // Use defaults

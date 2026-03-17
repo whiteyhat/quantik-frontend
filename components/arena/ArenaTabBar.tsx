@@ -1,12 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { type ArenaWindow } from "@/lib/api";
 import { ARENA_WINDOW_OPTIONS, buildWindowHref } from "@/components/arena/arenaHelpers";
 import { cn } from "@/lib/utils";
 
 export function ArenaTabBar({ activeWindow }: { activeWindow: ArenaWindow }) {
+  const t = useTranslations("arena");
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -24,7 +26,7 @@ export function ArenaTabBar({ activeWindow }: { activeWindow: ArenaWindow }) {
           aria-current={activeWindow === windowOption.value ? "page" : undefined}
           tabIndex={activeWindow === windowOption.value ? 0 : -1}
         >
-          <span className="arena-tab__label">{windowOption.label}</span>
+          <span className="arena-tab__label">{t(windowOption.label)}</span>
         </Link>
       ))}
     </div>

@@ -280,6 +280,7 @@ export interface ArenaSparklinePoint {
 
 export interface ArenaComparisonAgent {
   agentId: string;
+  agentCode: string;
   name: string;
   avatarEmoji: string;
   rank: number | null;
@@ -419,6 +420,7 @@ function normalizeComparisonAgent(input: unknown): ArenaComparisonAgent {
   const a = requireObject(input, "comparison.agent");
   return {
     agentId: String(a.agentId ?? ""),
+    agentCode: String(a.agentCode ?? ""),
     name: String(a.name ?? "Unknown"),
     avatarEmoji: String(a.avatarEmoji ?? "?"),
     rank: a.rank == null ? null : Number(a.rank),

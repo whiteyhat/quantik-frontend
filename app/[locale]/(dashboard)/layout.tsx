@@ -25,6 +25,7 @@ function AuthSync() {
   const { getToken, isSignedIn } = useAuth();
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const setMyAgentLoading = useQuantikStore((s) => s.setMyAgentLoading);
+  const setStoreAuthReady = useQuantikStore((s) => s.setAuthReady);
   const myAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const router = useRouter();
@@ -46,15 +47,21 @@ function AuthSync() {
           setAuthToken(t);
         }
         // Mark ready after the first attempt regardless (covers signed-out state).
-        if (isInitial) setAuthReady(true);
+        if (isInitial) {
+          setAuthReady(true);
+          setStoreAuthReady(true);
+        }
       }).catch(() => {
-        if (active && isInitial) setAuthReady(true);
+        if (active && isInitial) {
+          setAuthReady(true);
+          setStoreAuthReady(true);
+        }
       });
     };
     sync(true);
     const iv = setInterval(() => sync(false), 50_000); // refresh before 60s JWT expiry
     return () => { active = false; clearInterval(iv); };
-  }, [getToken]);
+  }, [getToken, setStoreAuthReady]);
 
   // Fetch the user's agent once authenticated AND auth token is set
   useEffect(() => {

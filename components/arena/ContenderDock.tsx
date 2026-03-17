@@ -1,7 +1,8 @@
 "use client";
 
-import { Target } from "lucide-react";
+import { ExternalLink, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { type ArenaLeaderboardEntry, type ArenaViewerContext } from "@/lib/api";
 import {
   contenderDetailCopy,
@@ -144,8 +145,14 @@ export function ContenderDock({
           )}
           {onCompare && (
             <button type="button" className="arena-compare-btn" onClick={onCompare}>
-              ⚔️ Compare with Crown
+              ⚔️ {t("compareWithCrown")}
             </button>
+          )}
+          {viewerEntry?.agentCode && (
+            <Link href={`/arena/agent/${viewerEntry.agentCode}`} className="arena-dock-share-link">
+              <ExternalLink className="size-3.5" />
+              {t("shareMyProfile")}
+            </Link>
           )}
         </div>
 

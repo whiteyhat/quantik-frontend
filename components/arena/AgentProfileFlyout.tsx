@@ -11,6 +11,7 @@ import { PnlSparkline } from "@/components/arena/PnlSparkline";
 import { WinRateRing } from "@/components/arena/WinRateRing";
 import { StrategyDNAChart } from "@/components/arena/StrategyDNAChart";
 import { useFollowedAgents } from "@/hooks/useFollowedAgents";
+import { Link } from "@/i18n/navigation";
 
 export function AgentProfileFlyout({
   entry,
@@ -75,11 +76,18 @@ export function AgentProfileFlyout({
             </svg>
             {following ? t("following") : t("follow")}
           </button>
+          <Link
+            href={`/arena/agent/${entry.agentCode}`}
+            className="arena-flyout-profile-link"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+            {t("viewPublicProfile")}
+          </Link>
         </div>
 
         {/* Equity Curve */}
         <div className="arena-flyout-section">
-          <div className="arena-section-kicker">PnL History</div>
+          <div className="arena-section-kicker">{t("pnlHistory")}</div>
           <div className="arena-flyout-chart">
             {historyData.length >= 2 ? (
               <PnlSparkline
@@ -88,7 +96,7 @@ export function AgentProfileFlyout({
                 height={80}
               />
             ) : (
-              <span className="arena-flyout-no-data">Not enough history</span>
+              <span className="arena-flyout-no-data">{t("notEnoughHistory")}</span>
             )}
           </div>
         </div>
@@ -109,15 +117,15 @@ export function AgentProfileFlyout({
             <strong>{entry.totalTrades}</strong>
           </div>
           <div className="arena-flyout-stat">
-            <span>Streak</span>
-            <strong>{entry.currentStreak > 0 ? `+${entry.currentStreak}W` : entry.currentStreak < 0 ? `${entry.currentStreak}L` : "—"}</strong>
+            <span>{t("metricStreak")}</span>
+            <strong>{entry.currentStreak > 0 ? t("streakWin", { v: entry.currentStreak }) : entry.currentStreak < 0 ? t("streakLoss", { v: entry.currentStreak }) : t("streakNone")}</strong>
           </div>
         </div>
 
         {/* Market Breakdown */}
         {entry.marketBreakdown.length > 0 && (
           <div className="arena-flyout-section">
-            <div className="arena-section-kicker">Market Breakdown</div>
+            <div className="arena-section-kicker">{t("marketBreakdown")}</div>
             <div className="arena-flyout-markets">
               {entry.marketBreakdown.map((m) => (
                 <div key={m.slug} className="arena-flyout-market-row">
@@ -125,9 +133,9 @@ export function AgentProfileFlyout({
                   <span className={m.pnl >= 0 ? "arena-flyout-pnl--up" : "arena-flyout-pnl--down"}>
                     {formatSignedCurrency(m.pnl)}
                   </span>
-                  <span>{m.trades} trades</span>
-                  <span>{m.winRate.toFixed(0)}% WR</span>
-                  {m.openPositions > 0 && <span className="arena-flyout-open-tag">{m.openPositions} open</span>}
+                  <span>{t("tradesCount", { count: m.trades })}</span>
+                  <span>{t("wrShort", { rate: m.winRate.toFixed(0) })}</span>
+                  {m.openPositions > 0 && <span className="arena-flyout-open-tag">{t("openCount", { count: m.openPositions })}</span>}
                 </div>
               ))}
             </div>
@@ -145,7 +153,7 @@ export function AgentProfileFlyout({
         {/* Badges */}
         {entry.badges.length > 0 && (
           <div className="arena-flyout-section">
-            <div className="arena-section-kicker">Achievements</div>
+            <div className="arena-section-kicker">{t("achievements")}</div>
             <div className="arena-flyout-badges">
               {entry.badges.map((badge, i) => (
                 <AchievementBadge key={badge.id} badge={badge} index={i} />

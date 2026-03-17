@@ -5,6 +5,7 @@ import { type ArenaLeaderboardEntry } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { formatSignedCurrency, isOpenClawAgent, podiumLabel } from "@/components/arena/arenaHelpers";
 import { RankChangeBadge } from "@/components/arena/RankChangeBadge";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 export function ArenaFlankCard({
@@ -41,7 +42,7 @@ export function ArenaFlankCard({
         <div className="arena-podium-avatar arena-pylon-avatar">{entry.avatarEmoji}</div>
         <div className="min-w-0">
           <div className="arena-pylon-name" title={entry.name}>{entry.name}</div>
-          <div className="arena-podium-code" title={entry.agentCode}>{entry.agentCode}</div>
+          <Link href={`/arena/agent/${entry.agentCode}`} className="arena-podium-code arena-podium-code--link" title={entry.agentCode}>{entry.agentCode}</Link>
         </div>
       </div>
 

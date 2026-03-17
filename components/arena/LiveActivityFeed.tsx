@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSocketEvent } from "@/context/SocketContext";
 import { useFollowedAgents } from "@/hooks/useFollowedAgents";
 
@@ -28,7 +29,8 @@ interface ActivityItem {
 
 const MAX_ITEMS = 8;
 
-function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deltaToItems(event: ArenaRankDeltaEvent, t: (key: any, values?: any) => string): ActivityItem[] {
   const items: ActivityItem[] = [];
   for (const delta of event.deltas) {
     if (delta.rankChange === 0) continue;
@@ -38,7 +40,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
         id: `${event.timestamp}-${delta.agentId}-crown`,
         agentId: delta.agentId,
         emoji: delta.avatarEmoji || "🏆",
-        text: `${delta.name} claimed the crown!`,
+        text: t("crownClaimed", { name: delta.name }),
         tone: "crown",
         timestamp: event.timestamp,
       });
@@ -48,7 +50,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
         id: `${event.timestamp}-${delta.agentId}`,
         agentId: delta.agentId,
         emoji: delta.avatarEmoji || "📈",
-        text: `${delta.name} #${from} → #${delta.currentRank}`,
+        text: t("rankClimbed", { name: delta.name, from: String(from), to: String(delta.currentRank) }),
         tone: "climb",
         timestamp: event.timestamp,
       });
@@ -57,7 +59,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
         id: `${event.timestamp}-${delta.agentId}`,
         agentId: delta.agentId,
         emoji: delta.avatarEmoji || "📉",
-        text: `${delta.name} dropped to #${delta.currentRank}`,
+        text: t("rankDropped", { name: delta.name, rank: String(delta.currentRank) }),
         tone: "drop",
         timestamp: event.timestamp,
       });
@@ -67,15 +69,16 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
 }
 
 export function LiveActivityFeed() {
+  const t = useTranslations("arena");
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [followingOnly, setFollowingOnly] = useState(false);
   const { followed } = useFollowedAgents();
 
   const handler = useCallback((event: ArenaRankDeltaEvent) => {
-    const newItems = deltaToItems(event);
+    const newItems = deltaToItems(event, t);
     if (newItems.length === 0) return;
     setItems((prev) => [...newItems, ...prev].slice(0, MAX_ITEMS));
-  }, []);
+  }, [t]);
 
   useSocketEvent("arena:leaderboard_delta", handler);
 
@@ -88,7 +91,7 @@ export function LiveActivityFeed() {
   return (
     <div className="arena-feed">
       <div className="arena-feed-header">
-        <span className="arena-section-kicker">Live Activity</span>
+        <span className="arena-section-kicker">{t("liveActivity")}</span>
         {followed.size > 0 && (
           <button
             type="button"
@@ -99,7 +102,7 @@ export function LiveActivityFeed() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill={followingOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            Following
+            {t("feedFollowing")}
           </button>
         )}
       </div>

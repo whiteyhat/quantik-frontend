@@ -313,6 +313,14 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
                   </WalletActionButton>
                 </>
               )}
+              {myAgent.agent_code && (
+                <WalletActionButton
+                  href={`/arena/agent/${myAgent.agent_code}`}
+                  label={t("viewPublicProfile")}
+                >
+                  <ExternalLink size={12} />
+                </WalletActionButton>
+              )}
             </div>
 
             {/* Balance */}

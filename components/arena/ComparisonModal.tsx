@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { type ArenaComparisonAgent, type ArenaWindow } from "@/lib/api";
+import { useTranslations } from "next-intl";
 import { useArenaComparisonQuery } from "@/components/dashboard/dashboardQueries";
 import { formatSignedCurrency } from "@/components/arena/arenaHelpers";
 import { AnimatedCounter } from "@/components/arena/AnimatedCounter";
@@ -98,14 +100,21 @@ function SparklineOverlay({
   );
 }
 
-function AgentColumn({ agent, color }: { agent: ArenaComparisonAgent; color: string }) {
+function AgentColumn({ agent, color, unrankedLabel }: { agent: ArenaComparisonAgent; color: string; unrankedLabel: string }) {
   return (
     <div className="arena-compare-agent">
       <div className="arena-compare-agent-head">
         <div className="arena-compare-avatar" style={{ borderColor: color }}>{agent.avatarEmoji}</div>
         <div>
-          <div className="arena-compare-name">{agent.name}</div>
-          <div className="arena-compare-rank">{agent.rank ? `#${agent.rank}` : "Unranked"}</div>
+          <div className="arena-compare-name">
+            {agent.name}
+            {agent.agentCode && (
+              <Link href={`/arena/agent/${agent.agentCode}`} className="arena-compare-profile-link" aria-label="View profile">
+                <ExternalLink className="size-3" />
+              </Link>
+            )}
+          </div>
+          <div className="arena-compare-rank">{agent.rank ? `#${agent.rank}` : unrankedLabel}</div>
         </div>
       </div>
     </div>
@@ -123,6 +132,7 @@ export default function ComparisonModal({
   window: ArenaWindow;
   onClose: () => void;
 }) {
+  const t = useTranslations("arena");
   const query = useArenaComparisonQuery(agentId1, agentId2, activeWindow);
 
   useEffect(() => {
@@ -139,12 +149,12 @@ export default function ComparisonModal({
 
   const metrics = a1 && a2
     ? [
-        { label: "Selected PnL", left: a1.selectedPnl, right: a2.selectedPnl, format: formatSignedCurrency },
-        { label: "All-Time PnL", left: a1.allTimePnl, right: a2.allTimePnl, format: formatSignedCurrency },
-        { label: "Win Rate", left: a1.winRate, right: a2.winRate, format: (v: number) => `${v.toFixed(1)}%` },
-        { label: "Total Trades", left: a1.totalTrades, right: a2.totalTrades },
-        { label: "Open Positions", left: a1.openPositions, right: a2.openPositions },
-        { label: "Streak", left: a1.currentStreak, right: a2.currentStreak, format: (v: number) => (v > 0 ? `+${v}W` : v < 0 ? `${v}L` : "—") },
+        { label: t("metricSelectedPnl"), left: a1.selectedPnl, right: a2.selectedPnl, format: formatSignedCurrency },
+        { label: t("metricAllTimePnl"), left: a1.allTimePnl, right: a2.allTimePnl, format: formatSignedCurrency },
+        { label: t("metricWinRate"), left: a1.winRate, right: a2.winRate, format: (v: number) => `${v.toFixed(1)}%` },
+        { label: t("metricTotalTrades"), left: a1.totalTrades, right: a2.totalTrades },
+        { label: t("metricOpenPositions"), left: a1.openPositions, right: a2.openPositions },
+        { label: t("metricStreak"), left: a1.currentStreak, right: a2.currentStreak, format: (v: number) => (v > 0 ? t("streakWin", { v }) : v < 0 ? t("streakLoss", { v }) : t("streakNone")) },
       ]
     : [];
 
@@ -169,24 +179,24 @@ export default function ComparisonModal({
             <X className="size-5" />
           </button>
 
-          <div className="arena-section-kicker">Head-to-Head</div>
+          <div className="arena-section-kicker">{t("headToHead")}</div>
 
           {query.isLoading ? (
             <div className="arena-compare-loading">
               <Skeleton width="100%" height={200} borderRadius={16} />
             </div>
           ) : !a1 || !a2 ? (
-            <div className="arena-compare-empty">Could not load comparison data</div>
+            <div className="arena-compare-empty">{t("comparisonLoadFailed")}</div>
           ) : (
             <>
               {/* Agent headers */}
               <div className="arena-compare-agents">
                 <motion.div initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}>
-                  <AgentColumn agent={a1} color="rgba(87,216,255,0.6)" />
+                  <AgentColumn agent={a1} color="rgba(87,216,255,0.6)" unrankedLabel={t("unranked")} />
                 </motion.div>
-                <div className="arena-compare-vs">VS</div>
+                <div className="arena-compare-vs">{t("vs")}</div>
                 <motion.div initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}>
-                  <AgentColumn agent={a2} color="rgba(255,217,102,0.6)" />
+                  <AgentColumn agent={a2} color="rgba(255,217,102,0.6)" unrankedLabel={t("unranked")} />
                 </motion.div>
               </div>
 

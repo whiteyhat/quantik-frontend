@@ -1,6 +1,7 @@
 "use client";
 
 import { type CSSProperties, useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface BadgeData {
   id: string;
@@ -22,14 +23,15 @@ const TIER_CLASS: Record<string, string> = {
   legendary: "arena-badge--legendary",
 };
 
-const TIER_LABEL: Record<string, string> = {
-  common: "Common",
-  rare: "Rare",
-  epic: "Epic",
-  legendary: "Legendary",
-};
+const TIER_KEY = {
+  common: "tierCommon",
+  rare: "tierRare",
+  epic: "tierEpic",
+  legendary: "tierLegendary",
+} as const;
 
 export function AchievementBadge({ badge, index = 0 }: AchievementBadgeProps) {
+  const t = useTranslations("arena");
   const [showTooltip, setShowTooltip] = useState(false);
   const badgeRef = useRef<HTMLSpanElement>(null);
   const tierClass = TIER_CLASS[badge.tier] ?? TIER_CLASS.common;
@@ -61,7 +63,7 @@ export function AchievementBadge({ badge, index = 0 }: AchievementBadgeProps) {
           <strong className="arena-badge-tooltip-name">{badge.name}</strong>
           <span className="arena-badge-tooltip-desc">{badge.description}</span>
           <span className={`arena-badge-tooltip-tier arena-badge-tooltip-tier--${badge.tier}`}>
-            {TIER_LABEL[badge.tier] ?? "Common"}
+            {t(badge.tier === "rare" ? "tierRare" : badge.tier === "epic" ? "tierEpic" : badge.tier === "legendary" ? "tierLegendary" : "tierCommon")}
           </span>
         </span>
       )}
@@ -76,6 +78,7 @@ export function AchievementBadgeRow({
   badges: BadgeData[];
   maxVisible?: number;
 }) {
+  const t = useTranslations("arena");
   if (badges.length === 0) return null;
 
   const visible = badges.slice(0, maxVisible);
@@ -87,7 +90,7 @@ export function AchievementBadgeRow({
         <AchievementBadge key={badge.id} badge={badge} index={i} />
       ))}
       {overflow > 0 && (
-        <span className="arena-badge-overflow" title={`${overflow} more badge${overflow > 1 ? "s" : ""}`}>
+        <span className="arena-badge-overflow" title={t("moreBadges", { count: overflow })}>
           +{overflow}
         </span>
       )}

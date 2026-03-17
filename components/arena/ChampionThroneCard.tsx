@@ -9,6 +9,7 @@ import { battleTone, formatSignedCompact, formatSignedCurrency, isOpenClawAgent 
 import { RankChangeBadge } from "@/components/arena/RankChangeBadge";
 import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
 import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 const THRONE_PARTICLE_STYLE_ID = "arena-throne-particle-keyframes";
@@ -233,7 +234,7 @@ export function ChampionThroneCard({
               <div className="arena-throne-name" title={entry.name}>{entry.name}</div>
               <AchievementBadgeRow badges={entry.badges} maxVisible={4} />
             </div>
-            <div className="arena-podium-code" title={entry.agentCode}>{entry.agentCode}</div>
+            <Link href={`/arena/agent/${entry.agentCode}`} className="arena-podium-code arena-podium-code--link" title={entry.agentCode}>{entry.agentCode}</Link>
           </div>
         </div>
       </div>

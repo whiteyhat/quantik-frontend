@@ -170,7 +170,7 @@ export function AutopilotStatusBar() {
             letterSpacing: "0.08em",
           }}
         >
-          {scannerData.paperMode ? "PAPER" : "LIVE"}
+          {scannerData.paperMode ? t("paper") : t("live")}
         </span>
       </div>
     </div>

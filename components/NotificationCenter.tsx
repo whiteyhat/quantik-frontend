@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { api, NotificationItem } from "@/lib/api";
 import { useNotificationsStore } from "@/store/useNotificationsStore";
+import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
 import { useRouter } from "@/i18n/navigation";
 
@@ -20,6 +22,7 @@ function levelColor(level: NotificationItem["level"]): string {
 }
 
 export function NotificationCenterButton({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations("notifications");
   const unread = useNotificationsStore((state) => state.unread);
   const open = useNotificationsStore((state) => state.open);
   const setOpen = useNotificationsStore((state) => state.setOpen);
@@ -27,7 +30,7 @@ export function NotificationCenterButton({ compact = false }: { compact?: boolea
   return (
     <button
       onClick={() => setOpen(!open)}
-      aria-label="Open notifications"
+      aria-label={t("openNotifications")}
       style={{
         position: "relative",
         display: "inline-flex",
@@ -71,6 +74,7 @@ export function NotificationCenterButton({ compact = false }: { compact?: boolea
 }
 
 export function NotificationCenterPanel() {
+  const t = useTranslations("notifications");
   const router = useRouter();
   const open = useNotificationsStore((state) => state.open);
   const items = useNotificationsStore((state) => state.items);
@@ -80,13 +84,14 @@ export function NotificationCenterPanel() {
   const markRead = useNotificationsStore((state) => state.markRead);
   const markAllRead = useNotificationsStore((state) => state.markAllRead);
   const setOpen = useNotificationsStore((state) => state.setOpen);
+  const authReady = useQuantikStore((state) => state.authReady);
 
   useEffect(() => {
-    if (hydrated) return;
+    if (!authReady || hydrated) return;
     api.getNotifications().then((response) => {
       setItems(response.notifications);
     }).catch(() => {});
-  }, [hydrated, setItems]);
+  }, [authReady, hydrated, setItems]);
 
   useSocketEvent<NotificationItem>("notification:new", (notification) => {
     addItem(notification);
@@ -97,7 +102,7 @@ export function NotificationCenterPanel() {
   return (
     <>
       <button
-        aria-label="Close notifications"
+        aria-label={t("closeNotifications")}
         onClick={() => setOpen(false)}
         style={{
           position: "fixed",
@@ -136,8 +141,8 @@ export function NotificationCenterPanel() {
           }}
         >
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Notifications</div>
-            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Live operator feed</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("title")}</div>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t("subtitle")}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
@@ -156,7 +161,7 @@ export function NotificationCenterPanel() {
                 fontFamily: '"SF Mono", "JetBrains Mono", monospace',
               }}
             >
-              MARK ALL
+              {t("markAll")}
             </button>
             <button
               onClick={() => setOpen(false)}
@@ -187,7 +192,7 @@ export function NotificationCenterPanel() {
                 fontSize: 13,
               }}
             >
-              No notifications yet.
+              {t("empty")}
             </div>
           ) : (
             items.map((item) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,31 @@ export function ShareButtons({
         onClick={handleCopy}
         aria-label={t("copyLink")}
       >
-        {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+        <AnimatePresence mode="wait">
+          {copied ? (
+            <motion.span
+              key="check"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              style={{ display: "inline-flex" }}
+            >
+              <Check className="size-4" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="copy"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              style={{ display: "inline-flex" }}
+            >
+              <Copy className="size-4" />
+            </motion.span>
+          )}
+        </AnimatePresence>
         <span>{copied ? t("copied") : t("copyLink")}</span>
       </button>
 

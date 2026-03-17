@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronUp, ChevronDown, Minus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export function RankChangeBadge({
@@ -10,6 +11,7 @@ export function RankChangeBadge({
   rankChange: number | null;
   size?: "sm" | "md";
 }) {
+  const t = useTranslations("arena");
   if (rankChange == null) return null;
 
   const isUp = rankChange > 0;
@@ -27,10 +29,10 @@ export function RankChangeBadge({
       )}
       title={
         isUp
-          ? `Up ${rankChange} position${rankChange > 1 ? "s" : ""}`
+          ? t("rankUp", { n: rankChange })
           : isDown
-            ? `Down ${Math.abs(rankChange)} position${Math.abs(rankChange) > 1 ? "s" : ""}`
-            : "No change"
+            ? t("rankDown", { n: Math.abs(rankChange) })
+            : t("rankNoChange")
       }
     >
       {isUp ? (
