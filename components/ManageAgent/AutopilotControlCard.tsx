@@ -395,6 +395,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
   return (
     <div
+      data-tutorial="autopilot-card"
       ref={cardRef}
       style={{
         background:

@@ -249,7 +249,7 @@ export function TradeConfirmationModal() {
               }}
             />
 
-            <div style={{ padding: "24px 28px 28px" }}>
+            <div className="p-4 sm:p-6 md:py-7 md:px-7">
               {/* ── Top row: Direction badge + Confidence ring ── */}
               <div
                 style={{

@@ -105,133 +105,189 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
           {t("noOpenPositions")}
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          {/* Keyframe for the bouncing arrow */}
-          <style>{`
-            @keyframes bounceRight {
-              0%, 100% { transform: translateX(0); }
-              50% { transform: translateX(4px); }
-            }
-          `}</style>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                {[
-                  t("source") ?? "Source",
-                  t("marketTitle"),
-                  t("outcome"),
-                  t("shares"),
-                  t("currentPrice"),
-                  t("currentValue"),
-                  t("pnlPercent"),
-                  t("resolutionDate"),
-                  "", // arrow column
-                ].map((h, i) => (
-                  <th
-                    key={`${h}-${i}`}
-                    style={{
-                      textAlign: "left",
-                      padding: "8px 10px",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: "rgba(255,255,255,0.30)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      borderBottom: "1px solid rgba(255,255,255,0.06)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {positions.map((pos) => {
-                const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
-                const currentValue = pos.size * pos.currentPrice;
-                const isHovered = hoveredRow === pos.id;
-                const isAutopilot = pos.source === "autopilot";
-                return (
-                  <tr
-                    key={pos.id}
-                    onMouseEnter={() => setHoveredRow(pos.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                    onClick={() => onOpenPosition(pos)}
-                    style={{
-                      borderBottom: "1px solid rgba(255,255,255,0.04)",
-                      cursor: "pointer",
-                      background: isHovered ? "rgba(255,255,255,0.04)" : "transparent",
-                      transition: "background 0.15s ease",
-                    }}
-                  >
-                    {/* Source: agent emoji for autopilot, human for manual */}
-                    <td
-                      style={{ padding: "10px", whiteSpace: "nowrap" }}
-                      title={isAutopilot ? agentName : "Manual"}
-                    >
-                      <span style={{ fontSize: 16 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
-                    </td>
-                    {/* Market */}
-                    <td style={{ padding: "10px", fontSize: 13, color: "rgba(255,255,255,0.80)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <>
+          {/* Mobile card view */}
+          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {positions.map((pos) => {
+              const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
+              const isAutopilot = pos.source === "autopilot";
+              return (
+                <div
+                  key={pos.id}
+                  onClick={() => onOpenPosition(pos)}
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {/* Row 1: Market name + direction badge */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 14 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.80)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {pos.market}
-                    </td>
-                    {/* Outcome */}
-                    <td style={{ padding: "10px" }}>
-                      <span
-                        style={{
-                          padding: "2px 8px",
-                          borderRadius: 4,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          background: pos.direction === "YES" ? "rgba(48,209,88,0.12)" : "rgba(255,69,58,0.12)",
-                          color: pos.direction === "YES" ? "#30d158" : "#ff453a",
-                        }}
+                    </span>
+                    <span
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 4,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                        background: pos.direction === "YES" ? "rgba(48,209,88,0.12)" : "rgba(255,69,58,0.12)",
+                        color: pos.direction === "YES" ? "#30d158" : "#ff453a",
+                      }}
+                    >
+                      {pos.direction}
+                    </span>
+                  </div>
+                  {/* Row 2: Size + Price + PnL */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 12, fontFamily: '"SF Mono", monospace', fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
+                      <span>{pos.size.toFixed(1)} sh</span>
+                      <span>@ {fmtPrice(pos.currentPrice)}</span>
+                      <span>{fmtCountdown(pos.resolutionDate)}</span>
+                    </div>
+                    <span style={{ fontFamily: '"SF Mono", monospace', fontSize: 12, fontWeight: 600, color: pnlColor }}>
+                      {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block" style={{ overflowX: "auto" }}>
+            {/* Keyframe for the bouncing arrow */}
+            <style>{`
+              @keyframes bounceRight {
+                0%, 100% { transform: translateX(0); }
+                50% { transform: translateX(4px); }
+              }
+            `}</style>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  {[
+                    t("source") ?? "Source",
+                    t("marketTitle"),
+                    t("outcome"),
+                    t("shares"),
+                    t("currentPrice"),
+                    t("currentValue"),
+                    t("pnlPercent"),
+                    t("resolutionDate"),
+                    "", // arrow column
+                  ].map((h, i) => (
+                    <th
+                      key={`${h}-${i}`}
+                      style={{
+                        textAlign: "left",
+                        padding: "8px 10px",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "rgba(255,255,255,0.30)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {positions.map((pos) => {
+                  const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
+                  const currentValue = pos.size * pos.currentPrice;
+                  const isHovered = hoveredRow === pos.id;
+                  const isAutopilot = pos.source === "autopilot";
+                  return (
+                    <tr
+                      key={pos.id}
+                      onMouseEnter={() => setHoveredRow(pos.id)}
+                      onMouseLeave={() => setHoveredRow(null)}
+                      onClick={() => onOpenPosition(pos)}
+                      style={{
+                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        cursor: "pointer",
+                        background: isHovered ? "rgba(255,255,255,0.04)" : "transparent",
+                        transition: "background 0.15s ease",
+                      }}
+                    >
+                      {/* Source: agent emoji for autopilot, human for manual */}
+                      <td
+                        style={{ padding: "10px", whiteSpace: "nowrap" }}
+                        title={isAutopilot ? agentName : "Manual"}
                       >
-                        {pos.direction}
-                      </span>
-                    </td>
-                    {/* Shares */}
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-                      {pos.size.toFixed(1)}
-                    </td>
-                    {/* Current Price */}
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-                      {fmtPrice(pos.currentPrice)}
-                    </td>
-                    {/* Current Value */}
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-                      {fmtUSDC(currentValue)}
-                    </td>
-                    {/* PnL */}
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: pnlColor, fontWeight: 600 }}>
-                      {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)} / {pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%
-                    </td>
-                    {/* Resolution Date */}
-                    <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
-                      {fmtCountdown(pos.resolutionDate)}
-                    </td>
-                    {/* Hover arrow */}
-                    <td style={{ padding: "10px 8px", width: 28 }}>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          opacity: isHovered ? 1 : 0,
-                          transition: "opacity 0.15s ease",
-                          animation: isHovered ? "bounceRight 0.8s ease-in-out infinite" : "none",
-                          fontSize: 14,
-                          color: "rgba(255,255,255,0.50)",
-                        }}
-                      >
-                        →
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        <span style={{ fontSize: 16 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
+                      </td>
+                      {/* Market */}
+                      <td style={{ padding: "10px", fontSize: 13, color: "rgba(255,255,255,0.80)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {pos.market}
+                      </td>
+                      {/* Outcome */}
+                      <td style={{ padding: "10px" }}>
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: pos.direction === "YES" ? "rgba(48,209,88,0.12)" : "rgba(255,69,58,0.12)",
+                            color: pos.direction === "YES" ? "#30d158" : "#ff453a",
+                          }}
+                        >
+                          {pos.direction}
+                        </span>
+                      </td>
+                      {/* Shares */}
+                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                        {pos.size.toFixed(1)}
+                      </td>
+                      {/* Current Price */}
+                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                        {fmtPrice(pos.currentPrice)}
+                      </td>
+                      {/* Current Value */}
+                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                        {fmtUSDC(currentValue)}
+                      </td>
+                      {/* PnL */}
+                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: pnlColor, fontWeight: 600 }}>
+                        {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)} / {pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%
+                      </td>
+                      {/* Resolution Date */}
+                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
+                        {fmtCountdown(pos.resolutionDate)}
+                      </td>
+                      {/* Hover arrow */}
+                      <td style={{ padding: "10px 8px", width: 28 }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            opacity: isHovered ? 1 : 0,
+                            transition: "opacity 0.15s ease",
+                            animation: isHovered ? "bounceRight 0.8s ease-in-out infinite" : "none",
+                            fontSize: 14,
+                            color: "rgba(255,255,255,0.50)",
+                          }}
+                        >
+                          →
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

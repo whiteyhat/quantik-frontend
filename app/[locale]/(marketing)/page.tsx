@@ -52,8 +52,9 @@ function AmbientCursorGlow() {
 function ScrollProgressBar() {
   const { scrollYProgress } = useScroll();
   const reduced = useReducedMotion();
+  const isTouch = useTouchDevice();
 
-  if (reduced) return null;
+  if (reduced || isTouch) return null;
 
   return (
     <motion.div
@@ -133,6 +134,8 @@ function SectionDotNav() {
       {SECTION_IDS.map((id) => (
         <div
           key={id}
+          role="button"
+          aria-label={id}
           style={{
             width: 6,
             height: 6,

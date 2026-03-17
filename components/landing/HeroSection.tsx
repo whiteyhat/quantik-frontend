@@ -25,8 +25,10 @@ function LiquidGlassWord({
   reduced: boolean | null;
 }) {
   const containerRef = useRef<HTMLSpanElement>(null);
+  const isTouch = useTouchDevice();
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isTouch) return;
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -34,14 +36,14 @@ function LiquidGlassWord({
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     el.style.setProperty("--glass-x", `${x}%`);
     el.style.setProperty("--glass-y", `${y}%`);
-  }, []);
+  }, [isTouch]);
 
   const handleMouseLeave = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     el.style.setProperty("--glass-x", "50%");
     el.style.setProperty("--glass-y", "50%");
-  }, []);
+  }, [isTouch]);
 
   return (
     <motion.span
@@ -150,6 +152,7 @@ export function HeroSection() {
         loop
         playsInline
         preload={isTouch ? "metadata" : "auto"}
+        poster="/video-poster.jpg"
         style={{
           position: "fixed",
           inset: 0,
@@ -185,7 +188,10 @@ export function HeroSection() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingBlock: scrolled ? 14 : 20,
+          paddingTop: scrolled
+            ? "max(14px, env(safe-area-inset-top, 0px))"
+            : "max(20px, env(safe-area-inset-top, 0px))",
+          paddingBottom: scrolled ? 14 : 20,
           background: scrolled
             ? "rgba(5,5,8,0.8)"
             : "transparent",
@@ -313,13 +319,12 @@ export function HeroSection() {
               style={{
                 maxWidth: 720,
                 fontFamily: FONT,
-                fontSize: 25,
                 fontWeight: 800,
                 color: "rgba(255,255,255,0.65)",
                 lineHeight: 2,
                 margin: 0,
               }}
-              className="px-6 md:px-0"
+              className="text-[18px] sm:text-[22px] md:text-[25px] px-6 md:px-0"
             >
               <AnimatedSubtitle text={t("subtitle")} />
             </motion.p>

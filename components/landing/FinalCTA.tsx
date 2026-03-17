@@ -51,6 +51,7 @@ function FloatingParticles() {
             background: "rgba(255,255,255,0.6)",
             ["--p-opacity" as string]: p.opacity,
             animation: `landing-float-particle ${p.duration}s ease-in-out ${p.delay}s infinite`,
+            willChange: "transform, opacity",
           }}
         />
       ))}
@@ -64,7 +65,7 @@ export function FinalCTA() {
   return (
     <SectionShell className="!pb-32">
       <div
-        className="text-center px-6 py-10 sm:px-8 sm:py-14"
+        className="text-center py-10 sm:py-14"
         style={{
           background:
             "linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(191,90,242,0.12) 100%)",

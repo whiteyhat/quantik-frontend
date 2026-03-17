@@ -76,6 +76,7 @@ export function FAQSection() {
               <button
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : i)}
+                aria-expanded={isOpen}
                 className="landing-faq-item w-full text-left flex items-center justify-between gap-4"
                 style={{
                   padding: "18px 24px",

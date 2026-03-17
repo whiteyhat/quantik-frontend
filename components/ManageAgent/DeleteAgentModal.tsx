@@ -89,6 +89,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
               <img
                 src={agent.avatar_image}
                 alt={agent.name}
+                loading="lazy"
                 style={{ width: 44, height: 44, borderRadius: 12, objectFit: "cover" }}
               />
             ) : (

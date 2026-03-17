@@ -623,10 +623,6 @@ export default function MarketAnalysisPage() {
     setLog([]);
     setPipelineRunning(true);
 
-    // Verify what body is being sent (temporary debug log as requested)
-    const pipelineBody = { slug: market.slug };
-    console.log("[Quantik] Pipeline request body:", pipelineBody);
-
     const startTs = Date.now();
     const agentStartTimes: Record<string, number> = {};
 

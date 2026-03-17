@@ -107,12 +107,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     socket.on("connect", () => {
       setConnected(true);
-      console.log("[socket.io] Connected:", socket.id);
+      if (process.env.NODE_ENV === "development") console.log("[socket.io] Connected:", socket.id);
     });
 
     socket.on("disconnect", (reason) => {
       setConnected(false);
-      console.log("[socket.io] Disconnected:", reason);
+      if (process.env.NODE_ENV === "development") console.log("[socket.io] Disconnected:", reason);
     });
 
     socketRef.current = socket;

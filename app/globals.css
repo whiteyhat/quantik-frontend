@@ -2692,6 +2692,7 @@ a.command-center-list-row:focus-visible,
   );
   background-size: 200% 100%;
   animation: landing-shimmer 3s linear infinite;
+  will-change: background-position;
   pointer-events: none;
   border-radius: inherit;
 }
@@ -2806,19 +2807,21 @@ a.command-center-list-row:focus-visible,
   pointer-events: none;
 }
 
-.landing-feature-card:hover::before {
-  opacity: 1;
-}
+@media (hover: hover) {
+  .landing-feature-card:hover::before {
+    opacity: 1;
+  }
 
-.landing-feature-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(0, 122, 255, 0.2) !important;
-  box-shadow: 0 8px 32px rgba(0, 122, 255, 0.08);
-}
+  .landing-feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0, 122, 255, 0.2) !important;
+    box-shadow: 0 8px 32px rgba(0, 122, 255, 0.08);
+  }
 
-.landing-feature-card:hover .landing-feature-icon {
-  transform: translateY(-4px);
-  filter: drop-shadow(0 4px 12px rgba(0, 122, 255, 0.3));
+  .landing-feature-card:hover .landing-feature-icon {
+    transform: translateY(-4px);
+    filter: drop-shadow(0 4px 12px rgba(0, 122, 255, 0.3));
+  }
 }
 
 .landing-feature-icon {
@@ -2891,8 +2894,10 @@ a.command-center-list-row:focus-visible,
   border-radius: 1px;
 }
 
-.landing-stat-item:hover::after {
-  opacity: 1;
+@media (hover: hover) {
+  .landing-stat-item:hover::after {
+    opacity: 1;
+  }
 }
 
 /* FAQ hover accent */
@@ -2901,8 +2906,10 @@ a.command-center-list-row:focus-visible,
   transition: background 150ms ease;
 }
 
-.landing-faq-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+@media (hover: hover) {
+  .landing-faq-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
 }
 
 .landing-faq-item--active {

@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { buildWalletDownloadContent } from "@/lib/agentFactory";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 import { useTranslations } from "next-intl";
+import { initTutorial } from "@/hooks/useTutorialState";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -1488,6 +1489,7 @@ export default function AgentFactoryPage() {
       setWalletPrivateKey(null);
       setWalletSeedPhrase(null);
       setMyAgent(agentData as unknown as MyAgent);
+      initTutorial();
       router.push("/manage-agent");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to deploy agent";

@@ -104,6 +104,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
 
       <button
         onClick={onToggleRelay}
+        aria-label={myAgent?.name ?? tSidebar("chat")}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -135,7 +136,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
           />
         )}
         <span style={{ fontSize: 20, marginBottom: 4 }}>{myAgent?.avatar_emoji ?? "🤝"}</span>
-        <span style={{ fontSize: 11, fontWeight: relayOpen ? 600 : 400, lineHeight: 1.2 }}>
+        <span style={{ fontSize: 11, fontWeight: relayOpen ? 600 : 400, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 56 }}>
           {myAgent?.name ?? tSidebar("chat")}
         </span>
       </button>

@@ -16,15 +16,18 @@ function TiltCard({
   children,
   index,
   reduced,
+  isTouch,
 }: {
   children: React.ReactNode;
   index: number;
   reduced: boolean | null;
+  isTouch: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isTouch) return;
     const card = cardRef.current;
     const highlight = highlightRef.current;
     if (!card || !highlight) return;
@@ -39,7 +42,7 @@ function TiltCard({
     card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
     highlight.style.opacity = "1";
     highlight.style.background = `radial-gradient(300px circle at ${x}px ${y}px, rgba(255,255,255,0.07), transparent)`;
-  }, []);
+  }, [isTouch]);
 
   const handleMouseLeave = useCallback(() => {
     const card = cardRef.current;
@@ -95,6 +98,7 @@ function TiltCard({
 export function HowItWorks() {
   const t = useTranslations("landing");
   const reduced = useReducedMotion();
+  const isTouch = useTouchDevice();
 
   return (
     <SectionShell>
@@ -110,9 +114,9 @@ export function HowItWorks() {
       >
         {t("howItWorks.title")}
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {STEPS.map((step, index) => (
-          <TiltCard key={step.titleKey} index={index} reduced={reduced}>
+          <TiltCard key={step.titleKey} index={index} reduced={reduced} isTouch={isTouch}>
             <div
               style={{
                 display: "inline-flex",

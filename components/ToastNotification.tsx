@@ -61,7 +61,7 @@ export function ToastNotification() {
     <div
       style={{
         position: "fixed",
-        top: 16,
+        top: "max(16px, env(safe-area-inset-top, 16px))",
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 200,

@@ -22,6 +22,7 @@ function FeatureCard({
   descKey,
   index,
   reduced,
+  isTouch,
   t,
 }: {
   icon: (typeof FEATURES)[number]["icon"];
@@ -29,12 +30,14 @@ function FeatureCard({
   descKey: string;
   index: number;
   reduced: boolean | null;
+  isTouch: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: (key: any) => string;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isTouch) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -42,7 +45,7 @@ function FeatureCard({
     const y = e.clientY - rect.top;
     card.style.setProperty("--mx", `${x}px`);
     card.style.setProperty("--my", `${y}px`);
-  }, []);
+  }, [isTouch]);
 
   return (
     <motion.div
@@ -110,6 +113,7 @@ export function FeatureGrid() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = useTranslations("landing") as (key: any) => string;
   const reduced = useReducedMotion();
+  const isTouch = useTouchDevice();
 
   return (
     <SectionShell>
@@ -133,6 +137,7 @@ export function FeatureGrid() {
             descKey={feat.descKey}
             index={index}
             reduced={reduced}
+            isTouch={isTouch}
             t={t}
           />
         ))}

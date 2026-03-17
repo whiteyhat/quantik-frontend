@@ -19,6 +19,7 @@ import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorag
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
+import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 
 // ─── Auth Sync ────────────────────────────────────────────────────────────────
 // Keeps the API client's Bearer token in sync with Clerk's session token
@@ -576,6 +577,7 @@ export default function DashboardLayout({
       <AuthSync />
       <WalletSync />
       <WelcomeModal />
+      <TutorialOverlay />
 
       {/* Animated gradient background */}
       <div className="crystal-bg" />

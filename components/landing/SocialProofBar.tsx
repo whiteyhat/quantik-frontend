@@ -42,7 +42,7 @@ function ScrambleStat({
       }
     }, 50);
     timeoutRef.current = interval;
-  }, [value]);
+  }, [value, isTouch]);
 
   const handleMouseLeave = useCallback(() => {
     if (timeoutRef.current) clearInterval(timeoutRef.current);
@@ -100,7 +100,10 @@ export function SocialProofBar() {
     if (inView) setTriggered(true);
   }, [inView]);
 
+  const isTouchDevice = useTouchDevice();
+
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isTouchDevice) return;
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -111,7 +114,7 @@ export function SocialProofBar() {
     const rotateX = ((y - centerY) / centerY) * -2;
     const rotateY = ((x - centerX) / centerX) * 2;
     el.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-  }, []);
+  }, [isTouchDevice]);
 
   const handleMouseLeave = useCallback(() => {
     const el = containerRef.current;
