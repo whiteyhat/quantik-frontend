@@ -196,6 +196,7 @@ export type ArenaWindow = "day" | "week" | "all";
 
 export interface ArenaMarketBreakdown {
   slug: string;
+  question: string;
   pnl: number;
   trades: number;
   winRate: number;
@@ -382,6 +383,7 @@ function normalizeArenaEntry(input: unknown, context: string): ArenaLeaderboardE
     marketBreakdown: Array.isArray(entry.marketBreakdown)
       ? (entry.marketBreakdown as Record<string, unknown>[]).map((m) => ({
           slug: String(m.slug ?? ""),
+          question: String(m.question ?? m.slug ?? ""),
           pnl: Number(m.pnl ?? 0),
           trades: Number(m.trades ?? 0),
           winRate: Number(m.winRate ?? 0),
@@ -1286,6 +1288,7 @@ export const api = {
         marketBreakdown: Array.isArray(raw.marketBreakdown)
           ? (raw.marketBreakdown as Record<string, unknown>[]).map((m) => ({
               slug: String(m.slug ?? ""),
+              question: String(m.question ?? m.slug ?? ""),
               pnl: Number(m.pnl ?? 0),
               trades: Number(m.trades ?? 0),
               winRate: Number(m.winRate ?? 0),

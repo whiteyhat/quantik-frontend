@@ -370,10 +370,10 @@ function RiskConfigPanel() {
           {isDirty && <UnsavedBadge />}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           {/* Collapsed summary chips */}
           {!open && !isLoading && !isError && (
-            <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {summaryChips.map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.06em" }}>

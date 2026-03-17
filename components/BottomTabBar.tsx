@@ -48,7 +48,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
                     right: -14,
                     padding: "0px 4px",
                     borderRadius: 100,
-                    fontSize: 8,
+                    fontSize: 9,
                     fontWeight: 700,
                     fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                     background: myAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
@@ -61,7 +61,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400 }}>
+            <span style={{ fontSize: 11, fontWeight: isActive ? 600 : 400, lineHeight: 1.2 }}>
               {item.label}
             </span>
           </>
@@ -135,7 +135,7 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
           />
         )}
         <span style={{ fontSize: 20, marginBottom: 4 }}>{myAgent?.avatar_emoji ?? "🤝"}</span>
-        <span style={{ fontSize: 10, fontWeight: relayOpen ? 600 : 400 }}>
+        <span style={{ fontSize: 11, fontWeight: relayOpen ? 600 : 400, lineHeight: 1.2 }}>
           {myAgent?.name ?? tSidebar("chat")}
         </span>
       </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -17,13 +17,18 @@ export function ShareButtons({
 }) {
   const t = useTranslations("arena");
   const [copied, setCopied] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator !== "undefined" && "share" in navigator);
+  }, []);
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (_) {
       // Fallback for older browsers
       const textarea = document.createElement("textarea");
       textarea.value = url;
@@ -45,7 +50,7 @@ export function ShareButtons({
     if (navigator.share) {
       try {
         await navigator.share({ title: text, url });
-      } catch {
+      } catch (_) {
         // User cancelled or share failed — no action needed
       }
     }
@@ -99,7 +104,7 @@ export function ShareButtons({
         <span>{t("shareTwitter")}</span>
       </button>
 
-      {typeof navigator !== "undefined" && "share" in navigator && (
+      {canNativeShare && (
         <button
           type="button"
           className="arena-share-btn"

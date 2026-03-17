@@ -1,81 +1,160 @@
 "use client";
 
-import { SignInButton, useAuth } from "@clerk/nextjs";
-import { useTranslations } from "next-intl";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { motion, useScroll, useReducedMotion } from "framer-motion";
+import { useTouchDevice } from "@/hooks/useTouchDevice";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { SocialProofBar } from "@/components/landing/SocialProofBar";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { AgentSwarmShowcase } from "@/components/landing/AgentSwarmShowcase";
+import { FeatureGrid } from "@/components/landing/FeatureGrid";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { FinalCTA } from "@/components/landing/FinalCTA";
 
-const FONT = "'General Sans', sans-serif";
+function AmbientCursorGlow() {
+  const glowRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const isTouch = useTouchDevice();
 
-const VIDEO_URL =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4";
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (reduced || !glowRef.current) return;
+      glowRef.current.style.background = `radial-gradient(600px circle at ${e.clientX}px ${e.clientY}px, rgba(0,122,255,0.04), rgba(191,90,242,0.02) 40%, transparent 70%)`;
+    },
+    [reduced]
+  );
 
+  useEffect(() => {
+    if (isTouch) return;
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove, isTouch]);
 
-function PillButton({
-  children,
-  variant = "dark",
-  onClick,
-}: {
-  children: React.ReactNode;
-  variant?: "dark" | "light";
-  onClick?: () => void;
-}) {
-  const isDark = variant === "dark";
+  if (reduced || isTouch) return null;
 
   return (
-    <button
-      onClick={onClick}
-      className={`group relative inline-flex cursor-pointer overflow-hidden transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]`}
+    <div
+      ref={glowRef}
       style={{
-        borderRadius: 9999,
-        border: "0.6px solid rgba(255,255,255,0.6)",
-        background: "transparent",
-        padding: 1,
+        position: "fixed",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 1,
+        willChange: "background",
+        transition: "background 150ms ease",
       }}
+    />
+  );
+}
+
+function ScrollProgressBar() {
+  const { scrollYProgress } = useScroll();
+  const reduced = useReducedMotion();
+
+  if (reduced) return null;
+
+  return (
+    <motion.div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        background: "linear-gradient(90deg, #007AFF, #BF5AF2)",
+        transformOrigin: "left",
+        scaleX: scrollYProgress,
+        zIndex: 60,
+      }}
+    />
+  );
+}
+
+const SECTION_IDS = [
+  "hero",
+  "social-proof",
+  "how-it-works",
+  "agent-swarm",
+  "features",
+  "faq",
+  "cta",
+];
+
+function SectionDotNav() {
+  const reduced = useReducedMotion();
+  const isTouch = useTouchDevice();
+  const { scrollYProgress } = useScroll();
+  const dotContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (reduced || isTouch) return;
+
+    const unsubscribe = scrollYProgress.on("change", (v) => {
+      if (!dotContainerRef.current) return;
+      const dots = dotContainerRef.current.children;
+      const activeIndex = Math.min(
+        Math.floor(v * SECTION_IDS.length),
+        SECTION_IDS.length - 1
+      );
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i] as HTMLElement;
+        const isActive = i === activeIndex;
+        dot.style.opacity = isActive ? "1" : "0.2";
+        dot.style.width = isActive ? "8px" : "6px";
+        dot.style.height = isActive ? "8px" : "6px";
+        dot.style.background = isActive
+          ? "#007AFF"
+          : "rgba(255,255,255,0.8)";
+      }
+    });
+    return unsubscribe;
+  }, [scrollYProgress, reduced, isTouch]);
+
+  if (reduced || isTouch) return null;
+
+  return (
+    <div
+      ref={dotContainerRef}
+      style={{
+        position: "fixed",
+        right: 20,
+        top: "50%",
+        transform: "translateY(-50%)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        zIndex: 55,
+        alignItems: "center",
+      }}
+      className="hidden md:flex"
     >
-      {/* Top glow streak */}
-      <span
-        className="transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: "20%",
-          right: "20%",
-          height: 12,
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%)",
-          borderRadius: "0 0 50% 50%",
-          filter: "blur(4px)",
-          pointerEvents: "none",
-          opacity: 0.7,
-        }}
-      />
-      <span
-        className={`relative inline-flex items-center justify-center transition-colors duration-200 ${
-          isDark
-            ? "bg-black text-white/90 group-hover:text-white"
-            : "bg-white text-black group-hover:bg-white/90"
-        }`}
-        style={{
-          borderRadius: 9999,
-          fontFamily: FONT,
-          fontSize: 14,
-          fontWeight: 500,
-          padding: "11px 29px",
-          lineHeight: 1,
-        }}
-      >
-        {children}
-      </span>
-    </button>
+      {SECTION_IDS.map((id) => (
+        <div
+          key={id}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.8)",
+            opacity: 0.2,
+            transition: "all 300ms ease",
+            cursor: "pointer",
+          }}
+          onClick={() => {
+            const el = document.getElementById(id);
+            el?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
 export default function LandingPage() {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
-  const t = useTranslations("landing");
-  const tNav = useTranslations("nav");
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -92,182 +171,44 @@ export default function LandingPage() {
       style={{
         position: "relative",
         width: "100%",
-        minHeight: "100vh",
         background: "#000",
-        overflow: "hidden",
-        fontFamily: FONT,
+        fontFamily: "'General Sans', sans-serif",
       }}
     >
-      {/* Fullscreen background video */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        style={{
-          position: "fixed",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          zIndex: 0,
-        }}
-      >
-        <source src={VIDEO_URL} type="video/mp4" />
-      </video>
+      <AmbientCursorGlow />
+      <ScrollProgressBar />
+      <SectionDotNav />
 
-      {/* 50% black overlay */}
+      <div id="hero">
+        <HeroSection />
+      </div>
+
+      {/* Scrollable sections layer */}
       <div
         style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 1,
+          position: "relative",
+          zIndex: 2,
+          background:
+            "linear-gradient(180deg, transparent 0%, rgba(5,5,8,0.95) 120px, #050508 240px)",
         }}
-      />
-
-      {/* Content layer */}
-      <div style={{ position: "relative", zIndex: 2 }}>
-        {/* ─── Navbar ──────────────────────────────────────────────── */}
-        <nav
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "20px 120px",
-          }}
-          className="!px-6 md:!px-[120px]"
-        >
-          {/* Left — Logo */}
-          <div
-            style={{
-              width: 187,
-              height: 25,
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: FONT,
-                fontSize: 20,
-                fontWeight: 700,
-                color: "#fff",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {tNav("wordmark")}
-            </span>
-          </div>
-
-          {/* Right — Join Now */}
-          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <PillButton variant="dark">{t("joinNow")}</PillButton>
-          </SignInButton>
-        </nav>
-
-        {/* ─── Hero Content ────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            paddingBottom: 102,
-          }}
-          className="pt-[200px] md:pt-[280px]"
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 40,
-            }}
-          >
-            {/* Badge / pill */}
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 16px",
-                borderRadius: 20,
-                background: "rgba(255,255,255,0.10)",
-                border: "1px solid rgba(255,255,255,0.20)",
-              }}
-            >
-              <span
-                style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: "50%",
-                  background: "#fff",
-                  display: "inline-block",
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "rgba(255,255,255,0.75)",
-                }}
-              >
-                {t("badge")}
-              </span>
-              <span
-                style={{
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "#fff",
-                }}
-              >
-                {t("badgeDate")}
-              </span>
-            </div>
-
-            {/* Heading */}
-            <h1
-              style={{
-                maxWidth: 613,
-                fontFamily: FONT,
-                fontWeight: 500,
-                lineHeight: 1.28,
-                margin: 0,
-                background:
-                  "linear-gradient(144.5deg, #FFFFFF 28%, rgba(255,255,255,0.40) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-              className="text-[36px] md:text-[56px] px-4 md:px-0"
-            >
-              {t("heading")}
-            </h1>
-
-            {/* Subtitle */}
-            <p
-              style={{
-                maxWidth: 680,
-                fontFamily: FONT,
-                fontSize: 14,
-                fontWeight: 400,
-                color: "rgba(255,255,255,0.80)",
-                lineHeight: 1.6,
-                margin: 0,
-              }}
-              className="px-6 md:px-0"
-            >
-              {t("subtitle")}
-            </p>
-
-            {/* CTA Button — opens Clerk sign-in modal */}
-            <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-              <PillButton variant="light">{t("joinNow")}</PillButton>
-            </SignInButton>
-          </div>
+      >
+        <div id="social-proof">
+          <SocialProofBar />
+        </div>
+        <div id="how-it-works">
+          <HowItWorks />
+        </div>
+        <div id="agent-swarm">
+          <AgentSwarmShowcase />
+        </div>
+        <div id="features">
+          <FeatureGrid />
+        </div>
+        <div id="faq">
+          <FAQSection />
+        </div>
+        <div id="cta">
+          <FinalCTA />
         </div>
       </div>
     </div>

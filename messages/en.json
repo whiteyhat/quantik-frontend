@@ -5,10 +5,78 @@
   },
   "landing": {
     "badge": "Early access available from",
-    "badgeDate": "May 1, 2026",
+    "badgeDate": "March 20, 2026",
     "heading": "Tether Hackathon Galactica",
     "subtitle": "Build your own ruthless AI trading agent with a savage personality and unique trading behaviour in a few clicks. Then unleash it in Polymarket to crush markets and print money with a swarm of 7 sub-agents.",
-    "joinNow": "JOIN NOW"
+    "joinNow": "JOIN NOW",
+    "socialProof": {
+      "agentsDeployed": "Agents Deployed",
+      "tradesExecuted": "Trades Executed",
+      "marketsTracked": "Markets Tracked"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1Title": "Create Your Agent",
+      "step1Desc": "Give your AI agent a unique personality, trading instinct, and decision-making style in just a few clicks.",
+      "step2Title": "Configure Strategy",
+      "step2Desc": "Set risk rules, market preferences, and let 7 specialized sub-agents form your trading swarm.",
+      "step3Title": "Watch It Trade",
+      "step3Desc": "Your agent autonomously analyzes markets, sizes positions, and executes trades on Polymarket 24/7."
+    },
+    "swarm": {
+      "title": "The 7-Agent Swarm",
+      "subtitle": "Each trade passes through a pipeline of 7 specialized AI agents before execution.",
+      "aura": "Sentiment analysis",
+      "flux": "Liquidity mapping",
+      "clause": "Resolution risk",
+      "oracle": "Probability engine",
+      "edge": "Position sizing",
+      "lucifer": "Devil's advocate",
+      "sigma": "Final synthesis"
+    },
+    "features": {
+      "title": "Built for Serious Traders",
+      "realtime": "Real-time Trading",
+      "realtimeDesc": "Live market data, instant execution, and real-time position monitoring across all Polymarket events.",
+      "risk": "Risk Management",
+      "riskDesc": "Circuit breakers, drawdown limits, Kelly criterion sizing, and a global panic button for emergencies.",
+      "paper": "Paper Trading",
+      "paperDesc": "Practice risk-free with simulated capital before deploying real funds. Perfect for testing strategies.",
+      "byo": "BYO Agent",
+      "byoDesc": "Bring your own AI agent via MCP server integration. Full API access with webhook event delivery.",
+      "profiles": "Public Profiles",
+      "profilesDesc": "Showcase your agent's performance with shareable public profiles, OG images, and social cards.",
+      "i18n": "Multi-language",
+      "i18nDesc": "Full support for English, Spanish, French, and German with locale-aware routing."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": "What is Quantik?",
+      "a1": "Quantik is an AI-powered trading platform for Polymarket. You create a personalized trading agent backed by a swarm of 7 specialized sub-agents that analyze sentiment, liquidity, probability, risk, and more — then execute trades autonomously.",
+      "q2": "Is it free to use?",
+      "a2": "Yes. Quantik is free to use with paper trading (simulated capital). When you're ready to trade with real funds, you connect your own Polymarket wallet.",
+      "q3": "What is paper trading mode?",
+      "a3": "Paper trading lets you test your agent's strategy with simulated USDC. All trades, positions, and P&L are tracked realistically — but no real money is at risk. It's the default mode for all new agents.",
+      "q4": "How does the 7-agent swarm work?",
+      "a4": "Every trade decision passes through a pipeline of specialized agents: AURA (sentiment), FLUX (liquidity), CLAUSE (contract risk) run in parallel, then ORACLE (probability), EDGE (sizing), LUCIFER (devil's advocate), and finally SIGMA (synthesis) produce the final trade decision.",
+      "q5": "What markets are supported?",
+      "a5": "Quantik supports all prediction markets on Polymarket — politics, sports, crypto, science, entertainment, and more. Your agent's market scanner discovers opportunities automatically."
+    },
+    "cta": {
+      "title": "Start Building Your Agent",
+      "subtitle": "Create your AI trading agent in minutes. No coding required."
+    }
+  },
+  "welcome": {
+    "title": "Welcome to Quantik",
+    "card1Title": "Your AI Agent",
+    "card1Desc": "Create a personalized trading agent with its own personality, instincts, and strategy — tailored to how you think about markets.",
+    "card2Title": "7 Sub-Agents",
+    "card2Desc": "Your agent commands a swarm of 7 specialized AI sub-agents that analyze sentiment, liquidity, risk, and probability before every trade.",
+    "card3Title": "Paper Trading",
+    "card3Desc": "Start risk-free with simulated capital. Test your strategy, watch your agent learn, and deploy real funds when you're ready.",
+    "getStarted": "Get Started",
+    "skip": "Skip"
   },
   "nav": {
     "dashboard": "Dashboard",

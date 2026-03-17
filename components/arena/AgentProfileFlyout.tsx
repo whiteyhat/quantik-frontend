@@ -91,7 +91,7 @@ export function AgentProfileFlyout({
           <div className="arena-flyout-chart">
             {historyData.length >= 2 ? (
               <PnlSparkline
-                data={historyData.map((p) => ({ slug: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
+                data={historyData.map((p) => ({ slug: "", question: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
                 width={280}
                 height={80}
               />
@@ -129,7 +129,7 @@ export function AgentProfileFlyout({
             <div className="arena-flyout-markets">
               {entry.marketBreakdown.map((m) => (
                 <div key={m.slug} className="arena-flyout-market-row">
-                  <span className="arena-flyout-market-slug" title={m.slug}>{m.slug}</span>
+                  <span className="arena-flyout-market-slug" title={m.slug}>{m.question}</span>
                   <span className={m.pnl >= 0 ? "arena-flyout-pnl--up" : "arena-flyout-pnl--down"}>
                     {formatSignedCurrency(m.pnl)}
                   </span>

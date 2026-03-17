@@ -119,7 +119,7 @@ export function PublicAgentProfileView({
           <div className="arena-section-kicker">{t("publicEquityCurve")}</div>
           <div className="arena-public-chart">
             <PnlSparkline
-              data={profile.sparkline.map((p) => ({ slug: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
+              data={profile.sparkline.map((p) => ({ slug: "", question: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
               width={600}
               height={120}
               animated
@@ -162,7 +162,7 @@ export function PublicAgentProfileView({
                   viewport={viewportOnce}
                   transition={{ delay: i * 0.06, ease: sectionEase }}
                 >
-                  <span className="arena-public-market-slug" title={m.slug}>{m.slug}</span>
+                  <span className="arena-public-market-slug" title={m.slug}>{m.question}</span>
                   <span className={m.pnl >= 0 ? "arena-flyout-pnl--up" : "arena-flyout-pnl--down"}>
                     {formatSignedCompact(m.pnl)}
                   </span>

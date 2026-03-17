@@ -68,6 +68,7 @@ export function ToastNotification() {
         display: "flex",
         flexDirection: "column",
         gap: 8,
+        maxWidth: "calc(100vw - 32px)",
         pointerEvents: "none",
       }}
     >
@@ -98,7 +99,8 @@ export function ToastNotification() {
               color: textColor,
               fontSize: "var(--text-subhead)",
               fontWeight: 500,
-              whiteSpace: "nowrap",
+              whiteSpace: "normal",
+              textAlign: "center",
               animation:
                 toast.phase === "in"
                   ? "toast-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"

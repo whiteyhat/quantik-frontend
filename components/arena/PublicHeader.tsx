@@ -22,9 +22,6 @@ export function PublicHeader() {
           <Link href="/arena" className="arena-public-header__link">
             {t("publicViewArena")}
           </Link>
-          <Link href="/agent-factory" className="arena-public-header__cta">
-            {t("publicJoinCta")}
-          </Link>
         </nav>
       </div>
     </motion.header>

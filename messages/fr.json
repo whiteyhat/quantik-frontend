@@ -5,10 +5,78 @@
   },
   "landing": {
     "badge": "Acces anticipe disponible a partir du",
-    "badgeDate": "1er mai 2026",
+    "badgeDate": "20 mars 2026",
     "heading": "Tether Hackathon Galactica",
     "subtitle": "Creez votre propre agent de trading IA impitoyable avec une personnalite sauvage et un comportement de trading unique en quelques clics. Puis lancez-le sur Polymarket pour ecraser les marches et imprimer de l'argent avec un essaim de 7 sous-agents.",
-    "joinNow": "REJOINDRE"
+    "joinNow": "REJOINDRE",
+    "socialProof": {
+      "agentsDeployed": "Agents Deployes",
+      "tradesExecuted": "Trades Executes",
+      "marketsTracked": "Marches Suivis"
+    },
+    "howItWorks": {
+      "title": "Comment Ca Marche",
+      "step1Title": "Creez Votre Agent",
+      "step1Desc": "Donnez a votre agent IA une personnalite unique, un instinct de trading et un style de prise de decision en quelques clics.",
+      "step2Title": "Configurez la Strategie",
+      "step2Desc": "Definissez les regles de risque, les preferences de marche et laissez 7 sous-agents specialises former votre essaim de trading.",
+      "step3Title": "Regardez-le Trader",
+      "step3Desc": "Votre agent analyse les marches de maniere autonome, dimensionne les positions et execute des trades sur Polymarket 24/7."
+    },
+    "swarm": {
+      "title": "L'Essaim de 7 Agents",
+      "subtitle": "Chaque trade passe par un pipeline de 7 agents IA specialises avant execution.",
+      "aura": "Analyse de sentiment",
+      "flux": "Cartographie de liquidite",
+      "clause": "Risque de resolution",
+      "oracle": "Moteur de probabilite",
+      "edge": "Dimensionnement de position",
+      "lucifer": "Avocat du diable",
+      "sigma": "Synthese finale"
+    },
+    "features": {
+      "title": "Concu pour les Traders Serieux",
+      "realtime": "Trading en Temps Reel",
+      "realtimeDesc": "Donnees de marche en direct, execution instantanee et suivi des positions en temps reel sur tous les evenements Polymarket.",
+      "risk": "Gestion des Risques",
+      "riskDesc": "Circuit breakers, limites de drawdown, dimensionnement Kelly et un bouton de panique global pour les urgences.",
+      "paper": "Paper Trading",
+      "paperDesc": "Entrainez-vous sans risque avec du capital simule avant de deployer des fonds reels. Parfait pour tester les strategies.",
+      "byo": "Apportez Votre Agent",
+      "byoDesc": "Connectez votre propre agent IA via l'integration de serveur MCP. Acces complet a l'API avec livraison d'evenements webhook.",
+      "profiles": "Profils Publics",
+      "profilesDesc": "Presentez les performances de votre agent avec des profils publics partageables, des images OG et des cartes sociales.",
+      "i18n": "Multi-langue",
+      "i18nDesc": "Support complet pour l'anglais, l'espagnol, le francais et l'allemand avec routage selon la langue."
+    },
+    "faq": {
+      "title": "Questions Frequentes",
+      "q1": "Qu'est-ce que Quantik ?",
+      "a1": "Quantik est une plateforme de trading alimentee par l'IA pour Polymarket. Vous creez un agent de trading personnalise soutenu par un essaim de 7 sous-agents specialises qui analysent le sentiment, la liquidite, la probabilite, le risque et plus — puis executent des trades de maniere autonome.",
+      "q2": "Est-ce gratuit ?",
+      "a2": "Oui. Quantik est gratuit avec le paper trading (capital simule). Quand vous etes pret a trader avec de vrais fonds, vous connectez votre propre portefeuille Polymarket.",
+      "q3": "Qu'est-ce que le mode paper trading ?",
+      "a3": "Le paper trading vous permet de tester la strategie de votre agent avec des USDC simules. Tous les trades, positions et P&L sont suivis de maniere realiste — mais aucun argent reel n'est en jeu. C'est le mode par defaut pour tous les nouveaux agents.",
+      "q4": "Comment fonctionne l'essaim de 7 agents ?",
+      "a4": "Chaque decision de trading passe par un pipeline d'agents specialises : AURA (sentiment), FLUX (liquidite), CLAUSE (risque contractuel) s'executent en parallele, puis ORACLE (probabilite), EDGE (dimensionnement), LUCIFER (avocat du diable) et enfin SIGMA (synthese) produisent la decision finale.",
+      "q5": "Quels marches sont supportes ?",
+      "a5": "Quantik supporte tous les marches de prediction sur Polymarket — politique, sport, crypto, science, divertissement et plus. Le scanner de marches de votre agent decouvre automatiquement les opportunites."
+    },
+    "cta": {
+      "title": "Commencez a Construire Votre Agent",
+      "subtitle": "Creez votre agent de trading IA en quelques minutes. Aucun code requis."
+    }
+  },
+  "welcome": {
+    "title": "Bienvenue sur Quantik",
+    "card1Title": "Votre Agent IA",
+    "card1Desc": "Creez un agent de trading personnalise avec sa propre personnalite, ses instincts et sa strategie — adapte a votre vision des marches.",
+    "card2Title": "7 Sous-Agents",
+    "card2Desc": "Votre agent commande un essaim de 7 sous-agents IA specialises qui analysent le sentiment, la liquidite, le risque et la probabilite avant chaque trade.",
+    "card3Title": "Paper Trading",
+    "card3Desc": "Commencez sans risque avec du capital simule. Testez votre strategie, observez votre agent apprendre et deployez des fonds reels quand vous etes pret.",
+    "getStarted": "Commencer",
+    "skip": "Passer"
   },
   "nav": {
     "dashboard": "Tableau de bord",

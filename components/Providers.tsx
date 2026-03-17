@@ -8,6 +8,7 @@ import { PaperModeProvider } from "@/context/PaperModeContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { useTradeNotifications } from "@/hooks/useTradeNotifications";
+import { PosthogProvider } from "@/components/PosthogProvider";
 
 function NotificationInit() {
   useTradeNotifications();
@@ -79,7 +80,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <SocketProvider>
           <NotificationInit />
           <ThemeProvider>
-            <PaperModeProvider>{children}</PaperModeProvider>
+            <PaperModeProvider>
+              <PosthogProvider>{children}</PosthogProvider>
+            </PaperModeProvider>
           </ThemeProvider>
         </SocketProvider>
       </QueryClientProvider>

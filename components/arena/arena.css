@@ -3332,6 +3332,8 @@
 }
 
 .arena-public-main {
+  position: relative;
+  z-index: 1;
   min-height: 100dvh;
   padding: clamp(1rem, 3vw, 2rem);
 }

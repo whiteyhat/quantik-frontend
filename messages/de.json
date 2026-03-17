@@ -5,10 +5,78 @@
   },
   "landing": {
     "badge": "Fruhzeitiger Zugang verfugbar ab",
-    "badgeDate": "1. Mai 2026",
+    "badgeDate": "20. März 2026",
     "heading": "Tether Hackathon Galactica",
     "subtitle": "Erstelle deinen eigenen rucksichtslosen KI-Handelsagenten mit einer wilden Personlichkeit und einzigartigem Handelsverhalten in wenigen Klicks. Dann lass ihn auf Polymarket los, um Markte zu dominieren und Geld zu drucken mit einem Schwarm von 7 Sub-Agenten.",
-    "joinNow": "JETZT BEITRETEN"
+    "joinNow": "JETZT BEITRETEN",
+    "socialProof": {
+      "agentsDeployed": "Agenten Bereitgestellt",
+      "tradesExecuted": "Trades Ausgefuhrt",
+      "marketsTracked": "Markte Verfolgt"
+    },
+    "howItWorks": {
+      "title": "So Funktioniert's",
+      "step1Title": "Erstelle Deinen Agenten",
+      "step1Desc": "Gib deinem KI-Agenten eine einzigartige Personlichkeit, Handelsinstinkt und Entscheidungsstil in wenigen Klicks.",
+      "step2Title": "Konfiguriere die Strategie",
+      "step2Desc": "Lege Risikoregeln, Marktpraferenzen fest und lass 7 spezialisierte Sub-Agenten deinen Handelsschwarm bilden.",
+      "step3Title": "Sieh Ihm Beim Handeln Zu",
+      "step3Desc": "Dein Agent analysiert autonom Markte, dimensioniert Positionen und fuhrt Trades auf Polymarket 24/7 aus."
+    },
+    "swarm": {
+      "title": "Der 7-Agenten-Schwarm",
+      "subtitle": "Jeder Trade durchlauft eine Pipeline von 7 spezialisierten KI-Agenten vor der Ausfuhrung.",
+      "aura": "Sentimentanalyse",
+      "flux": "Liquiditats-Mapping",
+      "clause": "Auflosungsrisiko",
+      "oracle": "Wahrscheinlichkeits-Engine",
+      "edge": "Positionsdimensionierung",
+      "lucifer": "Advocatus Diaboli",
+      "sigma": "Finale Synthese"
+    },
+    "features": {
+      "title": "Fur Ernsthafte Trader Gebaut",
+      "realtime": "Echtzeit-Trading",
+      "realtimeDesc": "Live-Marktdaten, sofortige Ausfuhrung und Echtzeit-Positionsuberwachung uber alle Polymarket-Events.",
+      "risk": "Risikomanagement",
+      "riskDesc": "Circuit Breaker, Drawdown-Limits, Kelly-Dimensionierung und ein globaler Panik-Button fur Notfalle.",
+      "paper": "Paper Trading",
+      "paperDesc": "Uben Sie risikofrei mit simuliertem Kapital, bevor Sie echte Mittel einsetzen. Perfekt zum Testen von Strategien.",
+      "byo": "Eigenen Agenten Mitbringen",
+      "byoDesc": "Verbinden Sie Ihren eigenen KI-Agenten uber MCP-Server-Integration. Voller API-Zugang mit Webhook-Event-Zustellung.",
+      "profiles": "Offentliche Profile",
+      "profilesDesc": "Prasentieren Sie die Leistung Ihres Agenten mit teilbaren offentlichen Profilen, OG-Bildern und Social Cards.",
+      "i18n": "Mehrsprachig",
+      "i18nDesc": "Volle Unterstutzung fur Englisch, Spanisch, Franzosisch und Deutsch mit sprachbewusstem Routing."
+    },
+    "faq": {
+      "title": "Haufig Gestellte Fragen",
+      "q1": "Was ist Quantik?",
+      "a1": "Quantik ist eine KI-gestutzte Handelsplattform fur Polymarket. Sie erstellen einen personalisierten Handelsagenten, unterstutzt von einem Schwarm aus 7 spezialisierten Sub-Agenten, die Sentiment, Liquiditat, Wahrscheinlichkeit, Risiko und mehr analysieren — und dann autonom Trades ausfuhren.",
+      "q2": "Ist es kostenlos?",
+      "a2": "Ja. Quantik ist kostenlos mit Paper Trading (simuliertes Kapital). Wenn Sie bereit sind, mit echtem Geld zu handeln, verbinden Sie Ihre eigene Polymarket-Wallet.",
+      "q3": "Was ist Paper Trading?",
+      "a3": "Paper Trading ermoglicht es Ihnen, die Strategie Ihres Agenten mit simulierten USDC zu testen. Alle Trades, Positionen und P&L werden realistisch verfolgt — aber es ist kein echtes Geld gefahrdet. Es ist der Standardmodus fur alle neuen Agenten.",
+      "q4": "Wie funktioniert der 7-Agenten-Schwarm?",
+      "a4": "Jede Handelsentscheidung durchlauft eine Pipeline spezialisierter Agenten: AURA (Sentiment), FLUX (Liquiditat), CLAUSE (Vertragsrisiko) laufen parallel, dann produzieren ORACLE (Wahrscheinlichkeit), EDGE (Dimensionierung), LUCIFER (Advocatus Diaboli) und schliesslich SIGMA (Synthese) die finale Handelsentscheidung.",
+      "q5": "Welche Markte werden unterstutzt?",
+      "a5": "Quantik unterstutzt alle Prognose-Markte auf Polymarket — Politik, Sport, Krypto, Wissenschaft, Unterhaltung und mehr. Der Marktscanner Ihres Agenten entdeckt automatisch Gelegenheiten."
+    },
+    "cta": {
+      "title": "Starten Sie mit Ihrem Agenten",
+      "subtitle": "Erstellen Sie Ihren KI-Handelsagenten in Minuten. Keine Programmierung erforderlich."
+    }
+  },
+  "welcome": {
+    "title": "Willkommen bei Quantik",
+    "card1Title": "Ihr KI-Agent",
+    "card1Desc": "Erstellen Sie einen personalisierten Handelsagenten mit eigener Personlichkeit, Instinkten und Strategie — angepasst an Ihre Sicht auf die Markte.",
+    "card2Title": "7 Sub-Agenten",
+    "card2Desc": "Ihr Agent befehligt einen Schwarm von 7 spezialisierten KI-Sub-Agenten, die Sentiment, Liquiditat, Risiko und Wahrscheinlichkeit vor jedem Trade analysieren.",
+    "card3Title": "Paper Trading",
+    "card3Desc": "Starten Sie risikofrei mit simuliertem Kapital. Testen Sie Ihre Strategie, beobachten Sie Ihren Agenten lernen und setzen Sie echte Mittel ein, wenn Sie bereit sind.",
+    "getStarted": "Loslegen",
+    "skip": "Uberspringen"
   },
   "nav": {
     "dashboard": "Dashboard",

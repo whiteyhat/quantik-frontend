@@ -18,6 +18,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
+import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 
 // ─── Auth Sync ────────────────────────────────────────────────────────────────
 // Keeps the API client's Bearer token in sync with Clerk's session token
@@ -76,9 +77,12 @@ function AuthSync() {
   }, [isSignedIn, authReady, setMyAgent, setMyAgentLoading]);
 
   // Redirect first-time users (no agent) to Agent Factory
+  // Skip redirect if onboarding modal hasn't been seen yet — let the modal show first
   useEffect(() => {
     if (!isSignedIn || myAgentLoading || myAgent !== null) return;
     if (pathname.startsWith("/agent-factory")) return;
+    const hasSeenOnboarding = typeof window !== "undefined" && window.localStorage.getItem("hasSeenOnboarding") === "true";
+    if (!hasSeenOnboarding) return;
     router.replace("/agent-factory");
   }, [isSignedIn, myAgentLoading, myAgent, pathname, router]);
 
@@ -571,6 +575,7 @@ export default function DashboardLayout({
     <>
       <AuthSync />
       <WalletSync />
+      <WelcomeModal />
 
       {/* Animated gradient background */}
       <div className="crystal-bg" />

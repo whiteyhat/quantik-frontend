@@ -365,7 +365,48 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
             </div>
           </div>
 
-          <div style={panelStyle}>
+          {/* Mobile card view */}
+          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {trades.length === 0 ? (
+              <div style={{ ...panelStyle, padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
+                No trades match the current filters.
+              </div>
+            ) : (
+              trades.map((trade) => (
+                <div
+                  key={`mobile-${trade.id}-${trade.timestamp}`}
+                  style={{
+                    ...panelStyle,
+                    padding: 14,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {trade.market}
+                    </div>
+                    <OutcomeBadge outcome={trade.outcome} />
+                  </div>
+                  <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                    <span style={{ color: trade.direction === "YES" ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>{trade.direction}</span>
+                    <span>{fmtPrice(trade.price)}</span>
+                    <span>{fmtUSDC(trade.size)}</span>
+                    <span style={{ marginLeft: "auto", color: "var(--text-tertiary)" }}>
+                      {new Date(trade.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)" }}>
+                    {(trade.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSDC(trade.pnl ?? 0)}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block" style={panelStyle}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
                 <thead>
