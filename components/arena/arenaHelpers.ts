@@ -106,3 +106,60 @@ export function findNextRival(leaders: ArenaLeaderboardEntry[], viewer?: ArenaVi
 export interface ReadonlyURLSearchParamsLike {
   toString(): string;
 }
+
+export function podiumLabel(rank: number, labels: {
+  topPerformer: string;
+  runnerUp: string;
+  thirdPlace: string;
+}) {
+  if (rank === 1) return labels.topPerformer;
+  if (rank === 2) return labels.runnerUp;
+  return labels.thirdPlace;
+}
+
+export function contenderReasonCopy(
+  reason: ArenaViewerContext["reason"],
+  labels: {
+    viewerInactive: string;
+    viewerNoActivity: string;
+    viewerRanked: string;
+    viewerNoAgent: string;
+  },
+) {
+  if (reason === "inactive") return labels.viewerInactive;
+  if (reason === "no_activity") return labels.viewerNoActivity;
+  if (reason === "ranked") return labels.viewerRanked;
+  return labels.viewerNoAgent;
+}
+
+export function contenderEyebrow(reason: ArenaViewerContext["reason"], labels: {
+  dockRankedEyebrow: string;
+  dockClimbEyebrow: string;
+  dockOpenEyebrow: string;
+}) {
+  if (reason === "ranked") return labels.dockRankedEyebrow;
+  if (reason === "no_agent") return labels.dockOpenEyebrow;
+  return labels.dockClimbEyebrow;
+}
+
+export function contenderDetailCopy(reason: ArenaViewerContext["reason"], labels: {
+  dockRankedDetail: string;
+  dockInactiveDetail: string;
+  dockNoActivityDetail: string;
+  dockNoAgentDetail: string;
+}) {
+  if (reason === "ranked") return labels.dockRankedDetail;
+  if (reason === "inactive") return labels.dockInactiveDetail;
+  if (reason === "no_activity") return labels.dockNoActivityDetail;
+  return labels.dockNoAgentDetail;
+}
+
+export function qualifierLabel(viewer: ArenaViewerContext | undefined, labels: {
+  qualifierReady: string;
+  qualifierLocked: string;
+  qualifierMissing: string;
+}) {
+  if (!viewer || viewer.reason === "no_agent") return labels.qualifierMissing;
+  if (viewer.eligible) return labels.qualifierReady;
+  return labels.qualifierLocked;
+}

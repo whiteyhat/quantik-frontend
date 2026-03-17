@@ -194,6 +194,14 @@ export interface TradeReportsResponse {
 
 export type ArenaWindow = "day" | "week" | "all";
 
+export interface ArenaMarketBreakdown {
+  slug: string;
+  pnl: number;
+  trades: number;
+  winRate: number;
+  openPositions: number;
+}
+
 export interface ArenaLeaderboardEntry {
   rank: number;
   agentId: string;
@@ -216,6 +224,8 @@ export interface ArenaLeaderboardEntry {
   lastTradeAt: number | null;
   bestTradeSlug: string | null;
   bestTradePnl: number;
+  rankChange: number | null;
+  marketBreakdown: ArenaMarketBreakdown[];
 }
 
 export interface ArenaViewerContext {
@@ -236,6 +246,7 @@ export interface ArenaLeaderboardResponse {
   updatedAt: number;
   meta: {
     rankedAgents: number;
+    totalRanked: number;
     activeAgents: number;
     totalSelectedPnlPool: number;
     totalRealizedPnlPool: number;
@@ -315,6 +326,16 @@ function normalizeArenaEntry(input: unknown, context: string): ArenaLeaderboardE
     lastTradeAt: entry.lastTradeAt == null ? null : requireArenaNumber(entry.lastTradeAt, `${context}.lastTradeAt`),
     bestTradeSlug: readArenaOptionalString(entry.bestTradeSlug),
     bestTradePnl: requireArenaNumber(entry.bestTradePnl, `${context}.bestTradePnl`),
+    rankChange: entry.rankChange == null ? null : Number(entry.rankChange),
+    marketBreakdown: Array.isArray(entry.marketBreakdown)
+      ? (entry.marketBreakdown as Record<string, unknown>[]).map((m) => ({
+          slug: String(m.slug ?? ""),
+          pnl: Number(m.pnl ?? 0),
+          trades: Number(m.trades ?? 0),
+          winRate: Number(m.winRate ?? 0),
+          openPositions: Number(m.openPositions ?? 0),
+        }))
+      : [],
   };
 }
 
@@ -1106,6 +1127,7 @@ export const api = {
       updatedAt: requireArenaNumber(raw.updatedAt, "arena.updatedAt"),
       meta: {
         rankedAgents: requireArenaNumber(meta.rankedAgents, "arena.meta.rankedAgents"),
+        totalRanked: requireArenaNumber(meta.totalRanked ?? meta.rankedAgents, "arena.meta.totalRanked"),
         activeAgents: requireArenaNumber(meta.activeAgents, "arena.meta.activeAgents"),
         totalSelectedPnlPool: requireArenaNumber(meta.totalSelectedPnlPool, "arena.meta.totalSelectedPnlPool"),
         totalRealizedPnlPool: requireArenaNumber(meta.totalRealizedPnlPool, "arena.meta.totalRealizedPnlPool"),

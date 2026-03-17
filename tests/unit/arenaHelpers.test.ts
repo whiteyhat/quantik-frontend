@@ -30,6 +30,8 @@ function makeEntry(overrides: Partial<ArenaLeaderboardEntry> = {}): ArenaLeaderb
     lastTradeAt: 1_710_000_000_000,
     bestTradeSlug: "alpha-breakout",
     bestTradePnl: 420,
+    rankChange: null,
+    marketBreakdown: [],
     ...overrides,
   };
 }
