@@ -8,36 +8,9 @@ import { useArenaAgentHistoryQuery } from "@/components/dashboard/dashboardQueri
 import { formatSignedCurrency } from "@/components/arena/arenaHelpers";
 import { AchievementBadge } from "@/components/arena/AchievementBadge";
 import { PnlSparkline } from "@/components/arena/PnlSparkline";
-
-function WinRateRing({ winRate }: { winRate: number }) {
-  const radius = 20;
-  const stroke = 3;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (winRate / 100) * circumference;
-  const color = winRate >= 60 ? "#34d399" : winRate >= 45 ? "#fbbf24" : "#f87171";
-
-  return (
-    <svg width={50} height={50} viewBox="0 0 50 50" className="arena-flyout-ring">
-      <circle cx={25} cy={25} r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
-      <circle
-        cx={25}
-        cy={25}
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        transform="rotate(-90 25 25)"
-        style={{ transition: "stroke-dashoffset 600ms ease" }}
-      />
-      <text x={25} y={25} textAnchor="middle" dominantBaseline="central" fill="rgba(255,255,255,0.85)" fontSize={10} fontFamily="'SF Mono', monospace" fontWeight={700}>
-        {winRate.toFixed(0)}%
-      </text>
-    </svg>
-  );
-}
+import { WinRateRing } from "@/components/arena/WinRateRing";
+import { StrategyDNAChart } from "@/components/arena/StrategyDNAChart";
+import { useFollowedAgents } from "@/hooks/useFollowedAgents";
 
 export function AgentProfileFlyout({
   entry,
@@ -51,6 +24,8 @@ export function AgentProfileFlyout({
   const t = useTranslations("arena");
   const panelRef = useRef<HTMLDivElement>(null);
   const historyQuery = useArenaAgentHistoryQuery(entry.agentId, activeWindow);
+  const { isFollowing, toggle: toggleFollow } = useFollowedAgents();
+  const following = isFollowing(entry.agentId);
 
   // Close on ESC
   useEffect(() => {
@@ -88,6 +63,20 @@ export function AgentProfileFlyout({
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="arena-flyout-inner">
+        {/* Follow Button */}
+        <div className="arena-flyout-actions">
+          <button
+            type="button"
+            className={`arena-flyout-follow ${following ? "arena-flyout-follow--active" : ""}`}
+            onClick={() => toggleFollow(entry.agentId)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={following ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            {following ? t("following") : t("follow")}
+          </button>
+        </div>
+
         {/* Equity Curve */}
         <div className="arena-flyout-section">
           <div className="arena-section-kicker">PnL History</div>
@@ -144,6 +133,14 @@ export function AgentProfileFlyout({
             </div>
           </div>
         )}
+
+        {/* Strategy DNA */}
+        <div className="arena-flyout-section">
+          <div className="arena-section-kicker">{t("strategyDNA")}</div>
+          <div className="arena-flyout-dna">
+            <StrategyDNAChart dna={entry.dna} size={160} />
+          </div>
+        </div>
 
         {/* Badges */}
         {entry.badges.length > 0 && (

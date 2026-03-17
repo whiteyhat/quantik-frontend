@@ -2,7 +2,7 @@
 
 import "./arena.css";
 import { useDeferredValue, useRef, useState } from "react";
-import { Activity, RefreshCw, Search, Shield, Target } from "lucide-react";
+import { Activity, RefreshCw, Search, Shield, Star, Swords, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { type ArenaWindow } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { useNow } from "@/hooks/useNow";
+import { useFollowedAgents } from "@/hooks/useFollowedAgents";
 import { useArenaLeaderboardQuery } from "@/components/dashboard/dashboardQueries";
 import {
   battleTone,
@@ -50,6 +51,10 @@ export function ArenaPageClient() {
   const [viewerFocus, setViewerFocus] = useState(false);
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
   const [comparisonPair, setComparisonPair] = useState<[string, string] | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareSelection, setCompareSelection] = useState<string | null>(null);
+  const [followingFocus, setFollowingFocus] = useState(false);
+  const { followed, isFollowing, toggle: toggleFollow } = useFollowedAgents();
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const windowParam = searchParams.get("window");
   const activeWindow: ArenaWindow = windowParam === "day" || windowParam === "week" ? windowParam : "all";
@@ -73,8 +78,10 @@ export function ArenaPageClient() {
     query: deferredSearchTerm,
     viewerFocus,
     viewer,
+    followingFocus,
+    followedIds: followed,
   });
-  const hasSearchFilters = deferredSearchTerm.trim().length > 0 || viewerFocus;
+  const hasSearchFilters = deferredSearchTerm.trim().length > 0 || viewerFocus || followingFocus;
   const defaultLeaders = leaders.slice(0, 10);
   const warTableLeaders = hasSearchFilters
     ? filteredLeaders
@@ -312,6 +319,29 @@ export function ArenaPageClient() {
                   <Target className="size-4" />
                   {t("focusViewer")}
                 </button>
+                <button
+                  type="button"
+                  className={cn("arena-filter-chip", followingFocus && "arena-filter-chip--active")}
+                  onClick={() => setFollowingFocus((current) => !current)}
+                  aria-pressed={followingFocus}
+                  aria-controls="arena-lane-list"
+                  disabled={followed.size === 0}
+                >
+                  <Star className="size-4" />
+                  {t("followingFilter")}
+                </button>
+                <button
+                  type="button"
+                  className={cn("arena-filter-chip", compareMode && "arena-filter-chip--active")}
+                  onClick={() => {
+                    setCompareMode((prev) => !prev);
+                    setCompareSelection(null);
+                  }}
+                  aria-pressed={compareMode}
+                >
+                  <Swords className="size-4" />
+                  {t("compareMode")}
+                </button>
                 {hasSearchFilters ? (
                   <button
                     type="button"
@@ -319,6 +349,7 @@ export function ArenaPageClient() {
                     onClick={() => {
                       setSearchTerm("");
                       setViewerFocus(false);
+                      setFollowingFocus(false);
                     }}
                   >
                     <RefreshCw className="size-4" />
@@ -340,6 +371,21 @@ export function ArenaPageClient() {
                         onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
                         staggerIndex={hasInitiallyRendered.current ? undefined : index}
                         activeWindow={activeWindow}
+                        compareMode={compareMode}
+                        isCompareSelected={compareSelection === entry.agentId}
+                        isFollowing={isFollowing(entry.agentId)}
+                        onToggleFollow={toggleFollow}
+                        onSelectForCompare={(agentId) => {
+                          if (compareSelection === null) {
+                            setCompareSelection(agentId);
+                          } else if (compareSelection === agentId) {
+                            setCompareSelection(null);
+                          } else {
+                            setComparisonPair([compareSelection, agentId]);
+                            setCompareMode(false);
+                            setCompareSelection(null);
+                          }
+                        }}
                       />
                     ))}
                   </AnimatePresence>

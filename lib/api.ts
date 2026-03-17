@@ -228,6 +228,35 @@ export interface ArenaLeaderboardEntry {
   marketBreakdown: ArenaMarketBreakdown[];
   badges: Array<{ id: string; name: string; description: string; tier: string; emoji: string }>;
   heat: number;
+  dna: AgentDNA;
+}
+
+export interface AgentDNA {
+  volume: number;
+  diversity: number;
+  speed: number;
+  streak: number;
+  riskAppetite: number;
+  timing: number;
+}
+
+export interface PublicAgentProfile {
+  agentCode: string;
+  name: string;
+  avatarEmoji: string;
+  agentType: string;
+  rank: number | null;
+  selectedPnl: number;
+  allTimePnl: number;
+  winRate: number;
+  totalTrades: number;
+  openPositions: number;
+  currentStreak: number;
+  heat: number;
+  dna: AgentDNA;
+  badges: ArenaLeaderboardEntry["badges"];
+  marketBreakdown: ArenaMarketBreakdown[];
+  sparkline: ArenaSparklinePoint[];
 }
 
 export interface ArenaViewerContext {
@@ -368,6 +397,21 @@ function normalizeArenaEntry(input: unknown, context: string): ArenaLeaderboardE
         }))
       : [],
     heat: Number(entry.heat ?? 0),
+    dna: normalizeDNA(entry.dna),
+  };
+}
+
+function normalizeDNA(input: unknown): AgentDNA {
+  const empty: AgentDNA = { volume: 0, diversity: 0, speed: 0, streak: 0, riskAppetite: 0, timing: 0 };
+  if (!input || typeof input !== "object") return empty;
+  const d = input as Record<string, unknown>;
+  return {
+    volume: Number(d.volume ?? 0),
+    diversity: Number(d.diversity ?? 0),
+    speed: Number(d.speed ?? 0),
+    streak: Number(d.streak ?? 0),
+    riskAppetite: Number(d.riskAppetite ?? 0),
+    timing: Number(d.timing ?? 0),
   };
 }
 
@@ -1205,6 +1249,58 @@ export const api = {
         reason: requireArenaReason(viewer.reason),
       },
     };
+  },
+
+  getPublicAgentProfile: async (
+    agentCode: string,
+    signal?: AbortSignal,
+  ): Promise<PublicAgentProfile | null> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>(`/api/performance/arena/agent/${encodeURIComponent(agentCode)}`, { signal });
+      if (!raw) return null;
+      return {
+        agentCode: String(raw.agentCode ?? ""),
+        name: String(raw.name ?? "Unknown"),
+        avatarEmoji: String(raw.avatarEmoji ?? "?"),
+        agentType: String(raw.agentType ?? "created"),
+        rank: raw.rank == null ? null : Number(raw.rank),
+        selectedPnl: Number(raw.selectedPnl ?? 0),
+        allTimePnl: Number(raw.allTimePnl ?? 0),
+        winRate: Number(raw.winRate ?? 0),
+        totalTrades: Number(raw.totalTrades ?? 0),
+        openPositions: Number(raw.openPositions ?? 0),
+        currentStreak: Number(raw.currentStreak ?? 0),
+        heat: Number(raw.heat ?? 0),
+        dna: normalizeDNA(raw.dna),
+        badges: Array.isArray(raw.badges)
+          ? (raw.badges as Record<string, unknown>[]).map((b) => ({
+              id: String(b.id ?? ""),
+              name: String(b.name ?? ""),
+              description: String(b.description ?? ""),
+              tier: String(b.tier ?? "common"),
+              emoji: String(b.emoji ?? ""),
+            }))
+          : [],
+        marketBreakdown: Array.isArray(raw.marketBreakdown)
+          ? (raw.marketBreakdown as Record<string, unknown>[]).map((m) => ({
+              slug: String(m.slug ?? ""),
+              pnl: Number(m.pnl ?? 0),
+              trades: Number(m.trades ?? 0),
+              winRate: Number(m.winRate ?? 0),
+              openPositions: Number(m.openPositions ?? 0),
+            }))
+          : [],
+        sparkline: Array.isArray(raw.sparkline)
+          ? (raw.sparkline as Record<string, unknown>[]).map((p) => ({
+              timestamp: Number(p.timestamp ?? 0),
+              pnl: Number(p.pnl ?? 0),
+              rank: Number(p.rank ?? 0),
+            }))
+          : [],
+      };
+    } catch {
+      return null;
+    }
   },
 
   getArenaAgentHistory: async (

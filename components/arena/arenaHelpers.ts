@@ -80,17 +80,28 @@ export function filterArenaLeaders(
     query,
     viewerFocus,
     viewer,
+    followingFocus,
+    followedIds,
   }: {
     query: string;
     viewerFocus: boolean;
     viewer?: ArenaViewerContext;
+    followingFocus?: boolean;
+    followedIds?: Set<string>;
   },
 ) {
-  const searchMatched = leaders.filter((entry) => matchArenaLeader(entry, query));
-  if (!viewerFocus || !viewer?.ranked || !viewer.rank) return searchMatched;
+  let filtered = leaders.filter((entry) => matchArenaLeader(entry, query));
 
-  const nearbyRanks = new Set([1, 2, 3, viewer.rank - 2, viewer.rank - 1, viewer.rank, viewer.rank + 1, viewer.rank + 2]);
-  return searchMatched.filter((entry) => nearbyRanks.has(entry.rank));
+  if (followingFocus && followedIds && followedIds.size > 0) {
+    filtered = filtered.filter((entry) => followedIds.has(entry.agentId));
+  }
+
+  if (viewerFocus && viewer?.ranked && viewer.rank) {
+    const nearbyRanks = new Set([1, 2, 3, viewer.rank - 2, viewer.rank - 1, viewer.rank, viewer.rank + 1, viewer.rank + 2]);
+    filtered = filtered.filter((entry) => nearbyRanks.has(entry.rank));
+  }
+
+  return filtered;
 }
 
 export function findNextRival(leaders: ArenaLeaderboardEntry[], viewer?: ArenaViewerContext | null) {

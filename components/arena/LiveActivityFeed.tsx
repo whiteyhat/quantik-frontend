@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useSocketEvent } from "@/context/SocketContext";
+import { useFollowedAgents } from "@/hooks/useFollowedAgents";
 
 interface ArenaRankDeltaEvent {
   window: string;
@@ -18,6 +19,7 @@ interface ArenaRankDeltaEvent {
 
 interface ActivityItem {
   id: string;
+  agentId: string;
   emoji: string;
   text: string;
   tone: "climb" | "drop" | "crown";
@@ -34,6 +36,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
     if (delta.currentRank === 1 && delta.rankChange > 0) {
       items.push({
         id: `${event.timestamp}-${delta.agentId}-crown`,
+        agentId: delta.agentId,
         emoji: delta.avatarEmoji || "🏆",
         text: `${delta.name} claimed the crown!`,
         tone: "crown",
@@ -43,6 +46,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
       const from = delta.previousRank ?? "?";
       items.push({
         id: `${event.timestamp}-${delta.agentId}`,
+        agentId: delta.agentId,
         emoji: delta.avatarEmoji || "📈",
         text: `${delta.name} #${from} → #${delta.currentRank}`,
         tone: "climb",
@@ -51,6 +55,7 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
     } else {
       items.push({
         id: `${event.timestamp}-${delta.agentId}`,
+        agentId: delta.agentId,
         emoji: delta.avatarEmoji || "📉",
         text: `${delta.name} dropped to #${delta.currentRank}`,
         tone: "drop",
@@ -63,6 +68,8 @@ function deltaToItems(event: ArenaRankDeltaEvent): ActivityItem[] {
 
 export function LiveActivityFeed() {
   const [items, setItems] = useState<ActivityItem[]>([]);
+  const [followingOnly, setFollowingOnly] = useState(false);
+  const { followed } = useFollowedAgents();
 
   const handler = useCallback((event: ArenaRankDeltaEvent) => {
     const newItems = deltaToItems(event);
@@ -72,15 +79,32 @@ export function LiveActivityFeed() {
 
   useSocketEvent("arena:leaderboard_delta", handler);
 
+  const visibleItems = followingOnly && followed.size > 0
+    ? items.filter((item) => followed.has(item.agentId))
+    : items;
+
   if (items.length === 0) return null;
 
   return (
     <div className="arena-feed">
       <div className="arena-feed-header">
         <span className="arena-section-kicker">Live Activity</span>
+        {followed.size > 0 && (
+          <button
+            type="button"
+            className={`arena-feed-toggle ${followingOnly ? "arena-feed-toggle--active" : ""}`}
+            onClick={() => setFollowingOnly((prev) => !prev)}
+            aria-pressed={followingOnly}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill={followingOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            Following
+          </button>
+        )}
       </div>
       <div className="arena-feed-track">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <div key={item.id} className={`arena-feed-item arena-feed-item--${item.tone}`}>
             <span className="arena-feed-emoji">{item.emoji}</span>
             <span className="arena-feed-text">{item.text}</span>

@@ -20,6 +20,11 @@ export function BattleLaneRow({
   onToggleExpand,
   staggerIndex,
   activeWindow,
+  compareMode,
+  isCompareSelected,
+  onSelectForCompare,
+  isFollowing,
+  onToggleFollow,
 }: {
   entry: ArenaLeaderboardEntry;
   now: number;
@@ -28,6 +33,11 @@ export function BattleLaneRow({
   onToggleExpand?: () => void;
   staggerIndex?: number;
   activeWindow?: ArenaWindow;
+  compareMode?: boolean;
+  isCompareSelected?: boolean;
+  onSelectForCompare?: (agentId: string) => void;
+  isFollowing?: boolean;
+  onToggleFollow?: (agentId: string) => void;
 }) {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
@@ -47,11 +57,23 @@ export function BattleLaneRow({
           opacity: { duration: 0.2 },
           ...(staggerIndex != null ? { delay: staggerIndex * 0.05 } : {}),
         }}
-        className={cn("arena-lane", isViewer && "arena-lane--viewer", isExpanded && "arena-lane--expanded")}
-        onClick={onToggleExpand}
-        role={onToggleExpand ? "button" : undefined}
-        tabIndex={onToggleExpand ? 0 : undefined}
-        onKeyDown={onToggleExpand ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleExpand(); } } : undefined}
+        className={cn(
+          "arena-lane",
+          isViewer && "arena-lane--viewer",
+          isExpanded && "arena-lane--expanded",
+          compareMode && "arena-lane--compare-mode",
+          isCompareSelected && "arena-lane--compare-selected",
+        )}
+        onClick={compareMode && onSelectForCompare ? () => onSelectForCompare(entry.agentId) : onToggleExpand}
+        role={onToggleExpand || (compareMode && onSelectForCompare) ? "button" : undefined}
+        tabIndex={onToggleExpand || (compareMode && onSelectForCompare) ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (compareMode && onSelectForCompare) onSelectForCompare(entry.agentId);
+            else if (onToggleExpand) onToggleExpand();
+          }
+        }}
       >
         <div className="arena-lane-rankblade">
           <span>#{entry.rank}</span>
@@ -127,6 +149,19 @@ export function BattleLaneRow({
             <span>{t("lastTrade")}</span>
             <strong>{formatRelativeTime(entry.lastTradeAt, now, tCommon)}</strong>
           </div>
+          {onToggleFollow && (
+            <button
+              type="button"
+              className={cn("arena-follow-star", isFollowing && "arena-follow-star--active")}
+              onClick={(e) => { e.stopPropagation(); onToggleFollow(entry.agentId); }}
+              aria-label={isFollowing ? t("unfollow") : t("follow")}
+              aria-pressed={isFollowing}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={isFollowing ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </button>
+          )}
         </div>
       </motion.article>
 

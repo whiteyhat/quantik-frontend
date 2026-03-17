@@ -34,6 +34,7 @@ function makeEntry(overrides: Partial<ArenaLeaderboardEntry> = {}): ArenaLeaderb
     marketBreakdown: [],
     badges: [],
     heat: 0,
+    dna: { volume: 0.5, diversity: 0.5, speed: 0.5, streak: 0.5, riskAppetite: 0.5, timing: 0.5 },
     ...overrides,
   };
 }

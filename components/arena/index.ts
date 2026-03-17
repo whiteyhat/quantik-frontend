@@ -14,3 +14,7 @@ export { AchievementBadge, AchievementBadgeRow } from "./AchievementBadge";
 export { AgentHeatGlow } from "./AgentHeatGlow";
 export { AgentProfileFlyout } from "./AgentProfileFlyout";
 export { LiveActivityFeed } from "./LiveActivityFeed";
+export { StrategyDNAChart } from "./StrategyDNAChart";
+export { WinRateRing } from "./WinRateRing";
+export { ShareButtons } from "./ShareButtons";
+export { PublicAgentProfileView } from "./PublicAgentProfile";
