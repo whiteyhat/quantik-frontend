@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useLocalStorageFlag, setLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { PillButton } from "@/components/landing/PillButton";
+import { initTutorial } from "@/hooks/useTutorialState";
 
 const ONBOARDING_KEY = "hasSeenOnboarding";
 
@@ -29,6 +30,7 @@ export function WelcomeModal() {
 
   const dismiss = () => {
     setLocalStorageFlag(ONBOARDING_KEY, true);
+    initTutorial();
     router.push("/agent-factory");
   };
 
