@@ -73,6 +73,34 @@ export function Providers({ children }: { children: React.ReactNode }) {
           profileSectionPrimaryButton: {
             color: "rgba(255, 255, 255, 0.85)",
           },
+          // "Last used" badge on social buttons
+          identityPreviewEditButton: {
+            color: "rgba(255, 255, 255, 0.45)",
+          },
+          badge: {
+            color: "rgba(255, 255, 255, 0.45)",
+            background: "rgba(255, 255, 255, 0.08)",
+            borderColor: "rgba(255, 255, 255, 0.12)",
+          },
+          // Email input placeholder
+          formFieldInput: {
+            color: "rgba(255, 255, 255, 0.85)",
+          },
+          // Hide "Secured by Clerk" branding link
+          footerPagesLink: { display: "none" },
+          // "Don't have an account? Sign up" — white bg, black text
+          footerAction: {
+            background: "#ffffff",
+            borderRadius: "0 0 12px 12px",
+            padding: "14px 16px",
+          },
+          footerActionText: {
+            color: "#000000",
+          },
+          footerActionLink: {
+            color: "#000000",
+            fontWeight: 600,
+          },
         },
       }}
     >

@@ -2704,6 +2704,31 @@ a.command-center-list-row:focus-visible,
   display: none !important;
 }
 
+/* Hide "Secured by Clerk" branding in sign-in/sign-up modal */
+.cl-footerPagesLink,
+.cl-internal-b3fm6y,
+.cl-footer a[href*="clerk"],
+.cl-signIn-root .cl-footer > div:last-child,
+.cl-signUp-root .cl-footer > div:last-child {
+  display: none !important;
+}
+
+/* Also hide via content detection — any link/text containing "Secured" */
+.cl-modalContent a[title*="Clerk"],
+.cl-modalContent a[aria-label*="Clerk"] {
+  display: none !important;
+}
+
+/* Gray placeholder text in Clerk email input */
+.cl-formFieldInput::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Gray "Last used" badge text */
+.cl-badge {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
 /* Popover root box — transparent wrapper, card styled via appearance API */
 .cl-userButtonPopoverRootBox,
 .cl-userButtonPopoverRootBox > * {
