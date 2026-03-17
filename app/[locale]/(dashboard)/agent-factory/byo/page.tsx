@@ -1164,8 +1164,8 @@ export default function ByoAgentPage() {
         emojiSize: 60,
         confettiNumber: 40,
       });
-      initTutorial();
-      setTimeout(() => router.push("/manage-agent"), 1500);
+      // Keep the user on the factory page so the first tutorial step can render.
+      initTutorial({ force: true, initialPage: "agent-factory", initialStep: 0 });
     } catch (err) {
       setDeployError(err instanceof Error ? err.message : "Failed to activate BYO agent");
     } finally {

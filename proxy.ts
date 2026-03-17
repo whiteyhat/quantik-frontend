@@ -5,7 +5,9 @@ import { NextRequest } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/",
+  "/manifest.json",
   "/:locale",
+  "/:locale/manifest.json",
   "/:locale/sign-in(.*)",
   "/:locale/sign-up(.*)",
   "/api(.*)",
@@ -25,8 +27,8 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files, but match everything else
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Skip Next.js internals and static files, including public JSON assets like manifest.json
+    "/((?!_next|[^?]*\\.(?:html?|css|js|json|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes
     "/(api|trpc)(.*)",
   ],

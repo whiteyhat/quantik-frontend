@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { routing, type Locale } from "@/i18n/routing";
 import { Providers } from "@/components/Providers";
-import { themeBootstrapScript } from "@/context/ThemeContext";
+import { themeBootstrapScript } from "@/lib/theme";
 
 type Props = {
   children: React.ReactNode;

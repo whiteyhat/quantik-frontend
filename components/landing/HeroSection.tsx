@@ -43,7 +43,7 @@ function LiquidGlassWord({
     if (!el) return;
     el.style.setProperty("--glass-x", "50%");
     el.style.setProperty("--glass-y", "50%");
-  }, [isTouch]);
+  }, []);
 
   return (
     <motion.span
@@ -152,7 +152,6 @@ export function HeroSection() {
         loop
         playsInline
         preload={isTouch ? "metadata" : "auto"}
-        poster="/video-poster.jpg"
         style={{
           position: "fixed",
           inset: 0,

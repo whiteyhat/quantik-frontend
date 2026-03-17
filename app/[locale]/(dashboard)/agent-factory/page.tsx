@@ -1489,8 +1489,8 @@ export default function AgentFactoryPage() {
       setWalletPrivateKey(null);
       setWalletSeedPhrase(null);
       setMyAgent(agentData as unknown as MyAgent);
-      initTutorial();
-      router.push("/manage-agent");
+      // Start the first-run tutorial on the factory page that owns step 1.
+      initTutorial({ force: true, initialPage: "agent-factory", initialStep: 0 });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to deploy agent";
       if (msg.includes("409")) {

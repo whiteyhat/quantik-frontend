@@ -13,6 +13,12 @@ export interface TutorialState {
   startedAt: number;
 }
 
+export interface InitTutorialOptions {
+  force?: boolean;
+  initialPage?: TutorialPage;
+  initialStep?: number;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const LS_KEY = "quantik_tutorial";
@@ -26,22 +32,50 @@ const DEFAULT_STATE: TutorialState = {
   startedAt: Date.now(),
 };
 
+const NULL_SNAPSHOT = "__tutorial_null__";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function readState(): TutorialState | null {
-  if (typeof window === "undefined") return null;
+function readSerializedState(): string {
+  if (typeof window === "undefined") return NULL_SNAPSHOT;
   try {
-    const raw = window.localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as TutorialState;
+    return window.localStorage.getItem(LS_KEY) ?? NULL_SNAPSHOT;
+  } catch {
+    return NULL_SNAPSHOT;
+  }
+}
+
+function parseState(serialized: string): TutorialState | null {
+  if (serialized === NULL_SNAPSHOT) return null;
+  try {
+    return JSON.parse(serialized) as TutorialState;
   } catch {
     return null;
   }
 }
 
+let cachedSerializedState = NULL_SNAPSHOT;
+let cachedState: TutorialState | null = null;
+
+function syncCache(serialized = readSerializedState()): string {
+  if (serialized !== cachedSerializedState) {
+    cachedSerializedState = serialized;
+    cachedState = parseState(serialized);
+  }
+  return cachedSerializedState;
+}
+
+function readState(): TutorialState | null {
+  return syncCache() === NULL_SNAPSHOT ? null : cachedState;
+}
+
 function writeState(state: TutorialState) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LS_KEY, JSON.stringify(state));
+
+  const serialized = JSON.stringify(state);
+  cachedSerializedState = serialized;
+  cachedState = state;
+  window.localStorage.setItem(LS_KEY, serialized);
   window.dispatchEvent(
     new CustomEvent("local-storage-flag-change", { detail: { key: LS_KEY } })
   );
@@ -52,11 +86,13 @@ function subscribe(onStoreChange: () => void) {
 
   const handleStorage = (event: Event) => {
     if (!(event instanceof StorageEvent) || event.key === null || event.key === LS_KEY) {
+      syncCache();
       onStoreChange();
     }
   };
   const handleCustom = (event: Event) => {
     if (!(event instanceof CustomEvent) || event.detail?.key === LS_KEY) {
+      syncCache();
       onStoreChange();
     }
   };
@@ -69,14 +105,23 @@ function subscribe(onStoreChange: () => void) {
   };
 }
 
+function getStoreSnapshot() {
+  return syncCache();
+}
+
+function getServerStoreSnapshot() {
+  return NULL_SNAPSHOT;
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useTutorialState() {
-  const state = useSyncExternalStore(
+  const serializedState = useSyncExternalStore(
     subscribe,
-    () => readState(),
-    () => null
+    getStoreSnapshot,
+    getServerStoreSnapshot
   );
+  const state = serializedState === NULL_SNAPSHOT ? null : cachedState;
 
   const nextStep = useCallback((totalStepsOnPage: number) => {
     const s = readState();
@@ -133,16 +178,24 @@ export function useTutorialState() {
 
 // ─── Init (called from agent factory) ────────────────────────────────────────
 
-export function initTutorial() {
+export function initTutorial(options: InitTutorialOptions = {}) {
   if (typeof window === "undefined") return;
-  if (window.localStorage.getItem(LS_KEY)) return; // don't re-init
-  writeState({ ...DEFAULT_STATE, startedAt: Date.now() });
+  const { force = false, initialPage = DEFAULT_STATE.currentPage, initialStep = DEFAULT_STATE.currentStep } = options;
+  if (!force && window.localStorage.getItem(LS_KEY)) return;
+  writeState({
+    ...DEFAULT_STATE,
+    currentPage: initialPage,
+    currentStep: initialStep,
+    startedAt: Date.now(),
+  });
 }
 
 // ─── Reset (called from settings to replay tutorial) ─────────────────────────
 
 export function resetTutorial() {
   if (typeof window === "undefined") return;
+  cachedSerializedState = NULL_SNAPSHOT;
+  cachedState = null;
   window.localStorage.removeItem(LS_KEY);
   window.dispatchEvent(
     new CustomEvent("local-storage-flag-change", { detail: { key: LS_KEY } })

@@ -1,16 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-
-export type AppTheme = "dark" | "light";
+import { THEME_STORAGE_KEY, type AppTheme } from "@/lib/theme";
 
 interface ThemeContextValue {
   theme: AppTheme;
   setTheme: (theme: AppTheme) => void;
   toggleTheme: () => void;
 }
-
-const STORAGE_KEY = "quantik-theme";
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "dark",
@@ -24,21 +21,20 @@ function applyTheme(theme: AppTheme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AppTheme>("dark");
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    if (typeof window === "undefined") return "dark";
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return stored === "light" ? "light" : "dark";
+  });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    const nextTheme: AppTheme = stored === "light" ? "light" : "dark";
-    setThemeState(nextTheme);
-    applyTheme(nextTheme);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const setTheme = (nextTheme: AppTheme) => {
     setThemeState(nextTheme);
-    applyTheme(nextTheme);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, nextTheme);
+      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     }
   };
 
@@ -57,14 +53,3 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
-
-export const themeBootstrapScript = `
-  (function () {
-    try {
-      var theme = localStorage.getItem("${STORAGE_KEY}") === "light" ? "light" : "dark";
-      document.documentElement.dataset.theme = theme;
-    } catch (error) {
-      document.documentElement.dataset.theme = "dark";
-    }
-  })();
-`;
