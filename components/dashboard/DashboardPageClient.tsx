@@ -236,7 +236,7 @@ function MissionControlHero({
       : t("telemetryOnly");
 
   return (
-    <CommandCenterCard accent="blue" className="command-center-hero overflow-hidden">
+    <CommandCenterCard accent="blue" className="command-center-hero overflow-hidden" data-tutorial="mission-control">
       <div className="command-center-hero-grid">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
@@ -754,7 +754,7 @@ function OrchestratorCard({
   const tRel = useTranslations("common");
 
   return (
-    <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card">
+    <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card" data-tutorial="orchestrator">
       <CommandCenterHeader
         eyebrow={t("eyebrow")}
         title={t("title")}

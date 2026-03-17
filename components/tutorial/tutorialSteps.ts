@@ -3,15 +3,15 @@ import type { TutorialPage } from "@/hooks/useTutorialState";
 export type TooltipPosition = "top" | "bottom" | "left" | "right";
 
 export interface TutorialStep {
-  /** CSS selector to find the target element */
+  /** CSS selector to find the target element (use data-tutorial attributes exclusively) */
   selector: string;
   /** Preferred tooltip position relative to target */
   position: TooltipPosition;
-  /** Title shown in the tooltip */
-  title: string;
-  /** Description shown in the tooltip */
-  description: string;
-  /** If true, auto-navigate to next page after a short delay instead of showing tooltip */
+  /** i18n key for the tooltip title (under "tutorial" namespace) */
+  titleKey: string;
+  /** i18n key for the tooltip description (under "tutorial" namespace) */
+  descKey: string;
+  /** If true, auto-navigate to next page after a short delay */
   autoNavigate?: boolean;
 }
 
@@ -19,8 +19,8 @@ export interface PageSteps {
   page: TutorialPage;
   /** Route path to navigate to (without locale prefix) */
   route: string;
-  /** Label shown in the progress bar */
-  label: string;
+  /** i18n key for the progress bar label */
+  labelKey: string;
   steps: TutorialStep[];
 }
 
@@ -28,20 +28,19 @@ export const TUTORIAL_PAGES: PageSteps[] = [
   {
     page: "agent-factory",
     route: "/agent-factory",
-    label: "Factory",
+    labelKey: "pageFactory",
     steps: [
       {
-        selector: 'a[href*="manage-agent"]',
+        selector: '[data-tutorial="nav-manage-agent"]',
         position: "right",
-        title: "Agent Deployed!",
-        description:
-          "Your agent is live! This is the Factory where you built it. Now let's explore what it can do.",
+        titleKey: "factoryDeployedTitle",
+        descKey: "factoryDeployedDesc",
       },
       {
         selector: "__auto_navigate__",
         position: "bottom",
-        title: "",
-        description: "",
+        titleKey: "",
+        descKey: "",
         autoNavigate: true,
       },
     ],
@@ -49,84 +48,75 @@ export const TUTORIAL_PAGES: PageSteps[] = [
   {
     page: "manage-agent",
     route: "/manage-agent",
-    label: "Agent",
+    labelKey: "pageAgent",
     steps: [
       {
         selector: '[data-tutorial="agent-identity"]',
         position: "bottom",
-        title: "Identity Card",
-        description:
-          "Your agent's identity — name, avatar, wallet balance, and live status at a glance.",
+        titleKey: "identityTitle",
+        descKey: "identityDesc",
       },
       {
         selector: '[data-tutorial="autopilot-card"]',
         position: "left",
-        title: "Autopilot Mode",
-        description:
-          "When enabled, the 7-agent pipeline evaluates markets and executes trades autonomously.",
+        titleKey: "autopilotTitle",
+        descKey: "autopilotDesc",
       },
       {
-        selector: ".segmented-control",
+        selector: '[data-tutorial="view-tabs"]',
         position: "bottom",
-        title: "Explore Views",
-        description:
-          "Switch between Dashboard analytics, Architecture view (see how the 7 agents connect), and Agent World.",
+        titleKey: "viewTabsTitle",
+        descKey: "viewTabsDesc",
       },
     ],
   },
   {
     page: "dashboard",
     route: "/dashboard",
-    label: "Dashboard",
+    labelKey: "pageDashboard",
     steps: [
       {
-        selector: ".command-center-hero",
+        selector: '[data-tutorial="mission-control"]',
         position: "bottom",
-        title: "Mission Control",
-        description:
-          "Your real-time command center. Portfolio value, P&L, and system health — all in one place.",
+        titleKey: "missionControlTitle",
+        descKey: "missionControlDesc",
       },
       {
-        selector: '[data-testid="dashboard-command-strip"]',
+        selector: '[data-tutorial="mission-rail"]',
         position: "bottom",
-        title: "Mission Rail",
-        description:
-          "Your 7 specialized agents and their live status. Green means online and ready to analyze.",
+        titleKey: "missionRailTitle",
+        descKey: "missionRailDesc",
       },
       {
-        selector: '[data-testid="dashboard-orchestrator-card"]',
+        selector: '[data-tutorial="orchestrator"]',
         position: "left",
-        title: "The Orchestrator",
-        description:
-          "Scans Polymarket for opportunities. Hit 'Scan Now' to trigger an immediate market sweep.",
+        titleKey: "orchestratorTitle",
+        descKey: "orchestratorDesc",
       },
     ],
   },
   {
     page: "arena",
     route: "/arena",
-    label: "Arena",
+    labelKey: "pageArena",
     steps: [
       {
-        selector: ".arena-prelude",
+        selector: '[data-tutorial="arena-prelude"]',
         position: "bottom",
-        title: "The Arena",
-        description:
-          "Where all agents compete on the global leaderboard. Rankings based on real trading performance.",
+        titleKey: "arenaTitle",
+        descKey: "arenaDesc",
       },
       {
-        selector: "#arena-stage-panel",
+        selector: '[data-tutorial="arena-stage"]',
         position: "bottom",
-        title: "The Stage",
-        description:
-          "Top 3 agents on the podium. The champion holds center throne. Can your agent dethrone them?",
+        titleKey: "arenaStageTitle",
+        descKey: "arenaStageDesc",
       },
       {
-        selector: ".arena-prelude-target__core",
+        selector: '[data-tutorial="arena-position"]',
         position: "left",
-        title: "Your Position",
-        description:
-          "This is you. Make profitable trades, climb the ranks. You're ready to compete.",
+        titleKey: "arenaPositionTitle",
+        descKey: "arenaPositionDesc",
       },
     ],
   },
@@ -144,9 +134,9 @@ export function getNextPageRoute(page: TutorialPage): string | null {
   return TUTORIAL_PAGES[idx + 1].route;
 }
 
-/** Get the next page's label for button text */
-export function getNextPageLabel(page: TutorialPage): string | null {
+/** Get the next page's label key for button text */
+export function getNextPageLabelKey(page: TutorialPage): string | null {
   const idx = TUTORIAL_PAGES.findIndex((p) => p.page === page);
   if (idx < 0 || idx >= TUTORIAL_PAGES.length - 1) return null;
-  return TUTORIAL_PAGES[idx + 1].label;
+  return TUTORIAL_PAGES[idx + 1].labelKey;
 }

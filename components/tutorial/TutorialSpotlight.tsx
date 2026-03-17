@@ -12,16 +12,17 @@ interface SpotlightRect {
 interface TutorialSpotlightProps {
   rect: SpotlightRect | null;
   visible: boolean;
+  /** Called when user clicks on the dark overlay area (not the cutout) */
+  onOverlayClick: () => void;
 }
 
 const PADDING = 10;
 const BORDER_RADIUS = 14;
 
-export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
+export function TutorialSpotlight({ rect, visible, onOverlayClick }: TutorialSpotlightProps) {
   const reduced = useReducedMotion();
 
   const maskId = "tutorial-spotlight-mask";
-  const borderId = "tutorial-spotlight-border";
 
   const cutout = rect
     ? {
@@ -32,10 +33,7 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
       }
     : null;
 
-  // Perimeter for dash animation
-  const perimeter = cutout
-    ? 2 * (cutout.width + cutout.height)
-    : 0;
+  const perimeter = cutout ? 2 * (cutout.width + cutout.height) : 0;
 
   return (
     <AnimatePresence>
@@ -49,7 +47,8 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
             position: "fixed",
             inset: 0,
             zIndex: 10000,
-            pointerEvents: "none",
+            // pointerEvents on the SVG dark area captures clicks,
+            // the cutout allows clicks to pass through to the target element
           }}
         >
           <svg
@@ -64,9 +63,7 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
           >
             <defs>
               <mask id={maskId}>
-                {/* White = visible (the dark overlay) */}
                 <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                {/* Black = transparent (the cutout) */}
                 {cutout && (
                   <rect
                     x={cutout.x}
@@ -81,20 +78,21 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
               </mask>
             </defs>
 
-            {/* Dark overlay with cutout */}
+            {/* Dark overlay — clicks here advance the tutorial */}
             <rect
               x="0"
               y="0"
               width="100%"
               height="100%"
-              fill="rgba(0,0,0,0.62)"
+              fill="var(--tutorial-overlay-bg, rgba(0,0,0,0.62))"
               mask={`url(#${maskId})`}
+              style={{ cursor: "pointer", pointerEvents: "auto" }}
+              onClick={onOverlayClick}
             />
 
-            {/* Animated scanning border around cutout */}
+            {/* Animated scanning border */}
             {cutout && (
               <rect
-                id={borderId}
                 x={cutout.x}
                 y={cutout.y}
                 width={cutout.width}
@@ -102,10 +100,12 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
                 rx={BORDER_RADIUS}
                 ry={BORDER_RADIUS}
                 fill="none"
-                stroke="rgba(10,132,255,0.45)"
+                stroke="var(--ios-blue, #0a84ff)"
+                strokeOpacity={0.45}
                 strokeWidth="2"
                 strokeDasharray={`${perimeter * 0.25} ${perimeter * 0.75}`}
                 style={{
+                  pointerEvents: "none",
                   animation: reduced
                     ? "none"
                     : `tutorial-scan ${Math.max(3, perimeter / 400)}s linear infinite`,
@@ -113,7 +113,7 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
               />
             )}
 
-            {/* Subtle glow around cutout */}
+            {/* Subtle glow */}
             {cutout && (
               <rect
                 x={cutout.x - 1}
@@ -123,18 +123,13 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
                 rx={BORDER_RADIUS + 1}
                 ry={BORDER_RADIUS + 1}
                 fill="none"
-                stroke="rgba(10,132,255,0.12)"
+                stroke="var(--ios-blue, #0a84ff)"
+                strokeOpacity={0.12}
                 strokeWidth="4"
+                style={{ pointerEvents: "none" }}
               />
             )}
           </svg>
-
-          {/* CSS for the scan animation */}
-          <style>{`
-            @keyframes tutorial-scan {
-              to { stroke-dashoffset: -${perimeter}; }
-            }
-          `}</style>
         </motion.div>
       )}
     </AnimatePresence>

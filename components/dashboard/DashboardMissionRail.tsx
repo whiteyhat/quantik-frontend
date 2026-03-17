@@ -61,7 +61,7 @@ export function DashboardMissionRail({
         : "idle";
 
   return (
-    <section className="mission-rail" data-testid="dashboard-command-strip">
+    <section className="mission-rail" data-testid="dashboard-command-strip" data-tutorial="mission-rail">
       <article className="mission-rail-tile mission-rail-tile--neutral">
         <div className="mission-rail-icon-wrap">
           <RefreshCw className="size-4" />

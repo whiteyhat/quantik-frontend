@@ -10,6 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { GlassSlider } from "@/components/ui/GlassSlider";
 import { api, type RiskConfig } from "@/lib/api";
+import { resetTutorial } from "@/hooks/useTutorialState";
+import { useQuantikStore } from "@/store/useQuantikStore";
+import { useRouter } from "@/i18n/navigation";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -1210,6 +1213,70 @@ export default function SettingsPage() {
       <motion.div variants={fadeInUp}><RiskConfigPanel /></motion.div>
       <motion.div variants={fadeInUp}><TelegramSettingsPanel /></motion.div>
       <motion.div variants={fadeInUp}><AppInfoPanel /></motion.div>
+      <motion.div variants={fadeInUp}><TutorialRestartPanel /></motion.div>
     </motion.div>
+  );
+}
+
+// ─── Tutorial Restart Panel ──────────────────────────────────────────────────
+
+function TutorialRestartPanel() {
+  const t = useTranslations("tutorial");
+  const myAgent = useQuantikStore((s) => s.myAgent);
+  const router = useRouter();
+  const [restarted, setRestarted] = useState(false);
+
+  const handleRestart = () => {
+    resetTutorial();
+    setRestarted(true);
+    setTimeout(() => router.push("/agent-factory"), 400);
+  };
+
+  return (
+    <div style={panelStyle}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <div
+            style={{
+              fontSize: HEADLINE_SIZE,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.92)",
+              marginBottom: 4,
+            }}
+          >
+            {t("restartTitle")}
+          </div>
+          <div
+            style={{
+              fontSize: META_SIZE,
+              color: "rgba(255,255,255,0.40)",
+              lineHeight: 1.4,
+            }}
+          >
+            {myAgent ? t("restartDesc") : t("restartNotAvailable")}
+          </div>
+        </div>
+        <button
+          onClick={handleRestart}
+          disabled={!myAgent || restarted}
+          style={{
+            flexShrink: 0,
+            background: restarted ? "rgba(48,209,88,0.15)" : "rgba(10,132,255,0.15)",
+            border: `1px solid ${restarted ? "rgba(48,209,88,0.30)" : "rgba(10,132,255,0.30)"}`,
+            borderRadius: 10,
+            padding: "8px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            color: restarted ? "#30d158" : "#0a84ff",
+            cursor: myAgent && !restarted ? "pointer" : "not-allowed",
+            opacity: myAgent ? 1 : 0.4,
+            transition: "all 200ms ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {restarted ? "✓" : t("restartButton")}
+        </button>
+      </div>
+    </div>
   );
 }

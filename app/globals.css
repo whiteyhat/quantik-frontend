@@ -135,6 +135,50 @@
     60% { transform: translateX(-2px); }
     80% { transform: translateX(2px); }
   }
+
+  /* ─── Tutorial animations ─────────────────────────────────────────────────── */
+  @keyframes tutorial-scan {
+    to { stroke-dashoffset: -1000; }
+  }
+}
+
+/* ─── Tutorial CSS variables ──────────────────────────────────────────────── */
+:root {
+  --tutorial-overlay-bg: rgba(0, 0, 0, 0.62);
+  --tutorial-tooltip-bg: rgba(10, 12, 20, 0.88);
+  --tutorial-tooltip-border: rgba(255, 255, 255, 0.09);
+  --tutorial-text-primary: rgba(255, 255, 255, 0.92);
+  --tutorial-text-secondary: rgba(255, 255, 255, 0.55);
+  --tutorial-text-dim: rgba(255, 255, 255, 0.30);
+  --tutorial-btn-ghost-bg: rgba(255, 255, 255, 0.06);
+  --tutorial-btn-ghost-border: rgba(255, 255, 255, 0.08);
+  --tutorial-btn-ghost-hover: rgba(255, 255, 255, 0.10);
+}
+
+[data-theme="light"] {
+  --tutorial-overlay-bg: rgba(0, 0, 0, 0.45);
+  --tutorial-tooltip-bg: rgba(255, 255, 255, 0.92);
+  --tutorial-tooltip-border: rgba(15, 23, 42, 0.10);
+  --tutorial-text-primary: rgba(15, 23, 42, 0.94);
+  --tutorial-text-secondary: rgba(15, 23, 42, 0.60);
+  --tutorial-text-dim: rgba(15, 23, 42, 0.30);
+  --tutorial-btn-ghost-bg: rgba(15, 23, 42, 0.06);
+  --tutorial-btn-ghost-border: rgba(15, 23, 42, 0.08);
+  --tutorial-btn-ghost-hover: rgba(15, 23, 42, 0.10);
+}
+
+/* Tutorial pulse ring */
+.tutorial-pulse-ring {
+  animation: tutorial-dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tutorial-dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-pulse-ring { animation: none; }
 }
 
 /* ─── Base Styles ──────────────────────────────────────────────────────────── */

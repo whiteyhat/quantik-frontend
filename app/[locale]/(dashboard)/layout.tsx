@@ -317,6 +317,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               href={item.href}
               className={!myAgent && item.isFactory ? "onboarding-glow" : undefined}
               style={sharedStyle}
+              {...(item.href === "/manage-agent" ? { "data-tutorial": "nav-manage-agent" } : {})}
             >
               {content}
             </Link>

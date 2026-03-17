@@ -269,7 +269,7 @@ export default function ManageAgentPage() {
         </div>
 
         {/* Segmented tab control */}
-        <div className="segmented-control">
+        <div className="segmented-control" data-tutorial="view-tabs">
           {(
             [
               { id: "dashboard" as TabId, label: t("tabDashboard") },

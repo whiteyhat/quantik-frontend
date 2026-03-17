@@ -83,7 +83,6 @@ export function useTutorialState() {
     if (!s || s.status !== "active") return null;
 
     if (s.currentStep < totalStepsOnPage - 1) {
-      // Advance step within page
       writeState({ ...s, currentStep: s.currentStep + 1 });
       return { action: "next-step" as const };
     }
@@ -138,6 +137,16 @@ export function initTutorial() {
   if (typeof window === "undefined") return;
   if (window.localStorage.getItem(LS_KEY)) return; // don't re-init
   writeState({ ...DEFAULT_STATE, startedAt: Date.now() });
+}
+
+// ─── Reset (called from settings to replay tutorial) ─────────────────────────
+
+export function resetTutorial() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(LS_KEY);
+  window.dispatchEvent(
+    new CustomEvent("local-storage-flag-change", { detail: { key: LS_KEY } })
+  );
 }
 
 export { PAGES_ORDER };
