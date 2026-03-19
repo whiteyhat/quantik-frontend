@@ -20,6 +20,7 @@ export function TelegramWebhookEditor() {
   const [botToken, setBotToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
@@ -45,6 +46,26 @@ export function TelegramWebhookEditor() {
       setIsError(true);
     }
     setSaving(false);
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setMessage("");
+    setIsError(false);
+    try {
+      const result = await api.testTelegramConnection();
+      if (result.sent) {
+        setMessage(t("testSuccess"));
+      } else {
+        setMessage(t("testFailed"));
+        setIsError(true);
+      }
+      setTimeout(() => setMessage(""), 4000);
+    } catch {
+      setMessage(t("testFailed"));
+      setIsError(true);
+    }
+    setTesting(false);
   };
 
   if (loading) return <div style={panelStyle}>{t("loadingSettings")}</div>;
@@ -108,22 +129,41 @@ export function TelegramWebhookEditor() {
           <span style={{ fontSize: 12, color: isError ? "#ff453a" : "#30d158" }}>
             {message}
           </span>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              padding: "6px 16px",
-              background: "#0a84ff",
-              color: "white",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: saving ? "wait" : "pointer"
-            }}
-          >
-            {saving ? t("saving") : t("saveSettings")}
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={handleTest}
+              disabled={testing || !chatId || !botToken}
+              style={{
+                padding: "6px 16px",
+                background: "rgba(255,255,255,0.06)",
+                color: "rgba(255,255,255,0.78)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: testing || !chatId || !botToken ? "default" : "pointer",
+                opacity: testing || !chatId || !botToken ? 0.45 : 1,
+              }}
+            >
+              {testing ? t("testSending") : t("testConnection")}
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: "6px 16px",
+                background: "#0a84ff",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: saving ? "wait" : "pointer"
+              }}
+            >
+              {saving ? t("saving") : t("saveSettings")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

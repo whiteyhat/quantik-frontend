@@ -998,7 +998,11 @@
     "saveError": "Error al guardar configuracion",
     "saving": "Guardando...",
     "saveSettings": "Guardar Configuracion",
-    "loadingSettings": "Cargando configuracion..."
+    "loadingSettings": "Cargando configuracion...",
+    "testConnection": "Probar Conexion",
+    "testSending": "Enviando...",
+    "testSuccess": "Mensaje de prueba enviado — revisa tu Telegram!",
+    "testFailed": "Error al enviar mensaje de prueba. Verifica tu Bot Token y Chat ID."
   },
   "toast": {
     "pipelineCompletePass": "Pipeline completo: APROBADO — ",

@@ -1006,7 +1006,11 @@
     "saveError": "Error saving settings",
     "saving": "Saving...",
     "saveSettings": "Save Settings",
-    "loadingSettings": "Loading settings..."
+    "loadingSettings": "Loading settings...",
+    "testConnection": "Test Connection",
+    "testSending": "Sending...",
+    "testSuccess": "Test message sent — check your Telegram!",
+    "testFailed": "Failed to send test message. Check your Bot Token and Chat ID."
   },
   "toast": {
     "pipelineCompletePass": "Pipeline complete: PASS — ",

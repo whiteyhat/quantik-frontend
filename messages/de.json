@@ -1002,7 +1002,11 @@
     "saveError": "Fehler beim Speichern",
     "saving": "Speichern...",
     "saveSettings": "Einstellungen Speichern",
-    "loadingSettings": "Einstellungen werden geladen..."
+    "loadingSettings": "Einstellungen werden geladen...",
+    "testConnection": "Verbindung Testen",
+    "testSending": "Senden...",
+    "testSuccess": "Testnachricht gesendet — prufe dein Telegram!",
+    "testFailed": "Testnachricht konnte nicht gesendet werden. Uberprufe Bot Token und Chat ID."
   },
   "toast": {
     "pipelineCompletePass": "Pipeline abgeschlossen: BESTANDEN — ",

@@ -2036,6 +2036,10 @@ export const api = {
     });
   },
 
+  testTelegramConnection: async (): Promise<{ ok: boolean; sent: boolean }> => {
+    return apiFetch("/api/alerts/test", { method: "POST" });
+  },
+
   getNotifications: async (): Promise<{ notifications: NotificationItem[]; unread: number }> => {
     const raw = await apiFetch<{ notifications?: NotificationItem[]; unread?: number }>("/api/notifications");
     return {

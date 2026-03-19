@@ -1002,7 +1002,11 @@
     "saveError": "Erreur lors de l'enregistrement",
     "saving": "Enregistrement...",
     "saveSettings": "Enregistrer les Parametres",
-    "loadingSettings": "Chargement des parametres..."
+    "loadingSettings": "Chargement des parametres...",
+    "testConnection": "Tester la Connexion",
+    "testSending": "Envoi...",
+    "testSuccess": "Message de test envoye — verifiez votre Telegram !",
+    "testFailed": "Echec de l'envoi du message de test. Verifiez votre Bot Token et Chat ID."
   },
   "toast": {
     "pipelineCompletePass": "Pipeline termine: PASSE — ",
