@@ -11,7 +11,7 @@ import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agent
 import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } from "@/lib/byoImport";
 import { AVAILABLE_WEBHOOK_EVENTS, validateOptionalPublicHttpsUrl } from "@/lib/webhookEvents";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
-import { initTutorial } from "@/hooks/useTutorialState";
+import { requestProductTourResume } from "@/hooks/useOnboardingTourState";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -1164,8 +1164,8 @@ export default function ByoAgentPage() {
         emojiSize: 60,
         confettiNumber: 40,
       });
-      // Keep the user on the factory page so the first tutorial step can render.
-      initTutorial({ force: true, initialPage: "agent-factory", initialStep: 0 });
+      requestProductTourResume();
+      router.push("/manage-agent");
     } catch (err) {
       setDeployError(err instanceof Error ? err.message : "Failed to activate BYO agent");
     } finally {

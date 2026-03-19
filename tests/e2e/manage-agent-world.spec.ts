@@ -38,7 +38,7 @@ test.describe('Manage Agent — Agent World', () => {
       window.dispatchEvent(event);
     });
     await expect(page.getByTestId('agent-world-detail-panel')).toBeVisible();
-    await expect(page.getByText('AURA')).toBeVisible();
+    await expect(page.getByTestId('agent-world-detail-panel').getByText('AURA', { exact: true })).toBeVisible();
   });
 
   test('detail panel shows agent info when opened', async ({ page }) => {
@@ -49,7 +49,7 @@ test.describe('Manage Agent — Agent World', () => {
       window.dispatchEvent(new CustomEvent('phaser:npc-clicked', { detail: { agentId: 'sigma' } }));
     });
     await expect(page.getByTestId('agent-world-detail-panel')).toBeVisible();
-    await expect(page.getByText('SIGMA')).toBeVisible();
+    await expect(page.getByTestId('agent-world-detail-panel').getByText('SIGMA', { exact: true })).toBeVisible();
   });
 
   test('detail panel can be closed by clicking X', async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('Manage Agent — Agent World', () => {
     await page.goto('/manage-agent');
     await page.getByText('Agent World').click();
     await expect(page.getByTestId('agent-world-shell')).toBeVisible({ timeout: 15000 });
-    await page.getByText('Dashboard').click();
+    await page.locator('#tour-view-tabs').getByRole('button', { name: 'Dashboard', exact: true }).click();
     await expect(page.getByText('Autopilot Control')).toBeVisible();
   });
 

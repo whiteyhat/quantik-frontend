@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { api, type AutopilotPolicyEnvelope, type WalletBalance } from "@/lib/api";
+import { api, type AutopilotAgentStatus, type AutopilotPolicyEnvelope, type WalletBalance } from "@/lib/api";
 import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
@@ -123,6 +123,57 @@ function statusLabelKey(status: string): string | null {
   }
 }
 
+function blockerLabel(blocker: AutopilotAgentStatus["blocker"], t: ReturnType<typeof useTranslations>): string {
+  switch (blocker) {
+    case "no_wallet":
+      return t("blockerNoWalletTitle");
+    case "funding_required":
+      return t("blockerFundingTitle");
+    case "polymarket_prep_required":
+      return t("blockerPrepTitle");
+    case "scanner_idle":
+      return t("blockerScannerIdleTitle");
+    case "autopilot_off":
+      return t("blockerOffTitle");
+    default:
+      return t("readyToArm");
+  }
+}
+
+function blockerTone(blocker: AutopilotAgentStatus["blocker"]): { color: string; background: string } {
+  if (blocker === "none") {
+    return { color: "#30d158", background: "rgba(48,209,88,0.12)" };
+  }
+  if (blocker === "autopilot_off") {
+    return { color: "#0a84ff", background: "rgba(10,132,255,0.14)" };
+  }
+  if (blocker === "scanner_idle") {
+    return { color: "#ff9f0a", background: "rgba(255,159,10,0.14)" };
+  }
+  return { color: "#ff9f0a", background: "rgba(255,159,10,0.14)" };
+}
+
+function blockerDescription(
+  blocker: AutopilotAgentStatus["blocker"],
+  status: AutopilotAgentStatus | null,
+  t: ReturnType<typeof useTranslations>
+): string {
+  switch (blocker) {
+    case "no_wallet":
+      return t("blockerNoWalletDesc");
+    case "funding_required":
+      return status?.wallet.fundingMessage ?? t("fundWalletDesc");
+    case "polymarket_prep_required":
+      return t("blockerPrepDesc");
+    case "scanner_idle":
+      return t("blockerScannerIdleDesc");
+    case "autopilot_off":
+      return t("blockerOffDesc");
+    default:
+      return t("readyToArmDesc");
+  }
+}
+
 interface PolicyDraft {
   cadenceMinutes: string;
   cooldownMinutes: string;
@@ -149,17 +200,49 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isPolicySaving, setIsPolicySaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [telegramConfigured, setTelegramConfigured] = useState(false);
+  const [autopilotStatus, setAutopilotStatus] = useState<AutopilotAgentStatus | null>(null);
   const [policyDraft, setPolicyDraft] = useState<PolicyDraft>(() => toPolicyDraft(myAgent?.autopilot_policy));
 
   useEffect(() => {
-    api.getTelegramSettings().then((s) => {
-      setTelegramConfigured(Boolean(s.chatId && s.botToken));
-    }).catch(() => {});
-  }, []);
-  useEffect(() => {
     setPolicyDraft(toPolicyDraft(myAgent?.autopilot_policy));
   }, [myAgent?.autopilot_policy]);
+
+  const refreshAutopilotStatus = useCallback(async () => {
+    if (!myAgent?.id) return null;
+    try {
+      const nextStatus = await api.getAgentAutopilotStatus(myAgent.id);
+      setAutopilotStatus(nextStatus);
+      return nextStatus;
+    } catch {
+      setAutopilotStatus(null);
+      return null;
+    }
+  }, [myAgent?.id]);
+
+  useEffect(() => {
+    if (!myAgent?.id) {
+      setAutopilotStatus(null);
+      return;
+    }
+
+    let active = true;
+
+    const pollStatus = async () => {
+      try {
+        const nextStatus = await api.getAgentAutopilotStatus(myAgent.id);
+        if (active) setAutopilotStatus(nextStatus);
+      } catch {
+        if (active) setAutopilotStatus(null);
+      }
+    };
+
+    pollStatus();
+    const interval = window.setInterval(pollStatus, 30_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [myAgent?.id]);
 
   useEffect(() => {
     if (!myAgent || myAgent.autopilot_policy) return;
@@ -265,10 +348,12 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   }, []);
 
   const fundingReady = useMemo(() => {
-    const status = wallet?.fundingStatus ?? defaultFundingStatus;
+    const status = autopilotStatus?.wallet.fundingStatus ?? wallet?.fundingStatus ?? defaultFundingStatus;
     return status === "ready";
-  }, [wallet, defaultFundingStatus]);
+  }, [autopilotStatus?.wallet.fundingStatus, wallet, defaultFundingStatus]);
   const autopilotEnabled = Boolean(myAgent?.autopilot_enabled);
+  const prepReady = autopilotStatus?.polymarketReady ?? Boolean(myAgent?.polymarket_ready);
+  const blocker = autopilotStatus?.blocker ?? "autopilot_off";
   const policy = myAgent?.autopilot_policy;
   const policySummary = policy
     ? `${policy.effective.cadenceMinutes}m · ${policy.effective.maxTradesPerDay}/day · $${policy.effective.maxBetUsdc.toFixed(0)} max`
@@ -284,9 +369,6 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   }, [policy, policyDraft]);
 
   if (!myAgent) return null;
-
-  // Hide entirely until polymarket is fully ready (funded + contracts signed)
-  if (!myAgent.polymarket_ready) return null;
 
   const updatePolicyField = (field: keyof PolicyDraft, value: string) => {
     setPolicyDraft((prev) => ({ ...prev, [field]: value }));
@@ -312,10 +394,12 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
         status: deploy.status,
         deployed_at: deploy.deployed_at,
       });
+      await refreshAutopilotStatus();
       return;
     }
 
     setMyAgent(nextAgent);
+    await refreshAutopilotStatus();
   };
 
   const persistPolicy = async () => {
@@ -365,11 +449,25 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
         await persistAutopilot(enabled);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
+        await refreshAutopilotStatus();
       } finally {
         setIsSaving(false);
       }
     })();
   };
+
+  const toggleBlocked = !autopilotEnabled && (
+    blocker === "no_wallet"
+    || blocker === "funding_required"
+    || blocker === "polymarket_prep_required"
+  );
+  const statusWallet = autopilotStatus?.wallet;
+  const walletMissingItems = statusWallet?.missingItems ?? [];
+  const blockerToneValue = autopilotStatus
+    ? blockerTone(blocker)
+    : { color: "rgba(255,255,255,0.58)", background: "rgba(255,255,255,0.08)" };
+  const blockerTitle = autopilotStatus ? blockerLabel(blocker, t) : t("loading");
+  const statusMessage = autopilotStatus ? blockerDescription(blocker, autopilotStatus, t) : t("statusLoadingDesc");
 
   const chips = [
     {
@@ -381,6 +479,11 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
       label: fundingReady ? t("walletFunded") : t("fundingRequired"),
       color: readinessColor(fundingReady),
       background: fundingReady ? "rgba(48,209,88,0.12)" : "rgba(255,159,10,0.12)",
+    },
+    {
+      label: prepReady ? t("prepReady") : t("prepRequired"),
+      color: prepReady ? "#30d158" : "#ff9f0a",
+      background: prepReady ? "rgba(48,209,88,0.12)" : "rgba(255,159,10,0.12)",
     },
     {
       label:
@@ -395,7 +498,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
   return (
     <div
-      data-tutorial="autopilot-card"
+      id="tour-autopilot-card"
       ref={cardRef}
       style={{
         background:
@@ -524,7 +627,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
           <ToggleSwitch
             checked={autopilotEnabled}
             onChange={handleToggle}
-            disabled={isSaving || myAgent.status === "terminated"}
+            disabled={isSaving || myAgent.status === "terminated" || toggleBlocked}
             pulse={showPulse && !autopilotEnabled}
             loading={isSaving}
           />
@@ -538,30 +641,35 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(255,255,255,0.06)",
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
             gap: 12,
           }}
         >
           {[
             {
               label: "POL",
-              value: `${formatAmount(wallet?.pol, 4)} POL`,
+              value: `${formatAmount(statusWallet?.pol ?? wallet?.pol, 4)} POL`,
               hint: t("polFeeToken"),
             },
             {
               label: "USDC.e",
-              value: `$${formatAmount(wallet?.onChainUsdc ?? wallet?.usdc)}`,
+              value: `$${formatAmount(statusWallet?.onChainUsdc ?? wallet?.onChainUsdc ?? wallet?.usdc)}`,
               hint: t("usdcTradingCapital"),
             },
             {
               label: t("status"),
               value: (() => {
-                const key = statusLabelKey(wallet?.fundingStatus ?? defaultFundingStatus);
+                const key = statusLabelKey(statusWallet?.fundingStatus ?? wallet?.fundingStatus ?? defaultFundingStatus);
                 return key
                   ? t(key as Parameters<typeof t>[0])
-                  : (wallet?.fundingStatus ?? defaultFundingStatus).toUpperCase();
+                  : (statusWallet?.fundingStatus ?? wallet?.fundingStatus ?? defaultFundingStatus).toUpperCase();
               })(),
-              hint: wallet?.fundingMessage ?? t("autopilotDesc"),
+              hint: statusWallet?.fundingMessage ?? wallet?.fundingMessage ?? t("autopilotDesc"),
+            },
+            {
+              label: t("polymarketPrep"),
+              value: prepReady ? t("funded") : String(myAgent.polymarket_status ?? "PENDING").toUpperCase(),
+              hint: prepReady ? t("prepReadyHint") : t("prepRequiredHint"),
             },
           ].map((item) => (
             <div key={item.label}>
@@ -584,6 +692,91 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
               </div>
             </div>
           ))}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            padding: 14,
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.035)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div
+                style={{
+                  ...mono,
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.45)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {t("blockerTitle")}
+              </div>
+              <div style={{ fontSize: 14, color: "rgba(255,255,255,0.88)", fontWeight: 700, marginTop: 4 }}>
+                {blockerTitle}
+              </div>
+            </div>
+            <span
+              style={{
+                ...mono,
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                padding: "5px 10px",
+                borderRadius: 999,
+                color: blockerToneValue.color,
+                background: blockerToneValue.background,
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              {autopilotStatus ? blocker : t("loading")}
+            </span>
+          </div>
+
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", lineHeight: 1.6 }}>
+            {statusMessage}
+          </div>
+
+          {walletMissingItems.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div
+                style={{
+                  ...mono,
+                  fontSize: 10,
+                  color: "rgba(255,255,255,0.42)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {t("requirementsTitle")}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {walletMissingItems.map((item) => (
+                  <div
+                    key={item}
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.64)",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      borderRadius: 10,
+                      padding: "8px 10px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {policy && autopilotEnabled && (
@@ -769,51 +962,49 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
           </div>
         )}
 
-        {autopilotEnabled && (
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <AutopilotStatusBar />
-            </div>
-
-            <div
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 12,
-                padding: 14,
-              }}
-            >
-              <div
-                style={{
-                  ...mono,
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.46)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: 10,
-                }}
-              >
-                {t("liveScanner")}
-              </div>
-              <ScannerFeed />
-            </div>
-
-            <div
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 12,
-                padding: 14,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <ExecutionLog />
-              <TelegramWebhookEditor />
-            </div>
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <AutopilotStatusBar status={autopilotStatus} />
           </div>
-        )}
+
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: 14,
+            }}
+          >
+            <div
+              style={{
+                ...mono,
+                fontSize: 11,
+                color: "rgba(255,255,255,0.46)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                marginBottom: 10,
+              }}
+            >
+              {t("liveScanner")}
+            </div>
+            <ScannerFeed agentId={myAgent.id} />
+          </div>
+
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <ExecutionLog agentId={myAgent.id} />
+            <TelegramWebhookEditor />
+          </div>
+        </div>
       </div>
     </div>
   );

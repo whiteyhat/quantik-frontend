@@ -207,7 +207,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const balanceMessage = wallet?.balanceMessage ?? null;
 
   return (
-    <div data-tutorial="agent-identity" style={panelStyle}>
+    <div id="tour-agent-identity" style={panelStyle}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         {/* Left: Avatar + Identity */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

@@ -10,9 +10,9 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('renders the dashboard tab by default with agent identity', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('Signal Scout')).toBeVisible();
-    await expect(page.getByText('🦊')).toBeVisible();
-    await expect(page.getByText('Dashboard')).toBeVisible();
+    await expect(page.locator('#tour-agent-identity')).toContainText('Signal Scout');
+    await expect(page.locator('#tour-agent-identity')).toContainText('🦊');
+    await expect(page.locator('#tour-view-tabs').getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible();
   });
 
   test('displays wallet address (truncated) with copy button', async ({ page }) => {
@@ -24,11 +24,12 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('switches between Dashboard, Architecture, and Agent World tabs', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('Dashboard')).toBeVisible();
-    await page.getByText('Architecture').click();
-    await expect(page.getByText('Architecture')).toBeVisible();
-    await page.getByText('Agent World').click();
-    await page.getByText('Dashboard').click();
+    const tabs = page.locator('#tour-view-tabs');
+    await expect(tabs.getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible();
+    await tabs.getByRole('button', { name: 'Architecture', exact: true }).click();
+    await expect(tabs.getByRole('button', { name: 'Architecture', exact: true })).toBeVisible();
+    await tabs.getByRole('button', { name: 'Agent World', exact: true }).click();
+    await tabs.getByRole('button', { name: 'Dashboard', exact: true }).click();
   });
 
   test('renders autopilot control card with funding status', async ({ page }) => {
@@ -47,8 +48,14 @@ test.describe('Manage Agent — Dashboard', () => {
     await page.goto('/manage-agent');
     await expect(page.getByTestId('autopilot-control-card')).toBeVisible();
     // The funding grid inside autopilot card shows POL and USDC.e labels
-    await expect(page.getByTestId('autopilot-control-card').getByText('POL').first()).toBeVisible();
-    await expect(page.getByTestId('autopilot-control-card').getByText('USDC.e')).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card').getByText('POL', { exact: true }).first()).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card').getByText('USDC.e', { exact: true })).toBeVisible();
+  });
+
+  test('renders the execution log even when Telegram is not configured', async ({ page }) => {
+    await page.goto('/manage-agent');
+    await expect(page.getByTestId('execution-log')).toBeVisible();
+    await expect(page.getByTestId('execution-row').first()).toBeVisible();
   });
 
   test('toggles autopilot on when funding is ready', async ({ page }) => {
@@ -94,36 +101,44 @@ test.describe('Manage Agent — Dashboard', () => {
   });
 
   test('shows funding dialog when wallet is not funded', async ({ page }) => {
-    // getBalance() calls /api/performance/summary, not /api/wallet/balance
-    await page.route('**/api/performance/summary*', async (route) => {
+    await page.route('**/api/v1/agents/*/autopilot-status*', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          totalValue: 0,
-          cashBalance: 0,
-          positionsValue: 0,
-          pnl: 0,
-          pnlPct: 0,
-          pnlToday: 0,
-          pnlTodayPct: 0,
-          winRate: 0,
-          totalTrades: 0,
-          kellyUtilization: 0,
-          circuitBreakerStatus: 'ARMED',
-          balanceStatus: 'live',
-          liveBalanceAvailable: true,
-          fundingStatus: 'funding_required',
-          fundingMessage: 'Wallet needs funding',
-          pol: 0,
-          onChainUsdc: 0,
+          agentId: 'agent-std-1',
+          autopilotEnabled: false,
+          polymarketReady: false,
+          polymarketStatus: 'pending_funding',
+          wallet: {
+            address: '0x1111111111111111111111111111111111111111',
+            onChainUsdc: 0,
+            clobBalance: 0,
+            pol: 0,
+            fundingStatus: 'funding_required',
+            fundingMessage: 'Wallet needs funding',
+            missingItems: ['Fund wallet with >= 3 POL and >= 10 USDC.e'],
+          },
+          scheduler: {
+            scannerRunning: false,
+            lastGlobalScanAt: Date.now() - 120000,
+            scanIntervalMs: 300000,
+            paperMode: true,
+          },
+          activity: {
+            tradesToday: 0,
+            lastExecutedAt: null,
+            lastDecisionAt: null,
+            lastDecision: null,
+            lastReasonCode: null,
+          },
+          blocker: 'funding_required',
         }),
       });
     });
 
     await page.goto('/manage-agent');
-    // The chip in AutopilotControlCard shows "Funding required" when not funded
-    await expect(page.getByText(/funding required/i)).toBeVisible();
+    await expect(page.getByTestId('autopilot-control-card').getByText(/funding required/i).first()).toBeVisible();
   });
 
   test('renders AI insights with signals', async ({ page }) => {
@@ -176,9 +191,9 @@ test.describe('Manage Agent — Dashboard', () => {
   test('displays signal decision badges (TRADE/WATCH/SKIP)', async ({ page }) => {
     await page.goto('/manage-agent');
     await expect(page.getByText('AI Insights')).toBeVisible();
-    await expect(page.getByText('TRADE')).toBeVisible();
-    await expect(page.getByText('WATCH')).toBeVisible();
-    await expect(page.getByText('SKIP')).toBeVisible();
+    await expect(page.getByTestId('ai-insight-link-sig-1').getByText('TRADE', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('ai-insight-link-sig-2').getByText('WATCH', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('ai-insight-link-sig-3').getByText('SKIP', { exact: true })).toBeVisible();
   });
 
   test('shows no insights message when no signals exist', async ({ page }) => {
@@ -215,17 +230,17 @@ test.describe('Manage Agent — Dashboard', () => {
     // When positions are empty and loading is false, the table section is hidden entirely
     // (the page renders positions only if loading || positions.length > 0)
     // So we verify the page loaded and no positions table is shown
-    await expect(page.getByText('Signal Scout')).toBeVisible();
+    await expect(page.locator('#tour-agent-identity')).toContainText('Signal Scout');
     await expect(page.getByText('Live Positions')).not.toBeVisible();
   });
 
   test('time period buttons (7D/30D/All) are clickable', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText('7D')).toBeVisible();
-    await expect(page.getByText('30D')).toBeVisible();
-    await expect(page.getByText('All')).toBeVisible();
-    await page.getByText('30D').click();
-    await page.getByText('7D').click();
+    await expect(page.getByRole('button', { name: '7D', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '30D', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'All', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '30D', exact: true }).click();
+    await page.getByRole('button', { name: '7D', exact: true }).click();
   });
 
   test('chat button is visible and clickable', async ({ page }) => {
@@ -245,13 +260,14 @@ test.describe('Manage Agent — Dashboard', () => {
     });
 
     await page.goto('/manage-agent');
-    await expect(page.getByText('Signal Scout')).toBeVisible();
+    await expect(page.locator('#tour-agent-identity')).toContainText('Signal Scout');
     await page.locator('[title="Delete Agent"]').click();
     await expect(page.getByText(/permanently delete/i)).toBeVisible();
     await page.getByText('CONTINUE').click();
     await page.getByPlaceholder('Type DELETE').fill('DELETE');
     await page.getByText('DELETE FOREVER').click();
-    await expect(page.getByText('Agent deleted successfully')).toBeVisible();
+    await expect(page).toHaveURL(/\/agent-factory$/);
+    await expect(page.getByText('Choose Your Path')).toBeVisible();
   });
 
   test('shows BYO-specific panels when agent is BYO type', async ({ page }) => {
@@ -281,7 +297,7 @@ test.describe('Manage Agent — Dashboard', () => {
     });
 
     await page.goto('/manage-agent');
-    await expect(page.getByText('OpenClaw Prime')).toBeVisible();
+    await expect(page.locator('#tour-agent-identity')).toContainText('OpenClaw Prime');
   });
 
   test('renders risk config panel with values', async ({ page }) => {

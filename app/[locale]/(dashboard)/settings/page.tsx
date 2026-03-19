@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { GlassSlider } from "@/components/ui/GlassSlider";
 import { api, type RiskConfig } from "@/lib/api";
-import { resetTutorial } from "@/hooks/useTutorialState";
+import { resetOnboardingTourState } from "@/hooks/useOnboardingTourState";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useRouter } from "@/i18n/navigation";
 
@@ -1227,7 +1227,7 @@ function TutorialRestartPanel() {
   const [restarted, setRestarted] = useState(false);
 
   const handleRestart = () => {
-    resetTutorial();
+    resetOnboardingTourState({ resumeProductTourAfterDeploy: Boolean(myAgent) });
     setRestarted(true);
     setTimeout(() => router.push("/agent-factory"), 400);
   };

@@ -87,7 +87,7 @@ describe("agent factory api", () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({
         error: "AUTOPILOT_FUNDING_REQUIRED",
-        message: "Deposit POL for Polygon fees and USDC.e for Polymarket trades before enabling autopilot.",
+        message: "Deposit >= 3 POL for Polygon fees and >= 10 USDC.e for Polymarket trades before enabling autopilot.",
         wallet_address: "0x3333333333333333333333333333333333333333",
         pol: 0,
         on_chain_usdc: 0,
@@ -95,13 +95,37 @@ describe("agent factory api", () => {
     );
 
     await expect(api.updateAutopilot("agent-123", true)).rejects.toMatchObject({
-      message: "Deposit POL for Polygon fees and USDC.e for Polymarket trades before enabling autopilot.",
+      message: "Deposit >= 3 POL for Polygon fees and >= 10 USDC.e for Polymarket trades before enabling autopilot.",
       status: 409,
       code: "AUTOPILOT_FUNDING_REQUIRED",
       data: expect.objectContaining({
         wallet_address: "0x3333333333333333333333333333333333333333",
         pol: 0,
         on_chain_usdc: 0,
+      }),
+    });
+  });
+
+  it("surfaces polymarket prep conflicts with backend details", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        error: "AUTOPILOT_POLYMARKET_PREP_REQUIRED",
+        message: "Polymarket approvals are incomplete. Run the approval flow before enabling autopilot.",
+        wallet_address: "0x4444444444444444444444444444444444444444",
+        polymarket_status: "funding_detected",
+        funding_status: "ready",
+        funding_message: "Wallet funded",
+        missing_items: ["Run the Polymarket approval flow for this wallet."],
+      }), { status: 409 })
+    );
+
+    await expect(api.updateAutopilot("agent-123", true)).rejects.toMatchObject({
+      message: "Polymarket approvals are incomplete. Run the approval flow before enabling autopilot.",
+      status: 409,
+      code: "AUTOPILOT_POLYMARKET_PREP_REQUIRED",
+      data: expect.objectContaining({
+        polymarket_status: "funding_detected",
+        missing_items: ["Run the Polymarket approval flow for this wallet."],
       }),
     });
   });
@@ -152,16 +176,108 @@ describe("agent factory api", () => {
         pnlTodayPct: null,
         totalValue: 12,
         funding_status: "ready",
-        funding_message: "Wallet has both POL and USDC.e required for autonomous trading.",
+        funding_message: "Wallet meets the >= 3 POL and >= 10 USDC.e autopilot requirements.",
       }), { status: 200 })
     );
 
     const wallet = await api.getBalance();
 
     expect(wallet?.fundingStatus).toBe("ready");
-    expect(wallet?.fundingMessage).toBe("Wallet has both POL and USDC.e required for autonomous trading.");
+    expect(wallet?.fundingMessage).toBe("Wallet meets the >= 3 POL and >= 10 USDC.e autopilot requirements.");
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/performance/summary"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer session-token",
+        }),
+      })
+    );
+  });
+
+  it("loads agent-scoped autopilot status", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        agentId: "agent-123",
+        autopilotEnabled: false,
+        polymarketReady: false,
+        polymarketStatus: "pending_funding",
+        wallet: {
+          address: "0x5555555555555555555555555555555555555555",
+          onChainUsdc: 7,
+          clobBalance: 0,
+          pol: 1.2,
+          fundingStatus: "funding_required",
+          fundingMessage: "Wallet needs funding",
+          missingItems: ["Fund with >= 3 POL and >= 10 USDC.e"],
+        },
+        scheduler: {
+          scannerRunning: false,
+          lastGlobalScanAt: 1741397200000,
+          scanIntervalMs: 300000,
+          paperMode: true,
+        },
+        activity: {
+          tradesToday: 0,
+          lastExecutedAt: null,
+          lastDecisionAt: 1741397100000,
+          lastDecision: {
+            id: "decision-1",
+            slug: "btc-100k",
+            direction: "YES",
+            decision: "skipped",
+            reason_code: "funding",
+            size_usdc: null,
+            scanned_at: 1741397100000,
+            error: null,
+          },
+          lastReasonCode: "funding",
+        },
+        blocker: "funding_required",
+      }), { status: 200 })
+    );
+
+    const status = await api.getAgentAutopilotStatus("agent-123");
+
+    expect(status.blocker).toBe("funding_required");
+    expect(status.wallet.fundingStatus).toBe("funding_required");
+    expect(status.activity.lastDecision?.reason_code).toBe("funding");
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/agents/agent-123/autopilot-status"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer session-token",
+        }),
+      })
+    );
+  });
+
+  it("loads agent-scoped executions and keeps legacy blank sources as unknown", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        executions: [
+          {
+            id: "execution-1",
+            slug: "btc-100k",
+            side: "buy",
+            direction: "YES",
+            amount: 25,
+            executedAt: 1741397200000,
+            status: "paper",
+            orderId: "paper-1",
+            fillPrice: 0.62,
+            pnl: 1.5,
+            source: "",
+          },
+        ],
+      }), { status: 200 })
+    );
+
+    const executions = await api.getAgentExecutions("agent-123", { limit: 5 });
+
+    expect(executions[0]?.source).toBe("unknown");
+    expect(executions[0]?.fillPrice).toBe(0.62);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/agents/agent-123/executions?limit=5"),
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer session-token",

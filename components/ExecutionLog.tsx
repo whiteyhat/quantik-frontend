@@ -2,67 +2,59 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { api, type AgentExecutionLogItem } from "@/lib/api";
 import { Skeleton } from "./ui/skeleton";
-import { api, type AlertEntry } from "@/lib/api";
 
-export interface ExecutedTrade {
-  id?: string;
-  slug: string;
-  direction: "YES" | "NO";
-  amount: number;
-  confidence: number; // 0-1
-  status: "PLACED" | "FAILED" | "PAPER";
-  source?: "autopilot" | "manual";
-  executedAt?: string;
+function timeLabel(ts: number): string {
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function ExecutionLog() {
+function statusTone(entry: AgentExecutionLogItem): { color: string; bg: string } {
+  const status = entry.status.toUpperCase();
+  if (status === "FAILED") return { color: "#ff453a", bg: "rgba(255,69,58,0.15)" };
+  if (status === "PAPER") return { color: "#ff9f0a", bg: "rgba(255,159,10,0.15)" };
+  return { color: "#30d158", bg: "rgba(48,209,88,0.15)" };
+}
+
+function sourceTone(source: AgentExecutionLogItem["source"]): { color: string; bg: string } {
+  if (source === "manual") return { color: "#0a84ff", bg: "rgba(10,132,255,0.14)" };
+  if (source === "unknown") return { color: "rgba(255,255,255,0.62)", bg: "rgba(255,255,255,0.08)" };
+  return { color: "#30d158", bg: "rgba(48,209,88,0.15)" };
+}
+
+interface ExecutionLogProps {
+  agentId: string;
+}
+
+export function ExecutionLog({ agentId }: ExecutionLogProps) {
   const t = useTranslations("executionLog");
   const [loaded, setLoaded] = useState(false);
-  const [telegramConfigured, setTelegramConfigured] = useState(false);
-  const [lastAlert, setLastAlert] = useState<AlertEntry | null>(null);
+  const [entries, setEntries] = useState<AgentExecutionLogItem[]>([]);
 
   useEffect(() => {
     let active = true;
 
-    const fetchAlert = async () => {
+    const fetchExecutions = async () => {
       try {
-        const data = await api.getAlertStatus();
-        if (!active) return;
-        setTelegramConfigured(Boolean(data.telegramConfigured));
-        setLastAlert(data.alerts[0] ?? null);
-      } catch { /* silently fail */ }
+        const next = await api.getAgentExecutions(agentId, { limit: 12 });
+        if (active) setEntries(next);
+      } catch {
+        if (active) setEntries([]);
+      } finally {
+        if (active) setLoaded(true);
+      }
     };
 
-    fetchAlert().finally(() => { if (active) setLoaded(true); });
-    const iv = setInterval(fetchAlert, 20_000);
-    return () => { active = false; clearInterval(iv); };
-  }, []);
-
-  // Don't render anything if Telegram is not configured
-  if (loaded && !telegramConfigured) return null;
-
-  const alertStatusLabel = lastAlert
-    ? lastAlert.alert_sent === 2 ? t("approved")
-    : lastAlert.alert_sent === -1 ? t("vetoed")
-    : t("sent")
-    : "";
-
-  const alertColor = lastAlert
-    ? lastAlert.alert_sent === 2 ? "#30d158"
-    : lastAlert.alert_sent === -1 ? "#ff453a"
-    : "#0a84ff"
-    : "#0a84ff";
-
-  const alertIcon = lastAlert
-    ? lastAlert.alert_sent === 2 ? "\u2713"
-    : lastAlert.alert_sent === -1 ? "\u2717"
-    : "\u{1F4E9}"
-    : "\u{1F4E9}";
+    fetchExecutions();
+    const interval = window.setInterval(fetchExecutions, 20_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [agentId]);
 
   return (
     <div data-testid="execution-log" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -83,59 +75,14 @@ export function ExecutionLog() {
         >
           {t("title")}
         </span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace" }}>
+          {entries.length} {t("trades")}
+        </span>
       </div>
 
       {!loaded ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-            <Skeleton width={16} height={14} borderRadius={3} />
-            <Skeleton width="50%" height={12} borderRadius={4} />
-            <Skeleton width={50} height={11} borderRadius={4} style={{ marginLeft: "auto" }} />
-          </div>
-        </div>
-      ) : !lastAlert ? (
-        <div
-          data-testid="execution-log-empty"
-          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "32px 0" }}
-        >
-          <div style={{ position: "relative", width: 40, height: 40 }}>
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  border: "1px solid rgba(48,209,88,0.3)",
-                  animation: `radar-ring 2.4s ease-out ${i * 1.2}s infinite`,
-                }}
-              />
-            ))}
-            <div
-              style={{
-                position: "absolute",
-                inset: "30%",
-                borderRadius: "50%",
-                background: "rgba(48,209,88,0.5)",
-              }}
-            />
-          </div>
-          <span
-            style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.30)",
-              fontFamily: "\"SF Mono\", monospace",
-              letterSpacing: "0.05em",
-              textAlign: "center",
-            }}
-          >
-            {t("noTrades")}
-          </span>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div
-            data-testid="execution-row"
             style={{
               display: "flex",
               alignItems: "center",
@@ -143,44 +90,128 @@ export function ExecutionLog() {
               padding: "7px 12px",
               borderRadius: 8,
               background: "rgba(255,255,255,0.03)",
-              border: `1px solid ${alertColor}22`,
+              border: "1px solid rgba(255,255,255,0.05)",
             }}
           >
-            <span style={{ fontSize: 12, color: alertColor }}>{alertIcon}</span>
-            <span
-              style={{
-                flex: 1,
-                fontSize: 12,
-                color: "rgba(255,255,255,0.65)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontFamily: "\"SF Mono\", monospace",
-              }}
-            >
-              {lastAlert.question || lastAlert.slug}
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: alertColor,
-                fontFamily: "monospace",
-                flexShrink: 0,
-                padding: "1px 6px",
-                borderRadius: 4,
-                background: `${alertColor}15`,
-              }}
-            >
-              {alertStatusLabel}
-            </span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: "monospace", flexShrink: 0 }}>
-              {Math.round(lastAlert.confidence * 100)}%
-            </span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace", flexShrink: 0 }}>
-              {new Date(lastAlert.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
+            <Skeleton width={16} height={14} borderRadius={3} />
+            <Skeleton width="50%" height={12} borderRadius={4} />
+            <Skeleton width={50} height={11} borderRadius={4} style={{ marginLeft: "auto" }} />
           </div>
+        </div>
+      ) : entries.length === 0 ? (
+        <div
+          data-testid="execution-log-empty"
+          style={{
+            padding: "30px 0",
+            textAlign: "center",
+            fontSize: 12,
+            color: "rgba(255,255,255,0.30)",
+            fontFamily: "\"SF Mono\", monospace",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {t("noTrades")}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {entries.slice(0, 8).map((entry) => {
+            const status = statusTone(entry);
+            const source = sourceTone(entry.source);
+            return (
+              <div
+                key={entry.id}
+                data-testid="execution-row"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr auto",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: source.color,
+                      background: source.bg,
+                      borderRadius: 999,
+                      padding: "4px 8px",
+                      fontFamily: "\"SF Mono\", monospace",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {entry.source}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: status.color,
+                      background: status.bg,
+                      borderRadius: 999,
+                      padding: "4px 8px",
+                      fontFamily: "\"SF Mono\", monospace",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {entry.status}
+                  </span>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.70)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {entry.slug}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      fontSize: 10,
+                      color: "rgba(255,255,255,0.34)",
+                      fontFamily: "\"SF Mono\", monospace",
+                    }}
+                  >
+                    <span>{entry.direction ?? "—"}</span>
+                    <span>${entry.amount.toFixed(2)}</span>
+                    {entry.fillPrice != null ? <span>@ {entry.fillPrice.toFixed(3)}</span> : null}
+                    {entry.pnl != null ? (
+                      <span style={{ color: entry.pnl >= 0 ? "#30d158" : "#ff453a" }}>
+                        P&L {entry.pnl >= 0 ? "+" : ""}{entry.pnl.toFixed(2)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "rgba(255,255,255,0.22)",
+                    fontFamily: "\"SF Mono\", monospace",
+                    flexShrink: 0,
+                  }}
+                >
+                  {timeLabel(entry.executedAt)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

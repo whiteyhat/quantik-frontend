@@ -223,13 +223,108 @@ export async function setupAuth(page: Page) {
     page,
     emailAddress: 'carlosroldan26396@gmail.com',
   });
-  await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForURL((url) => !url.pathname.includes('sign-in') && !url.pathname.includes('sign-up'), { timeout: 10000 }).catch(() => {});
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
 }
 
 export async function mockManageAgentApis(page: Page) {
   await page.route('**/api/v1/agents/*/autopilot-policy*', async (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(DEFAULT_AUTOPILOT_POLICY) })
+  );
+  await page.route('**/api/v1/agents/*/autopilot-status*', async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        agentId: 'agent-std-1',
+        autopilotEnabled: false,
+        polymarketReady: true,
+        polymarketStatus: 'ready',
+        wallet: {
+          address: '0x1111111111111111111111111111111111111111',
+          onChainUsdc: 850,
+          clobBalance: 850,
+          pol: 12.5,
+          fundingStatus: 'ready',
+          fundingMessage: 'Wallet funded and ready',
+          missingItems: [],
+        },
+        scheduler: {
+          scannerRunning: false,
+          lastGlobalScanAt: Date.now() - 120000,
+          scanIntervalMs: 300000,
+          paperMode: true,
+        },
+        activity: {
+          tradesToday: 0,
+          lastExecutedAt: null,
+          lastDecisionAt: Date.now() - 180000,
+          lastDecision: {
+            id: 'decision-1',
+            slug: 'btc-100k',
+            direction: 'YES',
+            decision: 'skipped',
+            reason_code: 'cadence',
+            size_usdc: null,
+            scanned_at: Date.now() - 180000,
+            error: null,
+          },
+          lastReasonCode: 'cadence',
+        },
+        blocker: 'autopilot_off',
+      }),
+    })
+  );
+  await page.route('**/api/v1/agents/*/autopilot-decisions*', async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        decisions: [
+          {
+            id: 'decision-1',
+            agent_id: 'agent-std-1',
+            user_id: 'user-test',
+            slug: 'btc-100k',
+            direction: 'YES',
+            decision: 'skipped',
+            reason_code: 'cadence',
+            size_usdc: null,
+            scanned_at: Date.now() - 180000,
+            policy_snapshot: DEFAULT_AUTOPILOT_POLICY,
+            signal_snapshot: {
+              question: 'Will Bitcoin reach $100k by year end?',
+              sigmaConfidence: 0.74,
+              kellyFraction: 0.11,
+            },
+            error: null,
+          },
+        ],
+      }),
+    })
+  );
+  await page.route('**/api/v1/agents/*/executions*', async (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        executions: [
+          {
+            id: 'execution-1',
+            slug: 'btc-100k',
+            side: 'buy',
+            direction: 'YES',
+            amount: 25,
+            executedAt: Date.now() - 600000,
+            status: 'paper',
+            orderId: 'paper-1',
+            fillPrice: 0.62,
+            pnl: 1.25,
+            source: 'autopilot',
+          },
+        ],
+      }),
+    })
   );
   await page.route('**/api/v1/settings/telegram*', async (route) =>
     route.fulfill({

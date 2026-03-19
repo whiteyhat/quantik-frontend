@@ -101,7 +101,7 @@ export function ArenaPageClient() {
 
   return (
     <div className="arena-shell">
-      <section className="arena-prelude" data-tutorial="arena-prelude">
+      <section className="arena-prelude" id="tour-arena-prelude">
         <div className="arena-prelude-copy">
           <div className="arena-eyebrow">{t("eyebrow")}</div>
           <h1 className="arena-title">⚔️ {t("title")}</h1>
@@ -144,7 +144,7 @@ export function ArenaPageClient() {
                 <span />
                 <span />
               </div>
-              <div className="arena-prelude-target__core" data-tutorial="arena-position">
+              <div className="arena-prelude-target__core" id="tour-arena-position">
                 <span>{viewerEntry ? viewerEntry.avatarEmoji : <Target className="size-9" />}</span>
                 <strong>{viewer?.ranked ? `#${viewer.rank}` : viewerEntry ? t("outsideBoard") : "—"}</strong>
               </div>
@@ -207,7 +207,7 @@ export function ArenaPageClient() {
       ) : (
         <div className="arena-grid">
           <div className="arena-main-column">
-            <CommandCenterCard accent="orange" className="arena-stage-card" id="arena-stage-panel" role="tabpanel" aria-labelledby={`arena-tab-${activeWindow}`} data-tutorial="arena-stage">
+            <CommandCenterCard accent="orange" className="arena-stage-card" id="tour-arena-stage" role="tabpanel" aria-labelledby={`arena-tab-${activeWindow}`}>
               <div className="arena-stage-header">
                 <div>
                   <div className="arena-section-kicker">{t("stageEyebrow")}</div>

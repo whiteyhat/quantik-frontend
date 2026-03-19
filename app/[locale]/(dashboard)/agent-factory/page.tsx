@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNextStep } from "nextstepjs";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import JSConfetti from "js-confetti";
@@ -11,7 +12,10 @@ import { api } from "@/lib/api";
 import { buildWalletDownloadContent } from "@/lib/agentFactory";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 import { useTranslations } from "next-intl";
-import { initTutorial } from "@/hooks/useTutorialState";
+import {
+  completeFactoryTour,
+  requestProductTourResume,
+} from "@/hooks/useOnboardingTourState";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -582,7 +586,7 @@ function StepBasicIdentity({
   const t = useTranslations("agentFactory");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={panelStyle}>
+      <div id="tour-wizard-name" style={panelStyle}>
         <SectionHeader icon="🏷️" title={t("identity.sectionTitle")} />
         <div
           style={{
@@ -608,7 +612,7 @@ function StepBasicIdentity({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={panelStyle}>
+        <div id="tour-wizard-personality" style={panelStyle}>
           <SectionHeader icon="🧬" title={t("identity.personalityTitle")} tooltip={t("identity.personalityTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
@@ -673,7 +677,7 @@ function StepTradingStyle({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Trading Instinct — 2x2 grid */}
-      <div style={panelStyle}>
+      <div id="tour-wizard-instinct" style={panelStyle}>
         <SectionHeader icon="✨" title={t("trading.instinctTitle")} tooltip={t("trading.instinctTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -770,7 +774,7 @@ function StepRiskMoney({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Money Approach — 3 in a row */}
-      <div style={panelStyle}>
+      <div id="tour-wizard-money" style={panelStyle}>
         <SectionHeader icon="💰" title={t("risk.moneyTitle")} tooltip={t("risk.moneyTooltip")} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -835,7 +839,7 @@ function StepPreferences({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Market Sense — 2 in a row */}
-      <div style={panelStyle}>
+      <div id="tour-wizard-sense" style={panelStyle}>
         <SectionHeader icon="🟢" title={t("prefs.senseTitle")} tooltip={t("prefs.senseTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -1313,6 +1317,7 @@ function StepLaunch({
 
 export default function AgentFactoryPage() {
   const router = useRouter();
+  const { closeNextStep } = useNextStep();
   const t = useTranslations("agentFactory");
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const myAgent = useQuantikStore((s) => s.myAgent);
@@ -1339,6 +1344,11 @@ export default function AgentFactoryPage() {
     jsConfettiRef.current = new JSConfetti();
     return () => { jsConfettiRef.current = null; };
   }, []);
+
+  const finishFactoryTour = useCallback(() => {
+    completeFactoryTour();
+    closeNextStep();
+  }, [closeNextStep]);
 
   const handleDelete = useCallback(async () => {
     if (!myAgent) return;
@@ -1375,6 +1385,20 @@ export default function AgentFactoryPage() {
   const handleBack = useCallback(() => {
     if (step > 1) setStep((s) => s - 1);
   }, [step]);
+
+  const handleSelectCreatePath = useCallback(() => {
+    finishFactoryTour();
+    setStep(1);
+    // Signal the ProductTourProvider to start the create-wizard tour
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("quantik:wizard-step-entered"));
+    }, 350);
+  }, [finishFactoryTour]);
+
+  const handleSelectByoPath = useCallback(() => {
+    finishFactoryTour();
+    router.push("/agent-factory/byo");
+  }, [finishFactoryTour, router]);
 
   const handleSkipRandomize = useCallback(() => {
     const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -1489,8 +1513,8 @@ export default function AgentFactoryPage() {
       setWalletPrivateKey(null);
       setWalletSeedPhrase(null);
       setMyAgent(agentData as unknown as MyAgent);
-      // Start the first-run tutorial on the factory page that owns step 1.
-      initTutorial({ force: true, initialPage: "agent-factory", initialStep: 0 });
+      requestProductTourResume();
+      router.push("/manage-agent");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to deploy agent";
       if (msg.includes("409")) {
@@ -1548,6 +1572,7 @@ export default function AgentFactoryPage() {
 
         {/* Locked content */}
         <div
+          id="tour-factory-shell"
           style={{
             ...panelStyle,
             maxWidth: 560,
@@ -1617,6 +1642,7 @@ export default function AgentFactoryPage() {
             {/* Create disabled */}
             <div className="relative group" style={{ position: "relative" }}>
               <button
+                id="tour-factory-create"
                 disabled
                 style={{
                   padding: "10px 20px",
@@ -1641,6 +1667,7 @@ export default function AgentFactoryPage() {
             {/* Import disabled */}
             <div className="relative group" style={{ position: "relative" }}>
               <button
+                id="tour-factory-byo"
                 disabled
                 style={{
                   padding: "10px 20px",
@@ -1905,7 +1932,7 @@ export default function AgentFactoryPage() {
               transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               {step === 0 && (
-                <div style={{ maxWidth: 720, margin: "0 auto" }}>
+                <div id="tour-factory-shell" style={{ maxWidth: 720, margin: "0 auto" }}>
                   <div style={{ textAlign: "center", marginBottom: 40 }}>
                     <h1
                       style={{
@@ -1934,7 +1961,8 @@ export default function AgentFactoryPage() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="!grid-cols-1 sm:!grid-cols-2">
                     {/* Create from Scratch */}
                     <button
-                      onClick={() => setStep(1)}
+                      id="tour-factory-create"
+                      onClick={handleSelectCreatePath}
                       style={{
                         ...panelStyle,
                         cursor: "pointer",
@@ -2001,7 +2029,8 @@ export default function AgentFactoryPage() {
 
                     {/* Bring Your Own Agent */}
                     <button
-                      onClick={() => router.push("/agent-factory/byo")}
+                      id="tour-factory-byo"
+                      onClick={handleSelectByoPath}
                       style={{
                         ...panelStyle,
                         cursor: "pointer",
@@ -2145,6 +2174,7 @@ export default function AgentFactoryPage() {
               {t("footer.skipRandomize")}
             </button>
             <button
+              id="tour-wizard-next"
               onClick={handleNext}
               disabled={!isStepValid}
               style={{

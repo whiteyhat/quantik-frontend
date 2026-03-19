@@ -343,6 +343,31 @@ function requireArenaBoolean(value: unknown, context: string): boolean {
   throw new Error(`Invalid ${context}`);
 }
 
+function normalizeBooleanLike(value: unknown): boolean {
+  return value === true || value === 1 || value === "1";
+}
+
+function normalizeFundingStatus(value: unknown): WalletBalance["fundingStatus"] {
+  return value === "ready" || value === "funding_required" || value === "unavailable" || value === "no_wallet"
+    ? value
+    : "unavailable";
+}
+
+function normalizeAutopilotBlocker(value: unknown): AutopilotBlocker {
+  return value === "none"
+    || value === "no_wallet"
+    || value === "funding_required"
+    || value === "polymarket_prep_required"
+    || value === "scanner_idle"
+    || value === "autopilot_off"
+    ? value
+    : "none";
+}
+
+function normalizeExecutionSource(value: unknown): AgentExecutionLogItem["source"] {
+  return value === "autopilot" || value === "manual" || value === "unknown" ? value : "unknown";
+}
+
 function requireArenaWindow(value: unknown): ArenaWindow {
   if (value === "day" || value === "week" || value === "all") return value;
   throw new Error("Invalid arena window");
@@ -644,6 +669,69 @@ export interface AutopilotDecision {
   policy_snapshot: AutopilotPolicyEnvelope;
   signal_snapshot: Record<string, unknown> | null;
   error: string | null;
+}
+
+export type AutopilotBlocker =
+  | "none"
+  | "no_wallet"
+  | "funding_required"
+  | "polymarket_prep_required"
+  | "scanner_idle"
+  | "autopilot_off";
+
+export interface AutopilotDecisionSummary {
+  id: string;
+  slug: string;
+  direction: "YES" | "NO";
+  decision: "executed" | "skipped" | "failed";
+  reason_code: string;
+  size_usdc: number | null;
+  scanned_at: number;
+  error: string | null;
+}
+
+export interface AutopilotAgentStatus {
+  agentId: string;
+  autopilotEnabled: boolean;
+  polymarketReady: boolean;
+  polymarketStatus: string | null;
+  wallet: {
+    address: string | null;
+    onChainUsdc: number;
+    clobBalance: number;
+    pol: number;
+    fundingStatus: WalletBalance["fundingStatus"];
+    fundingMessage: string | null;
+    missingItems: string[];
+  };
+  scheduler: {
+    scannerRunning: boolean;
+    lastGlobalScanAt: number | null;
+    scanIntervalMs: number;
+    paperMode: boolean;
+  };
+  activity: {
+    tradesToday: number;
+    lastExecutedAt: number | null;
+    lastDecisionAt: number | null;
+    lastDecision: AutopilotDecisionSummary | null;
+    lastReasonCode: string | null;
+  };
+  blocker: AutopilotBlocker;
+}
+
+export interface AgentExecutionLogItem {
+  id: string;
+  slug: string;
+  side: string;
+  direction: "YES" | "NO" | null;
+  amount: number;
+  executedAt: number;
+  status: string;
+  orderId: string | null;
+  fillPrice: number | null;
+  pnl: number | null;
+  source: "autopilot" | "manual" | "unknown";
 }
 
 export interface LiquidationAsset {
@@ -1769,6 +1857,98 @@ export const api = {
   getAutopilotDecisions: async (agentId: string, limit = 50): Promise<AutopilotDecision[]> => {
     const response = await apiFetch<{ decisions?: AutopilotDecision[] }>(`/api/v1/agents/${agentId}/autopilot-decisions?limit=${limit}`);
     return Array.isArray(response.decisions) ? response.decisions : [];
+  },
+
+  getAgentAutopilotStatus: async (agentId: string): Promise<AutopilotAgentStatus> => {
+    const raw = await apiFetch<Record<string, unknown>>(`/api/v1/agents/${agentId}/autopilot-status`);
+    const walletRaw = raw.wallet && typeof raw.wallet === "object" ? raw.wallet as Record<string, unknown> : {};
+    const schedulerRaw = raw.scheduler && typeof raw.scheduler === "object" ? raw.scheduler as Record<string, unknown> : {};
+    const activityRaw = raw.activity && typeof raw.activity === "object" ? raw.activity as Record<string, unknown> : {};
+    const decisionRaw = activityRaw.lastDecision && typeof activityRaw.lastDecision === "object"
+      ? activityRaw.lastDecision as Record<string, unknown>
+      : null;
+
+    return {
+      agentId: String(raw.agentId ?? agentId),
+      autopilotEnabled: normalizeBooleanLike(raw.autopilotEnabled),
+      polymarketReady: normalizeBooleanLike(raw.polymarketReady),
+      polymarketStatus: typeof raw.polymarketStatus === "string" ? raw.polymarketStatus : null,
+      wallet: {
+        address: typeof walletRaw.address === "string" ? walletRaw.address : null,
+        onChainUsdc: Number(walletRaw.onChainUsdc ?? 0),
+        clobBalance: Number(walletRaw.clobBalance ?? 0),
+        pol: Number(walletRaw.pol ?? 0),
+        fundingStatus: normalizeFundingStatus(walletRaw.fundingStatus),
+        fundingMessage: typeof walletRaw.fundingMessage === "string" ? walletRaw.fundingMessage : null,
+        missingItems: Array.isArray(walletRaw.missingItems)
+          ? walletRaw.missingItems.map((item) => String(item))
+          : [],
+      },
+      scheduler: {
+        scannerRunning: normalizeBooleanLike(schedulerRaw.scannerRunning),
+        lastGlobalScanAt: schedulerRaw.lastGlobalScanAt == null ? null : Number(schedulerRaw.lastGlobalScanAt),
+        scanIntervalMs: Number(schedulerRaw.scanIntervalMs ?? 0),
+        paperMode: normalizeBooleanLike(schedulerRaw.paperMode),
+      },
+      activity: {
+        tradesToday: Number(activityRaw.tradesToday ?? 0),
+        lastExecutedAt: activityRaw.lastExecutedAt == null ? null : Number(activityRaw.lastExecutedAt),
+        lastDecisionAt: activityRaw.lastDecisionAt == null ? null : Number(activityRaw.lastDecisionAt),
+        lastDecision: decisionRaw
+          ? {
+              id: String(decisionRaw.id ?? ""),
+              slug: String(decisionRaw.slug ?? ""),
+              direction: String(decisionRaw.direction ?? "YES").toUpperCase() === "NO" ? "NO" : "YES",
+              decision: String(decisionRaw.decision ?? "skipped") === "executed"
+                ? "executed"
+                : String(decisionRaw.decision ?? "skipped") === "failed"
+                  ? "failed"
+                  : "skipped",
+              reason_code: String(decisionRaw.reason_code ?? ""),
+              size_usdc: decisionRaw.size_usdc == null ? null : Number(decisionRaw.size_usdc),
+              scanned_at: Number(decisionRaw.scanned_at ?? 0),
+              error: typeof decisionRaw.error === "string" ? decisionRaw.error : null,
+            }
+          : null,
+        lastReasonCode: typeof activityRaw.lastReasonCode === "string" ? activityRaw.lastReasonCode : null,
+      },
+      blocker: normalizeAutopilotBlocker(raw.blocker),
+    };
+  },
+
+  getAgentExecutions: async (
+    agentId: string,
+    options?: { source?: "autopilot" | "manual"; limit?: number }
+  ): Promise<AgentExecutionLogItem[]> => {
+    const params = new URLSearchParams();
+    if (options?.source) params.set("source", options.source);
+    if (options?.limit) params.set("limit", String(options.limit));
+    const query = params.toString();
+    const raw = await apiFetch<{ executions?: unknown[] }>(
+      `/api/v1/agents/${agentId}/executions${query ? `?${query}` : ""}`
+    );
+    const executions = Array.isArray(raw.executions) ? raw.executions : [];
+
+    return executions.map((entry) => {
+      const item = entry as Record<string, unknown>;
+      return {
+        id: String(item.id ?? ""),
+        slug: String(item.slug ?? ""),
+        side: String(item.side ?? ""),
+        direction: item.direction == null
+          ? null
+          : String(item.direction).toUpperCase() === "NO"
+            ? "NO"
+            : "YES",
+        amount: Number(item.amount ?? 0),
+        executedAt: Number(item.executedAt ?? 0),
+        status: String(item.status ?? ""),
+        orderId: item.orderId == null ? null : String(item.orderId),
+        fillPrice: item.fillPrice == null ? null : Number(item.fillPrice),
+        pnl: item.pnl == null ? null : Number(item.pnl),
+        source: normalizeExecutionSource(item.source),
+      };
+    });
   },
 
   updateRiskConfig: async (config: RiskConfig): Promise<void> => {

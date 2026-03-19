@@ -2816,7 +2816,8 @@ a.command-center-list-row:focus-visible,
   pointer-events: none;
 }
 
-.pill-button-magnetic:hover::after {
+.pill-button-magnetic:hover::after,
+.pill-button-magnetic.is-hovering::after {
   opacity: 1;
 }
 
@@ -2840,7 +2841,8 @@ a.command-center-list-row:focus-visible,
   animation: landing-spin-border 3s linear infinite;
 }
 
-.pill-button-magnetic:hover::before {
+.pill-button-magnetic:hover::before,
+.pill-button-magnetic.is-hovering::before {
   opacity: 1;
 }
 

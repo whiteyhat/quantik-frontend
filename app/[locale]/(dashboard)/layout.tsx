@@ -19,7 +19,7 @@ import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorag
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
-import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
+import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
 
 // ─── Auth Sync ────────────────────────────────────────────────────────────────
 // Keeps the API client's Bearer token in sync with Clerk's session token
@@ -317,7 +317,6 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               href={item.href}
               className={!myAgent && item.isFactory ? "onboarding-glow" : undefined}
               style={sharedStyle}
-              {...(item.href === "/manage-agent" ? { "data-tutorial": "nav-manage-agent" } : {})}
             >
               {content}
             </Link>
@@ -577,53 +576,54 @@ export default function DashboardLayout({
     <>
       <AuthSync />
       <WalletSync />
-      <WelcomeModal />
-      <TutorialOverlay />
+      <ProductTourProvider>
+        <WelcomeModal />
 
-      {/* Animated gradient background */}
-      <div className="crystal-bg" />
+        {/* Animated gradient background */}
+        <div className="crystal-bg" />
 
-      {/* Left sidebar — agent chat button lives in its footer */}
-      <Sidebar
-        relayOpen={relayOpen}
-        relayPulsing={relayPulsing}
-        onToggleRelay={handleToggleRelay}
-      />
+        {/* Left sidebar — agent chat button lives in its footer */}
+        <Sidebar
+          relayOpen={relayOpen}
+          relayPulsing={relayPulsing}
+          onToggleRelay={handleToggleRelay}
+        />
 
-      <RelayChatSidebar
-        open={relayOpen}
-        onToggle={handleToggleRelay}
-        onFirstOpen={handleRelayFirstOpen}
-      />
+        <RelayChatSidebar
+          open={relayOpen}
+          onToggle={handleToggleRelay}
+          onFirstOpen={handleRelayFirstOpen}
+        />
 
-      <NotificationCenterPanel />
+        <NotificationCenterPanel />
 
-      {/* Toast notifications */}
-      <ToastNotification />
+        {/* Toast notifications */}
+        <ToastNotification />
 
-      {/* Global panic mode floating action button */}
-      <GlobalPanicButton />
+        {/* Global panic mode floating action button */}
+        <GlobalPanicButton />
 
-      <BottomTabBar
-        relayOpen={relayOpen}
-        relayPulsing={relayPulsing}
-        onToggleRelay={handleToggleRelay}
-      />
+        <BottomTabBar
+          relayOpen={relayOpen}
+          relayPulsing={relayPulsing}
+          onToggleRelay={handleToggleRelay}
+        />
 
-      {/* Main content — offset by sidebar width */}
-      <div
-        className="md:ml-[220px] min-h-[100vh] flex flex-col relative z-10 pb-[68px] md:pb-0"
-      >
-        {/* Page content */}
-        <main
-          style={{
-            flex: 1,
-            padding: "20px 20px 40px",
-          }}
+        {/* Main content — offset by sidebar width */}
+        <div
+          className="md:ml-[220px] min-h-[100vh] flex flex-col relative z-10 pb-[68px] md:pb-0"
         >
-          {children}
-        </main>
-      </div>
+          {/* Page content */}
+          <main
+            style={{
+              flex: 1,
+              padding: "20px 20px 40px",
+            }}
+          >
+            {children}
+          </main>
+        </div>
+      </ProductTourProvider>
     </>
   );
 }
