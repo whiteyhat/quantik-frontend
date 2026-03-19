@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import JSConfetti from "js-confetti";
-import { api, type WalletBalance } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
 
@@ -87,7 +87,6 @@ interface Props {
   walletAddress: string | null;
   polymarketReady?: boolean;
   polymarketStatus?: string;
-  wallet?: WalletBalance | null;
 }
 
 // ── Fonts ────────────────────────────────────────────────────────────────────
@@ -228,7 +227,7 @@ function CheckItem({
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, polymarketStatus, wallet }: Props) {
+export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, polymarketStatus }: Props) {
   const t = useTranslations("polymarket");
   const tc = useTranslations("common");
   useEffect(ensureKeyframes, []);
@@ -293,9 +292,10 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
 
   useSocketEvent("polymarket:ready", handlePolymarketReady);
 
-  // Derive unified "ready" from either result — but re-show if wallet balance ran out
-  const balanceLow = polymarketReady === true && wallet?.fundingStatus === "funding_required";
-  const isReady = !balanceLow && (forcedReady || (approvalResult?.polymarketReady ?? balanceResult?.polymarketReady ?? polymarketReady ?? false));
+  // Derive unified "ready" from either result.
+  // Once polymarket_ready is true in the DB, the setup card stays hidden.
+  // Low balance is handled separately by AutopilotControlCard.
+  const isReady = forcedReady || (approvalResult?.polymarketReady ?? balanceResult?.polymarketReady ?? polymarketReady ?? false);
   // Derive balances from whichever result we have
   const shownBalances = approvalResult?.balances ?? balanceResult?.balances ?? null;
   const shownError = approvalResult?.error ?? balanceResult?.error ?? null;
@@ -416,8 +416,6 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
   const polChecked = shownBalances?.polSufficient ?? false;
   const usdcChecked = shownBalances?.usdcSufficient ?? false;
   const approvalsChecked = approvalResult?.approvals?.allPassed ?? false;
-  const verifying = checkingBalance || runningApprovals;
-
   return (
     <div
       style={{

@@ -832,6 +832,7 @@
   "executionLog": {
     "title": "Registro de Ejecucion",
     "trades": "operaciones",
+    "latest": "último",
     "noTrades": "Sin operaciones aun — primera señal entrante",
     "bet": "APOSTAR ",
     "sent": "ENVIADO",

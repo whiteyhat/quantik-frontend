@@ -832,6 +832,7 @@
   "executionLog": {
     "title": "Ausfuhrungsprotokoll",
     "trades": "Trades",
+    "latest": "neueste",
     "noTrades": "Noch keine Trades — erstes Signal kommt",
     "bet": "WETTEN ",
     "sent": "GESENDET",

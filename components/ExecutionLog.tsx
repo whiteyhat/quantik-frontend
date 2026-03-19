@@ -36,7 +36,7 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
 
     const fetchExecutions = async () => {
       try {
-        const next = await api.getAgentExecutions(agentId, { limit: 12 });
+        const next = await api.getAgentExecutions(agentId, { limit: 1 });
         if (active) setEntries(next);
       } catch {
         if (active) setEntries([]);
@@ -76,7 +76,7 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
           {t("title")}
         </span>
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: "monospace" }}>
-          {entries.length} {t("trades")}
+          {t("latest")}
         </span>
       </div>
 
@@ -114,7 +114,7 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {entries.slice(0, 8).map((entry) => {
+          {entries.slice(0, 1).map((entry) => {
             const status = statusTone(entry);
             const source = sourceTone(entry.source);
             return (

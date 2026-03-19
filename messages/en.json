@@ -832,6 +832,7 @@
   "executionLog": {
     "title": "Execution Log",
     "trades": "trades",
+    "latest": "latest",
     "noTrades": "No trades yet — first signal incoming",
     "bet": "BET ",
     "sent": "SENT",

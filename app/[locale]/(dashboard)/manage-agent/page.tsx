@@ -328,7 +328,6 @@ export default function ManageAgentPage() {
               walletAddress={storeAgent?.wallet_address ?? null}
               polymarketReady={storeAgent?.polymarket_ready}
               polymarketStatus={storeAgent?.polymarket_status}
-              wallet={storeWallet}
             />
             <AutopilotControlCard
               wallet={storeWallet}

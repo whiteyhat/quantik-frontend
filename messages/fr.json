@@ -832,6 +832,7 @@
   "executionLog": {
     "title": "Journal d'Execution",
     "trades": "trades",
+    "latest": "dernier",
     "noTrades": "Aucun trade encore — premier signal en approche",
     "bet": "PARIER ",
     "sent": "ENVOYE",
