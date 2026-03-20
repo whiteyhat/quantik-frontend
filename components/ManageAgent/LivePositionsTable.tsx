@@ -125,7 +125,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
       ) : (
         <>
           {/* Mobile card view */}
-          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="flex flex-col gap-2 md:hidden">
             {visiblePositions.map((pos) => {
               const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
               const isAutopilot = pos.source === "autopilot";
@@ -176,7 +176,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block" style={{ overflowX: "auto" }}>
+          <div className="hidden md:block md:overflow-x-auto">
             <style>{`
               @keyframes bounceRight {
                 0%, 100% { transform: translateX(0); }
