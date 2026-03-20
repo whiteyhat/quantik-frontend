@@ -160,7 +160,7 @@ function blockerDescription(
 ): string {
   switch (blocker) {
     case "no_wallet":
-      return t("blockerNoWalletDesc");
+      return (status?.wallet as Record<string, unknown>)?.walletError as string ?? t("blockerNoWalletDesc");
     case "funding_required":
       return status?.wallet.fundingMessage ?? t("fundWalletDesc");
     case "polymarket_prep_required":
