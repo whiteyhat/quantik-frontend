@@ -215,9 +215,11 @@ export function useDashboardTradesQuery() {
 }
 
 export function useArenaLeaderboardQuery(window: ArenaWindow) {
+  const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({
     queryKey: dashboardKeys.arena(window),
     queryFn: ({ signal }) => api.getArenaLeaderboard(window, signal),
+    enabled: authReady,
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
