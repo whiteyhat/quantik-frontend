@@ -67,17 +67,11 @@ export function RiskConfigPanelByo({ agentId }: RiskConfigPanelByoProps) {
     setSaving(true);
     setSaveMsg(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/risk-config`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          drawdownLimit: editDrawdown / 100,
-          maxPositionSize: editMaxPos / 100,
-          kellyMultiplier: editKelly / 100,
-        }),
+      await api.updateRiskConfig({
+        drawdownLimit: editDrawdown / 100,
+        maxPositionSize: editMaxPos / 100,
+        kellyMultiplier: editKelly / 100,
       });
-      if (!res.ok) throw new Error("Save failed");
       setConfig({
         drawdownLimit: editDrawdown / 100,
         maxPositionSize: editMaxPos / 100,

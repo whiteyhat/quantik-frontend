@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNextStep } from "nextstepjs";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { SectionHeader, panelStyle, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
 import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
@@ -18,19 +18,6 @@ import {
 } from "@/hooks/useOnboardingTourState";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
-
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 24,
-};
-
-const LABEL_SIZE = 11;
-const META_SIZE = 12;
-const BODY_SIZE = 13;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,30 +70,6 @@ const EMOJI_TO_ANIMAL: Record<string, string> = {
   "🐝": "bee", "🦜": "parrot", "🐘": "elephant", "🦔": "hedgehog", "🤖": "robot",
 };
 
-// ─── Section header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, title, tooltip }: { icon?: string; title: string; tooltip?: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.50)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          }}
-        >
-          {title}
-        </span>
-      </div>
-      {tooltip && <HelpTooltip text={tooltip} />}
-    </div>
-  );
-}
 
 // ─── Radio card ───────────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import JSConfetti from "js-confetti";
-import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import { SectionHeader, panelStyle, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
 import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import { api, type ByoOnboardingSession } from "@/lib/api";
 import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
@@ -15,18 +15,6 @@ import { requestProductTourResume } from "@/hooks/useOnboardingTourState";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 24,
-};
-
-const LABEL_SIZE = 11;
-const META_SIZE = 12;
-const BODY_SIZE = 13;
 
 const reviewPanelStyle: React.CSSProperties = {
   ...panelStyle,
@@ -54,28 +42,6 @@ const BYO_STEPS = [
   { title: "Review & Activate", subtitle: "Verify the claimed identity and activate the agent" },
 ];
 
-function SectionHeader({ icon, title, tooltip }: { icon?: string; title: string; tooltip?: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-        <span
-          style={{
-            fontSize: LABEL_SIZE,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.50)",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          }}
-        >
-          {title}
-        </span>
-      </div>
-      {tooltip && <HelpTooltip text={tooltip} />}
-    </div>
-  );
-}
 
 function ByoStepIndicator({ currentStep, onStepClick }: { currentStep: number; onStepClick: (step: number) => void }) {
   return (
@@ -897,6 +863,38 @@ function StepReview({
   );
 }
 
+const TOAST_VARIANTS = {
+  warning: { bg: "rgba(255,159,10,0.18)", border: "rgba(255,159,10,0.35)", color: "#ffb340" },
+  info: { bg: "rgba(10,132,255,0.18)", border: "rgba(10,132,255,0.30)", color: "#7fc0ff" },
+} as const;
+
+function FixedToast({ top, zIndex, variant, children }: { top: number; zIndex: number; variant: keyof typeof TOAST_VARIANTS; children: React.ReactNode }) {
+  const tone = TOAST_VARIANTS[variant];
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex,
+        padding: "10px 18px",
+        borderRadius: 12,
+        background: tone.bg,
+        border: `1px solid ${tone.border}`,
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        color: tone.color,
+        fontSize: 12,
+        fontWeight: 700,
+        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function ByoAgentPage() {
   const router = useRouter();
   const setMyAgent = useQuantikStore((state) => state.setMyAgent);
@@ -933,7 +931,17 @@ export default function ByoAgentPage() {
     try {
       const data = await api.getByoOnboardingSession(id);
       setPollError(null);
-      setSession(data);
+      setSession((prev) => {
+        if (prev && prev.status === data.status && prev.claimed_at === data.claimed_at
+          && prev.wallet_downloaded_at === data.wallet_downloaded_at
+          && prev.wallet_download_ready === data.wallet_download_ready
+          && prev.policy_setup_completed === data.policy_setup_completed
+          && prev.connection_status === data.connection_status
+          && prev.endpoint_url === data.endpoint_url) {
+          return prev;
+        }
+        return data;
+      });
       if (data.status === "claimed") {
         setStep(3);
       }
@@ -982,11 +990,12 @@ export default function ByoAgentPage() {
     };
   }, [loadSession, sessionId]);
 
+  const sessionStatus = session?.status;
   useEffect(() => {
-    if (!session || session.status !== "pending_claim") return;
+    if (sessionStatus !== "pending_claim") return;
     const interval = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(interval);
-  }, [session]);
+  }, [sessionStatus]);
 
   useEffect(() => {
     if (!copyToast) return;
@@ -1001,7 +1010,7 @@ export default function ByoAgentPage() {
   }, [webhookSaveMessage]);
 
   const prompt = useMemo(() => buildByoOnboardingPrompt(onboardingUrl ?? ""), [onboardingUrl]);
-  const expiresLabel = session?.expires_at ? formatByoTimeRemaining(session.expires_at, nowTick) : null;
+  const expiresLabel = useMemo(() => session?.expires_at ? formatByoTimeRemaining(session.expires_at, nowTick) : null, [session?.expires_at, nowTick]);
   const webhookValidationError = useMemo(() => validateOptionalPublicHttpsUrl(webhookUrl), [webhookUrl]);
   const canActivate = useMemo(() => (
     isByoSessionReady(session?.status ?? null) &&
@@ -1204,51 +1213,15 @@ export default function ByoAgentPage() {
   return (
     <>
       {agentLimitToast && (
-        <div
-          style={{
-            position: "fixed",
-            top: 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 9999,
-            padding: "12px 24px",
-            borderRadius: 12,
-            background: "rgba(255,159,10,0.18)",
-            border: "1px solid rgba(255,159,10,0.35)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            color: "#ffb340",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          }}
-        >
+        <FixedToast top={24} zIndex={9999} variant="warning">
           ⚠ {agentLimitToast}
-        </div>
+        </FixedToast>
       )}
 
       {copyToast && (
-        <div
-          style={{
-            position: "fixed",
-            top: agentLimitToast ? 76 : 24,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 9998,
-            padding: "10px 18px",
-            borderRadius: 12,
-            background: "rgba(10,132,255,0.18)",
-            border: "1px solid rgba(10,132,255,0.30)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            color: "#7fc0ff",
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          }}
-        >
+        <FixedToast top={agentLimitToast ? 76 : 24} zIndex={9998} variant="info">
           {copyToast}
-        </div>
+        </FixedToast>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", maxWidth: 1100, minHeight: "calc(100vh - 120px)" }}>

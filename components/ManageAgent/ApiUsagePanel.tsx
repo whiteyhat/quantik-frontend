@@ -73,11 +73,11 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
       const json = await api.getAgentUsage(agentId);
       if (json.success) setData(json.data);
     } catch {
-      if (!data) setError(true);
+      setData((prev) => { if (!prev) setError(true); return prev; });
     } finally {
       setLoading(false);
     }
-  }, [agentId, data]);
+  }, [agentId]);
 
   useEffect(() => {
     fetchUsage();

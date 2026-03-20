@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useInView } from "react-intersection-observer";
-import { toWalletBalance } from "@/lib/dashboard";
+import { agentStatusTone, healthSeverityTone, serviceStatusTone, toWalletBalance } from "@/lib/dashboard";
 import { EquityCurveChart } from "@/components/ManageAgent/EquityCurveChart";
 import {
   ArrowRight,
@@ -25,6 +25,7 @@ import {
   type DashboardHealthSnapshot,
   type DashboardSummarySnapshot,
 } from "@/lib/dashboard";
+import { useDebouncedValue } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,17 +57,6 @@ import {
 } from "@/components/dashboard/dashboardQueries";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
-function useDebouncedValue<T>(value: T, delay = 250) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => setDebouncedValue(value), delay);
-    return () => window.clearTimeout(timeoutId);
-  }, [delay, value]);
-
-  return debouncedValue;
-}
-
 function numberTone(value: number, warnAt: number, badAt: number): "good" | "warn" | "bad" {
   if (value >= badAt) return "bad";
   if (value >= warnAt) return "warn";
@@ -77,27 +67,6 @@ function pnlTone(value: number): "good" | "bad" {
   return value >= 0 ? "good" : "bad";
 }
 
-function healthTone(health: DashboardHealthSnapshot | null | undefined) {
-  if (!health) return "warn" as const;
-  return health.severity === "good"
-    ? "good"
-    : health.severity === "bad"
-      ? "bad"
-      : "warn";
-}
-
-function serviceTone(status: DashboardHealthSnapshot["services"][number]["status"]) {
-  if (status === "healthy") return "good" as const;
-  if (status === "degraded") return "warn" as const;
-  return "bad" as const;
-}
-
-function runtimeStatusTone(status: DashboardAgentRow["status"]) {
-  if (status === "live") return "good" as const;
-  if (status === "degraded") return "warn" as const;
-  if (status === "idle") return "neutral" as const;
-  return "bad" as const;
-}
 
 function signalTone(signal: Signal["status"]) {
   if (signal === "TRADE") return "good" as const;
@@ -245,7 +214,7 @@ function MissionControlHero({
               label={statusText}
             />
             <StatusBadge
-              tone={healthTone(health)}
+              tone={healthSeverityTone(health)}
               label={health ? t(`apiHealth_${health.label}` as any) : t("apiChecking")}
             />
             <StatusBadge
@@ -896,7 +865,7 @@ function SystemStatusCard({
                   ? t("latency", { ms: health.latencyMs })
                   : t("awaitingServiceHeartbeat")
               }
-              tone={healthTone(health)}
+              tone={healthSeverityTone(health)}
             />
             <MetricBlock
               label={t("serviceMap")}
@@ -920,7 +889,7 @@ function SystemStatusCard({
                     </div>
                   </div>
                   <div className="command-center-service-badge">
-                    <StatusBadge tone={serviceTone(service.status)} label={service.status} />
+                    <StatusBadge tone={serviceStatusTone(service.status)} label={service.status} />
                   </div>
                 </div>
               ))
@@ -969,7 +938,7 @@ function SystemStatusCard({
                   <div className="shrink-0 text-right">
                     <div className="font-mono text-xs text-[rgba(255,255,255,0.58)]">{agent.latencyMs}ms</div>
                     <StatusBadge
-                      tone={runtimeStatusTone(agent.status)}
+                      tone={agent.status === "idle" ? "neutral" : agentStatusTone(agent.status) as "good" | "warn" | "bad" | "neutral"}
                       label={agent.status}
                     />
                   </div>
@@ -1063,7 +1032,7 @@ function MarketScannerCard() {
   const scannerQuery = useDashboardScannerQuery(activeCategory, debouncedSearch, 20);
   const { ref, inView } = useInView({ threshold: 0.1, rootMargin: "240px" });
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
-  const displayedMarkets = useMemo(() => scannerQuery.markets, [scannerQuery.markets]);
+  const { markets: displayedMarkets } = scannerQuery;
   const subscribedMarkets = useMemo(() => displayedMarkets.slice(0, 12), [displayedMarkets]);
   const {
     fetchNextPage,
@@ -1073,7 +1042,6 @@ function MarketScannerCard() {
     isFetchingNextPage,
     isLoading,
     isTrending,
-    markets,
     refetch,
   } = scannerQuery;
 
@@ -1091,7 +1059,18 @@ function MarketScannerCard() {
     if (tokenIds.length === 0) return;
 
     const unsubscribe = streamPrices(tokenIds, (prices) => {
-      setLivePrices((current) => ({ ...current, ...prices }));
+      setLivePrices((current) => {
+        let changed = false;
+        for (const key of Object.keys(prices)) {
+          const prev = current[key];
+          const next = prices[key];
+          if (!prev || prev.yes !== next.yes || prev.no !== next.no) {
+            changed = true;
+            break;
+          }
+        }
+        return changed ? { ...current, ...prices } : current;
+      });
     });
 
     return () => unsubscribe();
@@ -1100,7 +1079,7 @@ function MarketScannerCard() {
   const showTrendingCta =
     isTrending &&
     !isLoading &&
-    markets.length === 0;
+    displayedMarkets.length === 0;
 
   return (
     <CommandCenterCard accent="blue">

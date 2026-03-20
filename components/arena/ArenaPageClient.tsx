@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
-import { type ArenaWindow } from "@/lib/api";
+import { type ArenaWindow, type ArenaLeaderboardEntry } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { useNow } from "@/hooks/useNow";
 import { useFollowedAgents } from "@/hooks/useFollowedAgents";
@@ -70,8 +70,8 @@ export function ArenaPageClient() {
   const champion = podiumLeaders[0] ?? null;
   const battlePool = arenaQuery.data?.meta.totalSelectedPnlPool ?? 0;
   const unrealizedPool = arenaQuery.data?.meta.totalUnrealizedPnlPool ?? 0;
-  const hottestStreak = leaders.slice().sort((left, right) => Math.abs(right.currentStreak) - Math.abs(left.currentStreak))[0] ?? null;
-  const bestTradeLeader = leaders.slice().sort((left, right) => right.bestTradePnl - left.bestTradePnl)[0] ?? null;
+  const hottestStreak = leaders.reduce<ArenaLeaderboardEntry | null>((best, entry) => !best || Math.abs(entry.currentStreak) > Math.abs(best.currentStreak) ? entry : best, null);
+  const bestTradeLeader = leaders.reduce<ArenaLeaderboardEntry | null>((best, entry) => !best || entry.bestTradePnl > best.bestTradePnl ? entry : best, null);
   const battlePoolLabel = battlePool > 0 ? t("positivePool") : battlePool < 0 ? t("negativePool") : t("neutralPool");
   const lastPulseAt = arenaQuery.data?.meta.lastTradeAt;
   const filteredLeaders = filterArenaLeaders(leaders, {

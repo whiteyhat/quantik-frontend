@@ -7,14 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const SKILL_URL = `${BASE_URL}/api/skill.md`;
 const API_BASE = `${BASE_URL}/api/v1/tools`;
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 24,
-};
+import { panelStyle } from "@/components/agent-factory/shared";
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',

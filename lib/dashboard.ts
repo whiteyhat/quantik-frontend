@@ -283,6 +283,65 @@ export function selectSystemAgentRows(entries: SystemAgentHealthEntry[]) {
     }));
 }
 
+export type Tone = "good" | "warn" | "bad" | "neutral" | "info" | "idle";
+
+export function healthSeverityTone(health: DashboardHealthSnapshot | null | undefined): "good" | "warn" | "bad" {
+  if (!health) return "warn";
+  if (health.severity === "good") return "good";
+  if (health.severity === "bad") return "bad";
+  return "warn";
+}
+
+export function agentStatusTone(status: DashboardRuntimeStatus | undefined): "good" | "warn" | "bad" | "neutral" | "idle" {
+  if (status === "live") return "good";
+  if (status === "degraded") return "warn";
+  if (status === "down") return "bad";
+  if (status === "idle") return "idle";
+  return "neutral";
+}
+
+export function serviceStatusTone(status: DashboardServiceStatus): "good" | "warn" | "bad" {
+  if (status === "healthy") return "good";
+  if (status === "degraded") return "warn";
+  return "bad";
+}
+
+export interface AgentStatusCounts {
+  live: number;
+  idle: number;
+  degraded: number;
+  down: number;
+  hasTraffic: boolean;
+  hasActive: boolean;
+  allIdle: boolean;
+}
+
+export function countAgentStatuses(agents: DashboardAgentRow[]): AgentStatusCounts {
+  let live = 0;
+  let idle = 0;
+  let degraded = 0;
+  let down = 0;
+  let hasTraffic = false;
+
+  for (const agent of agents) {
+    if (agent.status === "live") live++;
+    else if (agent.status === "idle") idle++;
+    else if (agent.status === "degraded") degraded++;
+    else if (agent.status === "down") down++;
+    if (agent.lastActiveAt) hasTraffic = true;
+  }
+
+  return {
+    live,
+    idle,
+    degraded,
+    down,
+    hasTraffic,
+    hasActive: live > 0 || degraded > 0,
+    allIdle: agents.length > 0 && idle === agents.length,
+  };
+}
+
 /**
  * Localized relative time formatter.
  * Pass a translator bound to `common` (with keys: justNow, sAgo, mAgo, hAgo, dAgo, never).

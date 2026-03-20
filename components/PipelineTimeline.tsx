@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { AGENT_NAMES, AGENT_META } from "@/lib/agents";
 
 const AGENT_COLORS: Record<string, string> = {
   aura:   "rgba(120, 40, 200, 0.6)",
@@ -13,13 +14,6 @@ const AGENT_COLORS: Record<string, string> = {
   sigma:  "rgba(0, 122, 255, 0.8)",
 };
 
-const AGENT_NAMES: Record<string, string> = {
-  aura: "Aura", flux: "Flux", oracle: "Oracle", edge: "Edge",
-  clause: "Clause", lucifer: "Lucifer", sigma: "Sigma",
-};
-
-const AGENT_ORDER = ["aura", "flux", "oracle", "edge", "clause", "lucifer", "sigma"];
-
 export function PipelineTimeline() {
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
@@ -27,7 +21,7 @@ export function PipelineTimeline() {
   if (pipeline.running || !pipeline.result) return null;
 
   // Build durations from real latencyMs values stored in agents
-  const timed = AGENT_ORDER.filter((k) => (pipeline.agents[k]?.latencyMs ?? 0) > 0);
+  const timed = AGENT_NAMES.filter((k) => (pipeline.agents[k]?.latencyMs ?? 0) > 0);
   if (timed.length === 0) return null;
 
   const totalMs = timed.reduce((sum, k) => sum + (pipeline.agents[k]?.latencyMs ?? 0), 0);
@@ -84,7 +78,7 @@ export function PipelineTimeline() {
           }}
         >
           <span style={{ color: "var(--text-primary)" }}>
-            {AGENT_NAMES[hoveredAgent]}:{" "}
+            {AGENT_META[hoveredAgent as keyof typeof AGENT_META]?.name ?? hoveredAgent}:{" "}
             <span className="font-mono-data">
               {((pipeline.agents[hoveredAgent]?.latencyMs ?? 0) / 1000).toFixed(2)}s
             </span>

@@ -4,16 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api, type AlertEntry } from "@/lib/api";
-
-const AGENT_META: Record<string, { emoji: string; name: string }> = {
-  aura:   { emoji: "\u{1F30A}", name: "Aura" },
-  oracle: { emoji: "\u{1F52E}", name: "Oracle" },
-  edge:   { emoji: "\u{1F4D0}", name: "Edge" },
-  clause: { emoji: "\u2696\uFE0F", name: "Clause" },
-  flux:   { emoji: "\u26A1", name: "Flux" },
-  lucifer:{ emoji: "\u{1F608}", name: "Lucifer" },
-  sigma:  { emoji: "\u{1F9E9}", name: "Sigma" },
-};
+import { AGENT_META } from "@/lib/agents";
 
 interface LogEntry {
   id: string;
@@ -60,6 +51,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [telegramConfigured, setTelegramConfigured] = useState(false);
   const [lastTelegramAlert, setLastTelegramAlert] = useState<AlertEntry | null>(null);
+  const drainTimerId = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Drain queue one entry every 220ms
   function drainQueue() {
@@ -68,13 +60,14 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
     const tick = () => {
       if (pendingQueue.current.length === 0) {
         draining.current = false;
+        drainTimerId.current = null;
         return;
       }
       const next = pendingQueue.current.shift()!;
       setVisibleLogs(prev => [...prev, next]);
-      setTimeout(tick, 220);
+      drainTimerId.current = setTimeout(tick, 220);
     };
-    setTimeout(tick, 120);
+    drainTimerId.current = setTimeout(tick, 120);
   }
 
   function enqueue(entry: LogEntry) {
@@ -84,6 +77,8 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
 
   // Reset the feed when a new live run starts or a replay snapshot is loaded.
   useEffect(() => {
+    if (drainTimerId.current) clearTimeout(drainTimerId.current);
+    drainTimerId.current = null;
     setVisibleLogs([]);
     pendingQueue.current = [];
     draining.current = false;
@@ -99,6 +94,10 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
     if (pipeline.source === "replay") {
       setExpanded(true);
     }
+
+    return () => {
+      if (drainTimerId.current) clearTimeout(drainTimerId.current);
+    };
   }, [pipeline.version]);
 
   // Add a completion marker for live runs that finish normally.
@@ -124,7 +123,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
     const agents = pipeline.agents;
     for (const [key, state] of Object.entries(agents)) {
       const prev = prevStatuses.current[key];
-      const meta = AGENT_META[key] ?? { emoji: "\u{1F916}", name: key };
+      const meta = AGENT_META[key as keyof typeof AGENT_META] ?? { emoji: "\u{1F916}", name: key };
 
       if (state.status === "running" && prev !== "running") {
         enqueue({

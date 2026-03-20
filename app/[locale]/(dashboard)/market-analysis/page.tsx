@@ -17,6 +17,8 @@ import {
   type LuciferResult,
   type SigmaResult,
 } from "@/lib/api";
+import { AGENT_NAMES, AGENT_META, type AgentName } from "@/lib/agents";
+import type { AgentStatus } from "@/store/useQuantikStore";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -32,21 +34,14 @@ const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
 
-// ─── Agent config ─────────────────────────────────────────────────────────────
+// ─── Agent config (derived from centralized metadata) ─────────────────────────
 
-const AGENTS: { key: string; emoji: string; name: string; role: string; color: string }[] = [
-  { key: "aura", emoji: "🌊", name: "Aura", role: "Sentiment", color: "#0a84ff" },
-  { key: "flux", emoji: "⚡", name: "Flux", role: "Liquidity", color: "#0a84ff" },
-  { key: "oracle", emoji: "🔮", name: "Oracle", role: "Forecasting", color: "#0a84ff" },
-  { key: "edge", emoji: "📐", name: "Edge", role: "Calibration", color: "#ff9f0a" },
-  { key: "clause", emoji: "⚖️", name: "Clause", role: "Resolution", color: "#30d158" },
-  { key: "lucifer", emoji: "😈", name: "Lucifer", role: "Devil's Advocate", color: "#bf5af2" },
-  { key: "sigma", emoji: "🧩", name: "Sigma", role: "Synthesis", color: "#0a84ff" },
-];
+const AGENTS = AGENT_NAMES.map((key) => ({
+  key,
+  ...AGENT_META[key],
+}));
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type AgentStatus = "idle" | "running" | "done" | "error";
 
 interface AgentState {
   status: AgentStatus;

@@ -203,6 +203,28 @@ export function useDashboardAgentHealthScoreQuery(agentId?: string | null, enabl
   });
 }
 
+export function useDashboardPerformanceQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
+  return useQuery({
+    queryKey: ["dashboard", "performance"] as const,
+    enabled: authReady,
+    queryFn: ({ signal }) => api.getPerformanceSummary(signal),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useDashboardWalletQuery() {
+  const authReady = useQuantikStore((s) => s.authReady);
+  return useQuery({
+    queryKey: ["dashboard", "wallet"] as const,
+    enabled: authReady,
+    queryFn: ({ signal }) => api.getBalance(signal),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+}
+
 export function useDashboardTradesQuery() {
   const authReady = useQuantikStore((s) => s.authReady);
   return useQuery({

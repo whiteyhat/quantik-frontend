@@ -12,7 +12,9 @@ import {
 import { useTranslations } from "next-intl";
 import { fmtUSDC } from "@/lib/api";
 import {
+  countAgentStatuses,
   formatRelativeTime,
+  healthSeverityTone,
   type DashboardAgentRow,
   type DashboardHealthSnapshot,
   type DashboardSummarySnapshot,
@@ -26,12 +28,6 @@ function tileTone(status: "healthy" | "degraded" | "down" | "ready" | "idle") {
   return "neutral";
 }
 
-function runtimeTone(health: DashboardHealthSnapshot | null) {
-  if (!health) return "neutral";
-  if (health.severity === "good") return "good";
-  if (health.severity === "bad") return "bad";
-  return "warn";
-}
 
 export function DashboardMissionRail({
   summary,
@@ -48,11 +44,7 @@ export function DashboardMissionRail({
 }) {
   const t = useTranslations("dashboard.missionRail");
   const tRel = useTranslations("common");
-  const liveAgents = agents.filter((agent) => agent.status === "live").length;
-  const idleAgents = agents.filter((agent) => agent.status === "idle").length;
-  const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
-  const downAgents = agents.filter((agent) => agent.status === "down").length;
-  const hasTraffic = agents.some((agent) => agent.lastActiveAt);
+  const { live: liveAgents, idle: idleAgents, degraded: degradedAgents, down: downAgents, hasTraffic } = countAgentStatuses(agents);
   const fundingTone =
     summary?.fundingStatus === "ready"
       ? "ready"
@@ -104,7 +96,7 @@ export function DashboardMissionRail({
         ) : null}
       </article>
 
-      <article className={cn("mission-rail-tile", `mission-rail-tile--${runtimeTone(health)}`)}>
+      <article className={cn("mission-rail-tile", `mission-rail-tile--${healthSeverityTone(health)}`)}>
         <div className="mission-rail-icon-wrap">
           <Cpu className="size-4" />
         </div>

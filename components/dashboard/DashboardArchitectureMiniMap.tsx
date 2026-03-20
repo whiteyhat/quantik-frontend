@@ -10,16 +10,9 @@ import {
   StatusBadge,
 } from "@/components/dashboard/DashboardPrimitives";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { DashboardAgentRow } from "@/lib/dashboard";
+import { agentStatusTone, countAgentStatuses, type DashboardAgentRow } from "@/lib/dashboard";
 import type { MyAgent } from "@/store/useQuantikStore";
 
-function nodeTone(status: DashboardAgentRow["status"] | undefined) {
-  if (status === "live") return "good";
-  if (status === "degraded") return "warn";
-  if (status === "down") return "bad";
-  if (status === "idle") return "idle";
-  return "neutral";
-}
 
 export function DashboardArchitectureMiniMap({
   agents,
@@ -34,13 +27,7 @@ export function DashboardArchitectureMiniMap({
     agents.map((agent) => [agent.id.toLowerCase(), agent])
   );
 
-  const liveAgents = agents.filter((agent) => agent.status === "live").length;
-  const idleAgents = agents.filter((agent) => agent.status === "idle").length;
-  const degradedAgents = agents.filter((agent) => agent.status === "degraded").length;
-  const downAgents = agents.filter((agent) => agent.status === "down").length;
-  const hasTraffic = agents.some((agent) => agent.lastActiveAt);
-  const hasActiveAgents = liveAgents > 0 || degradedAgents > 0;
-  const allIdle = agents.length > 0 && idleAgents === agents.length;
+  const { live: liveAgents, idle: idleAgents, degraded: degradedAgents, down: downAgents, hasTraffic, hasActive: hasActiveAgents, allIdle } = countAgentStatuses(agents);
   const t = useTranslations("dashboard.architectureMiniMap");
 
   return (
@@ -105,7 +92,7 @@ export function DashboardArchitectureMiniMap({
               return (
                 <div
                   key={agentKey}
-                  className={`dashboard-mini-map-node dashboard-mini-map-node--${nodeTone(agentRow?.status)}`}
+                  className={`dashboard-mini-map-node dashboard-mini-map-node--${agentStatusTone(agentRow?.status)}`}
                   style={{
                     left: `${left}%`,
                     top: `${top}%`,

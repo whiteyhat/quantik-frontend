@@ -58,8 +58,6 @@ function ensureParticleKeyframes() {
   document.head.appendChild(style);
 }
 
-const MONEY_EMOJIS = ["💸", "💰", "🤑", "💎"];
-
 // Weighted distribution: 💸 is most common, 💎 is rarest
 const EMOJI_WEIGHTS = [
   { emoji: "💸", weight: 40 },
@@ -75,7 +73,7 @@ function pickWeightedEmoji(): string {
     r -= e.weight;
     if (r <= 0) return e.emoji;
   }
-  return MONEY_EMOJIS[0];
+  return EMOJI_WEIGHTS[0].emoji;
 }
 
 interface EmojiParticle {
@@ -92,8 +90,6 @@ interface EmojiParticle {
   rot1: number;
   scale: number;
 }
-
-let _particleId = 0;
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -236,6 +232,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [emojiParticles, setEmojiParticles] = useState<EmojiParticle[]>([]);
   const lastSpawnRef = useRef(0);
+  const particleIdRef = useRef(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isPolicyOpen, setIsPolicyOpen] = useState(false);
   const [showPulse, setShowPulse] = useState(() => {
@@ -261,7 +258,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
       const rot0 = (Math.random() - 0.5) * 30;
       const rot1 = rot0 + (Math.random() - 0.5) * 120;
       return {
-        id: ++_particleId,
+        id: ++particleIdRef.current,
         x: cx + (Math.random() - 0.5) * 80,
         y: cy + (Math.random() - 0.5) * 40,
         dx: Math.cos(angle) * speed,
@@ -301,7 +298,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
       const rot1 = rot0 + (Math.random() - 0.5) * 140;
       const duration = 1600 + Math.random() * 1400; // 1.6s–3s
       return {
-        id: ++_particleId,
+        id: ++particleIdRef.current,
         x: x + (Math.random() - 0.5) * 18,
         y: y + (Math.random() - 0.5) * 12,
         dx: Math.cos(angle) * speed,

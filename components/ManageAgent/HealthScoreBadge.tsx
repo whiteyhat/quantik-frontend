@@ -77,7 +77,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
       const json = await api.getHealthScore(agentId);
       if (json.success) setData(json.data);
     } catch {
-      if (!data) setError(true);
+      setData((prev) => { if (!prev) setError(true); return prev; });
     } finally {
       setLoading(false);
     }

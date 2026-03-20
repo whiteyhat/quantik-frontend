@@ -1990,7 +1990,7 @@ export const api = {
     });
   },
 
-  updateRiskConfig: async (config: RiskConfig): Promise<void> => {
+  updateRiskConfig: async (config: Partial<RiskConfig>): Promise<void> => {
     await apiFetch("/api/v1/risk-config", {
       method: "PUT",
       body: JSON.stringify(config),
@@ -2472,23 +2472,6 @@ export function runPipeline(
                 return;
               } else if (currentEvent === "pipeline:start") {
                 onEvent({ type: "pipeline:start" });
-              } else {
-                // Fallback: handle legacy format where data line has agent/status/data fields
-                if (payload.agent && payload.status) {
-                  if (payload.status === "running") {
-                    onEvent({ type: "agent:start", agent: payload.agent });
-                  } else if (payload.status === "done" || payload.status === "complete") {
-                    const normalized2 = payload.data && payload.agent
-                      ? normalizeAgentData(payload.agent, payload.data as Record<string, unknown>)
-                      : payload.data;
-                    onEvent({ type: "agent:complete", agent: payload.agent, data: normalized2 });
-                    if (payload.agent && normalized2) {
-                      (result as Record<string, unknown>)[payload.agent] = normalized2;
-                    }
-                  } else if (payload.status === "error") {
-                    onEvent({ type: "agent:error", agent: payload.agent, error: payload.error ?? payload.data });
-                  }
-                }
               }
               currentEvent = "";
             } catch {}

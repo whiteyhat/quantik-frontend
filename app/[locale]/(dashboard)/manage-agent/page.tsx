@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSocketEvent } from "@/context/SocketContext";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -8,10 +9,15 @@ import { useQuantikStore } from "@/store/useQuantikStore";
 import {
   api,
   type Position,
-  type Trade,
-  type Signal,
-  type PerformanceSummary,
 } from "@/lib/api";
+import {
+  dashboardKeys,
+  useDashboardPositionsQuery,
+  useDashboardSignalsQuery,
+  useDashboardTradesQuery,
+  useDashboardPerformanceQuery,
+  useDashboardWalletQuery,
+} from "@/components/dashboard/dashboardQueries";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
 
@@ -88,90 +94,52 @@ export default function ManageAgentPage() {
     return () => window.removeEventListener("popstate", syncTabFromLocation);
   }, []);
 
-  // Data state
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [signals, setSignals] = useState<Signal[]>([]);
-  const [performance, setPerformance] = useState<PerformanceSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data from shared React Query hooks (shared cache with dashboard)
+  const queryClient = useQueryClient();
+  const positionsQuery = useDashboardPositionsQuery();
+  const tradesQuery = useDashboardTradesQuery();
+  const signalsQuery = useDashboardSignalsQuery();
+  const performanceQuery = useDashboardPerformanceQuery();
+  const walletQuery = useDashboardWalletQuery();
+
+  const positions = positionsQuery.data ?? [];
+  const trades = tradesQuery.data ?? [];
+  const signals = signalsQuery.data ?? [];
+  const performance = performanceQuery.data ?? null;
+  const loading = positionsQuery.isLoading || tradesQuery.isLoading;
+
   const [timePeriod, setTimePeriod] = useState<"7D" | "30D" | "All">("7D");
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
-  const myAgent = storeAgent;
-
-  // Fetch real data when agent exists
+  // Sync wallet query → global store so other components stay fresh
   useEffect(() => {
-    if (!myAgent) {
-      setLoading(false);
-      return;
-    }
-    let active = true;
-
-    async function fetchAll() {
-      try {
-        const [walletData, posData, signalData, perfData, tradeData] = await Promise.allSettled([
-          api.getBalance(),
-          api.getPositions(),
-          api.getSignals(),
-          api.getPerformanceSummary(),
-          api.getTrades(),
-        ]);
-
-        if (!active) return;
-
-        if (walletData.status === "fulfilled" && walletData.value) storeSetWallet(walletData.value);
-        if (posData.status === "fulfilled") setPositions(posData.value);
-        if (signalData.status === "fulfilled") setSignals(signalData.value);
-        if (perfData.status === "fulfilled") setPerformance(perfData.value);
-        if (tradeData.status === "fulfilled") setTrades(tradeData.value);
-      } catch {
-        // silent
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    fetchAll();
-
-    const interval = setInterval(() => {
-      api.getBalance().then((w) => { if (active && w) storeSetWallet(w); }).catch(() => {});
-      api.getPositions().then((p) => { if (active) setPositions(p); }).catch(() => {});
-    }, 30_000);
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [myAgent]);
+    if (walletQuery.data) storeSetWallet(walletQuery.data);
+  }, [walletQuery.data, storeSetWallet]);
 
   const handlePositionUpdate = useCallback(
     (slug: string, currentPrice: number, pnl: number, pnlPct: number) => {
-      setPositions((prev) =>
-        prev.map((p) =>
+      queryClient.setQueryData<Position[]>(dashboardKeys.positions, (prev) =>
+        prev?.map((p) =>
           p.slug === slug ? { ...p, currentPrice, pnl, pnlPct } : p
         )
       );
     },
-    []
+    [queryClient]
   );
 
   const refreshWallet = useCallback(async () => {
-    try {
-      const nextWallet = await api.getBalance();
-      if (nextWallet) storeSetWallet(nextWallet);
-      return nextWallet;
-    } catch {
-      return null;
-    }
-  }, [storeSetWallet]);
+    const result = await walletQuery.refetch();
+    return result.data ?? null;
+  }, [walletQuery]);
 
-  // Gap 2: instant balance refresh when a trade executes
+  // Instant balance refresh when a trade executes
   const handleTradeExecuted = useCallback(() => {
-    if (!myAgent) return;
-    api.getBalance()
-      .then((w) => { if (w) storeSetWallet(w); })
-      .catch(() => {});
-  }, [myAgent, storeSetWallet]);
+    if (!storeAgent) return;
+    void queryClient.invalidateQueries({ queryKey: dashboardKeys.positions });
+    void walletQuery.refetch().then((result) => {
+      if (result.data) storeSetWallet(result.data);
+    });
+  }, [storeAgent, storeSetWallet, queryClient, walletQuery]);
 
   useSocketEvent("trade:executed", handleTradeExecuted);
 
@@ -186,7 +154,7 @@ export default function ManageAgentPage() {
     );
   }
 
-  if (!myAgent) {
+  if (!storeAgent) {
     return (
       <div
         style={{
@@ -294,7 +262,6 @@ export default function ManageAgentPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-5">
           {/* LEFT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <AgentIdentityHeader
                 wallet={storeWallet}
                 timePeriod={timePeriod}
@@ -310,7 +277,6 @@ export default function ManageAgentPage() {
                 performance={performance}
                 loading={loading}
               />
-            </div>
             {(loading || positions.length > 0) && (
               <LivePositionsTable
                 positions={positions}
@@ -397,7 +363,9 @@ export default function ManageAgentPage() {
         open={selectedPosition != null}
         onClose={() => setSelectedPosition(null)}
         onClosed={(executionId) => {
-          setPositions((prev) => prev.filter((position) => position.executionId !== executionId));
+          queryClient.setQueryData<Position[]>(dashboardKeys.positions, (prev) =>
+            prev?.filter((position) => position.executionId !== executionId)
+          );
         }}
       />
     </div>

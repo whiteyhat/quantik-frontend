@@ -12,6 +12,7 @@ import {
   Trade,
   normalizeAgentData,
 } from "@/lib/api";
+import { AGENT_NAMES, AGENT_OUTPUT_KEYS, isAgentName, type AgentName } from "@/lib/agents";
 
 // ─── My Agent (user's configured trading agent) ──────────────────────────────
 
@@ -128,18 +129,7 @@ interface QuantikStore {
   closeTradeModal: () => void;
 }
 
-const AGENT_NAMES = ["aura", "flux", "oracle", "edge", "clause", "lucifer", "sigma"] as const;
-type PipelineAgentKey = (typeof AGENT_NAMES)[number];
-
-const AGENT_OUTPUT_KEYS: Record<PipelineAgentKey, keyof PipelineHistoryRun> = {
-  aura: "aura_output",
-  flux: "flux_output",
-  oracle: "oracle_output",
-  edge: "edge_output",
-  clause: "clause_output",
-  lucifer: "lucifer_output",
-  sigma: "sigma_output",
-};
+type PipelineAgentKey = AgentName;
 
 let pipelineVersion = 0;
 
@@ -153,7 +143,7 @@ function defaultAgents(): Record<string, AgentCardState> {
 }
 
 function isPipelineAgentKey(agent: string): agent is PipelineAgentKey {
-  return AGENT_NAMES.includes(agent as PipelineAgentKey);
+  return isAgentName(agent);
 }
 
 function normalizeStoredAgentOutput(agent: PipelineAgentKey, raw: unknown): unknown {
@@ -212,7 +202,7 @@ function buildReplayState(
   }
 
   for (const agent of AGENT_NAMES) {
-    const outputKey = AGENT_OUTPUT_KEYS[agent];
+    const outputKey = AGENT_OUTPUT_KEYS[agent] as keyof PipelineHistoryRun;
     const normalized = normalizeStoredAgentOutput(agent, run[outputKey]);
     if (normalized == null) continue;
 
