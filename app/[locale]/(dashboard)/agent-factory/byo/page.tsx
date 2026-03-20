@@ -836,9 +836,33 @@ function StepReview({
       </div>
 
       <div style={panelStyle}>
+        <SectionHeader title="Trading Policy Setup" icon="🧠" tooltip="Your OpenClaw agent needs to ask you 7 quick questions about your risk tolerance and trading style. Answer them in your agent's chat (Telegram, etc.)." />
+        {session?.policy_setup_completed ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LaunchStatePill label="Configured" tone="ready" />
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+              Policy set {session.policy_setup_completed_at ? new Date(session.policy_setup_completed_at).toLocaleString() : ""}
+            </span>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <LaunchStatePill label="Pending" tone="pending" />
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
+                Waiting for answers
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 }}>
+              Your OpenClaw agent will ask you 7 quick questions about how you want it to trade — things like risk tolerance, trading pace, and loss limits. Answer them in your agent&apos;s chat interface. The agent can&apos;t be activated until this is done.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div style={panelStyle}>
         <SectionHeader title="Activate Agent" icon="🚀" />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
-          The OpenClaw handshake is complete. Activation only unlocks after the owner secures the wallet backup and there are no invalid or unsaved webhook settings.
+          The OpenClaw handshake is complete. Activation only unlocks after the trading policy is configured, the wallet backup is secured, and there are no invalid or unsaved webhook settings.
         </p>
         <button
           onClick={onDeploy}
@@ -981,14 +1005,18 @@ export default function ByoAgentPage() {
   const webhookValidationError = useMemo(() => validateOptionalPublicHttpsUrl(webhookUrl), [webhookUrl]);
   const canActivate = useMemo(() => (
     isByoSessionReady(session?.status ?? null) &&
+    Boolean(session?.policy_setup_completed) &&
     Boolean(session?.wallet_downloaded_at) &&
     !webhookSaving &&
     !webhookDirty &&
     !webhookValidationError
-  ), [session?.status, session?.wallet_downloaded_at, webhookSaving, webhookDirty, webhookValidationError]);
+  ), [session?.status, session?.policy_setup_completed, session?.wallet_downloaded_at, webhookSaving, webhookDirty, webhookValidationError]);
   const activationMessage = useMemo(() => {
     if (!session || !isByoSessionReady(session.status)) {
       return "Waiting for OpenClaw to finish the claim.";
+    }
+    if (!session.policy_setup_completed) {
+      return "Answer the 7 trading policy questions in your OpenClaw agent's chat first.";
     }
     if (!session.wallet_downloaded_at) {
       return "Download the OpenClaw wallet backup before activation.";

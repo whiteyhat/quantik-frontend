@@ -36,6 +36,8 @@ export function createPendingByoSession(data: {
     connection_status: null,
     wallet_download_ready: false,
     wallet_downloaded_at: null,
+    policy_setup_completed: false,
+    policy_setup_completed_at: null,
     last_error: null,
   };
 }

@@ -154,7 +154,7 @@ export function ScannerFeed({ agentId }: ScannerFeedProps) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {decisions.slice(0, 8).map((decision) => {
+          {decisions.slice(0, 3).map((decision) => {
             const badge = decisionBadge(decision);
             const question = resolveQuestion(decision);
             const isNew = animatingIds.has(decision.id);
@@ -235,7 +235,15 @@ export function ScannerFeed({ agentId }: ScannerFeedProps) {
                         lineHeight: 1.4,
                       }}
                     >
-                      {decision.error}
+                      {(() => {
+                        const raw = decision.error;
+                        try {
+                          const parsed = JSON.parse(raw);
+                          return parsed.message ?? parsed.error ?? parsed.msg ?? raw;
+                        } catch {
+                          return raw;
+                        }
+                      })()}
                     </div>
                   ) : null}
                 </div>

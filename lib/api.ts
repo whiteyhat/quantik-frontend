@@ -634,6 +634,12 @@ export interface AutopilotPolicyOverrides {
   cooldownMinutes: number | null;
   maxTradesPerDay: number | null;
   maxBetUsdc: number | null;
+  minSigma: number | null;
+  minKelly: number | null;
+  kellyMultiplier: number | null;
+  maxPositionFraction: number | null;
+  dailyLossLimitPct: number | null;
+  useAuraSentiment: boolean | null;
   updatedAt: number | null;
 }
 
@@ -852,6 +858,8 @@ export interface ByoOnboardingSession {
   connection_status: string | null;
   wallet_download_ready: boolean;
   wallet_downloaded_at: number | null;
+  policy_setup_completed: boolean;
+  policy_setup_completed_at: number | null;
   last_error: string | null;
 }
 
@@ -1793,6 +1801,25 @@ export const api = {
     await apiFetch(`/api/v1/agents/${id}`, { method: "DELETE" });
   },
 
+  updateAgentTraits: async (agentId: string, traits: {
+    personality: string;
+    decisionStyle: string;
+    tradingInstinct: string;
+    timePatience: string;
+    moneyApproach: string;
+    protectionMindset: string;
+    marketSense: string;
+  }): Promise<{ ok: boolean; system_prompt: string; autopilot_policy: AutopilotPolicyEnvelope }> => {
+    return apiFetch(`/api/v1/agents/${agentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        ...traits,
+        profitDream: "wealth_builder",
+        assetLove: "crypto",
+      }),
+    });
+  },
+
   deployAgent: async (id: string): Promise<{ ok: boolean; status: string; deployed_at: number }> => {
     return apiFetch(`/api/v1/agents/${id}/deploy`, { method: "POST" });
   },
@@ -1846,11 +1873,23 @@ export const api = {
       cooldownMinutes?: number | null;
       maxTradesPerDay?: number | null;
       maxBetUsdc?: number | null;
+      minSigma?: number | null;
+      minKelly?: number | null;
+      kellyMultiplier?: number | null;
+      maxPositionFraction?: number | null;
+      dailyLossLimitPct?: number | null;
+      useAuraSentiment?: boolean | null;
     }
   ): Promise<AutopilotPolicyEnvelope> => {
     return apiFetch(`/api/v1/agents/${agentId}/autopilot-policy`, {
       method: "PATCH",
       body: JSON.stringify(patch),
+    });
+  },
+
+  resetAutopilotPolicy: async (agentId: string): Promise<AutopilotPolicyEnvelope> => {
+    return apiFetch(`/api/v1/agents/${agentId}/autopilot-policy/reset`, {
+      method: "POST",
     });
   },
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { fmtUSDC, fmtPrice, type Position } from "@/lib/api";
 import {
@@ -9,6 +9,9 @@ import {
 } from "@/context/SocketContext";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const COLLAPSED_COUNT = 3;
+const PAGE_SIZE = 10;
 
 function fmtCountdown(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -44,6 +47,21 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
   const agentEmoji = myAgent?.avatar_emoji ?? "\u{1F916}";
   const agentName = myAgent?.name ?? "Agent";
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [page, setPage] = useState(0);
+
+  // Sort by biggest P&L (winnings) descending
+  const sorted = useMemo(
+    () => [...positions].sort((a, b) => b.pnl - a.pnl),
+    [positions]
+  );
+
+  // Determine visible positions: collapsed = top 3, expanded = paginated (max 10 per page)
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const visiblePositions = expanded
+    ? sorted.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+    : sorted.slice(0, COLLAPSED_COUNT);
+  const hasMore = sorted.length > COLLAPSED_COUNT;
 
   const handleUpdate = useCallback(
     (data: PositionUpdateEvent) => {
@@ -108,7 +126,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
         <>
           {/* Mobile card view */}
           <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {positions.map((pos) => {
+            {visiblePositions.map((pos) => {
               const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
               const isAutopilot = pos.source === "autopilot";
               return (
@@ -123,7 +141,6 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                     cursor: "pointer",
                   }}
                 >
-                  {/* Row 1: Market name + direction badge */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <span style={{ fontSize: 14 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.80)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -143,7 +160,6 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                       {pos.direction}
                     </span>
                   </div>
-                  {/* Row 2: Size + Price + PnL */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", gap: 12, fontFamily: '"SF Mono", monospace', fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
                       <span>{pos.size.toFixed(1)} sh</span>
@@ -161,7 +177,6 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
 
           {/* Desktop table */}
           <div className="hidden md:block" style={{ overflowX: "auto" }}>
-            {/* Keyframe for the bouncing arrow */}
             <style>{`
               @keyframes bounceRight {
                 0%, 100% { transform: translateX(0); }
@@ -202,7 +217,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                 </tr>
               </thead>
               <tbody>
-                {positions.map((pos) => {
+                {visiblePositions.map((pos) => {
                   const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
                   const currentValue = pos.size * pos.currentPrice;
                   const isHovered = hoveredRow === pos.id;
@@ -287,6 +302,95 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
               </tbody>
             </table>
           </div>
+
+          {/* Expand / Collapse + Pagination */}
+          {hasMore && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 10,
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => {
+                  setExpanded((prev) => !prev);
+                  setPage(0);
+                }}
+                style={{
+                  background: "none",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 6,
+                  padding: "5px 14px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,0.55)",
+                  cursor: "pointer",
+                  fontFamily: '"SF Mono", monospace',
+                  letterSpacing: "0.04em",
+                  transition: "background 0.15s ease, color 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.80)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "none";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                }}
+              >
+                {expanded ? t("showLess") : `${t("showMore")} (${sorted.length - COLLAPSED_COUNT})`}
+              </button>
+
+              {expanded && totalPages > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <button
+                    disabled={page === 0}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    style={{
+                      background: "none",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      borderRadius: 4,
+                      padding: "3px 8px",
+                      fontSize: 11,
+                      color: page === 0 ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.55)",
+                      cursor: page === 0 ? "default" : "pointer",
+                      fontFamily: '"SF Mono", monospace',
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "rgba(255,255,255,0.40)",
+                      fontFamily: '"SF Mono", monospace',
+                    }}
+                  >
+                    {page + 1}/{totalPages}
+                  </span>
+                  <button
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    style={{
+                      background: "none",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      borderRadius: 4,
+                      padding: "3px 8px",
+                      fontSize: 11,
+                      color: page >= totalPages - 1 ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.55)",
+                      cursor: page >= totalPages - 1 ? "default" : "pointer",
+                      fontFamily: '"SF Mono", monospace',
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

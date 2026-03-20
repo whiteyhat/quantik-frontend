@@ -174,22 +174,6 @@ function blockerDescription(
   }
 }
 
-interface PolicyDraft {
-  cadenceMinutes: string;
-  cooldownMinutes: string;
-  maxTradesPerDay: string;
-  maxBetUsdc: string;
-}
-
-function toPolicyDraft(policy: AutopilotPolicyEnvelope | undefined): PolicyDraft {
-  return {
-    cadenceMinutes: policy ? String(policy.effective.cadenceMinutes) : "",
-    cooldownMinutes: policy ? String(policy.effective.cooldownMinutes) : "",
-    maxTradesPerDay: policy ? String(policy.effective.maxTradesPerDay) : "",
-    maxBetUsdc: policy ? String(policy.effective.maxBetUsdc) : "",
-  };
-}
-
 export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const t = useTranslations("autopilot");
   const myAgent = useQuantikStore((s) => s.myAgent);
@@ -198,14 +182,8 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const defaultFundingStatus = agentWallet ? "funding_required" : "no_wallet";
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isPolicySaving, setIsPolicySaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autopilotStatus, setAutopilotStatus] = useState<AutopilotAgentStatus | null>(null);
-  const [policyDraft, setPolicyDraft] = useState<PolicyDraft>(() => toPolicyDraft(myAgent?.autopilot_policy));
-
-  useEffect(() => {
-    setPolicyDraft(toPolicyDraft(myAgent?.autopilot_policy));
-  }, [myAgent?.autopilot_policy]);
 
   const refreshAutopilotStatus = useCallback(async () => {
     if (!myAgent?.id) return null;
@@ -259,16 +237,14 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const [emojiParticles, setEmojiParticles] = useState<EmojiParticle[]>([]);
   const lastSpawnRef = useRef(0);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [isPolicyOpen, setIsPolicyOpen] = useState(Boolean(myAgent?.autopilot_enabled));
+  const [isPolicyOpen, setIsPolicyOpen] = useState(false);
   const [showPulse, setShowPulse] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(AUTOPILOT_PULSE_KEY) !== "true";
   });
 
   useEffect(ensureParticleKeyframes, []);
-  useEffect(() => {
-    setIsPolicyOpen(Boolean(myAgent?.autopilot_enabled));
-  }, [myAgent?.autopilot_enabled]);
+  // Policy section stays collapsed by default — user toggles it open to view
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -358,25 +334,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const policySummary = policy
     ? `${policy.effective.cadenceMinutes}m · ${policy.effective.maxTradesPerDay}/day · $${policy.effective.maxBetUsdc.toFixed(0)} max`
     : t("policyLoading");
-  const policyDirty = useMemo(() => {
-    if (!policy) return false;
-    return (
-      policyDraft.cadenceMinutes !== String(policy.effective.cadenceMinutes) ||
-      policyDraft.cooldownMinutes !== String(policy.effective.cooldownMinutes) ||
-      policyDraft.maxTradesPerDay !== String(policy.effective.maxTradesPerDay) ||
-      policyDraft.maxBetUsdc !== String(policy.effective.maxBetUsdc)
-    );
-  }, [policy, policyDraft]);
-
   if (!myAgent) return null;
-
-  const updatePolicyField = (field: keyof PolicyDraft, value: string) => {
-    setPolicyDraft((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const resetPolicyDraft = () => {
-    setPolicyDraft(toPolicyDraft(policy));
-  };
 
   const persistAutopilot = async (enabled: boolean) => {
     setError(null);
@@ -400,42 +358,6 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
     setMyAgent(nextAgent);
     await refreshAutopilotStatus();
-  };
-
-  const persistPolicy = async () => {
-    if (!policy) return;
-
-    const normalizeNumber = (value: string): number | null => {
-      if (!value.trim()) return null;
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    const cadenceMinutes = normalizeNumber(policyDraft.cadenceMinutes);
-    const cooldownMinutes = normalizeNumber(policyDraft.cooldownMinutes);
-    const maxTradesPerDay = normalizeNumber(policyDraft.maxTradesPerDay);
-    const maxBetUsdc = normalizeNumber(policyDraft.maxBetUsdc);
-
-    const payload = {
-      cadenceMinutes: cadenceMinutes === policy.derived.cadenceMinutes ? null : cadenceMinutes,
-      cooldownMinutes: cooldownMinutes === policy.derived.cooldownMinutes ? null : cooldownMinutes,
-      maxTradesPerDay: maxTradesPerDay === policy.derived.maxTradesPerDay ? null : maxTradesPerDay,
-      maxBetUsdc: maxBetUsdc === policy.derived.maxBetUsdc ? null : maxBetUsdc,
-    };
-
-    setIsPolicySaving(true);
-    setError(null);
-    try {
-      const nextPolicy = await api.updateAutopilotPolicy(myAgent.id, payload);
-      setMyAgent({
-        ...myAgent,
-        autopilot_policy: nextPolicy,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsPolicySaving(false);
-    }
   };
 
   const handleToggle = (enabled: boolean) => {
@@ -821,23 +743,6 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span
-                  style={{
-                    ...mono,
-                    fontSize: 10,
-                    padding: "5px 10px",
-                    borderRadius: 999,
-                    color: policyDirty ? "#ff9f0a" : "#30d158",
-                    background: policyDirty
-                      ? "rgba(255,159,10,0.12)"
-                      : "rgba(48,209,88,0.12)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {policyDirty ? t("policyUnsaved") : t("policySynced")}
-                </span>
                 <div style={{ ...mono, fontSize: 11, color: "rgba(255,255,255,0.58)" }}>
                   {policySummary}
                 </div>
@@ -857,99 +762,57 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
             {isPolicyOpen && (
               <>
+                {/* Timing & Limits — read-only */}
+                <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.38)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: -4 }}>
+                  {t("policyTimingTitle")}
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
                   {[
-                    {
-                      key: "cadenceMinutes" as const,
-                      label: t("cadenceLabel"),
-                      hint: t("cadenceHint", { derived: policy.derived.cadenceMinutes }),
-                      step: "5",
-                    },
-                    {
-                      key: "cooldownMinutes" as const,
-                      label: t("cooldownLabel"),
-                      hint: t("cooldownHint", { derived: policy.derived.cooldownMinutes }),
-                      step: "5",
-                    },
-                    {
-                      key: "maxTradesPerDay" as const,
-                      label: t("maxTradesLabel"),
-                      hint: t("maxTradesHint", { derived: policy.derived.maxTradesPerDay }),
-                      step: "1",
-                    },
-                    {
-                      key: "maxBetUsdc" as const,
-                      label: t("maxBetLabel"),
-                      hint: t("maxBetHint", { derived: policy.derived.maxBetUsdc.toFixed(2) }),
-                      step: "0.01",
-                    },
+                    { label: t("cadenceLabel"), value: `${policy.effective.cadenceMinutes}` },
+                    { label: t("cooldownLabel"), value: `${policy.effective.cooldownMinutes}` },
+                    { label: t("maxTradesLabel"), value: `${policy.effective.maxTradesPerDay}` },
+                    { label: t("maxBetLabel"), value: `$${policy.effective.maxBetUsdc.toFixed(2)}` },
                   ].map((field) => (
-                    <label key={field.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <span style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.52)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div key={field.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                         {field.label}
                       </span>
-                      <input
-                        value={policyDraft[field.key]}
-                        onChange={(event) => updatePolicyField(field.key, event.target.value)}
-                        inputMode="decimal"
-                        type="number"
-                        min="0"
-                        step={field.step}
-                        style={{
-                          ...mono,
-                          width: "100%",
-                          borderRadius: 10,
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          background: "rgba(8,10,16,0.72)",
-                          color: "rgba(255,255,255,0.92)",
-                          padding: "10px 12px",
-                          fontSize: 13,
-                        }}
-                      />
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", lineHeight: 1.4 }}>
-                        {field.hint}
+                      <span style={{ ...mono, fontSize: 14, color: "rgba(255,255,255,0.88)" }}>
+                        {field.value}
                       </span>
-                    </label>
+                    </div>
                   ))}
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={resetPolicyDraft}
-                    disabled={isPolicySaving || !policyDirty}
-                    style={{
-                      ...mono,
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      background: "rgba(255,255,255,0.04)",
-                      color: "rgba(255,255,255,0.78)",
-                      padding: "10px 14px",
-                      fontSize: 12,
-                      cursor: isPolicySaving || !policyDirty ? "default" : "pointer",
-                      opacity: isPolicySaving || !policyDirty ? 0.45 : 1,
-                    }}
-                  >
-                    {t("resetPolicy")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { void persistPolicy(); }}
-                    disabled={isPolicySaving || !policyDirty}
-                    style={{
-                      ...mono,
-                      borderRadius: 10,
-                      border: "1px solid rgba(10,132,255,0.30)",
-                      background: "rgba(10,132,255,0.16)",
-                      color: "#7dc4ff",
-                      padding: "10px 14px",
-                      fontSize: 12,
-                      cursor: isPolicySaving || !policyDirty ? "default" : "pointer",
-                      opacity: isPolicySaving || !policyDirty ? 0.45 : 1,
-                    }}
-                  >
-                    {isPolicySaving ? t("savingPolicy") : t("savePolicy")}
-                  </button>
+                {/* Risk Parameters — read-only */}
+                <div style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.38)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 8, marginBottom: -4 }}>
+                  {t("policyRiskTitle")}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                  {[
+                    { label: t("minSigmaLabel"), value: `${policy.effective.minSigma}` },
+                    { label: t("minKellyLabel"), value: `${policy.effective.minKelly}` },
+                    { label: t("kellyMultiplierLabel"), value: `${policy.effective.kellyMultiplier}` },
+                    { label: t("maxPositionLabel"), value: `${(policy.effective.maxPositionFraction * 100).toFixed(0)}%` },
+                    { label: t("dailyLossLabel"), value: `${(policy.effective.dailyLossLimitPct * 100).toFixed(0)}%` },
+                    {
+                      label: t("auraSentimentLabel"),
+                      value: policy.effective.useAuraSentiment ? t("auraSentimentOn") : t("auraSentimentOff"),
+                    },
+                  ].map((field) => (
+                    <div key={field.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        {field.label}
+                      </span>
+                      <span style={{ ...mono, fontSize: 14, color: "rgba(255,255,255,0.88)" }}>
+                        {field.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", lineHeight: 1.5, marginTop: 4 }}>
+                  {t("policyReadOnly")}
                 </div>
               </>
             )}
