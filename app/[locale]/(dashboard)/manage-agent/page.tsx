@@ -329,10 +329,12 @@ export default function ManageAgentPage() {
               polymarketReady={storeAgent?.polymarket_ready}
               polymarketStatus={storeAgent?.polymarket_status}
             />
-            <AutopilotControlCard
-              wallet={storeWallet}
-              onWalletRefresh={refreshWallet}
-            />
+            {storeAgent?.polymarket_ready && (
+              <AutopilotControlCard
+                wallet={storeWallet}
+                onWalletRefresh={refreshWallet}
+              />
+            )}
             <AiInsightCard signals={signals} loading={loading} />
             {storeAgent?.agent_type === "byo" ? (
               <>
