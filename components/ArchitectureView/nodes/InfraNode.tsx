@@ -2,15 +2,7 @@
 
 import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { InfraNodeData } from "../data/architectureData";
-
-const CATEGORY_COLORS: Record<string, string> = {
-  compute: "#64D2FF",
-  data: "#30D158",
-  messaging: "#FF9F0A",
-  auth: "#BF5AF2",
-  monitoring: "#FFD60A",
-};
+import { CATEGORY_COLORS, type InfraNodeData } from "../data/architectureData";
 
 function InfraNodeComponent({ data }: NodeProps) {
   const d = data as unknown as InfraNodeData;

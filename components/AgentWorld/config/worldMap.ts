@@ -222,6 +222,16 @@ export const PIPELINE_ORDER: RoomId[] = [
 
 export const PARALLEL_PHASE_ROOMS: RoomId[] = ["aura", "flux", "clause"];
 
+/** Particle sprite-sheet frame index per agent (shared by NPC effects + PipelineDirector) */
+export const PARTICLE_FRAME_BY_AGENT: Record<string, number> = {
+  aura: 5, oracle: 4, flux: 7, edge: 3, clause: 1, lucifer: 2, sigma: 5,
+};
+
+/** Convert a numeric hex color to a CSS hex string */
+export function colorToHex(color: number): string {
+  return `#${color.toString(16).padStart(6, "0")}`;
+}
+
 /** Waypoint graph for pathfinding between rooms via corridors */
 export interface Waypoint {
   x: number;

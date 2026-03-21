@@ -8,6 +8,7 @@ import {
   MAP_HEIGHT_PX,
   CORRIDOR_ROWS,
   getAgentRooms,
+  colorToHex,
   type RoomDef,
 } from "../config/worldMap";
 import { PhaserBridge } from "../PhaserBridge";
@@ -33,6 +34,10 @@ export class WorldScene extends Phaser.Scene {
   private roomGlows: Map<string, Phaser.GameObjects.Image> = new Map();
   private dustEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
   private stackSparkleEmitter: Phaser.GameObjects.Particles.ParticleEmitter | null = null;
+
+  // Bound ambient listeners (stored for cleanup)
+  private onAmbientPipelineState: ((state: import("@/store/useQuantikStore").PipelineState) => void) | null = null;
+  private onAmbientPricesUpdate: (() => void) | null = null;
 
   // First-visit onboarding
   private isFirstVisit = false;
@@ -93,19 +98,10 @@ export class WorldScene extends Phaser.Scene {
   // ── World Drawing ───────────────────────────────────────────────────
 
   private drawWorld(): void {
-    const hasWorldMap = this.textures.exists("world-map") && this.textures.get("world-map").key !== "__MISSING";
-
-    if (hasWorldMap) {
-      // Single pre-rendered background image
-      const bg = this.add.image(MAP_WIDTH_PX / 2, MAP_HEIGHT_PX / 2, "world-map");
-      bg.setDisplaySize(MAP_WIDTH_PX, MAP_HEIGHT_PX);
-      bg.setDepth(0);
-    } else {
-      // Fallback: the generated canvas texture from BootScene
-      const bg = this.add.image(MAP_WIDTH_PX / 2, MAP_HEIGHT_PX / 2, "world-map");
-      bg.setDisplaySize(MAP_WIDTH_PX, MAP_HEIGHT_PX);
-      bg.setDepth(0);
-    }
+    // Background image (real sprite or BootScene-generated canvas fallback — both use "world-map")
+    const bg = this.add.image(MAP_WIDTH_PX / 2, MAP_HEIGHT_PX / 2, "world-map");
+    bg.setDisplaySize(MAP_WIDTH_PX, MAP_HEIGHT_PX);
+    bg.setDepth(0);
 
     // Create clickable hit areas and DOM room labels for all rooms
     for (const room of ROOMS) {
@@ -137,7 +133,7 @@ export class WorldScene extends Phaser.Scene {
     hoverBorder.setDepth(2);
 
     // Hover label
-    const accentHex = this.colorToHex(room.theme.accentColor);
+    const accentHex = colorToHex(room.theme.accentColor);
     const label = this.add.text(centerX, ry * TILE_SIZE - 6, room.label, {
       fontFamily: '"SF Mono", "JetBrains Mono", monospace',
       fontSize: "7px",
@@ -377,21 +373,19 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // Pipeline intensity: scale dust particles when pipeline is running
-    this.bridge.on("pipeline:state", (state: import("@/store/useQuantikStore").PipelineState) => {
+    this.onAmbientPipelineState = (state: import("@/store/useQuantikStore").PipelineState) => {
       if (!this.dustEmitter) return;
-      if (state.running) {
-        this.dustEmitter.setFrequency(400);
-      } else {
-        this.dustEmitter.setFrequency(1000);
-      }
-    });
+      this.dustEmitter.setFrequency(state.running ? 400 : 1000);
+    };
+    this.bridge.on("pipeline:state", this.onAmbientPipelineState);
 
     // Price update sparkles
-    this.bridge.on("prices:update", () => {
+    this.onAmbientPricesUpdate = () => {
       if (this.stackSparkleEmitter) {
         this.stackSparkleEmitter.explode(4);
       }
-    });
+    };
+    this.bridge.on("prices:update", this.onAmbientPricesUpdate);
   }
 
   // ── First-Visit Onboarding ─────────────────────────────────────────
@@ -538,6 +532,8 @@ export class WorldScene extends Phaser.Scene {
     this.bridge.off("pipeline:state", this.pipelineDirector.onPipelineState, this.pipelineDirector);
     this.bridge.off("agent:event", this.pipelineDirector.onAgentEvent, this.pipelineDirector);
     this.bridge.off("trade:executed", this.pipelineDirector.onTradeExecuted, this.pipelineDirector);
+    if (this.onAmbientPipelineState) this.bridge.off("pipeline:state", this.onAmbientPipelineState);
+    if (this.onAmbientPricesUpdate) this.bridge.off("prices:update", this.onAmbientPricesUpdate);
 
     this.npcs.forEach((npc) => npc.destroy());
     this.mainAgent.destroy();
@@ -550,9 +546,4 @@ export class WorldScene extends Phaser.Scene {
     this.hoverLabels.clear();
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────
-
-  private colorToHex(color: number): string {
-    return `#${color.toString(16).padStart(6, "0")}`;
-  }
 }

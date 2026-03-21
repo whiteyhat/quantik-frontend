@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { TILE_SIZE, type RoomDef } from "../config/worldMap";
 import { SpeechBubble } from "./SpeechBubble";
 import { getRandomLine } from "../config/agentDialogue";
+import { PARTICLE_FRAME_BY_AGENT } from "../config/worldMap";
 
 // ─── Agent NPC Entity ─────────────────────────────────────────────────────────
 // Represents one of the 7 pipeline agents as an NPC inside their room.
@@ -263,17 +264,7 @@ export class AgentNPC {
     const px = this.sprite.x;
     const py = this.sprite.y - 8;
 
-    // Determine particle color index based on agent
-    const colorMap: Record<string, number> = {
-      aura: 5,    // purple
-      oracle: 4,  // blue
-      flux: 7,    // cyan
-      edge: 3,    // orange
-      clause: 1,  // green
-      lucifer: 2, // red
-      sigma: 5,   // purple
-    };
-    const frameIdx = colorMap[this.agentKey] ?? 0;
+    const frameIdx = PARTICLE_FRAME_BY_AGENT[this.agentKey] ?? 0;
 
     this.workingParticles = this.scene.add.particles(px, py, "particles", {
       frame: frameIdx,
@@ -386,12 +377,9 @@ export class AgentNPC {
       case 1:
         // Sparkle: single particle burst
         if (this.scene.textures.exists("particles")) {
-          const colorMap: Record<string, number> = {
-            aura: 5, oracle: 4, flux: 7, edge: 3, clause: 1, lucifer: 2, sigma: 5,
-          };
           const emitter = this.scene.add.particles(
             this.sprite.x, this.sprite.y - 6, "particles", {
-              frame: colorMap[this.agentKey] ?? 0,
+              frame: PARTICLE_FRAME_BY_AGENT[this.agentKey] ?? 0,
               speed: { min: 5, max: 12 },
               angle: { min: 240, max: 300 },
               lifespan: 500,

@@ -9,6 +9,7 @@ import {
   SERVICES,
   SERVICE_DETAILS,
   INFRA_NODES,
+  CATEGORY_COLORS,
   type MainNodeData,
   type SubAgentNodeData,
   type ServiceNodeData,
@@ -699,13 +700,6 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
 
 // ─── Infrastructure Details ──────────────────────────────────────────────────
 
-const CATEGORY_COLORS: Record<string, string> = {
-  compute: "#64D2FF",
-  data: "#30D158",
-  messaging: "#FF9F0A",
-  auth: "#BF5AF2",
-  monitoring: "#FFD60A",
-};
 
 function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData; nodeId: string; onNavigateToNode?: (nodeId: string) => void }) {
   const t = useTranslations("manageAgent.architecture");

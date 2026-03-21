@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import {
   ReactFlow,
@@ -49,7 +49,7 @@ export function ArchitectureCanvas() {
   const { fitView, getNode } = useReactFlow();
 
   // Sync live data into nodes when pipeline state changes
-  useMemo(() => {
+  useEffect(() => {
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
 
@@ -59,6 +59,17 @@ export function ArchitectureCanvas() {
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+  }, []);
+
+  const miniMapNodeColor = useCallback((node: Node) => {
+    const type = (node.data as { type?: string })?.type;
+    if (type === "main") return "#007AFF";
+    if (type === "sub-agent") {
+      const color = (node.data as { accentColor?: string })?.accentColor;
+      return color || "rgba(255,255,255,0.20)";
+    }
+    if (type === "infra") return "#64D2FF";
+    return "rgba(255,255,255,0.10)";
   }, []);
 
   const handleNavigateToNode = useCallback(
@@ -124,16 +135,7 @@ export function ArchitectureCanvas() {
         />
         <MiniMap
           position="bottom-left"
-          nodeColor={(node) => {
-            const type = (node.data as { type?: string })?.type;
-            if (type === "main") return "#007AFF";
-            if (type === "sub-agent") {
-              const color = (node.data as { accentColor?: string })?.accentColor;
-              return color || "rgba(255,255,255,0.20)";
-            }
-            if (type === "infra") return "#64D2FF";
-            return "rgba(255,255,255,0.10)";
-          }}
+          nodeColor={miniMapNodeColor}
           maskColor="rgba(0,0,0,0.70)"
           style={{
             background: "rgba(255,255,255,0.04)",

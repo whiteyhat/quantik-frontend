@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { type Personality } from "@/lib/agents";
+import { isPersonality, type Personality } from "@/lib/agents";
 import { getAuthToken } from "@/lib/api";
 import { readSSEStream } from "@/lib/sse";
 import {
@@ -627,7 +627,8 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const myAgent = useQuantikStore((state) => state.myAgent);
   const agentName = myAgent?.name ?? "Relay";
   const agentEmoji = myAgent?.avatar_emoji ?? "🤝";
-  const personality = (myAgent?.personality ?? "balanced") as Personality;
+  const rawPersonality = myAgent?.personality ?? "balanced";
+  const personality: Personality = isPersonality(rawPersonality) ? rawPersonality : "balanced";
   const theme = useMemo(() => getTheme(personality), [personality]);
 
   const defaultActions = useMemo(() => [

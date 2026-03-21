@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { PhaserBridge } from "./PhaserBridge";
 import { useWorldBridge } from "./useWorldBridge";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { getRoomByAgentKey, getRoomById, type RoomDef } from "./config/worldMap";
+import { getRoomByAgentKey, getRoomById, colorToHex, type RoomDef } from "./config/worldMap";
 import { getAgentLore, ROOM_DESCRIPTIONS, type AgentLore } from "./config/agentLore";
 
 // ─── Agent World Tab ──────────────────────────────────────────────────────────
@@ -180,7 +180,7 @@ function AgentDetailPanel({
   const agentState = pipeline.agents[resolvedKey];
   const lore = getAgentLore(resolvedKey);
   const roomDesc = ROOM_DESCRIPTIONS[agentKey];
-  const accentHex = room ? `#${room.theme.accentColor.toString(16).padStart(6, "0")}` : "#888";
+  const accentHex = room ? colorToHex(room.theme.accentColor) : "#888";
   const status = agentState?.status || "idle";
 
   // Determine title and description from translations, falling back to lore/roomDesc
@@ -237,8 +237,8 @@ function AgentDetailPanel({
         style={{
           background: "rgba(10,10,30,0.94)",
           backdropFilter: "blur(12px)",
-          borderLeft: `3px solid ${accentHex}`,
           border: `1px solid ${accentHex}33`,
+          borderLeft: `3px solid ${accentHex}`,
           borderRadius: 10,
           padding: "20px 24px",
           minWidth: 300,

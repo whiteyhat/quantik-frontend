@@ -7,11 +7,12 @@ import type { WorldScene } from "../scenes/WorldScene";
 import { FloatingText, formatAgentResult } from "../entities/FloatingText";
 import {
   PARALLEL_PHASE_ROOMS,
+  PARTICLE_FRAME_BY_AGENT,
   getRoomByAgentKey,
   getRoomById,
+  TILE_SIZE,
   type RoomId,
 } from "../config/worldMap";
-import { TILE_SIZE } from "../config/worldMap";
 
 // ─── Pipeline Director ────────────────────────────────────────────────────────
 // Orchestrates main agent movement + NPC state changes based on real-time
@@ -324,10 +325,7 @@ export class PipelineDirector {
     const py = npc.sprite.y - 16;
 
     // Small sparkle burst in agent's color
-    const colorMap: Record<string, number> = {
-      aura: 5, oracle: 4, flux: 7, edge: 3, clause: 1, lucifer: 2, sigma: 5,
-    };
-    const frame = colorMap[npc.agentKey] ?? 0;
+    const frame = PARTICLE_FRAME_BY_AGENT[npc.agentKey] ?? 0;
 
     const emitter = this.scene.add.particles(px, py, "particles", {
       frame,

@@ -5,18 +5,21 @@ import type { Node } from "@xyflow/react";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { getInitialNodes, getInitialEdges, type SubAgentNodeData } from "../data/architectureData";
 
+// Precompute static nodes and edges once at module level
+// (layout, services, infra never change at runtime)
+const BASE_NODES = getInitialNodes();
+const STATIC_EDGES = getInitialEdges();
+
 /**
  * Merges static architecture data with live pipeline state from Zustand.
- * Updates sub-agent node statuses based on pipeline.agents state.
+ * Only patches the main node + 7 sub-agent nodes; static nodes pass through unchanged.
  */
 export function useArchitectureState() {
   const pipelineAgents = useQuantikStore((s) => s.pipeline.agents);
   const myAgent = useQuantikStore((s) => s.myAgent);
 
   const nodes = useMemo(() => {
-    const base = getInitialNodes();
-
-    return base.map((node): Node => {
+    return BASE_NODES.map((node): Node => {
       // Update main node with real agent data
       if (node.id === "fenrir" && myAgent) {
         return {
@@ -51,7 +54,5 @@ export function useArchitectureState() {
     });
   }, [pipelineAgents, myAgent]);
 
-  const edges = useMemo(() => getInitialEdges(), []);
-
-  return { nodes, edges };
+  return { nodes, edges: STATIC_EDGES };
 }

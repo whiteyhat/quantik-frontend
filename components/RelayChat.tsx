@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { agentChipColor, type AgentName } from "@/lib/agents";
+import { agentChipColor, isAgentName, type AgentName } from "@/lib/agents";
 import { getAuthToken } from "@/lib/api";
 import { getRelaySidebarSessionId } from "@/lib/relaySidebar";
 import { readSSEStream } from "@/lib/sse";
@@ -736,7 +736,7 @@ function getSuggestedQuestions(
 
   const analysis: string[] = [];
   for (const agent of routedTo) {
-    const pool = analysisByAgent[agent as AgentName] ?? [];
+    const pool = isAgentName(agent) ? analysisByAgent[agent] ?? [] : [];
     for (const q of pool) {
       if (!analysis.includes(q) && analysis.length < 2) analysis.push(q);
     }

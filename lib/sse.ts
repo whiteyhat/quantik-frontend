@@ -22,7 +22,7 @@ export async function readSSEStream(
 
     for (const line of lines) {
       if (!line.startsWith("data:")) continue;
-      const payload = line.slice(line.charAt(5) === " " ? 6 : 5).trim();
+      const payload = line.substring(5).trim();
       if (!payload || payload === "[DONE]") continue;
       onLine(payload);
     }
