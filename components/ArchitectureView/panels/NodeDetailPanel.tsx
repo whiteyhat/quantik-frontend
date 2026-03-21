@@ -467,6 +467,181 @@ function ServiceListItem({ icon, label, color, onClick }: { icon: string; label:
   );
 }
 
+// ─── Shared Detail Sub-components ────────────────────────────────────────────
+
+type FeedItem = { time: string; message: string };
+type LogItem = { time: string; level: "info" | "warn" | "error"; message: string };
+
+function LiveFeed({ feed, accentColor, t }: { feed: FeedItem[]; accentColor: string; t: ReturnType<typeof useTranslations> }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={sectionLabelStyle}>{t("liveFeed")}</span>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: accentColor, animation: "pulse-ring 1.2s ease-out infinite" }} />
+      </div>
+      <div
+        style={{
+          maxHeight: 140,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          borderRadius: 10,
+          background: "rgba(0,0,0,0.20)",
+          border: "1px solid rgba(255,255,255,0.04)",
+          padding: 8,
+        }}
+        className="scrollbar-hide"
+      >
+        {feed.map((item, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: MONO_FONT_LIGHT, flexShrink: 0, marginTop: 1 }}>
+              {item.time}
+            </span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
+              {item.message}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SourceTags({ sources, t }: { sources: string[]; t: ReturnType<typeof useTranslations> }) {
+  return (
+    <div>
+      <span style={sectionLabelStyle}>{t("dataSources")}</span>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+        {sources.map((src, i) => (
+          <span
+            key={i}
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              padding: "3px 8px",
+              borderRadius: 6,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.50)",
+              fontFamily: MONO_FONT_LIGHT,
+            }}
+          >
+            {src}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CollapsibleLogs({ logs, logsOpen, setLogsOpen, t }: { logs: LogItem[]; logsOpen: boolean; setLogsOpen: (v: boolean) => void; t: ReturnType<typeof useTranslations> }) {
+  return (
+    <div>
+      <button
+        onClick={() => setLogsOpen(!logsOpen)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "4px 0",
+          color: "inherit",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={sectionLabelStyle}>{t("systemLogs")}</span>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              padding: "1px 6px",
+              borderRadius: 4,
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.30)",
+              fontFamily: MONO_FONT_LIGHT,
+            }}
+          >
+            {logs.length}
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: 10,
+            color: "rgba(255,255,255,0.25)",
+            transform: logsOpen ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 200ms ease",
+          }}
+        >
+          &#x25B8;
+        </span>
+      </button>
+
+      <div
+        style={{
+          maxHeight: logsOpen ? 300 : 0,
+          overflow: "hidden",
+          transition: "max-height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        }}
+      >
+        <div
+          style={{
+            marginTop: 8,
+            borderRadius: 10,
+            background: "rgba(0,0,0,0.30)",
+            border: "1px solid rgba(255,255,255,0.04)",
+            padding: 8,
+            fontFamily: MONO_FONT,
+          }}
+        >
+          {logs.map((log, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                gap: 6,
+                padding: "3px 0",
+                borderBottom: i < logs.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
+                alignItems: "flex-start",
+              }}
+            >
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", flexShrink: 0, marginTop: 1 }}>
+                {log.time}
+              </span>
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                  flexShrink: 0,
+                  marginTop: 1,
+                  background:
+                    log.level === "error" ? "rgba(255,69,58,0.15)"
+                    : log.level === "warn" ? "rgba(255,159,10,0.15)"
+                    : "rgba(0,122,255,0.10)",
+                  color:
+                    log.level === "error" ? "var(--ios-red)"
+                    : log.level === "warn" ? "var(--ios-orange)"
+                    : "var(--ios-blue)",
+                }}
+              >
+                {log.level.toUpperCase()}
+              </span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+                {log.message}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Service Details ─────────────────────────────────────────────────────────
 
 function ServiceDetails({ data }: { data: ServiceNodeData }) {
@@ -521,171 +696,11 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
           </div>
 
           <Separator />
-
-          {/* Live Feed */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={sectionLabelStyle}>{t("liveFeed")}</span>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ios-blue)", animation: "pulse-ring 1.2s ease-out infinite" }} />
-            </div>
-            <div
-              style={{
-                maxHeight: 140,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.20)",
-                border: "1px solid rgba(255,255,255,0.04)",
-                padding: 8,
-              }}
-              className="scrollbar-hide"
-            >
-              {details.feed.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < details.feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: MONO_FONT_LIGHT, flexShrink: 0, marginTop: 1 }}>
-                    {item.time}
-                  </span>
-                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
-                    {item.message}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          <LiveFeed feed={details.feed} accentColor="var(--ios-blue)" t={t} />
           <Separator />
-
-          {/* Sources */}
-          <div>
-            <span style={sectionLabelStyle}>{t("dataSources")}</span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-              {details.sources.map((src, i) => (
-                <span
-                  key={i}
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    padding: "3px 8px",
-                    borderRadius: 6,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.50)",
-                    fontFamily: MONO_FONT_LIGHT,
-                  }}
-                >
-                  {src}
-                </span>
-              ))}
-            </div>
-          </div>
-
+          <SourceTags sources={details.sources} t={t} />
           <Separator />
-
-          {/* Collapsible Logs */}
-          <div>
-            <button
-              onClick={() => setLogsOpen(!logsOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
-                color: "inherit",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={sectionLabelStyle}>{t("systemLogs")}</span>
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    padding: "1px 6px",
-                    borderRadius: 4,
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.30)",
-                    fontFamily: MONO_FONT_LIGHT,
-                  }}
-                >
-                  {details.logs.length}
-                </span>
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "rgba(255,255,255,0.25)",
-                  transform: logsOpen ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 200ms ease",
-                }}
-              >
-                &#x25B8;
-              </span>
-            </button>
-
-            <div
-              style={{
-                maxHeight: logsOpen ? 300 : 0,
-                overflow: "hidden",
-                transition: "max-height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-              }}
-            >
-              <div
-                style={{
-                  marginTop: 8,
-                  borderRadius: 10,
-                  background: "rgba(0,0,0,0.30)",
-                  border: "1px solid rgba(255,255,255,0.04)",
-                  padding: 8,
-                  fontFamily: MONO_FONT,
-                }}
-              >
-                {details.logs.map((log, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      gap: 6,
-                      padding: "3px 0",
-                      borderBottom: i < details.logs.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", flexShrink: 0, marginTop: 1 }}>
-                      {log.time}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        padding: "1px 4px",
-                        borderRadius: 3,
-                        flexShrink: 0,
-                        marginTop: 1,
-                        background:
-                          log.level === "error" ? "rgba(255,69,58,0.15)"
-                          : log.level === "warn" ? "rgba(255,159,10,0.15)"
-                          : "rgba(0,122,255,0.10)",
-                        color:
-                          log.level === "error" ? "var(--ios-red)"
-                          : log.level === "warn" ? "var(--ios-orange)"
-                          : "var(--ios-blue)",
-                      }}
-                    >
-                      {log.level.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
-                      {log.message}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <CollapsibleLogs logs={details.logs} logsOpen={logsOpen} setLogsOpen={setLogsOpen} t={t} />
         </>
       )}
     </>
@@ -813,170 +828,11 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
 
       {details && (
         <>
-          {/* Live Feed */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={sectionLabelStyle}>{t("liveFeed")}</span>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: accent, animation: "pulse-ring 1.2s ease-out infinite" }} />
-            </div>
-            <div
-              style={{
-                maxHeight: 140,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                borderRadius: 10,
-                background: "rgba(0,0,0,0.20)",
-                border: "1px solid rgba(255,255,255,0.04)",
-                padding: 8,
-              }}
-              className="scrollbar-hide"
-            >
-              {details.feed.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < details.feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: MONO_FONT_LIGHT, flexShrink: 0, marginTop: 1 }}>
-                    {item.time}
-                  </span>
-                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
-                    {item.message}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          <LiveFeed feed={details.feed} accentColor={accent} t={t} />
           <Separator />
-
-          {/* Sources */}
-          <div>
-            <span style={sectionLabelStyle}>{t("dataSources")}</span>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-              {details.sources.map((src, i) => (
-                <span
-                  key={i}
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    padding: "3px 8px",
-                    borderRadius: 6,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.50)",
-                    fontFamily: MONO_FONT_LIGHT,
-                  }}
-                >
-                  {src}
-                </span>
-              ))}
-            </div>
-          </div>
-
+          <SourceTags sources={details.sources} t={t} />
           <Separator />
-
-          {/* Collapsible Logs */}
-          <div>
-            <button
-              onClick={() => setLogsOpen(!logsOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
-                color: "inherit",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={sectionLabelStyle}>{t("systemLogs")}</span>
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    padding: "1px 6px",
-                    borderRadius: 4,
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.30)",
-                    fontFamily: MONO_FONT_LIGHT,
-                  }}
-                >
-                  {details.logs.length}
-                </span>
-              </div>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "rgba(255,255,255,0.25)",
-                  transform: logsOpen ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 200ms ease",
-                }}
-              >
-                &#x25B8;
-              </span>
-            </button>
-
-            <div
-              style={{
-                maxHeight: logsOpen ? 300 : 0,
-                overflow: "hidden",
-                transition: "max-height 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-              }}
-            >
-              <div
-                style={{
-                  marginTop: 8,
-                  borderRadius: 10,
-                  background: "rgba(0,0,0,0.30)",
-                  border: "1px solid rgba(255,255,255,0.04)",
-                  padding: 8,
-                  fontFamily: MONO_FONT,
-                }}
-              >
-                {details.logs.map((log, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      gap: 6,
-                      padding: "3px 0",
-                      borderBottom: i < details.logs.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", flexShrink: 0, marginTop: 1 }}>
-                      {log.time}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        padding: "1px 4px",
-                        borderRadius: 3,
-                        flexShrink: 0,
-                        marginTop: 1,
-                        background:
-                          log.level === "error" ? "rgba(255,69,58,0.15)"
-                          : log.level === "warn" ? "rgba(255,159,10,0.15)"
-                          : "rgba(0,122,255,0.10)",
-                        color:
-                          log.level === "error" ? "var(--ios-red)"
-                          : log.level === "warn" ? "var(--ios-orange)"
-                          : "var(--ios-blue)",
-                      }}
-                    >
-                      {log.level.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
-                      {log.message}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <CollapsibleLogs logs={details.logs} logsOpen={logsOpen} setLogsOpen={setLogsOpen} t={t} />
         </>
       )}
     </>

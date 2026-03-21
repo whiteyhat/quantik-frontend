@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import {
   ReactFlow,
@@ -48,6 +48,11 @@ export function ArchitectureCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const { fitView, getNode } = useReactFlow();
+  const navigateTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    return () => navigateTimers.current.forEach(clearTimeout);
+  }, []);
 
   // Sync live data into nodes when pipeline state changes
   useEffect(() => {
@@ -78,15 +83,21 @@ export function ArchitectureCanvas() {
       const targetNode = getNode(nodeId);
       if (!targetNode) return;
 
+      // Clear any in-flight navigation timers
+      navigateTimers.current.forEach(clearTimeout);
+      navigateTimers.current = [];
+
       // Close current panel, navigate, then open target's panel
       setSelectedNode(null);
-      setTimeout(() => {
+      const t1 = setTimeout(() => {
         fitView({ nodes: [{ id: nodeId }], duration: 600, padding: 0.5, maxZoom: 1.5 });
-        setTimeout(() => {
+        const t2 = setTimeout(() => {
           const freshNode = getNode(nodeId);
           if (freshNode) setSelectedNode(freshNode);
         }, 650);
+        navigateTimers.current.push(t2);
       }, 220); // wait for panel exit animation
+      navigateTimers.current.push(t1);
     },
     [fitView, getNode]
   );

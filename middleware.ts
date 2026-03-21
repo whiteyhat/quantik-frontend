@@ -10,6 +10,8 @@ const isPublicRoute = createRouteMatcher([
   "/:locale/manifest.json",
   "/:locale/sign-in(.*)",
   "/:locale/sign-up(.*)",
+  "/:locale/architecture",
+  "/:locale/world",
   "/api(.*)",
 ]);
 
