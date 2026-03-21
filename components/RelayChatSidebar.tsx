@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { getAuthToken } from "@/lib/api";
+import { readSSEStream } from "@/lib/sse";
 import {
   extractLatestSignalTimestamp,
   formatRelayRelativeTime,
@@ -1024,24 +1025,9 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (!payload || payload === "[DONE]") continue;
-          handleParsedEvent(parseRelaySidebarEvent(payload));
-        }
-      }
+      await readSSEStream(reader, (payload) => {
+        handleParsedEvent(parseRelaySidebarEvent(payload));
+      });
     } catch (error) {
       clearTimeout(fetchTimeout);
       setSending(false);

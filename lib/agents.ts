@@ -1,6 +1,6 @@
 // Centralized agent metadata — single source of truth for all 7 pipeline agents.
 
-export const AGENT_NAMES = ["aura", "flux", "oracle", "edge", "clause", "lucifer", "sigma"] as const;
+export const AGENT_NAMES = ["aura", "flux", "clause", "oracle", "edge", "lucifer", "sigma"] as const;
 export type AgentName = (typeof AGENT_NAMES)[number];
 
 export function isAgentName(value: string): value is AgentName {

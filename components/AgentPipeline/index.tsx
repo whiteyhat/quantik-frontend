@@ -15,6 +15,7 @@ import {
   type ClauseResult,
   type LuciferResult,
 } from "@/lib/api";
+import { readSSEStream } from "@/lib/sse";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -1069,36 +1070,25 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
         }
 
         const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
         let accumulated = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event = JSON.parse(line.slice(6).trim()) as {
-                type: string;
-                token?: string;
-                reply?: string;
-              };
-              if (event.type === "token" && event.token) {
-                accumulated += event.token;
-                setInsightText(accumulated);
-              } else if (event.type === "done") {
-                if (event.reply) setInsightText(event.reply);
-                setInsightLoading(false);
-              }
-            } catch {
-              // skip
+        await readSSEStream(reader, (jsonStr) => {
+          try {
+            const event = JSON.parse(jsonStr) as {
+              type: string;
+              token?: string;
+              reply?: string;
+            };
+            if (event.type === "token" && event.token) {
+              accumulated += event.token;
+              setInsightText(accumulated);
+            } else if (event.type === "done") {
+              if (event.reply) setInsightText(event.reply);
+              setInsightLoading(false);
             }
+          } catch {
+            // skip
           }
-        }
+        });
         setInsightLoading(false);
       })
       .catch(() => {

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { getAuthToken } from "@/lib/api";
 import { getRelaySidebarSessionId } from "@/lib/relaySidebar";
+import { readSSEStream } from "@/lib/sse";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -126,85 +127,66 @@ export function RelayChat({ slug }: RelayChatProps) {
         ]);
 
         const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
+        await readSSEStream(reader, (jsonStr) => {
+          try {
+            const event = JSON.parse(jsonStr) as {
+              type: string;
+              token?: string;
+              reply?: string;
+              latencyMs?: number;
+              model?: string;
+              routedTo?: string[];
+              agentData?: Record<string, unknown> | null;
+              error?: string;
+            };
 
-        const processChunk = (chunk: string) => {
-          buffer += chunk;
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const jsonStr = line.slice(6).trim();
-            if (!jsonStr) continue;
-
-            try {
-              const event = JSON.parse(jsonStr) as {
-                type: string;
-                token?: string;
-                reply?: string;
-                latencyMs?: number;
-                model?: string;
-                routedTo?: string[];
-                agentData?: Record<string, unknown> | null;
-                error?: string;
-              };
-
-              if (event.type === "token" && event.token) {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === placeholderId
-                      ? { ...m, text: m.text + event.token! }
-                      : m
-                  )
-                );
-              } else if (event.type === "metadata") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === placeholderId
-                      ? { ...m, routedTo: event.routedTo, agentData: event.agentData }
-                      : m
-                  )
-                );
-              } else if (event.type === "done") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === placeholderId
-                      ? {
-                          ...m,
-                          streaming: false,
-                          text: event.reply ?? m.text,
-                          latencyMs: event.latencyMs,
-                          model: event.model,
-                          routedTo: event.routedTo ?? m.routedTo,
-                          agentData: event.agentData ?? m.agentData,
-                        }
-                      : m
-                  )
-                );
-                setSending(false);
-              } else if (event.type === "error") {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === placeholderId
-                      ? { ...m, streaming: false, text: event.error ?? t("offline") }
-                      : m
-                  )
-                );
-                setSending(false);
-              }
-            } catch {
-              // skip malformed JSON
+            if (event.type === "token" && event.token) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId
+                    ? { ...m, text: m.text + event.token! }
+                    : m
+                )
+              );
+            } else if (event.type === "metadata") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId
+                    ? { ...m, routedTo: event.routedTo, agentData: event.agentData }
+                    : m
+                )
+              );
+            } else if (event.type === "done") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId
+                    ? {
+                        ...m,
+                        streaming: false,
+                        text: event.reply ?? m.text,
+                        latencyMs: event.latencyMs,
+                        model: event.model,
+                        routedTo: event.routedTo ?? m.routedTo,
+                        agentData: event.agentData ?? m.agentData,
+                      }
+                    : m
+                )
+              );
+              setSending(false);
+            } else if (event.type === "error") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === placeholderId
+                    ? { ...m, streaming: false, text: event.error ?? t("offline") }
+                    : m
+                )
+              );
+              setSending(false);
             }
+          } catch {
+            // skip malformed JSON
           }
-        };
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          processChunk(decoder.decode(value, { stream: true }));
-        }
+        });
 
         // Ensure streaming flag is cleared if stream ended without done event
         setMessages((prev) =>
