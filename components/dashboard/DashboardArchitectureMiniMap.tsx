@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { AlertTriangle, ArrowRight, Circle, Power, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AGENT_ANGLES, AGENT_META } from "@/components/ArchitectureView/data/architectureData";
 import {
@@ -10,6 +10,7 @@ import {
   StatusBadge,
 } from "@/components/dashboard/DashboardPrimitives";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { agentStatusTone, countAgentStatuses, type DashboardAgentRow } from "@/lib/dashboard";
 import type { MyAgent } from "@/store/useQuantikStore";
 
@@ -108,22 +109,30 @@ export function DashboardArchitectureMiniMap({
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">{t("live")}</div>
-              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--good">{liveAgents}</div>
-            </div>
-            <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">{t("idle")}</div>
-              <div className="dashboard-mini-map-stat-value">{idleAgents}</div>
-            </div>
-            <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">{t("degraded")}</div>
-              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--warn">{degradedAgents}</div>
-            </div>
-            <div className="dashboard-mini-map-stat">
-              <div className="dashboard-mini-map-stat-label">{t("down")}</div>
-              <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--bad">{downAgents}</div>
-            </div>
+            <Tooltip text={t("live")}>
+              <div className="dashboard-mini-map-stat">
+                <div className="dashboard-mini-map-stat-label"><Zap className="size-3.5 text-emerald-400" /></div>
+                <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--good">{liveAgents}</div>
+              </div>
+            </Tooltip>
+            <Tooltip text={t("idle")}>
+              <div className="dashboard-mini-map-stat">
+                <div className="dashboard-mini-map-stat-label"><Circle className="size-3.5 text-white/40" /></div>
+                <div className="dashboard-mini-map-stat-value">{idleAgents}</div>
+              </div>
+            </Tooltip>
+            <Tooltip text={t("degraded")}>
+              <div className="dashboard-mini-map-stat">
+                <div className="dashboard-mini-map-stat-label"><AlertTriangle className="size-3.5 text-amber-400" /></div>
+                <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--warn">{degradedAgents}</div>
+              </div>
+            </Tooltip>
+            <Tooltip text={t("down")}>
+              <div className="dashboard-mini-map-stat">
+                <div className="dashboard-mini-map-stat-label"><Power className="size-3.5 text-red-400" /></div>
+                <div className="dashboard-mini-map-stat-value dashboard-mini-map-stat-value--bad">{downAgents}</div>
+              </div>
+            </Tooltip>
           </div>
 
           <div className="flex flex-wrap gap-2">

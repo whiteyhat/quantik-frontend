@@ -5,18 +5,11 @@ import { useRouter, usePathname } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
 import { useTransition } from "react";
 
-const localeLabels: Record<Locale, string> = {
-  en: "🇺🇸 English",
-  es: "🇪🇸 Espanol",
-  fr: "🇫🇷 Francais",
-  de: "🇩🇪 Deutsch",
-};
-
-const localeFlags: Record<Locale, string> = {
-  en: "🇺🇸 EN",
-  es: "🇪🇸 ES",
-  fr: "🇫🇷 FR",
-  de: "🇩🇪 DE",
+const LOCALE_META: Record<Locale, { flag: string; code: string; name: string }> = {
+  en: { flag: "🇺🇸", code: "EN", name: "English" },
+  es: { flag: "🇪🇸", code: "ES", name: "Espanol" },
+  fr: { flag: "🇫🇷", code: "FR", name: "Francais" },
+  de: { flag: "🇩🇪", code: "DE", name: "Deutsch" },
 };
 
 interface LanguageSwitcherProps {
@@ -71,7 +64,7 @@ export function LanguageSwitcher({ variant = "default" }: LanguageSwitcherProps)
       >
         {routing.locales.map((loc) => (
           <option key={loc} value={loc} style={{ background: "#1a1a1a" }}>
-            {localeFlags[loc]}
+            {`${LOCALE_META[loc].flag} ${LOCALE_META[loc].code}`}
           </option>
         ))}
       </select>
@@ -114,7 +107,7 @@ export function LanguageSwitcher({ variant = "default" }: LanguageSwitcherProps)
       >
         {routing.locales.map((loc) => (
           <option key={loc} value={loc} style={{ background: "#1a1a1a" }}>
-            {localeLabels[loc]}
+            {`${LOCALE_META[loc].flag} ${LOCALE_META[loc].name}`}
           </option>
         ))}
       </select>

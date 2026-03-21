@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useRef, useCallback } from "react";
 import { motion, useScroll, useReducedMotion } from "framer-motion";
 import { useTouchDevice } from "@/hooks/useTouchDevice";

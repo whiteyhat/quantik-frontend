@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { routing } from "../../i18n/routing";
 
-const localeFiles = [
-  "messages/en.json",
-  "messages/es.json",
-  "messages/fr.json",
-  "messages/de.json",
-];
+const localeFiles = routing.locales.map((l) => `messages/${l}.json`);
 
 const requiredArenaKeys = [
   "ctaForgeContender",

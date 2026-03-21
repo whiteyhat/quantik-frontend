@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
@@ -114,9 +114,9 @@ export function TradeConfirmationModal() {
 
   // Reset trade amount when modal opens with new pending trade
   const pendingSlug = pending?.slug;
-  const prevSlugRef = useState<string | null>(null);
-  if (open && pendingSlug && pendingSlug !== prevSlugRef[0]) {
-    prevSlugRef[1](pendingSlug);
+  const prevSlugRef = useRef<string | null>(null);
+  if (open && pendingSlug && pendingSlug !== prevSlugRef.current) {
+    prevSlugRef.current = pendingSlug;
     setTradeAmount(sigma?.size_usd && sigma.size_usd > 0 ? sigma.size_usd : DEFAULT_TRADE_SIZE);
   }
 

@@ -284,6 +284,15 @@ function PanicCheckbox({
   );
 }
 
+const GLASS_PANEL: React.CSSProperties = {
+  background: "rgba(255,255,255,0.05)",
+  backdropFilter: "blur(24px) saturate(180%)",
+  WebkitBackdropFilter: "blur(24px) saturate(180%)",
+  border: "1px solid rgba(255,255,255,0.09)",
+  borderRadius: 14,
+  padding: 20,
+};
+
 type ModalState =
   | "loading"
   | "idle"
@@ -332,10 +341,14 @@ function PanicModal({ onClose }: { onClose: () => void }) {
       setPanicStatus((current) => {
         if (!current?.cooldownEndsAt) return current;
         const remaining = Math.max(0, current.cooldownEndsAt - Date.now());
+        const newCanRearm = current.active && remaining === 0;
+        if (remaining === current.cooldownRemainingMs && newCanRearm === current.canRearm) {
+          return current; // no change — skip re-render
+        }
         return {
           ...current,
           cooldownRemainingMs: remaining,
-          canRearm: current.active && remaining === 0,
+          canRearm: newCanRearm,
         };
       });
     }, 1000);
@@ -381,7 +394,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
       return t("rearmUnlocksIn", { countdown: formatCountdown(panicStatus.cooldownRemainingMs) });
     }
     return t("cooldownComplete");
-  }, [panicStatus]);
+  }, [panicStatus?.active, panicStatus?.cooldownEndsAt, panicStatus?.cooldownRemainingMs, t]);
 
   const handleActivate = useCallback(async () => {
     if (!canActivate) return;
@@ -525,16 +538,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
           </p>
         </div>
 
-        <div
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 14,
-            padding: 20,
-          }}
-        >
+        <div style={GLASS_PANEL}>
           <div
             style={{
               fontSize: LABEL_SIZE,
@@ -586,16 +590,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
 
         {!panicStatus?.active ? (
           <>
-            <div
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                backdropFilter: "blur(24px) saturate(180%)",
-                WebkitBackdropFilter: "blur(24px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                borderRadius: 14,
-                padding: 20,
-              }}
-            >
+            <div style={GLASS_PANEL}>
               <div
                 style={{
                   fontSize: LABEL_SIZE,
@@ -627,16 +622,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                backdropFilter: "blur(24px) saturate(180%)",
-                WebkitBackdropFilter: "blur(24px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                borderRadius: 14,
-                padding: 20,
-                display: "grid",
-                gap: 14,
-              }}
+              style={{ ...GLASS_PANEL, display: "grid", gap: 14 }}
             >
               <label style={{ display: "grid", gap: 8 }}>
                 <span
@@ -672,14 +658,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                backdropFilter: "blur(24px) saturate(180%)",
-                WebkitBackdropFilter: "blur(24px) saturate(180%)",
-                border: "1px solid rgba(255,69,58,0.15)",
-                borderRadius: 14,
-                padding: "18px 20px",
-              }}
+              style={{ ...GLASS_PANEL, border: "1px solid rgba(255,69,58,0.15)", padding: "18px 20px" }}
             >
               <div
                 style={{
@@ -703,16 +682,7 @@ function PanicModal({ onClose }: { onClose: () => void }) {
           </>
         ) : (
           <div
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              backdropFilter: "blur(24px) saturate(180%)",
-              WebkitBackdropFilter: "blur(24px) saturate(180%)",
-              border: "1px solid rgba(255,255,255,0.09)",
-              borderRadius: 14,
-              padding: 20,
-              display: "grid",
-              gap: 14,
-            }}
+            style={{ ...GLASS_PANEL, display: "grid", gap: 14 }}
           >
             <div
               style={{

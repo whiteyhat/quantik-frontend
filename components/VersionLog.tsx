@@ -8,18 +8,18 @@ import { getReleases } from "@/lib/api";
 import { CURRENT_VERSION, type ReleaseEntry } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 
-type SupportedLocale = "en" | "es" | "fr" | "de";
+import { routing, type Locale } from "@/i18n/routing";
+import { hasLocale } from "next-intl";
 
-function localeKey(locale: string): SupportedLocale {
-  if (locale === "es" || locale === "fr" || locale === "de") return locale;
-  return "en";
+function localeKey(locale: string): Locale {
+  return hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
 }
 
-function pick(map: Record<SupportedLocale, string>, locale: SupportedLocale): string {
+function pick(map: Record<Locale, string>, locale: Locale): string {
   return map[locale] || map.en;
 }
 
-function pickArr(map: Record<SupportedLocale, string[]>, locale: SupportedLocale): string[] {
+function pickArr(map: Record<Locale, string[]>, locale: Locale): string[] {
   return (map[locale]?.length ? map[locale] : map.en) ?? [];
 }
 

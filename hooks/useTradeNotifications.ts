@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback } from "react";
 import { useSocketEvent, TradeEvent, AgentAlertEvent, NotificationEvent } from "@/context/SocketContext";
 
 /** Request browser notification permission on mount */
@@ -36,15 +36,8 @@ function showNotification(title: string, body: string, tag?: string) {
  */
 export function useTradeNotifications() {
   useNotificationPermission();
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
 
   const handleTrade = useCallback((trade: TradeEvent) => {
-    if (!mountedRef.current) return;
     const mode = trade.paper ? "Paper" : "Live";
     showNotification(
       `${mode} Trade Executed`,
@@ -54,7 +47,6 @@ export function useTradeNotifications() {
   }, []);
 
   const handleAlert = useCallback((alert: AgentAlertEvent) => {
-    if (!mountedRef.current) return;
     showNotification(
       alert.title,
       alert.message,
@@ -63,7 +55,6 @@ export function useTradeNotifications() {
   }, []);
 
   const handleNotification = useCallback((notification: NotificationEvent) => {
-    if (!mountedRef.current) return;
     showNotification(
       notification.title,
       notification.message,

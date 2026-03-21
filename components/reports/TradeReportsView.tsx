@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, fmtPrice, fmtUSDC, type Trade, type TradeReportsResponse } from "@/lib/api";
@@ -22,6 +22,14 @@ const panelStyle: React.CSSProperties = {
   border: "1px solid var(--glass-border)",
   borderRadius: 18,
   padding: 20,
+};
+
+const filterControlStyle: React.CSSProperties = {
+  padding: "12px 14px",
+  borderRadius: 14,
+  border: "1px solid var(--glass-border)",
+  background: "var(--glass-surface)",
+  color: "var(--text-primary)",
 };
 
 type Period = "day" | "week" | "month" | "all";
@@ -120,15 +128,23 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
   const [outcome, setOutcome] = useState<OutcomeFilter>("All");
   const [source, setSource] = useState<SourceFilter>("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [data, setData] = useState<TradeReportsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [search]);
+
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
-    api.getTradeReports({ period, outcome, source, search })
+    api.getTradeReports({ period, outcome, source, search: debouncedSearch })
       .then((response) => {
         if (active) setData(response);
       })
@@ -141,7 +157,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
     return () => {
       active = false;
     };
-  }, [period, outcome, source, search]);
+  }, [period, outcome, source, debouncedSearch]);
 
   const trades = data?.trades ?? [];
   const summary = data?.summary;
@@ -226,13 +242,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
           <select
             value={outcome}
             onChange={(event) => setOutcome(event.target.value as OutcomeFilter)}
-            style={{
-              padding: "12px 14px",
-              borderRadius: 14,
-              border: "1px solid var(--glass-border)",
-              background: "var(--glass-surface)",
-              color: "var(--text-primary)",
-            }}
+            style={filterControlStyle}
           >
             <option value="All">All outcomes</option>
             <option value="WIN">Wins</option>
@@ -243,13 +253,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
           <select
             value={source}
             onChange={(event) => setSource(event.target.value as SourceFilter)}
-            style={{
-              padding: "12px 14px",
-              borderRadius: 14,
-              border: "1px solid var(--glass-border)",
-              background: "var(--glass-surface)",
-              color: "var(--text-primary)",
-            }}
+            style={filterControlStyle}
           >
             <option value="all">All sources</option>
             <option value="manual">Manual</option>
@@ -259,13 +263,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("searchPlaceholder")}
-            style={{
-              padding: "12px 14px",
-              borderRadius: 14,
-              border: "1px solid var(--glass-border)",
-              background: "var(--glass-surface)",
-              color: "var(--text-primary)",
-            }}
+            style={filterControlStyle}
           />
         </div>
       </div>

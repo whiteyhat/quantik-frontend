@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { HelpTooltip } from "./ui/HelpTooltip";
 import { api, type AutopilotDecision } from "@/lib/api";

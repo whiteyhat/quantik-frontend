@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { Copy, CopyCheck, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { fmtUSDC, type WalletBalance } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";

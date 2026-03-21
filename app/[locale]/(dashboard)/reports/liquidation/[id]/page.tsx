@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, type LiquidationReport, type LiquidationAsset, type TimelineEvent } from "@/lib/api";
+import { api, fmtUSDC, type LiquidationReport, type LiquidationAsset, type TimelineEvent } from "@/lib/api";
 
 // ─── Font sizes — L003 compliant ─────────────────────────────────────────────
 const LABEL_SIZE = 11;
@@ -23,31 +23,23 @@ const panelStyle: React.CSSProperties = {
 };
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
-function fmtUSDC(n: number | null | undefined): string {
-  const safe = n ?? 0;
-  return `$${safe.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 function fmtPrice(p: number | null | undefined): string {
   const safe = p ?? 0;
   return `${Math.round(safe * 100)}¢`;
 }
 
+const timeFmt = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+});
 function fmtTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  return timeFmt.format(ts);
 }
 
+const dateFmt = new Intl.DateTimeFormat("en-US", {
+  year: "numeric", month: "short", day: "numeric",
+});
 function fmtDate(ts: number): string {
-  return new Date(ts).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return dateFmt.format(ts);
 }
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────

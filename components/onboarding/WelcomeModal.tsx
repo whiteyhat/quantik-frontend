@@ -3,7 +3,7 @@
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useLocalStorageFlag, setLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { PillButton } from "@/components/landing/PillButton";

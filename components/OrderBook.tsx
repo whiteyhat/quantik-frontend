@@ -17,8 +17,9 @@ function fmtK(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
 }
 
+const dollarFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 function fmtDollar(n: number): string {
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  return `$${dollarFmt.format(n)}`;
 }
 
 export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {

@@ -2,8 +2,7 @@
 
 import { GlobalPanicButton } from "@/components/GlobalPanicButton";
 import { usePaperMode } from "@/context/PaperModeContext";
-import { Link, usePathname } from "@/i18n/navigation";
-import { useRouter } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth, useUser, UserButton } from "@clerk/nextjs";

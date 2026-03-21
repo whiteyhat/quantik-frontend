@@ -47,25 +47,35 @@ function isOpenTrade(trade: EquityCurveTrade) {
   return trade.outcome === "OPEN";
 }
 
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function getCachedFmt(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options)}`;
+  let fmt = fmtCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options);
+    fmtCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function formatEquityAxisLabel(
   timestamp: number,
   period: EquityCurvePeriod,
   locale = "en-US"
 ) {
-  const date = new Date(timestamp);
-  if (period === "7D") {
-    return date.toLocaleDateString(locale, { weekday: "short" });
-  }
-  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
+  const opts = period === "7D"
+    ? { weekday: "short" as const }
+    : { month: "short" as const, day: "numeric" as const };
+  return getCachedFmt(locale, opts).format(timestamp);
 }
 
 export function formatEquityTooltipLabel(timestamp: number, locale = "en-US") {
-  return new Date(timestamp).toLocaleString(locale, {
+  return getCachedFmt(locale, {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  });
+  }).format(timestamp);
 }
 
 export function buildEquityCurve(

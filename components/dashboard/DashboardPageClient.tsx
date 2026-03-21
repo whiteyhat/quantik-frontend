@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useInView } from "react-intersection-observer";
 import { agentStatusTone, healthSeverityTone, serviceStatusTone, toWalletBalance } from "@/lib/dashboard";
@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Search,
   Shield,
+  ShieldCheck,
   Sparkles,
   Wallet,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import { useDebouncedValue } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { DashboardArchitectureMiniMap } from "@/components/dashboard/DashboardArchitectureMiniMap";
 import { DashboardMissionRail } from "@/components/dashboard/DashboardMissionRail";
 import { DashboardPilotDeck } from "@/components/dashboard/DashboardPilotDeck";
@@ -869,7 +871,7 @@ function SystemStatusCard({
             />
             <MetricBlock
               label={t("serviceMap")}
-              value={health && isLiveHealth(health.services) ? t("serviceChecks", { count: health.services.length }) : "—"}
+              value={health && isLiveHealth(health.services) ? <span className="inline-flex items-center gap-1.5"><Tooltip text={t("serviceChecks", { count: health.services.length })}><ShieldCheck className="size-4" /></Tooltip>{health.services.length}</span> : "—"}
               hint={health?.message ?? t("waitingForServiceTelemetry")}
               tone={health && isLiveHealth(health.services) ? "good" : "neutral"}
             />

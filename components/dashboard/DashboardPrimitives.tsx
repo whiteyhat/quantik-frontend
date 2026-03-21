@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,14 @@ export function CommandCenterHeader({
   );
 }
 
+const STATUS_DOT_COLOR: Record<string, string> = {
+  good: "bg-emerald-400",
+  warn: "bg-amber-400",
+  bad: "bg-red-400",
+  info: "bg-sky-400",
+  neutral: "bg-white/30",
+};
+
 export function StatusBadge({
   label,
   tone = "neutral",
@@ -54,7 +62,18 @@ export function StatusBadge({
   label: string;
   tone?: "neutral" | "good" | "warn" | "bad" | "info";
 }) {
-  return <span className={cn("command-center-badge", `command-center-badge--${tone}`)}>{label}</span>;
+  return (
+    <span className={cn("command-center-badge", `command-center-badge--${tone}`)}>
+      <span
+        className={cn(
+          "inline-block size-2 shrink-0 rounded-full",
+          STATUS_DOT_COLOR[tone],
+          tone === "good" && "animate-pulse",
+        )}
+      />
+      {label}
+    </span>
+  );
 }
 
 export function MetricBlock({
