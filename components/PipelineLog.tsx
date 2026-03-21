@@ -218,7 +218,6 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
       >
         {pipeline.running && (
           <>
-            <style>{`@keyframes pipelinePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}`}</style>
             <span style={{
               width: 8, height: 8, borderRadius: "50%",
               background: "var(--ios-green)",

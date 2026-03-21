@@ -865,13 +865,12 @@ function SynthesizedInsight({
                     width: 5, height: 5, borderRadius: "50%",
                     background: "var(--ios-purple)",
                     opacity: 0.6,
-                    animation: `relayPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+                    animation: `relayChatPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
                   }}
                 />
               ))}
             </div>
             <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("relaySynthesizing")}</span>
-            <style>{`@keyframes relayPulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}`}</style>
           </div>
         ) : (
           <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>

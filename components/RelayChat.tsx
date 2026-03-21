@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { agentChipColor, type AgentName } from "@/lib/agents";
 import { getAuthToken } from "@/lib/api";
 import { getRelaySidebarSessionId } from "@/lib/relaySidebar";
 import { readSSEStream } from "@/lib/sse";
@@ -412,11 +413,10 @@ export function RelayChat({ slug }: RelayChatProps) {
                               style={{
                                 width: 7, height: 7, borderRadius: "50%",
                                 background: "rgba(255,255,255,0.5)",
-                                animation: `relayPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+                                animation: `relayChatPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
                               }}
                             />
                           ))}
-                          <style>{`@keyframes relayPulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }`}</style>
                         </div>
                       )}
                       {msg.text}
@@ -698,7 +698,7 @@ function getSuggestedQuestions(
   msgIndex: number = 0
 ): string[] {
   // Analysis-specific: 2 questions that dig deeper into what Relay just answered
-  const analysisByAgent: Record<string, string[]> = {
+  const analysisByAgent: Partial<Record<AgentName, string[]>> = {
     edge: [
       t("suggestions.edgeQuestion1"),
       t("suggestions.edgeQuestion2"),
@@ -736,7 +736,7 @@ function getSuggestedQuestions(
 
   const analysis: string[] = [];
   for (const agent of routedTo) {
-    const pool = analysisByAgent[agent] ?? [];
+    const pool = analysisByAgent[agent as AgentName] ?? [];
     for (const q of pool) {
       if (!analysis.includes(q) && analysis.length < 2) analysis.push(q);
     }
@@ -759,47 +759,3 @@ function getSuggestedQuestions(
   return [...analysis.slice(0, 2), howTo[msgIndex % howTo.length]];
 }
 
-function agentChipColor(agent: string): {
-  bg: string;
-  fg: string;
-  border: string;
-} {
-  switch (agent) {
-    case "aura":
-      return {
-        bg: "rgba(10,132,255,0.12)",
-        fg: "#0a84ff",
-        border: "rgba(10,132,255,0.25)",
-      };
-    case "oracle":
-      return {
-        bg: "rgba(191,90,242,0.12)",
-        fg: "#bf5af2",
-        border: "rgba(191,90,242,0.25)",
-      };
-    case "edge":
-      return {
-        bg: "rgba(255,159,10,0.12)",
-        fg: "#ff9f0a",
-        border: "rgba(255,159,10,0.25)",
-      };
-    case "flux":
-      return {
-        bg: "rgba(48,209,88,0.12)",
-        fg: "#30d158",
-        border: "rgba(48,209,88,0.25)",
-      };
-    case "risk":
-      return {
-        bg: "rgba(255,69,58,0.12)",
-        fg: "#ff453a",
-        border: "rgba(255,69,58,0.25)",
-      };
-    default:
-      return {
-        bg: "rgba(255,255,255,0.06)",
-        fg: "rgba(255,255,255,0.50)",
-        border: "rgba(255,255,255,0.10)",
-      };
-  }
-}

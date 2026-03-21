@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { type Personality } from "@/lib/agents";
 import { getAuthToken } from "@/lib/api";
 import { readSSEStream } from "@/lib/sse";
 import {
@@ -20,15 +21,6 @@ import {
 } from "@/lib/relaySidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
-let traceSpinStyleInjected = false;
-function ensureTraceSpinStyle() {
-  if (traceSpinStyleInjected || typeof document === "undefined") return;
-  const style = document.createElement("style");
-  style.textContent = `@keyframes traceSpinRing { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-  document.head.appendChild(style);
-  traceSpinStyleInjected = true;
-}
 
 type SidebarMessage =
   | {
@@ -89,7 +81,7 @@ function getNextMessageId() {
   return crypto.randomUUID();
 }
 
-function getTheme(personality: string): PersonalityTheme {
+function getTheme(personality: Personality): PersonalityTheme {
   switch (personality) {
     case "guardian":
       return {
@@ -635,7 +627,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const myAgent = useQuantikStore((state) => state.myAgent);
   const agentName = myAgent?.name ?? "Relay";
   const agentEmoji = myAgent?.avatar_emoji ?? "🤝";
-  const personality = myAgent?.personality ?? "balanced";
+  const personality = (myAgent?.personality ?? "balanced") as Personality;
   const theme = useMemo(() => getTheme(personality), [personality]);
 
   const defaultActions = useMemo(() => [
@@ -1220,7 +1212,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
           if (message.role === "trace") {
             const trace = message.trace;
             const isRunning = trace.state !== "done";
-            if (isRunning) ensureTraceSpinStyle();
+
             const traceLabel = trace.labelKey ? t(trace.labelKey as never) : trace.label;
             const traceStatus = trace.statusKey ? t(trace.statusKey as never) : trace.status;
             return (
