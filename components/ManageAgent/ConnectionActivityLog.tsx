@@ -4,15 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 20,
-};
-
 interface LogEntry {
   tool_name: string;
   method: string;
@@ -83,7 +74,7 @@ export function ConnectionActivityLog({ agentId }: ConnectionActivityLogProps) {
   }
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel">
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
         {t("title")}
       </span>

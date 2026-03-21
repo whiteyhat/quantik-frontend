@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtDateTime, fmtTimeShort, fmtDate } from "@/lib/api";
 import {
   AreaChart,
   Area,
@@ -52,6 +52,7 @@ function normalizeData(raw: unknown): { points: NormalizedPoint[]; isSynthetic: 
 }
 
 function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: number }) {
+  const locale = useLocale();
   if (!active || !payload?.length) return null;
   return (
     <div
@@ -67,7 +68,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
       </div>
       {label && (
         <div className="text-caption" style={{ color: "var(--text-tertiary)", marginTop: 2 }}>
-          {new Date(label).toLocaleString()}
+          {fmtDateTime(new Date(label).getTime(), locale)}
         </div>
       )}
     </div>
@@ -76,6 +77,7 @@ function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string }) {
   const t = useTranslations("priceChart");
+  const locale = useLocale();
   const [interval, setInterval] = useState<string>("1d");
   const [data, setData] = useState<NormalizedPoint[]>([]);
   const [isFallback, setIsFallback] = useState(false);
@@ -153,8 +155,8 @@ export function PriceChart({ tokenId, slug }: { tokenId: string; slug: string })
                   const d = new Date(ts);
                   if (isNaN(d.getTime())) return "";
                   return interval === "1h"
-                    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                    : d.toLocaleDateString([], { month: "short", day: "numeric" });
+                    ? fmtTimeShort(d.getTime(), locale)
+                    : fmtDate(d.getTime(), locale);
                 }}
                 stroke="rgba(255,255,255,0.15)"
                 tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}

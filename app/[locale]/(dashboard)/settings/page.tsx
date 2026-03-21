@@ -190,9 +190,9 @@ function UnsavedBadge() {
 
 // ─── Auto-reset status hook (clears timer on unmount) ────────────────────────
 
-function useAutoResetStatus<T extends string>(initial: T) {
+function useAutoResetStatus<T extends string | null>(initial: T) {
   const [status, setStatus] = useState<T>(initial);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const setStatusFor = useCallback((value: T, ms: number) => {
     clearTimeout(timerRef.current);
     setStatus(value);
@@ -743,7 +743,7 @@ function TelegramSettingsPanel() {
   const [chatId, setChatId] = useState("");
   const [botToken, setBotToken] = useState("");
   const [dirty, setDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveStatus, setSaveStatusFor, setSaveStatusDirect] = useAutoResetStatus<"idle" | "saving" | "saved" | "error">("idle");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["telegramSettings"],
@@ -762,17 +762,15 @@ function TelegramSettingsPanel() {
   const mutation = useMutation({
     mutationFn: api.updateTelegramSettings,
     onMutate: () => {
-      setSaveStatus("saving");
+      setSaveStatusDirect("saving");
     },
     onSuccess: () => {
-      setSaveStatus("saved");
       setDirty(false);
       queryClient.invalidateQueries({ queryKey: ["telegramSettings"] });
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setSaveStatusFor("saved", 3000);
     },
     onError: () => {
-      setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 5000);
+      setSaveStatusFor("error", 5000);
     },
   });
 
@@ -996,7 +994,7 @@ function TelegramSettingsPanel() {
 function AppInfoPanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKeyFor] = useAutoResetStatus<string | null>(null);
 
   const { data: health, isLoading: healthLoading, refetch: retryHealth } = useQuery({
     queryKey: ["apiHealth"],
@@ -1017,8 +1015,7 @@ function AppInfoPanel() {
   const handleCopy = async (key: string, value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 1500);
+      setCopiedKeyFor(key, 1500);
     } catch {
       // clipboard not available
     }

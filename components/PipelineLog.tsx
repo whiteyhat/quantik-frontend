@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { api, type AlertEntry } from "@/lib/api";
+import { api, fmtTime, type AlertEntry } from "@/lib/api";
 import { AGENT_META } from "@/lib/agents";
 
 interface LogEntry {
@@ -16,8 +16,8 @@ interface LogEntry {
   summary: string;
 }
 
-function ts(): string {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+function ts(locale?: string): string {
+  return fmtTime(Date.now(), locale);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +41,7 @@ function getAgentSummary(key: string, data: unknown, t: any): string {
 
 export function PipelineLog({ slug }: { slug?: string } = {}) {
   const t = useTranslations("pipelineLog");
+  const locale = useLocale();
   const pipeline = useQuantikStore((s) => s.pipeline);
   const [expanded, setExpanded] = useState(false);
   const [visibleLogs, setVisibleLogs] = useState<LogEntry[]>([]);
@@ -106,7 +107,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
       const elapsed = ((Date.now() - startTime.current) / 1000).toFixed(1);
       enqueue({
         id: "done",
-        time: ts(),
+        time: ts(locale),
         agentKey: "_done",
         agentName: "Pipeline",
         emoji: "✅",
@@ -128,7 +129,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
       if (state.status === "running" && prev !== "running") {
         enqueue({
           id: `${key}-running-${Date.now()}`,
-          time: ts(),
+          time: ts(locale),
           agentKey: key,
           agentName: meta.name,
           emoji: meta.emoji,
@@ -138,7 +139,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
       } else if (state.status === "done" && prev !== "done") {
         enqueue({
           id: `${key}-done-${Date.now()}`,
-          time: ts(),
+          time: ts(locale),
           agentKey: key,
           agentName: meta.name,
           emoji: meta.emoji,
@@ -148,7 +149,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
       } else if (state.status === "error" && prev !== "error") {
         enqueue({
           id: `${key}-error-${Date.now()}`,
-          time: ts(),
+          time: ts(locale),
           agentKey: key,
           agentName: meta.name,
           emoji: meta.emoji,
@@ -305,7 +306,7 @@ export function PipelineLog({ slug }: { slug?: string } = {}) {
               }}
             >
               <span style={{ color: "var(--text-tertiary)", flexShrink: 0, fontSize: 10, paddingTop: 1 }}>
-                {new Date(lastTelegramAlert.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                {fmtTime(new Date(lastTelegramAlert.created_at).getTime(), locale)}
               </span>
               <span style={{ flexShrink: 0, minWidth: 80, fontWeight: 600, color: "var(--text-secondary)" }}>
                 {"\u{1F4E9}"} Telegram

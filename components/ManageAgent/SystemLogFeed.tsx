@@ -10,17 +10,6 @@ import {
 import { api } from "@/lib/api";
 import { useTranslations } from "next-intl";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-  minWidth: 0,
-  overflow: "hidden",
-};
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type LogLevel = "info" | "success" | "warning" | "error" | "scan" | "agent";
@@ -38,10 +27,7 @@ const MAX_ENTRIES = 80;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatTime(ts: number): string {
-  const d = new Date(ts);
-  return d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
+import { fmtTime } from "@/lib/formatters";
 
 function slugToLabel(slug: string): string {
   if (slug.length > 40) return slug.slice(0, 37) + "...";
@@ -299,7 +285,7 @@ export function SystemLogFeed() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel-compact" style={{ minWidth: 0, overflow: "hidden" }}>
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
@@ -424,7 +410,7 @@ export function SystemLogFeed() {
                   >
                     {/* Time */}
                     <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", flexShrink: 0, marginTop: 2, width: 56 }}>
-                      {formatTime(entry.timestamp)}
+                      {fmtTime(entry.timestamp)}
                     </span>
 
                     {/* Level badge */}

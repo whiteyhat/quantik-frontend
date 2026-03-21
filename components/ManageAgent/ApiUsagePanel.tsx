@@ -1,17 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
-
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 20,
-};
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtNumber, fmtTimeShort } from "@/lib/api";
 
 interface ToolUsage {
   tool: string;
@@ -63,6 +54,7 @@ function latencyColor(ms: number | null): string {
 
 export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
   const t = useTranslations("apiUsage");
+  const locale = useLocale();
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,7 +83,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
 
   if (loading) {
     return (
-      <div style={panelStyle}>
+      <div className="glass-card glass-panel">
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {t("title")}
         </span>
@@ -102,7 +94,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
 
   if (error || !data) {
     return (
-      <div style={panelStyle}>
+      <div className="glass-card glass-panel">
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {t("title")}
         </span>
@@ -127,7 +119,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
   const maxBarCount = Math.max(...(data.daily_breakdown.map(d => d.count)), 1);
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel">
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
         {t("title")}
       </span>
@@ -135,8 +127,8 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
       {/* Summary stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14 }}>
         {[
-          { label: t("requests24h"), value: data.total_requests_24h.toLocaleString(), color: "#0a84ff" },
-          { label: t("lastHour"), value: data.requests_last_hour.toLocaleString(), color: "#30d158" },
+          { label: t("requests24h"), value: fmtNumber(data.total_requests_24h, locale), color: "#0a84ff" },
+          { label: t("lastHour"), value: fmtNumber(data.requests_last_hour, locale), color: "#30d158" },
           { label: t("errorRate"), value: data.error_rate_24h, color: data.error_count_24h > 0 ? "#ff453a" : "rgba(255,255,255,0.55)" },
         ].map((stat) => (
           <div key={stat.label} style={{ textAlign: "center" }}>
@@ -214,7 +206,7 @@ export function ApiUsagePanel({ agentId }: ApiUsagePanelProps) {
             {data.recent_errors.slice(0, 10).map((e, i) => (
               <div key={i} style={{ fontSize: 10, color: "#ff453a", ...mono }}>
                 <span style={{ color: "rgba(255,255,255,0.30)", marginRight: 6 }}>
-                  {new Date(e.created_at).toLocaleTimeString()}
+                  {fmtTimeShort(new Date(e.created_at).getTime(), locale)}
                 </span>
                 {formatToolName(e.tool_name)} — {e.error ?? `HTTP ${e.status_code}`}
               </div>

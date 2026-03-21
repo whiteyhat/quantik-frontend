@@ -24,15 +24,6 @@ function fmtCountdown(iso: string | null | undefined): string {
   return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-};
-
 interface LivePositionsTableProps {
   positions: Position[];
   loading: boolean;
@@ -75,7 +66,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
   const activeCount = positions.length;
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel-compact">
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <h2

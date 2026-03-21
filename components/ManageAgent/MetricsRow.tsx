@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WalletBalance, PerformanceSummary } from "@/lib/api";
+import { fmtDollar } from "@/lib/formatters";
 
 interface MetricsRowProps {
   wallet: WalletBalance | null;
@@ -53,7 +54,7 @@ export function MetricsRow({ wallet, performance, loading }: MetricsRowProps) {
     {
       label: t("trades"),
       value: wallet ? `${wallet.totalTrades}` : "--",
-      delta: performance ? `$${performance.metrics.totalVolume.toLocaleString("en-US", { maximumFractionDigits: 0 })} ${t("vol")}` : undefined,
+      delta: performance ? `${fmtDollar(performance.metrics.totalVolume)} ${t("vol")}` : undefined,
       color: "#ff9f0a",
     },
   ];

@@ -1,9 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useInView } from "react-intersection-observer";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatedCounter } from "@/components/arena/AnimatedCounter";
+import { fmtNumber } from "@/lib/formatters";
 import { SectionShell } from "./SectionShell";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
 
@@ -22,6 +23,7 @@ function ScrambleStat({
   triggered: boolean;
   label: string;
 }) {
+  const locale = useLocale();
   const [scrambleValue, setScrambleValue] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
@@ -34,7 +36,7 @@ function ScrambleStat({
       const randomized = Math.floor(
         value * (0.8 + Math.random() * 0.4)
       );
-      setScrambleValue(randomized.toLocaleString());
+      setScrambleValue(fmtNumber(randomized, locale));
       count++;
       if (count >= 6) {
         clearInterval(interval);
@@ -42,7 +44,7 @@ function ScrambleStat({
       }
     }, 50);
     timeoutRef.current = interval;
-  }, [value, isTouch]);
+  }, [value, isTouch, locale]);
 
   const handleMouseLeave = useCallback(() => {
     if (timeoutRef.current) clearInterval(timeoutRef.current);
@@ -70,7 +72,7 @@ function ScrambleStat({
         {scrambleValue ?? (
           <AnimatedCounter
             value={triggered ? value : 0}
-            format={(v) => Math.round(v).toLocaleString()}
+            format={(v) => fmtNumber(Math.round(v), locale)}
             duration={1200}
           />
         )}

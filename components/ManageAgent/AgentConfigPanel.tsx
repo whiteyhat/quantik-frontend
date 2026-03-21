@@ -4,15 +4,6 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-};
-
 // ─── Label mappings from agent factory config values ─────────────────────────
 
 const PERSONALITY_LABELS: Record<string, { labelKey: string; icon: string }> = {
@@ -166,7 +157,7 @@ export function AgentConfigPanel() {
   const tooltipMetric = hoveredRing == null ? null : chartMetrics[hoveredRing] ?? null;
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel-compact">
       <h3
         style={{
           margin: "0 0 16px",

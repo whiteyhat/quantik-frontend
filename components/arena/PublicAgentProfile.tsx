@@ -2,9 +2,9 @@
 
 import "../arena/arena.css";
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { type PublicAgentProfile as PublicAgentProfileData } from "@/lib/api";
+import { fmtNumber, type PublicAgentProfile as PublicAgentProfileData } from "@/lib/api";
 import { formatSignedCurrency, formatSignedCompact, streakLabel, battleTone } from "@/components/arena/arenaHelpers";
 import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
 import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
@@ -32,6 +32,7 @@ export function PublicAgentProfileView({
   shareUrl: string;
 }) {
   const t = useTranslations("arena");
+  const locale = useLocale();
   const pnlTone = battleTone(profile.allTimePnl);
 
   const heroContent = (
@@ -77,7 +78,7 @@ export function PublicAgentProfileView({
   const statItems = [
     { label: t("selectedPnl"), content: <AnimatedCounter value={profile.selectedPnl} format={formatSignedCurrency} /> },
     { label: t("winRate"), content: <WinRateRing winRate={profile.winRate} size={56} /> },
-    { label: t("totalTrades"), content: <AnimatedCounter value={profile.totalTrades} format={(v) => Math.round(v).toLocaleString()} /> },
+    { label: t("totalTrades"), content: <AnimatedCounter value={profile.totalTrades} format={(v) => fmtNumber(Math.round(v), locale)} /> },
     { label: t("metricStreak"), content: <strong>{streakLabel(profile.currentStreak)}</strong> },
     { label: t("openShort"), content: <AnimatedCounter value={profile.openPositions} format={(v) => String(Math.round(v))} /> },
   ];

@@ -8,22 +8,7 @@ import {
 } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.05)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.09)",
-  borderRadius: 14,
-  padding: 20,
-};
-
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
+import { fmtTime } from "@/lib/formatters";
 
 function formatRelativeDuration(run: PipelineHistoryRun): string {
   if (!run.completed_at) return "in progress";
@@ -213,7 +198,7 @@ export function PipelineReplayPanel({
   if (!loadingRuns && prioritizedRuns.length === 0) return null;
 
   return (
-    <section style={panelStyle}>
+    <section className="glass-card glass-panel-compact" style={{ borderRadius: 14 }}>
       <div
         style={{
           display: "flex",
@@ -361,7 +346,7 @@ export function PipelineReplayPanel({
                       fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                     }}
                   >
-                    <span>{formatTime(run.created_at)}</span>
+                    <span>{fmtTime(run.created_at)}</span>
                     <span>{run.decision ?? "PENDING"}</span>
                   </div>
                 </button>
@@ -445,7 +430,7 @@ export function PipelineReplayPanel({
                           fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                         }}
                       >
-                        {formatTime(frame.timestamp)}
+                        {fmtTime(frame.timestamp)}
                       </div>
                     </div>
                     <div

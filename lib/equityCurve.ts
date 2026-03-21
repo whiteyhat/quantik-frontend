@@ -47,16 +47,7 @@ function isOpenTrade(trade: EquityCurveTrade) {
   return trade.outcome === "OPEN";
 }
 
-const fmtCache = new Map<string, Intl.DateTimeFormat>();
-function getCachedFmt(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = `${locale}:${JSON.stringify(options)}`;
-  let fmt = fmtCache.get(key);
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat(locale, options);
-    fmtCache.set(key, fmt);
-  }
-  return fmt;
-}
+import { getCachedDateFmt } from "./formatters";
 
 export function formatEquityAxisLabel(
   timestamp: number,
@@ -66,11 +57,11 @@ export function formatEquityAxisLabel(
   const opts = period === "7D"
     ? { weekday: "short" as const }
     : { month: "short" as const, day: "numeric" as const };
-  return getCachedFmt(locale, opts).format(timestamp);
+  return getCachedDateFmt(locale, opts).format(timestamp);
 }
 
 export function formatEquityTooltipLabel(timestamp: number, locale = "en-US") {
-  return getCachedFmt(locale, {
+  return getCachedDateFmt(locale, {
     month: "short",
     day: "numeric",
     hour: "numeric",

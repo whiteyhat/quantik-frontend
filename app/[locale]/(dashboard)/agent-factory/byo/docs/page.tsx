@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const SKILL_URL = `${BASE_URL}/api/skill.md`;
 const API_BASE = `${BASE_URL}/api/v1/tools`;
 
-import { panelStyle } from "@/components/agent-factory/shared";
+const PANEL_CLASS = "glass-card glass-panel";
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -589,8 +589,8 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div style={{
-      ...panelStyle, padding: 0, overflow: "hidden",
+    <div className={PANEL_CLASS} style={{
+      padding: 0, overflow: "hidden",
       border: expanded ? "1px solid rgba(10,132,255,0.15)" : "1px solid rgba(255,255,255,0.08)",
     }}>
       {/* Header */}
@@ -915,7 +915,7 @@ export default function ByoDocsPage() {
       {/* ─── Endpoints Tab ──────────────────────────────────────────── */}
       {activeTab === "endpoints" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ ...panelStyle, marginBottom: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}>
+          <div className={PANEL_CLASS} style={{ marginBottom: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)" }}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.60)", marginBottom: 8 }}>
               OpenClaw Onboarding
             </div>
@@ -931,7 +931,7 @@ export default function ByoDocsPage() {
           </div>
 
           {/* Quick auth guide */}
-          <div style={{ ...panelStyle, marginBottom: 8, background: "rgba(10,132,255,0.04)", border: "1px solid rgba(10,132,255,0.12)" }}>
+          <div className={PANEL_CLASS} style={{ marginBottom: 8, background: "rgba(10,132,255,0.04)", border: "1px solid rgba(10,132,255,0.12)" }}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "#0a84ff", marginBottom: 8 }}>Authentication</div>
             <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
               After OpenClaw completes the claim flow, all runtime requests require an API key in the Authorization header:
@@ -978,7 +978,7 @@ export default function ByoDocsPage() {
             ))}
           </div>
 
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 4 }}>
               Full Example — {exampleLang === "python" ? "Python" : exampleLang === "typescript" ? "TypeScript" : "cURL"}
             </div>
@@ -995,7 +995,7 @@ export default function ByoDocsPage() {
           </div>
 
           {/* Socket.IO example */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 4 }}>
               Real-Time Events (Socket.IO)
             </div>
@@ -1021,7 +1021,7 @@ socket.on("error", (err) => console.error("Error:", err));`} lang="typescript" /
           </div>
 
           {/* Webhook example */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 4 }}>
               Webhook Events
             </div>
@@ -1051,7 +1051,7 @@ X-Quantik-Timestamp: 1709000000000
       {activeTab === "reference" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Error codes */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               Error Codes
             </div>
@@ -1071,7 +1071,7 @@ X-Quantik-Timestamp: 1709000000000
           </div>
 
           {/* Rate limits */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               Rate Limits
             </div>
@@ -1108,7 +1108,7 @@ X-Quantik-Timestamp: 1709000000000
           </div>
 
           {/* Response format */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               Response Format
             </div>
@@ -1132,7 +1132,7 @@ X-Quantik-Timestamp: 1709000000000
           </div>
 
           {/* Scopes */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               API Key Scopes
             </div>
@@ -1159,7 +1159,7 @@ X-Quantik-Timestamp: 1709000000000
           </div>
 
           {/* Heartbeat pattern */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               Heartbeat Pattern
             </div>
@@ -1177,7 +1177,7 @@ X-Quantik-Timestamp: 1709000000000
           </div>
 
           {/* Skill manifest */}
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", textTransform: "uppercase", marginBottom: 12 }}>
               Skill Manifest
             </div>

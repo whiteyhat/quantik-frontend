@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import JSConfetti from "js-confetti";
-import { SectionHeader, panelStyle, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
+import { SectionHeader, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
 import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
-import { api, type ByoOnboardingSession } from "@/lib/api";
+import { useLocale } from "next-intl";
+import { api, fmtDateTime, type ByoOnboardingSession } from "@/lib/api";
+
+const PANEL_CLASS = "glass-card glass-panel";
 import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
 import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } from "@/lib/byoImport";
 import { AVAILABLE_WEBHOOK_EVENTS, validateOptionalPublicHttpsUrl } from "@/lib/webhookEvents";
@@ -16,8 +19,7 @@ import { requestProductTourResume } from "@/hooks/useOnboardingTourState";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 
-const reviewPanelStyle: React.CSSProperties = {
-  ...panelStyle,
+const reviewPanelExtraStyle: React.CSSProperties = {
   background: [
     "radial-gradient(circle at top left, rgba(255,128,94,0.16), transparent 34%)",
     "radial-gradient(circle at bottom right, rgba(110,162,255,0.12), transparent 38%)",
@@ -189,7 +191,7 @@ function StepGenerate({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader
           title="OpenClaw Claim Link"
           icon="🦞"
@@ -243,7 +245,7 @@ function StepGenerate({
       </div>
 
       {onboardingUrl && (
-        <div style={panelStyle}>
+        <div className={PANEL_CLASS}>
           <SectionHeader title="One-Time URL" icon="🔗" />
           <div
             style={{
@@ -297,9 +299,10 @@ function StepSend({
   onCopyPrompt: () => void;
   onRegenerate: () => void;
 }) {
+  const locale = useLocale();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Send This to OpenClaw" icon="💬" />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>
           Paste the ready-made prompt into OpenClaw. It instructs OpenClaw to read the claim URL, POST its identity, and store the returned Quantik credentials.
@@ -326,14 +329,14 @@ function StepSend({
         </div>
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Claim Status" icon="🛰" tooltip="Quantik polls the onboarding session until OpenClaw completes the claim." />
         {session ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <StatusPill status={session.status} />
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-                {session.status === "pending_claim" ? `Expires in ${expiresLabel ?? "15:00"}` : session.claimed_at ? `Claimed ${new Date(session.claimed_at).toLocaleString()}` : "One-time session"}
+                {session.status === "pending_claim" ? `Expires in ${expiresLabel ?? "15:00"}` : session.claimed_at ? `Claimed ${fmtDateTime(new Date(session.claimed_at).getTime(), locale)}` : "One-time session"}
               </span>
             </div>
             <div style={{ marginTop: 14, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
@@ -496,9 +499,10 @@ function StepReview({
   isDeploying: boolean;
   deployError: string | null;
 }) {
+  const locale = useLocale();
   if (!session?.identity) {
     return (
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Awaiting Claim" icon="⏳" />
         <p style={{ margin: 0, fontSize: BODY_SIZE, color: "rgba(255,255,255,0.50)", lineHeight: 1.7 }}>
           OpenClaw has not claimed this onboarding session yet. Once the claim is complete, the imported identity and connection metadata will appear here.
@@ -525,7 +529,7 @@ function StepReview({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ ...reviewPanelStyle, overflow: "hidden" }}>
+      <div className={PANEL_CLASS} style={{ ...reviewPanelExtraStyle, overflow: "hidden" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
@@ -571,7 +575,7 @@ function StepReview({
         </div>
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="OpenClaw Runtime URL" icon="🌐" tooltip="This public agent URL is now required in the OpenClaw claim payload." />
         {session.agent_url ? (
           <>
@@ -599,7 +603,7 @@ function StepReview({
               <span style={{ color: "rgba(255,255,255,0.44)" }}>↗</span>
             </a>
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-              <MetaRow label="Claimed At" value={session.claimed_at ? new Date(session.claimed_at).toLocaleString() : null} />
+              <MetaRow label="Claimed At" value={session.claimed_at ? fmtDateTime(new Date(session.claimed_at).getTime(), locale) : null} />
               <MetaRow label="API Key Prefix" value={session.api_key_prefix} />
               <MetaRow label="Wallet Address" value={session.wallet_address} />
               <MetaRow label="Connection State" value={session.connection_status} />
@@ -612,7 +616,7 @@ function StepReview({
         )}
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Webhook Bridge" icon="📡" tooltip="Configure where Quantik should POST event notifications back into your OpenClaw runtime." />
         <p style={{ margin: "0 0 14px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.62)", lineHeight: 1.7 }}>
           Webhooks are optional. If you want Quantik to push trade and risk notifications into OpenClaw, enter a public HTTPS endpoint and choose the events to deliver before activation.
@@ -716,7 +720,7 @@ function StepReview({
         </div>
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Secure Wallet Backup" icon="🔐" tooltip="Quantik only exposes the WDK wallet bundle here once. Download it before activation." />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
           OpenClaw already received the runtime wallet credentials during claim. This dashboard gives the owner one secure download so the WDK private key and seed phrase are backed up outside Quantik.
@@ -790,7 +794,7 @@ function StepReview({
         <div style={{ marginTop: 10, fontSize: 12, color: walletDownloadError ? "#ff6b60" : walletBackedUp ? "#64dd8c" : "rgba(255,255,255,0.40)", lineHeight: 1.6, fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
           {walletDownloadError
             ?? (walletBackedUp
-              ? `Downloaded ${session.wallet_downloaded_at ? new Date(session.wallet_downloaded_at).toLocaleString() : "just now"}.`
+              ? `Downloaded ${session.wallet_downloaded_at ? fmtDateTime(new Date(session.wallet_downloaded_at).getTime(), locale) : "just now"}.`
               : isDownloadingWallet
                 ? "Streaming the one-time wallet export into your download."
                 : walletDownloadPending
@@ -801,13 +805,13 @@ function StepReview({
         </div>
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Trading Policy Setup" icon="🧠" tooltip="Your OpenClaw agent needs to ask you 7 quick questions about your risk tolerance and trading style. Answer them in your agent's chat (Telegram, etc.)." />
         {session?.policy_setup_completed ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LaunchStatePill label="Configured" tone="ready" />
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", fontFamily: '"SF Mono", "JetBrains Mono", monospace' }}>
-              Policy set {session.policy_setup_completed_at ? new Date(session.policy_setup_completed_at).toLocaleString() : ""}
+              Policy set {session.policy_setup_completed_at ? fmtDateTime(new Date(session.policy_setup_completed_at).getTime(), locale) : ""}
             </span>
           </div>
         ) : (
@@ -825,7 +829,7 @@ function StepReview({
         )}
       </div>
 
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader title="Activate Agent" icon="🚀" />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
           The OpenClaw handshake is complete. Activation only unlocks after the trading policy is configured, the wallet backup is secured, and there are no invalid or unsaved webhook settings.

@@ -1,17 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { api, type HealthScoreResponse } from "@/lib/api";
-
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 20,
-};
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtNumber, type HealthScoreResponse } from "@/lib/api";
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -67,6 +58,7 @@ interface HealthScoreBadgeProps {
 
 export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
   const t = useTranslations("healthScore");
+  const locale = useLocale();
   const [data, setData] = useState<HealthScoreResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,7 +83,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
 
   if (loading) {
     return (
-      <div style={panelStyle}>
+      <div className="glass-card glass-panel">
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {t("title")}
         </span>
@@ -102,7 +94,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
 
   if (error || !data) {
     return (
-      <div style={panelStyle}>
+      <div className="glass-card glass-panel">
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {t("title")}
         </span>
@@ -133,7 +125,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
   const noData = data.status === "insufficient_data" || data.score == null || data.grade == null;
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           {t("title")}
@@ -204,7 +196,7 @@ export function HealthScoreBadge({ agentId }: HealthScoreBadgeProps) {
       {/* Quick stats */}
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         {[
-          { label: t("requests"), value: data.total_requests_24h.toLocaleString() },
+          { label: t("requests"), value: fmtNumber(data.total_requests_24h, locale) },
           { label: t("errors"), value: String(data.error_count_24h), color: data.error_count_24h > 0 ? "#ff453a" : undefined },
           { label: t("avgLatency"), value: data.avg_latency_ms == null ? "—" : `${data.avg_latency_ms}ms` },
         ].map(s => (

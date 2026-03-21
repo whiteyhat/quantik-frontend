@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fmtDateFull } from "@/lib/formatters";
 
 interface TimeLeft {
   months: number;
@@ -127,13 +128,7 @@ export function ResolutionCountdown({ iso }: { iso: string }) {
 
       {/* Target date subtitle */}
       <div style={targetDateStyle}>
-        {target.toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+        {fmtDateFull(target.getTime())}
       </div>
 
       {/* Animated bottom glow bar */}

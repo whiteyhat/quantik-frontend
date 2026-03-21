@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { api, fmtUSDC, type TradeReportsResponse } from "@/lib/api";
+import { useLocale } from "next-intl";
+import { api, fmtUSDC, fmtDateTime, type TradeReportsResponse } from "@/lib/api";
 
 export default function ReportsPrintPage() {
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const [data, setData] = useState<TradeReportsResponse | null>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function ReportsPrintPage() {
           <div>
             <h1 style={{ margin: 0, fontSize: 28 }}>Quantik Reports</h1>
             <p style={{ margin: "8px 0 0", color: "#475569" }}>
-              Printable trade report generated {new Date().toLocaleString()}
+              Printable trade report generated {fmtDateTime(Date.now(), locale)}
             </p>
           </div>
           <button
@@ -94,7 +96,7 @@ export default function ReportsPrintPage() {
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtUSDC(trade.size)}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtUSDC(trade.pnl ?? 0)}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{trade.outcome}</td>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{new Date(trade.timestamp).toLocaleString()}</td>
+                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtDateTime(new Date(trade.timestamp).getTime(), locale)}</td>
               </tr>
             ))}
           </tbody>

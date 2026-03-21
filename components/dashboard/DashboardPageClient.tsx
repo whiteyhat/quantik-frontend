@@ -18,8 +18,8 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { fmtPrice, fmtUSDC, streamPrices, type Position, type Signal } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { fmtPrice, fmtUSDC, fmtDate, fmtTimeShort, fmtNumber, streamPrices, type Position, type Signal } from "@/lib/api";
 import {
   formatRelativeTime,
   type DashboardAgentRow,
@@ -723,6 +723,7 @@ function OrchestratorCard({
 }) {
   const t = useTranslations("dashboard.orchestrator");
   const tRel = useTranslations("common");
+  const locale = useLocale();
 
   return (
     <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card" id="tour-orchestrator">
@@ -759,7 +760,7 @@ function OrchestratorCard({
             </div>
             <div>
               <div className="command-center-stat-label">{t("marketsScanned")}</div>
-              <div className="command-center-stat-value">{orchestrator.status.marketsScanned.toLocaleString()}</div>
+              <div className="command-center-stat-value">{fmtNumber(orchestrator.status.marketsScanned, locale)}</div>
             </div>
             <div>
               <div className="command-center-stat-label">{t("candidates")}</div>
@@ -1027,6 +1028,7 @@ function RecentSignalsCard({
 
 function MarketScannerCard() {
   const t = useTranslations("dashboard.marketScanner");
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 250);
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending 🔥");
@@ -1196,10 +1198,7 @@ function MarketScannerCard() {
                     <span>
                       {Number.isNaN(new Date(market.resolutionDate).getTime())
                         ? t("tbd")
-                        : new Date(market.resolutionDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                        : fmtDate(new Date(market.resolutionDate).getTime(), locale)}
                     </span>
                   </div>
                 </Link>
@@ -1265,6 +1264,7 @@ function EquityChartCard() {
 
 function RecentTradesCard() {
   const t = useTranslations("dashboard.recentTrades");
+  const locale = useLocale();
   const tradesQuery = useDashboardTradesQuery();
 
   const recentTrades = useMemo(() => {
@@ -1306,9 +1306,8 @@ function RecentTradesCard() {
         <div className="space-y-3">
           {recentTrades.map((trade) => {
             const pnl = trade.pnl ?? 0;
-            const date = new Date(trade.timestamp);
-            const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+            const dateStr = fmtDate(trade.timestamp, locale);
+            const timeStr = fmtTimeShort(trade.timestamp, locale);
 
             return (
               <Link

@@ -5,7 +5,9 @@ import { createPortal } from "react-dom";
 import { useRouter } from "@/i18n/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNextStep } from "nextstepjs";
-import { SectionHeader, panelStyle, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
+import { SectionHeader, LABEL_SIZE, META_SIZE, BODY_SIZE } from "@/components/agent-factory/shared";
+
+const PANEL_CLASS = "glass-card glass-panel";
 import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoader";
 import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
@@ -416,7 +418,7 @@ function StepIndicator({
   ];
 
   return (
-    <div style={{ ...panelStyle, padding: 20 }}>
+    <div className={PANEL_CLASS} style={{ padding: 20 }}>
       <div
         style={{
           fontSize: LABEL_SIZE,
@@ -549,7 +551,7 @@ function StepBasicIdentity({
   const t = useTranslations("agentFactory");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div id="tour-wizard-name" style={panelStyle}>
+      <div id="tour-wizard-name" className={PANEL_CLASS}>
         <SectionHeader icon="🏷️" title={t("identity.sectionTitle")} />
         <div
           style={{
@@ -575,7 +577,7 @@ function StepBasicIdentity({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div id="tour-wizard-personality" style={panelStyle}>
+        <div id="tour-wizard-personality" className={PANEL_CLASS}>
           <SectionHeader icon="🧬" title={t("identity.personalityTitle")} tooltip={t("identity.personalityTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
@@ -599,7 +601,7 @@ function StepBasicIdentity({
           </div>
         </div>
 
-        <div style={panelStyle}>
+        <div className={PANEL_CLASS}>
           <SectionHeader icon="✨" title={t("identity.decisionTitle")} tooltip={t("identity.decisionTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
@@ -640,7 +642,7 @@ function StepTradingStyle({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Trading Instinct — 2x2 grid */}
-      <div id="tour-wizard-instinct" style={panelStyle}>
+      <div id="tour-wizard-instinct" className={PANEL_CLASS}>
         <SectionHeader icon="✨" title={t("trading.instinctTitle")} tooltip={t("trading.instinctTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -672,7 +674,7 @@ function StepTradingStyle({
 
       {/* Time Patience + Profit Dream — side by side */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={panelStyle}>
+        <div className={PANEL_CLASS}>
           <SectionHeader icon="⏱️" title={t("trading.patienceTitle")} tooltip={t("trading.patienceTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
@@ -696,7 +698,7 @@ function StepTradingStyle({
           </div>
         </div>
 
-        <div style={panelStyle}>
+        <div className={PANEL_CLASS}>
           <SectionHeader icon="📈" title={t("trading.profitTitle")} tooltip={t("trading.profitTooltip")} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <RadioCard
@@ -737,7 +739,7 @@ function StepRiskMoney({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Money Approach — 3 in a row */}
-      <div id="tour-wizard-money" style={panelStyle}>
+      <div id="tour-wizard-money" className={PANEL_CLASS}>
         <SectionHeader icon="💰" title={t("risk.moneyTitle")} tooltip={t("risk.moneyTooltip")} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -762,7 +764,7 @@ function StepRiskMoney({
       </div>
 
       {/* Protection Mindset */}
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader icon="🔵" title={t("risk.protectionTitle")} tooltip={t("risk.protectionTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -802,7 +804,7 @@ function StepPreferences({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Market Sense — 2 in a row */}
-      <div id="tour-wizard-sense" style={panelStyle}>
+      <div id="tour-wizard-sense" className={PANEL_CLASS}>
         <SectionHeader icon="🟢" title={t("prefs.senseTitle")} tooltip={t("prefs.senseTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -821,7 +823,7 @@ function StepPreferences({
       </div>
 
       {/* Asset Love — 2x2 grid */}
-      <div style={panelStyle}>
+      <div className={PANEL_CLASS}>
         <SectionHeader icon="💎" title={t("prefs.assetTitle")} tooltip={t("prefs.assetTooltip", { name: config.name.trim() || t("yourAiAgent") })} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <RadioCard
@@ -962,8 +964,8 @@ function StepLaunch({
 
       {/* Agent avatar card */}
       <div
+        className={PANEL_CLASS}
         style={{
-          ...panelStyle,
           width: "100%",
           display: "flex",
           flexDirection: "column",
@@ -1028,7 +1030,7 @@ function StepLaunch({
       </div>
 
       {/* Strategy DNA */}
-      <div style={{ ...panelStyle, width: "100%" }}>
+      <div className={PANEL_CLASS} style={{ width: "100%" }}>
         <SectionHeader icon="🧬" title={t("launch.strategyDna")} />
         <p
           style={{
@@ -1113,8 +1115,8 @@ function StepLaunch({
           />
         ) : (
           <div
+            className={PANEL_CLASS}
             style={{
-              ...panelStyle,
               padding: "14px 18px",
               display: "flex",
               alignItems: "center",
@@ -1536,8 +1538,8 @@ export default function AgentFactoryPage() {
         {/* Locked content */}
         <div
           id="tour-factory-shell"
+          className={PANEL_CLASS}
           style={{
-            ...panelStyle,
             maxWidth: 560,
             margin: "40px auto 0",
             textAlign: "center",
@@ -1714,8 +1716,8 @@ export default function AgentFactoryPage() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
+              className={PANEL_CLASS}
               style={{
-                ...panelStyle,
                 maxWidth: 400,
                 width: "90vw",
                 textAlign: "center",
@@ -1926,8 +1928,8 @@ export default function AgentFactoryPage() {
                     <button
                       id="tour-factory-create"
                       onClick={handleSelectCreatePath}
+                      className={PANEL_CLASS}
                       style={{
-                        ...panelStyle,
                         cursor: "pointer",
                         textAlign: "left",
                         transition: "all 220ms ease",
@@ -1994,8 +1996,8 @@ export default function AgentFactoryPage() {
                     <button
                       id="tour-factory-byo"
                       onClick={handleSelectByoPath}
+                      className={PANEL_CLASS}
                       style={{
-                        ...panelStyle,
                         cursor: "pointer",
                         textAlign: "left",
                         transition: "all 220ms ease",

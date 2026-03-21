@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { fmtDateShort } from "@/lib/formatters";
 import type { Node } from "@xyflow/react";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import {
@@ -25,19 +26,13 @@ interface NodeDetailPanelProps {
 
 // ─── Shared Styles ───────────────────────────────────────────────────────────
 
-const panelStyle: React.CSSProperties = {
+const panelExtraStyle: React.CSSProperties = {
   position: "absolute",
   top: 16,
   right: 16,
   bottom: 16,
   width: 320,
-  borderRadius: 16,
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
   boxShadow: "0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)",
-  padding: 20,
   overflowY: "auto",
   zIndex: 10,
   display: "flex",
@@ -145,6 +140,7 @@ function StatusBadge({ status, color }: { status: string; color: string }) {
 
 function MainNodeDetails({ data }: { data: MainNodeData }) {
   const t = useTranslations("manageAgent.architecture");
+  const locale = useLocale();
   const myAgent = useQuantikStore((s) => s.myAgent);
 
   return (
@@ -294,12 +290,12 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
                 {myAgent.deployed_at && (
                   <DetailRow
                     label={t("deployed")}
-                    value={new Date(myAgent.deployed_at).toLocaleDateString()}
+                    value={fmtDateShort(new Date(myAgent.deployed_at).getTime(), locale)}
                   />
                 )}
                 <DetailRow
                   label={t("created")}
-                  value={new Date(myAgent.created_at).toLocaleDateString()}
+                  value={fmtDateShort(new Date(myAgent.created_at).getTime(), locale)}
                 />
               </div>
             </div>
@@ -926,8 +922,9 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailP
 
       {/* Panel */}
       <div
+        className="glass-card glass-panel-compact"
         style={{
-          ...panelStyle,
+          ...panelExtraStyle,
           animation: closing
             ? "slide-out-right 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards"
             : "slide-in-right 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",

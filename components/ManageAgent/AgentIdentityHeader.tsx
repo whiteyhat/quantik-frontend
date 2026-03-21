@@ -9,15 +9,6 @@ import { fmtUSDC, type WalletBalance } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { DeleteAgentModal } from "./DeleteAgentModal";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-};
-
 function statusBadge(status: string) {
   switch (status) {
     case "active":
@@ -207,7 +198,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const balanceMessage = wallet?.balanceMessage ?? null;
 
   return (
-    <div id="tour-agent-identity" style={panelStyle}>
+    <div id="tour-agent-identity" className="glass-card glass-panel-compact">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         {/* Left: Avatar + Identity */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

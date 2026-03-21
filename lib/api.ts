@@ -2497,25 +2497,9 @@ export async function getReleases(): Promise<import("./releases").ReleaseEntry[]
   return apiFetch("/api/versions");
 }
 
-// ─── Formatters ───────────────────────────────────────────────────────────────
+// ─── Formatters (re-exported from lib/formatters.ts) ─────────────────────────
 
-export function fmtPrice(p: number | null | undefined): string {
-  if (p == null || isNaN(p)) return "0¢";
-  return `${Math.round(p * 100)}¢`;
-}
-
-export function fmtUSDC(n: number | null | undefined): string {
-  if (n == null || isNaN(n)) return "$0.00";
-  return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function fmtCompact(n: number | null | undefined): string {
-  if (n == null || isNaN(n)) return "$0";
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (abs >= 1_000) return `$${(n / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
-  return `$${n.toFixed(0)}`;
-}
+export { fmtPrice, fmtUSDC, fmtCompact, fmtDollar, fmtNumber, fmtDate, fmtDateFull, fmtDateShort, fmtTime, fmtTimeShort, fmtDateTime } from "./formatters";
 
 export function gradeColor(grade: string): string {
   switch (grade) {

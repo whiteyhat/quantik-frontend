@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { api, fmtUSDC, streamPrices, type Market, type MarketAlertItem, type WatchlistItem } from "@/lib/api";
+import { api, fmtUSDC, fmtDateShort, streamPrices, type Market, type MarketAlertItem, type WatchlistItem } from "@/lib/api";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { MarketAlertEditor } from "@/components/markets/MarketAlertEditor";
 
@@ -32,6 +32,7 @@ function MarketCard({
   onEditAlert: () => void;
 }) {
   const t = useTranslations("markets");
+  const locale = useLocale();
   const yes = livePrice?.yes ?? market.yesPrice ?? 0;
   const no = livePrice?.no ?? market.noPrice ?? Math.max(0, 1 - yes);
   const yesPct = Math.round(yes * 100);
@@ -116,7 +117,7 @@ function MarketCard({
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--text-secondary)", fontSize: 12 }}>
           <span>{t("vol")} {fmtUSDC(market.volume)}</span>
           <span>{t("liq")} {market.liquidityGrade}</span>
-          <span>{market.resolutionDate ? new Date(market.resolutionDate).toLocaleDateString() : "—"}</span>
+          <span>{market.resolutionDate ? fmtDateShort(new Date(market.resolutionDate).getTime(), locale) : "—"}</span>
         </div>
       </Link>
     </div>

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { api, type AgentExecutionLogItem } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtTimeShort, type AgentExecutionLogItem } from "@/lib/api";
 import { Skeleton } from "./ui/skeleton";
 
-function timeLabel(ts: number): string {
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function timeLabel(ts: number, locale?: string): string {
+  return fmtTimeShort(ts, locale);
 }
 
 function statusTone(entry: AgentExecutionLogItem): { color: string; bg: string } {
@@ -28,6 +28,7 @@ interface ExecutionLogProps {
 
 export function ExecutionLog({ agentId }: ExecutionLogProps) {
   const t = useTranslations("executionLog");
+  const locale = useLocale();
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<AgentExecutionLogItem[]>([]);
 
@@ -207,7 +208,7 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
                     flexShrink: 0,
                   }}
                 >
-                  {timeLabel(entry.executedAt)}
+                  {timeLabel(entry.executedAt, locale)}
                 </span>
               </div>
             );

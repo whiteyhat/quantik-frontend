@@ -4,15 +4,6 @@ import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 20,
-};
-
 interface ConnectionStatusPanelProps {
   agentId: string;
   connectionStatus?: string | null;
@@ -52,7 +43,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
   };
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <span
           style={{

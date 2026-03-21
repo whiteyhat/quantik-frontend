@@ -18,15 +18,6 @@ import {
   formatEquityTooltipLabel,
 } from "@/lib/equityCurve";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-};
-
 interface EquityCurveChartProps {
   wallet: WalletBalance | null;
   trades: Trade[];
@@ -79,7 +70,7 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
   const isPositive = periodPnl >= 0;
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel-compact">
       {/* Header */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
         <div>

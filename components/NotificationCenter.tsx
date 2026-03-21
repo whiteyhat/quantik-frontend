@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTranslations } from "next-intl";
-import { api, NotificationItem } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtDateTime, NotificationItem } from "@/lib/api";
 import { useNotificationsStore } from "@/store/useNotificationsStore";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
@@ -75,6 +75,7 @@ export function NotificationCenterButton({ compact = false }: { compact?: boolea
 
 export function NotificationCenterPanel() {
   const t = useTranslations("notifications");
+  const locale = useLocale();
   const router = useRouter();
   const open = useNotificationsStore((state) => state.open);
   const items = useNotificationsStore((state) => state.items);
@@ -224,7 +225,7 @@ export function NotificationCenterPanel() {
                       {(item.category ?? item.level).toUpperCase()}
                     </span>
                     <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                      {new Date(item.timestamp).toLocaleString()}
+                      {fmtDateTime(new Date(item.timestamp).getTime(), locale)}
                     </span>
                   </div>
                   <div style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>

@@ -3,17 +3,6 @@
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(20,20,22,0.92)",
-  backdropFilter: "blur(40px) saturate(180%)",
-  WebkitBackdropFilter: "blur(40px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 16,
-  padding: 28,
-  width: "100%",
-  maxWidth: 480,
-};
-
 const AUTOPILOT_LS_KEY = "autopilot_onboarded";
 
 const BULLET_POINTS = [
@@ -60,7 +49,7 @@ export function AutopilotOnboardingModal({ open, onConfirm, onCancel }: Autopilo
       }}
       onClick={onCancel}
     >
-      <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+      <div className="glass-modal" style={{ width: "100%", maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div

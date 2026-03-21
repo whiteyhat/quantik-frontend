@@ -6,17 +6,6 @@ import { createPortal } from "react-dom";
 import type { MyAgent } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(20,20,22,0.92)",
-  backdropFilter: "blur(40px) saturate(180%)",
-  WebkitBackdropFilter: "blur(40px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 16,
-  padding: 28,
-  width: "100%",
-  maxWidth: 420,
-};
-
 interface DeleteAgentModalProps {
   agent: MyAgent;
   open: boolean;
@@ -69,7 +58,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
       }}
       onClick={handleClose}
     >
-      <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+      <div className="glass-modal" style={{ width: "100%", maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
           <div

@@ -16,15 +16,6 @@ import { Skeleton } from "./ui/skeleton";
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  padding: 20,
-};
-
 const LABEL_SIZE = 11;
 const META_SIZE = 12;
 const BODY_SIZE = 13;
@@ -81,7 +72,7 @@ export function PerformancePanel() {
     : null;
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel-compact">
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -427,9 +418,9 @@ export function PerformanceSummaryWidget() {
     return () => clearInterval(iv);
   }, []);
 
-  if (error) return <div style={{ ...panelStyle, flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)" }}>Failed to load performance data</span></div>;
+  if (error) return <div className="glass-card glass-panel-compact" style={{ flex: 1 }}><span style={{ fontSize: BODY_SIZE, color: "rgba(255,69,58,0.6)" }}>Failed to load performance data</span></div>;
   if (!summary) return (
-    <div style={{ ...panelStyle, flex: 1 }}>
+    <div className="glass-card glass-panel-compact" style={{ flex: 1 }}>
       <Skeleton width={160} height={14} borderRadius={4} style={{ marginBottom: 8 }} />
       <Skeleton width={100} height={10} borderRadius={3} style={{ marginBottom: 16 }} />
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
@@ -460,7 +451,7 @@ export function PerformanceSummaryWidget() {
   const streak = summary.metrics.currentStreak;
 
   return (
-    <div style={{ ...panelStyle, flex: 1 }}>
+    <div className="glass-card glass-panel-compact" style={{ flex: 1 }}>
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <h2

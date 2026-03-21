@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, fmtUSDC, type LiquidationReport, type LiquidationAsset, type TimelineEvent } from "@/lib/api";
+import { api, fmtUSDC, fmtPrice, fmtTime, fmtDateShort, type LiquidationReport, type LiquidationAsset, type TimelineEvent } from "@/lib/api";
 
 // ─── Font sizes — L003 compliant ─────────────────────────────────────────────
 const LABEL_SIZE = 11;
@@ -23,23 +23,9 @@ const panelStyle: React.CSSProperties = {
 };
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
-function fmtPrice(p: number | null | undefined): string {
-  const safe = p ?? 0;
-  return `${Math.round(safe * 100)}¢`;
-}
 
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
-});
-function fmtTime(ts: number): string {
-  return timeFmt.format(ts);
-}
-
-const dateFmt = new Intl.DateTimeFormat("en-US", {
-  year: "numeric", month: "short", day: "numeric",
-});
 function fmtDate(ts: number): string {
-  return dateFmt.format(ts);
+  return fmtDateShort(ts);
 }
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────

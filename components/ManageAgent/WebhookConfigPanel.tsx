@@ -1,18 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
-import { api } from "@/lib/api";
+import { useTranslations, useLocale } from "next-intl";
+import { api, fmtTimeShort } from "@/lib/api";
 import { AVAILABLE_WEBHOOK_EVENTS } from "@/lib/webhookEvents";
-
-const panelStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.06)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 16,
-  padding: 20,
-};
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -36,6 +27,7 @@ interface WebhookConfigPanelProps {
 
 export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: WebhookConfigPanelProps) {
   const t = useTranslations("webhook");
+  const locale = useLocale();
   const [url, setUrl] = useState(endpointUrl ?? "");
   const [events, setEvents] = useState<string[]>(webhookEvents ?? ["*"]);
   const [saving, setSaving] = useState(false);
@@ -105,7 +97,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
   };
 
   return (
-    <div style={panelStyle}>
+    <div className="glass-card glass-panel">
       <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
         {t("title")}
       </span>
@@ -239,7 +231,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
                     {d.latency_ms}ms
                   </span>
                   <span style={{ ...mono, fontSize: 9, color: "rgba(255,255,255,0.20)" }}>
-                    {new Date(d.created_at).toLocaleTimeString()}
+                    {fmtTimeShort(new Date(d.created_at).getTime(), locale)}
                   </span>
                 </div>
               </div>

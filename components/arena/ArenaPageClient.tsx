@@ -3,12 +3,12 @@
 import "./arena.css";
 import { useDeferredValue, useReducer, useRef, useState } from "react";
 import { Activity, RefreshCw, Search, Shield, Star, Swords, Target } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
-import { type ArenaWindow, type ArenaLeaderboardEntry } from "@/lib/api";
+import { fmtNumber, type ArenaWindow, type ArenaLeaderboardEntry } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { useNow } from "@/hooks/useNow";
 import { useFollowedAgents } from "@/hooks/useFollowedAgents";
@@ -79,6 +79,7 @@ function compareReducer(state: CompareState, action: CompareAction): CompareStat
 export function ArenaPageClient() {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewerFocus, setViewerFocus] = useState(false);
@@ -186,13 +187,13 @@ export function ArenaPageClient() {
         <div className="arena-prelude-metrics">
           <MetricBlock
             label={t("rankedAgents")}
-            value={(arenaQuery.data?.meta.rankedAgents ?? 0).toLocaleString()}
+            value={fmtNumber(arenaQuery.data?.meta.rankedAgents ?? 0, locale)}
             tone="info"
             hint={t("metricRankedHint")}
           />
           <MetricBlock
             label={t("activeAgents")}
-            value={(arenaQuery.data?.meta.activeAgents ?? 0).toLocaleString()}
+            value={fmtNumber(arenaQuery.data?.meta.activeAgents ?? 0, locale)}
             tone="neutral"
             hint={t("metricActiveHint")}
           />

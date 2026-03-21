@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { api, fmtPrice, fmtUSDC, type Trade, type TradeReportsResponse } from "@/lib/api";
+import { api, fmtPrice, fmtUSDC, fmtDateShort, fmtDateTime, type Trade, type TradeReportsResponse } from "@/lib/api";
 import { Skeleton, SkeletonTableRows } from "@/components/ui/skeleton";
 import {
   ResponsiveContainer,
@@ -15,14 +15,8 @@ import {
   Tooltip,
 } from "recharts";
 
-const panelStyle: React.CSSProperties = {
-  background: "var(--glass-surface)",
-  backdropFilter: "blur(24px) saturate(180%)",
-  WebkitBackdropFilter: "blur(24px) saturate(180%)",
-  border: "1px solid var(--glass-border)",
-  borderRadius: 18,
-  padding: 20,
-};
+const PANEL_CLASS = "glass-card glass-panel-compact";
+const PANEL_OVERRIDE: React.CSSProperties = { borderRadius: 18 };
 
 const filterControlStyle: React.CSSProperties = {
   padding: "12px 14px",
@@ -73,7 +67,7 @@ function ReportMetric({
   color?: string;
 }) {
   return (
-    <div style={panelStyle}>
+    <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
       <div style={{ fontSize: 11, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
         {label}
       </div>
@@ -84,7 +78,7 @@ function ReportMetric({
 
 function TradeHighlightCard({ label, trade }: { label: string; trade: Trade | null }) {
   return (
-    <div style={panelStyle}>
+    <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
       <div style={{ fontSize: 11, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
         {label}
       </div>
@@ -124,6 +118,7 @@ interface TradeReportsViewProps {
 
 export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
   const t = useTranslations("tradeHistory");
+  const locale = useLocale();
   const [period, setPeriod] = useState<Period>("all");
   const [outcome, setOutcome] = useState<OutcomeFilter>("All");
   const [source, setSource] = useState<SourceFilter>("all");
@@ -218,7 +213,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
         </div>
       </div>
 
-      <div style={{ ...panelStyle, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {(["all", "day", "week", "month"] as Period[]).map((value) => (
             <button
@@ -272,19 +267,19 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
             {[1, 2, 3, 4].map((item) => (
-              <div key={item} style={panelStyle}>
+              <div key={item} className={PANEL_CLASS} style={PANEL_OVERRIDE}>
                 <Skeleton width={90} height={10} borderRadius={4} />
                 <div style={{ height: 8 }} />
                 <Skeleton width={120} height={26} borderRadius={8} />
               </div>
             ))}
           </div>
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
             <Skeleton width="100%" height={260} borderRadius={16} />
           </div>
         </>
       ) : error ? (
-        <div style={{ ...panelStyle, color: "var(--ios-red)" }}>Failed to load reports: {error}</div>
+        <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, color: "var(--ios-red)" }}>Failed to load reports: {error}</div>
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
@@ -303,7 +298,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
             <TradeHighlightCard label="Worst trade" trade={data?.worstTrade ?? null} />
           </div>
 
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
               P&L by {period === "day" ? "hour" : period === "all" ? "trade" : "day"}
             </div>
@@ -338,7 +333,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
             )}
           </div>
 
-          <div style={panelStyle}>
+          <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
               Agent attribution
             </div>
@@ -366,15 +361,16 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
           {/* Mobile card view */}
           <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {trades.length === 0 ? (
-              <div style={{ ...panelStyle, padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
+              <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
                 No trades match the current filters.
               </div>
             ) : (
               trades.map((trade) => (
                 <div
                   key={`mobile-${trade.id}-${trade.timestamp}`}
+                  className={PANEL_CLASS}
                   style={{
-                    ...panelStyle,
+                    ...PANEL_OVERRIDE,
                     padding: 14,
                     display: "flex",
                     flexDirection: "column",
@@ -392,7 +388,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
                     <span>{fmtPrice(trade.price)}</span>
                     <span>{fmtUSDC(trade.size)}</span>
                     <span style={{ marginLeft: "auto", color: "var(--text-tertiary)" }}>
-                      {new Date(trade.timestamp).toLocaleDateString()}
+                      {fmtDateShort(new Date(trade.timestamp).getTime(), locale)}
                     </span>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)" }}>
@@ -404,7 +400,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
           </div>
 
           {/* Desktop table view */}
-          <div className="hidden md:block" style={panelStyle}>
+          <div className={`hidden md:block ${PANEL_CLASS}`} style={PANEL_OVERRIDE}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
                 <thead>
@@ -452,7 +448,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
                           <OutcomeBadge outcome={trade.outcome} />
                         </td>
                         <td style={{ padding: "12px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-                          {new Date(trade.timestamp).toLocaleString()}
+                          {fmtDateTime(new Date(trade.timestamp).getTime(), locale)}
                         </td>
                       </tr>
                     ))

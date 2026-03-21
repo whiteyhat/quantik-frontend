@@ -18,13 +18,11 @@ function formatCountdown(ms: number): string {
   return `${minutes}:${seconds}`;
 }
 
+import { fmtTime } from "@/lib/formatters";
+
 function formatTimestamp(ts: number | null | undefined): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  return fmtTime(ts);
 }
 
 function SlideToConfirm({

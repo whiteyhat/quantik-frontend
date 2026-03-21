@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { api, fmtPrice, fmtUSDC, type Market, type Position } from "@/lib/api";
+import { useLocale } from "next-intl";
+import { api, fmtPrice, fmtUSDC, fmtDateTime, type Market, type Position } from "@/lib/api";
 import { PriceChart } from "@/components/PriceChart";
 
 export function PositionDetailSheet({
@@ -16,6 +17,7 @@ export function PositionDetailSheet({
   onClose: () => void;
   onClosed: (executionId: number) => void;
 }) {
+  const locale = useLocale();
   const [market, setMarket] = useState<Market | null>(null);
   const [closing, setClosing] = useState(false);
 
@@ -127,7 +129,7 @@ export function PositionDetailSheet({
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 12, color: "var(--text-secondary)" }}>
             <span>Size {position.size.toFixed(2)}</span>
             <span>Source {(position.source ?? "manual").toUpperCase()}</span>
-            <span>Opened {position.executedAt ? new Date(position.executedAt).toLocaleString() : "—"}</span>
+            <span>Opened {position.executedAt ? fmtDateTime(new Date(position.executedAt).getTime(), locale) : "—"}</span>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

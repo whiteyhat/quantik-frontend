@@ -17,10 +17,7 @@ function fmtK(n: number): string {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
 }
 
-const dollarFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-function fmtDollar(n: number): string {
-  return `$${dollarFmt.format(n)}`;
-}
+import { fmtDollar } from "@/lib/formatters";
 
 export function OrderBook({ tokenId, yesPrice }: OrderBookProps) {
   const t = useTranslations("orderBook");
