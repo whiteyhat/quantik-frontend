@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { getAuthToken } from "@/lib/api";
+import { getRelaySidebarSessionId } from "@/lib/relaySidebar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // ── Types ──────────────────────────────────────────────────────
 
 interface Message {
-  id: number;
+  id: string;
   role: "user" | "relay";
   text: string;
   streaming?: boolean;
@@ -35,29 +36,9 @@ interface RelayChatProps {
 
 // ── Helpers ────────────────────────────────────────────────────
 
-let _nextId = 0;
 function nextId() {
-  return _nextId++;
+  return crypto.randomUUID();
 }
-
-function getSessionId(): string {
-  const KEY = "quantik_relay_session";
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
-  }
-  return id;
-}
-
-const MODEL_LABELS: Record<string, string> = {
-  "gemini-2.5-flash-preview-04-17": "Gemini 2.5 Flash",
-  "gemini-2.0-flash": "Gemini 2.0 Flash",
-  "llama4:maverick": "Llama 4 Maverick",
-  phi4: "Phi-4",
-  "llama3.2:3b": "Llama 3.2",
-  fallback: "Offline",
-};
 
 // ── Component ──────────────────────────────────────────────────
 
@@ -66,14 +47,15 @@ export function RelayChat({ slug }: RelayChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [currentModel, setCurrentModel] = useState<string>("");
-  const [expandedAgent, setExpandedAgent] = useState<number | null>(null);
+  const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [pipelineDone, setPipelineDone] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pipelineRunning = useQuantikStore((s) => s.pipeline.running);
   const pipelineResult = useQuantikStore((s) => s.pipeline.result);
   const wasRunning = useRef(false);
   const overviewSent = useRef(false);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const sendMessage = useCallback(
     async (text?: string, opts?: { silent?: boolean; pipelineData?: unknown }) => {
@@ -87,12 +69,12 @@ export function RelayChat({ slug }: RelayChatProps) {
       setInput("");
       setSending(true);
 
-      const history = messages.slice(-MAX_VISIBLE * 2).map((m) => ({
+      const history = messagesRef.current.slice(-MAX_VISIBLE * 2).map((m) => ({
         role: m.role === "user" ? "user" : "assistant",
         content: m.text,
       }));
 
-      const sessionId = getSessionId();
+      const sessionId = getRelaySidebarSessionId(typeof window !== "undefined" ? window.localStorage : null);
       const token = getAuthToken();
       const reqBody = JSON.stringify({
         message: msg,
@@ -121,7 +103,6 @@ export function RelayChat({ slug }: RelayChatProps) {
         const contentType = res.headers.get("content-type") ?? "";
         if (!res.ok || !contentType.includes("text/event-stream")) {
           const data: RelayApiResponse = await res.json();
-          setCurrentModel(data.model);
           setMessages((prev) => [
             ...prev,
             {
@@ -187,7 +168,6 @@ export function RelayChat({ slug }: RelayChatProps) {
                   )
                 );
               } else if (event.type === "done") {
-                if (event.model) setCurrentModel(event.model);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === placeholderId
@@ -253,7 +233,7 @@ export function RelayChat({ slug }: RelayChatProps) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [input, sending, messages, slug]
+    [input, sending, slug]
   );
 
   // Track when pipeline starts running during this page visit
@@ -282,7 +262,7 @@ export function RelayChat({ slug }: RelayChatProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, sending]);
+  }, [messages]);
 
   if (!pipelineDone) return null;
 
@@ -507,26 +487,29 @@ export function RelayChat({ slug }: RelayChatProps) {
                 {/* Agent routing chips */}
                 {msg.routedTo &&
                   msg.routedTo.length > 0 &&
-                  msg.routedTo.map((agent) => (
-                    <span
-                      key={agent}
-                      data-testid="relay-agent-chip"
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                        padding: "2px 8px",
-                        borderRadius: 4,
-                        background: agentChipColor(agent).bg,
-                        color: agentChipColor(agent).fg,
-                        border: `1px solid ${agentChipColor(agent).border}`,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {agent}
-                    </span>
-                  ))}
+                  msg.routedTo.map((agent) => {
+                    const chip = agentChipColor(agent);
+                    return (
+                      <span
+                        key={agent}
+                        data-testid="relay-agent-chip"
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                          background: chip.bg,
+                          color: chip.fg,
+                          border: `1px solid ${chip.border}`,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {agent}
+                      </span>
+                    );
+                  })}
 
                 {/* Agent data toggle */}
                 {msg.agentData &&

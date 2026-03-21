@@ -18,7 +18,7 @@ import {
   type SigmaResult,
 } from "@/lib/api";
 import { AGENT_NAMES, AGENT_META, type AgentName } from "@/lib/agents";
-import type { AgentStatus } from "@/store/useQuantikStore";
+import { useQuantikStore, type AgentStatus, type AgentCardState } from "@/store/useQuantikStore";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -43,14 +43,7 @@ const AGENTS = AGENT_NAMES.map((key) => ({
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface AgentState {
-  status: AgentStatus;
-  data?: unknown;
-  error?: string;
-  startedAt?: number;
-  finishedAt?: number;
-  streamText?: string; // live streaming text
-}
+// AgentCardState imported from store (status, data, error, startedAt, latencyMs)
 
 // ─── Safe number guard ────────────────────────────────────────────────────────
 
@@ -148,13 +141,10 @@ function ConfidenceBadge({ agentKey, data }: { agentKey: string; data: unknown }
 
 // ─── Agent Step Row ───────────────────────────────────────────────────────────
 
-function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: AgentState }) {
+function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: AgentCardState }) {
   const t = useTranslations("marketAnalysis");
-  const { status, data, error, startedAt, finishedAt, streamText } = state;
-  const elapsed =
-    finishedAt && startedAt
-      ? `${(((finishedAt - startedAt) / 1000) as number).toFixed(1)}s`
-      : null;
+  const { status, data, error, latencyMs } = state;
+  const elapsed = latencyMs ? `${(latencyMs / 1000).toFixed(1)}s` : null;
 
   const dotColor =
     status === "done"
@@ -221,7 +211,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
           }}
         >
           {status === "running"
-            ? streamText ?? `${agentCfg.role} — running…`
+            ? `${agentCfg.role} — running…`
             : status === "error"
             ? `Error: ${error ?? "unknown"}`
             : summary ?? agentCfg.role}
@@ -313,7 +303,7 @@ function AgentRow({ agentCfg, state }: { agentCfg: (typeof AGENTS)[0]; state: Ag
 
 // ─── Pipeline progress bar ────────────────────────────────────────────────────
 
-function PipelineProgress({ agents }: { agents: Record<string, AgentState> }) {
+function PipelineProgress({ agents }: { agents: Record<string, AgentCardState> }) {
   const t = useTranslations("marketAnalysis");
   const total = AGENTS.length;
   const done = AGENTS.filter((a) => agents[a.key]?.status === "done").length;
@@ -570,12 +560,6 @@ function MarketCard({
   );
 }
 
-// ─── Default agent states ─────────────────────────────────────────────────────
-
-function defaultAgentStates(): Record<string, AgentState> {
-  return Object.fromEntries(AGENTS.map((a) => [a.key, { status: "idle" as const }]));
-}
-
 // ─── Market Analysis Page ─────────────────────────────────────────────────────
 
 export default function MarketAnalysisPage() {
@@ -583,13 +567,17 @@ export default function MarketAnalysisPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
-  const [agentStates, setAgentStates] = useState<Record<string, AgentState>>(defaultAgentStates());
-  const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const cancelRef = useRef<(() => void) | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Pipeline state from Zustand store (single source of truth)
+  const pipeline = useQuantikStore((s) => s.pipeline);
+  const pipelineStart = useQuantikStore((s) => s.pipelineStart);
+  const pipelineAgentEvent = useQuantikStore((s) => s.pipelineAgentEvent);
+  const pipelineComplete = useQuantikStore((s) => s.pipelineComplete);
+  const pipelineReset = useQuantikStore((s) => s.pipelineReset);
 
   useEffect(() => {
     api.getMarkets(search || undefined).then(res => setMarkets(res.markets)).catch(() => {});
@@ -612,84 +600,60 @@ export default function MarketAnalysisPage() {
     }
 
     setSelectedMarket(market);
-    setAgentStates(defaultAgentStates());
-    setPipelineResult(null);
     setPipelineError(null);
     setLog([]);
-    setPipelineRunning(true);
+    pipelineReset();
+    pipelineStart();
 
     const startTs = Date.now();
-    const agentStartTimes: Record<string, number> = {};
 
     const cancel = runPipeline(
       market.slug,
       (event: PipelineEvent) => {
+        pipelineAgentEvent(event);
+        // Also maintain local log for this page's timeline
         if (event.type === "pipeline:start") return;
         if (!("agent" in event)) return;
         const key = event.agent;
-        const now = Date.now();
-
+        const elapsed = ((Date.now() - startTs) / 1000).toFixed(1);
         if (event.type === "agent:start") {
-          agentStartTimes[key] = now;
-          setAgentStates((prev) => ({
-            ...prev,
-            [key]: { status: "running", startedAt: now },
-          }));
-          setLog((prev) => [
-            ...prev,
-            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} started`,
-          ]);
+          setLog((prev) => [...prev, `[${elapsed}s] ${key.toUpperCase()} started`]);
         } else if (event.type === "agent:complete") {
-          const started = agentStartTimes[key] ?? now;
-          setAgentStates((prev) => ({
-            ...prev,
-            [key]: {
-              status: "done",
-              data: event.data,
-              startedAt: started,
-              finishedAt: now,
-            },
-          }));
           const summary = event.data
             ? `  → ${JSON.stringify(event.data).slice(0, 80)}…`
             : "";
-          setLog((prev) => [
-            ...prev,
-            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} done${summary}`,
-          ]);
+          setLog((prev) => [...prev, `[${elapsed}s] ${key.toUpperCase()} done${summary}`]);
         } else if (event.type === "agent:error") {
           const errMsg = typeof event.error === "string" ? event.error : JSON.stringify(event.error) ?? "unknown error";
-          setAgentStates((prev) => ({
-            ...prev,
-            [key]: { status: "error", error: errMsg },
-          }));
-          setLog((prev) => [
-            ...prev,
-            `[${((now - startTs) / 1000).toFixed(1)}s] ${key.toUpperCase()} ERROR: ${errMsg}`,
-          ]);
+          setLog((prev) => [...prev, `[${elapsed}s] ${key.toUpperCase()} ERROR: ${errMsg}`]);
         }
       },
       (result: PipelineResult) => {
-        setPipelineResult(result);
-        setPipelineRunning(false);
+        pipelineComplete(result);
         const elapsed = ((Date.now() - startTs) / 1000).toFixed(1);
         setLog((prev) => [...prev, `[${elapsed}s] Pipeline complete ✓`]);
       },
       (err: Error) => {
+        pipelineComplete({});
         setPipelineError(err.message);
-        setPipelineRunning(false);
         setLog((prev) => [...prev, `Pipeline error: ${err.message}`]);
       }
     );
 
     cancelRef.current = cancel;
-  }, []);
+  }, [pipelineReset, pipelineStart, pipelineAgentEvent, pipelineComplete]);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => cancelRef.current?.();
-  }, []);
+    return () => {
+      cancelRef.current?.();
+      pipelineReset();
+    };
+  }, [pipelineReset]);
 
+  const pipelineRunning = pipeline.running;
+  const pipelineResult = pipeline.result;
+  const agentStates = pipeline.agents;
   const sigmaResult = pipelineResult?.sigma;
   const totalDone = AGENTS.filter((a) => agentStates[a.key]?.status === "done").length;
 

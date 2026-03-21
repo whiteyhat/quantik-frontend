@@ -1,7 +1,7 @@
 "use client";
 
 import "./arena.css";
-import { useDeferredValue, useRef, useState } from "react";
+import { useDeferredValue, useReducer, useRef, useState } from "react";
 import { Activity, RefreshCw, Search, Shield, Star, Swords, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -43,6 +43,39 @@ import { LiveActivityFeed } from "./LiveActivityFeed";
 
 const ComparisonModal = dynamic(() => import("./ComparisonModal"), { ssr: false });
 
+interface CompareState {
+  mode: boolean;
+  selection: string | null;
+  pair: [string, string] | null;
+}
+
+type CompareAction =
+  | { type: "TOGGLE_MODE" }
+  | { type: "SELECT_AGENT"; agentId: string }
+  | { type: "SET_PAIR"; pair: [string, string] }
+  | { type: "CLOSE_MODAL" };
+
+function compareReducer(state: CompareState, action: CompareAction): CompareState {
+  switch (action.type) {
+    case "TOGGLE_MODE":
+      return { ...state, mode: !state.mode, selection: null };
+    case "SELECT_AGENT":
+      if (state.selection === null) {
+        return { ...state, selection: action.agentId };
+      }
+      if (state.selection === action.agentId) {
+        return { ...state, selection: null };
+      }
+      return { mode: false, selection: null, pair: [state.selection, action.agentId] };
+    case "SET_PAIR":
+      return { mode: false, selection: null, pair: action.pair };
+    case "CLOSE_MODAL":
+      return { ...state, pair: null };
+    default:
+      return state;
+  }
+}
+
 export function ArenaPageClient() {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
@@ -50,9 +83,7 @@ export function ArenaPageClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewerFocus, setViewerFocus] = useState(false);
   const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
-  const [comparisonPair, setComparisonPair] = useState<[string, string] | null>(null);
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareSelection, setCompareSelection] = useState<string | null>(null);
+  const [compare, dispatchCompare] = useReducer(compareReducer, { mode: false, selection: null, pair: null });
   const [followingFocus, setFollowingFocus] = useState(false);
   const { followed, isFollowing, toggle: toggleFollow } = useFollowedAgents();
   const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -332,12 +363,9 @@ export function ArenaPageClient() {
                 </button>
                 <button
                   type="button"
-                  className={cn("arena-filter-chip", compareMode && "arena-filter-chip--active")}
-                  onClick={() => {
-                    setCompareMode((prev) => !prev);
-                    setCompareSelection(null);
-                  }}
-                  aria-pressed={compareMode}
+                  className={cn("arena-filter-chip", compare.mode && "arena-filter-chip--active")}
+                  onClick={() => dispatchCompare({ type: "TOGGLE_MODE" })}
+                  aria-pressed={compare.mode}
                 >
                   <Swords className="size-4" />
                   {t("compareMode")}
@@ -371,21 +399,11 @@ export function ArenaPageClient() {
                         onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
                         staggerIndex={hasInitiallyRendered.current ? undefined : index}
                         activeWindow={activeWindow}
-                        compareMode={compareMode}
-                        isCompareSelected={compareSelection === entry.agentId}
+                        compareMode={compare.mode}
+                        isCompareSelected={compare.selection === entry.agentId}
                         isFollowing={isFollowing(entry.agentId)}
                         onToggleFollow={toggleFollow}
-                        onSelectForCompare={(agentId) => {
-                          if (compareSelection === null) {
-                            setCompareSelection(agentId);
-                          } else if (compareSelection === agentId) {
-                            setCompareSelection(null);
-                          } else {
-                            setComparisonPair([compareSelection, agentId]);
-                            setCompareMode(false);
-                            setCompareSelection(null);
-                          }
-                        }}
+                        onSelectForCompare={(agentId) => dispatchCompare({ type: "SELECT_AGENT", agentId })}
                       />
                     ))}
                   </AnimatePresence>
@@ -406,7 +424,7 @@ export function ArenaPageClient() {
               leaders={leaders}
               onCompare={
                 viewerEntry && champion && viewerEntry.agentId !== champion.agentId
-                  ? () => setComparisonPair([viewerEntry.agentId, champion.agentId])
+                  ? () => dispatchCompare({ type: "SET_PAIR", pair: [viewerEntry.agentId, champion.agentId] })
                   : undefined
               }
             />
@@ -418,12 +436,12 @@ export function ArenaPageClient() {
         </div>
       )}
 
-      {comparisonPair && (
+      {compare.pair && (
         <ComparisonModal
-          agentId1={comparisonPair[0]}
-          agentId2={comparisonPair[1]}
+          agentId1={compare.pair[0]}
+          agentId2={compare.pair[1]}
           window={activeWindow}
-          onClose={() => setComparisonPair(null)}
+          onClose={() => dispatchCompare({ type: "CLOSE_MODAL" })}
         />
       )}
     </div>

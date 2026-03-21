@@ -635,7 +635,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const agentName = myAgent?.name ?? "Relay";
   const agentEmoji = myAgent?.avatar_emoji ?? "🤝";
   const personality = myAgent?.personality ?? "balanced";
-  const theme = getTheme(personality);
+  const theme = useMemo(() => getTheme(personality), [personality]);
 
   const defaultActions = useMemo(() => [
     { label: t("actionRefreshSignals"), message: t("actionRefreshSignalsMsg") },
@@ -698,17 +698,15 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     stale?: boolean;
   } | undefined;
 
-  const headerSyncLabel = (() => {
+  const headerSyncLabel = useMemo(() => {
     if (scannerContext?.lastScannedAt) {
       const prefix = scannerContext.stale ? t("cachedLabel") : t("scannerSyncLabel");
       return `${prefix} · ${formatRelayRelativeTime(scannerContext.lastScannedAt, Date.now(), syncFormats)}`;
     }
     if (lastSyncAt) return formatRelayRelativeTime(lastSyncAt, Date.now(), syncFormats);
-    // Autopilot is running but no manual chat sync yet — show a meaningful label
-    // instead of "no sync" which implies the agent is idle.
     if (myAgent?.autopilot_enabled) return t("autopilotOn");
     return t("syncNoSync");
-  })();
+  }, [scannerContext, lastSyncAt, myAgent?.autopilot_enabled, t, syncFormats]);
 
   const suggestionPrompts = useMemo<SuggestionPrompt[]>(() => {
     const promptMap = new Map<string, SuggestionPrompt>();

@@ -43,7 +43,7 @@ export function isOpenClawAgent(agentType: string | null | undefined) {
   return normalized === "byo" || normalized.includes("openclaw");
 }
 
-export function buildWindowHref(pathname: string, searchParams: URLSearchParams | ReadonlyURLSearchParamsLike, window: ArenaWindow) {
+export function buildWindowHref(pathname: string, searchParams: URLSearchParams, window: ArenaWindow) {
   const params = new URLSearchParams(searchParams.toString());
   if (window === "all") params.delete("window");
   else params.set("window", window);
@@ -112,10 +112,6 @@ export function findNextRival(leaders: ArenaLeaderboardEntry[], viewer?: ArenaVi
     return leaders.find((entry) => entry.rank === viewerRank - 1) ?? null;
   }
   return leaders[Math.min(9, leaders.length - 1)] ?? null;
-}
-
-export interface ReadonlyURLSearchParamsLike {
-  toString(): string;
 }
 
 export function podiumLabel(rank: number, labels: {
