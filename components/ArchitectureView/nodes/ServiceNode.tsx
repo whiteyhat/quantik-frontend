@@ -2,14 +2,13 @@
 
 import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { ServiceNodeData } from "../data/architectureData";
+import type { ServiceNodeTyped } from "../data/architectureData";
+import { MONO_FONT, serviceStatusColor } from "../shared";
 
-function ServiceNodeComponent({ data }: NodeProps) {
-  const d = data as unknown as ServiceNodeData;
+function ServiceNodeComponent({ data }: NodeProps<ServiceNodeTyped>) {
   const [hovered, setHovered] = useState(false);
 
-  const isStreaming = d.status === "streaming";
-  const isPolymarket = d.label.toLowerCase().includes("polymarket");
+  const isPolymarket = data.label.toLowerCase().includes("polymarket");
 
   return (
     <div
@@ -43,19 +42,19 @@ function ServiceNodeComponent({ data }: NodeProps) {
     >
       {/* Row: icon + label + status */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 12 }}>{d.icon}</span>
+        <span style={{ fontSize: 12 }}>{data.icon}</span>
         <span
           style={{
             fontSize: 10,
             fontWeight: 600,
             color: "rgba(255,255,255,0.60)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontFamily: MONO_FONT,
             flex: 1,
             letterSpacing: "0.02em",
             lineHeight: 1.3,
           }}
         >
-          {d.label}
+          {data.label}
         </span>
 
         {/* Status indicator */}
@@ -64,12 +63,7 @@ function ServiceNodeComponent({ data }: NodeProps) {
             width: 5,
             height: 5,
             borderRadius: "50%",
-            background:
-              isStreaming
-                ? "var(--ios-blue)"
-                : d.status === "connected"
-                ? "var(--ios-green)"
-                : "rgba(255,255,255,0.15)",
+            background: serviceStatusColor(data.status),
             flexShrink: 0,
           }}
         />

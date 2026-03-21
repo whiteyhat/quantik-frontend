@@ -42,6 +42,13 @@ export interface InfraNodeData {
   [key: string]: unknown;
 }
 
+// ─── Typed Node Aliases (for ReactFlow generics) ────────────────────────────
+
+export type MainNode = Node<MainNodeData>;
+export type SubAgentNodeTyped = Node<SubAgentNodeData>;
+export type ServiceNodeTyped = Node<ServiceNodeData>;
+export type InfraNodeTyped = Node<InfraNodeData>;
+
 // ─── Agent Metadata ──────────────────────────────────────────────────────────
 
 export const AGENT_META: Record<

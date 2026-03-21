@@ -2,13 +2,13 @@
 
 import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { CATEGORY_COLORS, type InfraNodeData } from "../data/architectureData";
+import { CATEGORY_COLORS, type InfraNodeTyped } from "../data/architectureData";
+import { MONO_FONT, infraStatusColor } from "../shared";
 
-function InfraNodeComponent({ data }: NodeProps) {
-  const d = data as unknown as InfraNodeData;
+function InfraNodeComponent({ data }: NodeProps<InfraNodeTyped>) {
   const [hovered, setHovered] = useState(false);
 
-  const accent = CATEGORY_COLORS[d.category] || "#64D2FF";
+  const accent = CATEGORY_COLORS[data.category] || "#64D2FF";
 
   return (
     <div
@@ -43,19 +43,19 @@ function InfraNodeComponent({ data }: NodeProps) {
     >
       {/* Row: icon + label + status */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontSize: 14 }}>{d.icon}</span>
+        <span style={{ fontSize: 14 }}>{data.icon}</span>
         <span
           style={{
             fontSize: 10,
             fontWeight: 600,
             color: "rgba(255,255,255,0.70)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontFamily: MONO_FONT,
             flex: 1,
             letterSpacing: "0.02em",
             lineHeight: 1.3,
           }}
         >
-          {d.label}
+          {data.label}
         </span>
 
         {/* Status indicator */}
@@ -64,12 +64,7 @@ function InfraNodeComponent({ data }: NodeProps) {
             width: 5,
             height: 5,
             borderRadius: "50%",
-            background:
-              d.status === "online"
-                ? "#30D158"
-                : d.status === "degraded"
-                ? "#FF9F0A"
-                : "rgba(255,255,255,0.15)",
+            background: infraStatusColor(data.status),
             flexShrink: 0,
           }}
         />
@@ -84,10 +79,10 @@ function InfraNodeComponent({ data }: NodeProps) {
           letterSpacing: "0.08em",
           color: accent,
           opacity: 0.7,
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+          fontFamily: MONO_FONT,
         }}
       >
-        {d.category}
+        {data.category}
       </span>
 
       {/* Bidirectional handles */}

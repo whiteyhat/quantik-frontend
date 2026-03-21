@@ -35,8 +35,8 @@ export function useArchitectureState() {
       }
 
       // Update sub-agent nodes with pipeline status
-      const nodeData = node.data as unknown as { type?: string; agentKey?: string };
-      if (nodeData.type === "sub-agent" && nodeData.agentKey) {
+      const nodeData = node.data as Record<string, unknown>;
+      if (nodeData.type === "sub-agent" && typeof nodeData.agentKey === "string") {
         const agentState = pipelineAgents[nodeData.agentKey];
         if (agentState) {
           return {
@@ -45,7 +45,7 @@ export function useArchitectureState() {
               ...node.data,
               status: agentState.status,
               latencyMs: agentState.latencyMs,
-            } as unknown as SubAgentNodeData,
+            } as SubAgentNodeData,
           };
         }
       }

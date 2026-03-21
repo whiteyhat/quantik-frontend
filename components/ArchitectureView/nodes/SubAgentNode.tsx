@@ -2,22 +2,14 @@
 
 import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { SubAgentNodeData } from "../data/architectureData";
+import type { SubAgentNodeTyped } from "../data/architectureData";
+import { MONO_FONT, MONO_FONT_LIGHT, agentStatusColor } from "../shared";
 
-function SubAgentNodeComponent({ data }: NodeProps) {
-  const d = data as unknown as SubAgentNodeData;
+function SubAgentNodeComponent({ data }: NodeProps<SubAgentNodeTyped>) {
   const [hovered, setHovered] = useState(false);
-  const isRunning = d.status === "running";
-  const isDone = d.status === "done";
-  const isError = d.status === "error";
-
-  const statusColor = isRunning
-    ? "var(--ios-blue)"
-    : isDone
-    ? "var(--ios-green)"
-    : isError
-    ? "var(--ios-red)"
-    : "rgba(255,255,255,0.20)";
+  const isRunning = data.status === "running";
+  const isDone = data.status === "done";
+  const statusColor = agentStatusColor(data.status);
 
   return (
     <div
@@ -30,14 +22,14 @@ function SubAgentNodeComponent({ data }: NodeProps) {
         background: hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.06)",
         backdropFilter: "blur(24px) saturate(180%)",
         WebkitBackdropFilter: "blur(24px) saturate(180%)",
-        borderTop: `1px solid ${hovered ? d.accentColor + "50" : isRunning ? d.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
-        borderRight: `1px solid ${hovered ? d.accentColor + "50" : isRunning ? d.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
-        borderBottom: `1px solid ${hovered ? d.accentColor + "50" : isRunning ? d.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
-        borderLeft: `3px solid ${d.accentColor}`,
+        borderTop: `1px solid ${hovered ? data.accentColor + "50" : isRunning ? data.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
+        borderRight: `1px solid ${hovered ? data.accentColor + "50" : isRunning ? data.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
+        borderBottom: `1px solid ${hovered ? data.accentColor + "50" : isRunning ? data.accentColor + "60" : "rgba(255,255,255,0.08)"}`,
+        borderLeft: `3px solid ${data.accentColor}`,
         boxShadow: hovered
-          ? `0 0 24px ${d.accentColor}30, 0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.10)`
+          ? `0 0 24px ${data.accentColor}30, 0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.10)`
           : isRunning
-          ? `0 0 20px ${d.accentColor}20, 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)`
+          ? `0 0 20px ${data.accentColor}20, 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)`
           : "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
         padding: "12px 14px",
         cursor: "pointer",
@@ -48,17 +40,17 @@ function SubAgentNodeComponent({ data }: NodeProps) {
     >
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 16 }}>{d.emoji}</span>
+        <span style={{ fontSize: 16 }}>{data.emoji}</span>
         <span
           style={{
             fontSize: 13,
             fontWeight: 700,
             color: "rgba(255,255,255,0.92)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontFamily: MONO_FONT,
             flex: 1,
           }}
         >
-          {d.label}
+          {data.label}
         </span>
 
         {/* Status dot */}
@@ -88,21 +80,21 @@ function SubAgentNodeComponent({ data }: NodeProps) {
 
       {/* Role */}
       <span style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", display: "block" }}>
-        {d.role}
+        {data.role}
       </span>
 
       {/* Latency badge */}
-      {d.latencyMs !== undefined && isDone && (
+      {data.latencyMs !== undefined && isDone && (
         <span
           style={{
             fontSize: 9,
             color: "rgba(255,255,255,0.30)",
-            fontFamily: '"SF Mono", monospace',
+            fontFamily: MONO_FONT_LIGHT,
             marginTop: 4,
             display: "block",
           }}
         >
-          {(d.latencyMs / 1000).toFixed(1)}s
+          {(data.latencyMs / 1000).toFixed(1)}s
         </span>
       )}
 
@@ -111,25 +103,25 @@ function SubAgentNodeComponent({ data }: NodeProps) {
         type="target"
         position={Position.Left}
         id="in"
-        style={{ background: d.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
+        style={{ background: data.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
       />
       <Handle
         type="target"
         position={Position.Top}
         id="in-top"
-        style={{ background: d.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
+        style={{ background: data.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
       />
       <Handle
         type="target"
         position={Position.Right}
         id="in-right"
-        style={{ background: d.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
+        style={{ background: data.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
       />
       <Handle
         type="target"
         position={Position.Bottom}
         id="in-bottom"
-        style={{ background: d.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
+        style={{ background: data.accentColor, border: "none", width: 6, height: 6, opacity: 0.7 }}
       />
 
       {/* Source handles (to services) */}

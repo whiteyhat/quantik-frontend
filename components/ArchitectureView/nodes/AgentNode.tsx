@@ -3,7 +3,8 @@
 import { memo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { MainNodeData } from "../data/architectureData";
+import type { MainNode } from "../data/architectureData";
+import { MONO_FONT, MONO_FONT_LIGHT } from "../shared";
 
 const nodeStyle: React.CSSProperties = {
   width: 180,
@@ -33,9 +34,8 @@ const pulseRingStyle: React.CSSProperties = {
   pointerEvents: "none",
 };
 
-function AgentNodeComponent({ data }: NodeProps) {
+function AgentNodeComponent({ data }: NodeProps<MainNode>) {
   const t = useTranslations("manageAgent.architecture");
-  const d = data as unknown as MainNodeData;
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -58,7 +58,7 @@ function AgentNodeComponent({ data }: NodeProps) {
         onMouseLeave={() => setHovered(false)}
       >
         {/* Emoji avatar */}
-        <span style={{ fontSize: 40, lineHeight: 1, marginBottom: 8 }}>{d.emoji}</span>
+        <span style={{ fontSize: 40, lineHeight: 1, marginBottom: 8 }}>{data.emoji}</span>
 
         {/* Name */}
         <span
@@ -66,11 +66,11 @@ function AgentNodeComponent({ data }: NodeProps) {
             fontSize: 14,
             fontWeight: 700,
             color: "rgba(255,255,255,0.92)",
-            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            fontFamily: MONO_FONT,
             letterSpacing: "0.06em",
           }}
         >
-          {d.label}
+          {data.label}
         </span>
 
         {/* Badge */}
@@ -85,7 +85,7 @@ function AgentNodeComponent({ data }: NodeProps) {
             padding: "2px 6px",
             marginTop: 6,
             letterSpacing: "0.08em",
-            fontFamily: '"SF Mono", monospace',
+            fontFamily: MONO_FONT_LIGHT,
           }}
         >
           {t("mainBadge")}

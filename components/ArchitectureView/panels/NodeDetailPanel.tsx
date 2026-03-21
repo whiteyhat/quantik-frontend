@@ -15,6 +15,7 @@ import {
   type ServiceNodeData,
   type InfraNodeData,
 } from "../data/architectureData";
+import { MONO_FONT, MONO_FONT_LIGHT, agentStatusColor, serviceStatusColor, infraStatusColor } from "../shared";
 
 interface NodeDetailPanelProps {
   node: Node | null;
@@ -69,14 +70,14 @@ const sectionLabelStyle: React.CSSProperties = {
   color: "rgba(255,255,255,0.30)",
   textTransform: "uppercase",
   letterSpacing: "0.08em",
-  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+  fontFamily: MONO_FONT,
 };
 
 const monoValueStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 500,
   color: "rgba(255,255,255,0.80)",
-  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+  fontFamily: MONO_FONT,
 };
 
 // ─── Shared Components ───────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ function AttributePill({ label, value, color }: { label: string; value: string; 
           background: `color-mix(in srgb, ${color} 12%, transparent)`,
           border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
           color,
-          fontFamily: '"SF Mono", monospace',
+          fontFamily: MONO_FONT_LIGHT,
           textTransform: "capitalize",
         }}
       >
@@ -130,7 +131,7 @@ function StatusBadge({ status, color }: { status: string; color: string }) {
         background: `color-mix(in srgb, ${color} 15%, transparent)`,
         border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
         color,
-        fontFamily: '"SF Mono", monospace',
+        fontFamily: MONO_FONT_LIGHT,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
       }}
@@ -152,7 +153,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
       <StaggerSection index={0}>
         <div style={{ textAlign: "center", marginBottom: 4, paddingTop: 8 }}>
           <span style={{ fontSize: 44, display: "block", marginBottom: 8 }}>{data.emoji}</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.92)", fontFamily: '"SF Mono", monospace', display: "block" }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.92)", fontFamily: MONO_FONT_LIGHT, display: "block" }}>
             {data.label}
           </span>
           <span style={{ display: "block", fontSize: 11, color: "#007AFF", marginTop: 4, fontFamily: '"SF Mono", monospace' }}>
@@ -324,7 +325,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
                   background: `color-mix(in srgb, ${meta.color} 15%, transparent)`,
                   border: `1px solid color-mix(in srgb, ${meta.color} 25%, transparent)`,
                   color: meta.color,
-                  fontFamily: '"SF Mono", monospace',
+                  fontFamily: MONO_FONT_LIGHT,
                 }}
               >
                 {meta.emoji} {meta.label}
@@ -341,11 +342,7 @@ function MainNodeDetails({ data }: { data: MainNodeData }) {
 
 function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; onNavigateToNode?: (nodeId: string) => void }) {
   const t = useTranslations("manageAgent.architecture");
-  const statusColor =
-    data.status === "running" ? "var(--ios-blue)"
-    : data.status === "done" ? "var(--ios-green)"
-    : data.status === "error" ? "var(--ios-red)"
-    : "rgba(255,255,255,0.30)";
+  const statusColor = agentStatusColor(data.status);
 
   const agentServices = SERVICES[data.agentKey] || [];
 
@@ -399,7 +396,7 @@ function SubAgentDetails({ data, onNavigateToNode }: { data: SubAgentNodeData; o
               borderRadius: 6,
               background: `color-mix(in srgb, ${data.accentColor} 15%, transparent)`,
               color: data.accentColor,
-              fontFamily: '"SF Mono", monospace',
+              fontFamily: MONO_FONT_LIGHT,
             }}
           >
             {agentServices.length}
@@ -448,7 +445,7 @@ function ServiceListItem({ icon, label, color, onClick }: { icon: string; label:
           fontSize: 11,
           fontWeight: 600,
           color: "rgba(255,255,255,0.70)",
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+          fontFamily: MONO_FONT,
           flex: 1,
         }}
       >
@@ -477,10 +474,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
   const [logsOpen, setLogsOpen] = useState(false);
   const details = SERVICE_DETAILS[getServiceId(data)] || null;
 
-  const statusColor =
-    data.status === "streaming" ? "var(--ios-blue)"
-    : data.status === "connected" ? "var(--ios-green)"
-    : "rgba(255,255,255,0.30)";
+  const statusColor = serviceStatusColor(data.status);
 
   const parentMeta = data.parentAgent !== "shared" ? AGENT_META[data.parentAgent] : null;
 
@@ -550,7 +544,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
             >
               {details.feed.map((item, i) => (
                 <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < details.feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: '"SF Mono", monospace', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: MONO_FONT_LIGHT, flexShrink: 0, marginTop: 1 }}>
                     {item.time}
                   </span>
                   <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
@@ -578,7 +572,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.06)",
                     color: "rgba(255,255,255,0.50)",
-                    fontFamily: '"SF Mono", monospace',
+                    fontFamily: MONO_FONT_LIGHT,
                   }}
                 >
                   {src}
@@ -615,7 +609,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
                     borderRadius: 4,
                     background: "rgba(255,255,255,0.06)",
                     color: "rgba(255,255,255,0.30)",
-                    fontFamily: '"SF Mono", monospace',
+                    fontFamily: MONO_FONT_LIGHT,
                   }}
                 >
                   {details.logs.length}
@@ -647,7 +641,7 @@ function ServiceDetails({ data }: { data: ServiceNodeData }) {
                   background: "rgba(0,0,0,0.30)",
                   border: "1px solid rgba(255,255,255,0.04)",
                   padding: 8,
-                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  fontFamily: MONO_FONT,
                 }}
               >
                 {details.logs.map((log, i) => (
@@ -708,10 +702,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
   const infraDef = INFRA_NODES.find((n) => n.id === nodeId);
   const accent = CATEGORY_COLORS[data.category] || "#64D2FF";
 
-  const statusColor =
-    data.status === "online" ? "var(--ios-green)"
-    : data.status === "degraded" ? "var(--ios-orange)"
-    : "rgba(255,255,255,0.30)";
+  const statusColor = infraStatusColor(data.status);
 
   return (
     <>
@@ -732,7 +723,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
               background: `color-mix(in srgb, ${accent} 15%, transparent)`,
               border: `1px solid color-mix(in srgb, ${accent} 25%, transparent)`,
               color: accent,
-              fontFamily: '"SF Mono", monospace',
+              fontFamily: MONO_FONT_LIGHT,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
             }}
@@ -780,7 +771,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
                   borderRadius: 6,
                   background: `color-mix(in srgb, ${accent} 15%, transparent)`,
                   color: accent,
-                  fontFamily: '"SF Mono", monospace',
+                  fontFamily: MONO_FONT_LIGHT,
                 }}
               >
                 {infraDef.connectedTo.length}
@@ -805,7 +796,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
                       background: `color-mix(in srgb, ${color} 15%, transparent)`,
                       border: `1px solid color-mix(in srgb, ${color} 25%, transparent)`,
                       color,
-                      fontFamily: '"SF Mono", monospace',
+                      fontFamily: MONO_FONT_LIGHT,
                       cursor: onNavigateToNode ? "pointer" : "default",
                       transition: "background 200ms",
                     }}
@@ -844,7 +835,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
             >
               {details.feed.map((item, i) => (
                 <div key={i} style={{ display: "flex", gap: 8, padding: "4px 0", borderBottom: i < details.feed.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none" }}>
-                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: '"SF Mono", monospace', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.20)", fontFamily: MONO_FONT_LIGHT, flexShrink: 0, marginTop: 1 }}>
                     {item.time}
                   </span>
                   <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
@@ -872,7 +863,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
                     background: "rgba(255,255,255,0.04)",
                     border: "1px solid rgba(255,255,255,0.06)",
                     color: "rgba(255,255,255,0.50)",
-                    fontFamily: '"SF Mono", monospace',
+                    fontFamily: MONO_FONT_LIGHT,
                   }}
                 >
                   {src}
@@ -909,7 +900,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
                     borderRadius: 4,
                     background: "rgba(255,255,255,0.06)",
                     color: "rgba(255,255,255,0.30)",
-                    fontFamily: '"SF Mono", monospace',
+                    fontFamily: MONO_FONT_LIGHT,
                   }}
                 >
                   {details.logs.length}
@@ -941,7 +932,7 @@ function InfraDetails({ data, nodeId, onNavigateToNode }: { data: InfraNodeData;
                   background: "rgba(0,0,0,0.30)",
                   border: "1px solid rgba(255,255,255,0.04)",
                   padding: 8,
-                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  fontFamily: MONO_FONT,
                 }}
               >
                 {details.logs.map((log, i) => (
@@ -1067,7 +1058,7 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailP
 
   if (!visibleNode) return null;
 
-  const nodeType = (visibleNode.data as { type?: string })?.type;
+  const nodeType = (visibleNode.data as Record<string, unknown>).type as string | undefined;
 
   return (
     <>
@@ -1097,20 +1088,20 @@ export function NodeDetailPanel({ node, onClose, onNavigateToNode }: NodeDetailP
         </button>
 
         {nodeType === "main" && (
-          <MainNodeDetails data={visibleNode.data as unknown as MainNodeData} />
+          <MainNodeDetails data={visibleNode.data as MainNodeData} />
         )}
         {nodeType === "sub-agent" && (
           <SubAgentDetails
-            data={visibleNode.data as unknown as SubAgentNodeData}
+            data={visibleNode.data as SubAgentNodeData}
             onNavigateToNode={onNavigateToNode}
           />
         )}
         {nodeType === "service" && (
-          <ServiceDetails data={visibleNode.data as unknown as ServiceNodeData} />
+          <ServiceDetails data={visibleNode.data as ServiceNodeData} />
         )}
         {nodeType === "infra" && (
           <InfraDetails
-            data={visibleNode.data as unknown as InfraNodeData}
+            data={visibleNode.data as InfraNodeData}
             nodeId={visibleNode.id}
             onNavigateToNode={onNavigateToNode}
           />

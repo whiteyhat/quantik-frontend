@@ -24,6 +24,7 @@ import { InfraNode } from "./nodes/InfraNode";
 import { AnimatedDataEdge } from "./edges/AnimatedDataEdge";
 import { NodeDetailPanel } from "./panels/NodeDetailPanel";
 import { useArchitectureState } from "./hooks/useArchitectureState";
+import { MONO_FONT_LIGHT } from "./shared";
 
 const nodeTypes: NodeTypes = {
   agentNode: AgentNode,
@@ -177,7 +178,7 @@ export function ArchitectureCanvas() {
           style={{
             fontSize: 11,
             color: "rgba(255,255,255,0.35)",
-            fontFamily: '"SF Mono", monospace',
+            fontFamily: MONO_FONT_LIGHT,
           }}
         >
           {t("infoBadgeSubtitle")}
