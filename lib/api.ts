@@ -34,6 +34,17 @@ export interface Market {
   category?: string;
   tags?: string[];
   spread?: number;
+  chainMode?: "stellar_testnet" | "polymarket";
+  protocol?: string;
+  opportunityType?: string;
+  assetPair?: string;
+  currentApy?: number;
+  riskScore?: number;
+  executionPlan?: StellarExecutionPlan;
+  poolReserves?: {
+    base: number;
+    quote: number;
+  };
 }
 
 export interface PricePoint {
@@ -61,6 +72,8 @@ export interface WalletBalance {
   onChainUsdcFormatted?: string;
   pol?: number;
   polFormatted?: string;
+  xlm?: number;
+  xlmFormatted?: string;
   pnl: number;
   pnlPct: number | null;
   winRate: number;
@@ -79,6 +92,48 @@ export interface WalletBalance {
   liveBalanceAvailable?: boolean;
   fundingStatus?: "ready" | "funding_required" | "unavailable" | "no_wallet";
   fundingMessage?: string | null;
+  trustlineEstablished?: boolean;
+  stellarReady?: boolean;
+  stellarStatus?: string | null;
+  network?: string | null;
+  walletNetwork?: string | null;
+}
+
+// ── Bridge Types ──────────────────────────────────────────────────────────────
+
+export type BridgeStatus =
+  | "pending"
+  | "stellar_tx_submitted"
+  | "bridging"
+  | "bridge_complete"
+  | "approving"
+  | "ready"
+  | "failed";
+
+export interface BridgeQuote {
+  amountIn: number;
+  fee: number;
+  amountOut: number;
+  estimatedTimeMinutes: number;
+}
+
+export interface BridgeTransfer {
+  id: string;
+  userId: string;
+  agentId: string;
+  direction: string;
+  sourceChain: string;
+  destChain: string;
+  sourceTxHash: string | null;
+  destTxHash: string | null;
+  amount: number;
+  fee: number | null;
+  amountReceived: number | null;
+  status: BridgeStatus;
+  error: string | null;
+  createdAt: number;
+  updatedAt: number;
+  completedAt: number | null;
 }
 
 export interface Position {
@@ -569,6 +624,7 @@ export interface SigmaResult {
   size_pct: number;
   size_usd: number;
   entry_price: number;
+  executionPlan?: StellarExecutionPlan;
 }
 
 // ── Orchestrator types ────────────────────────────────────────────────────────
@@ -883,6 +939,12 @@ export interface HealthScoreResponse {
 }
 
 export interface GeneratedWalletCredentials {
+  evm: { address: string; privateKey: string };
+  stellar: { address: string; privateKey: string };
+}
+
+/** Legacy single-wallet shape used by BYO onboarding */
+export interface LegacyWalletCredentials {
   address: string;
   privateKey: string;
   seedPhrase: string;
@@ -958,6 +1020,24 @@ export interface TradeRequest {
   marketSlug?: string;
   netEv?: number;
   evGrade?: string;
+}
+
+export interface StellarExecutionPlan {
+  action: "SWAP";
+  protocol: string;
+  assetIn: string;
+  assetOut: string;
+  amountUsdc: number;
+  minAmountOut?: number;
+}
+
+export interface StellarTradeRequest {
+  opportunityId: string;
+  action: "SWAP";
+  assetIn: string;
+  assetOut: string;
+  amountUsdc: number;
+  minAmountOut?: number;
 }
 
 // ── Monitoring types (L5) ───────────────────────────────────────────────────
@@ -1088,6 +1168,60 @@ export const api = {
     }
   },
 
+  // Solana Wallet
+  getSolanaWalletStatus: async (): Promise<{ linked: boolean; walletAddress: string | null }> => {
+    return apiFetch("/solana/wallet-status");
+  },
+  linkSolanaWallet: async (payload: {
+    walletAddress: string;
+    signature: string;
+    message: string;
+  }): Promise<{ success: boolean; walletAddress: string }> => {
+    return apiFetch("/solana/link-wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  unlinkSolanaWallet: async (): Promise<{ success: boolean }> => {
+    return apiFetch("/solana/link-wallet", { method: "DELETE" });
+  },
+
+  getWalletStatus: async (signal?: AbortSignal): Promise<WalletBalance | null> => {
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/wallet/balance", { signal });
+      return {
+        address: String(raw.address ?? ""),
+        usdc: raw.usdc == null ? null : Number(raw.usdc),
+        onChainUsdc: raw.onChainUsdc == null ? Number(raw.usdc ?? 0) : Number(raw.onChainUsdc),
+        onChainUsdcFormatted: raw.onChainUsdcFormatted != null ? String(raw.onChainUsdcFormatted) : undefined,
+        pol: raw.pol == null ? undefined : Number(raw.pol),
+        polFormatted: raw.polFormatted != null ? String(raw.polFormatted) : undefined,
+        xlm: raw.xlm == null ? undefined : Number(raw.xlm),
+        xlmFormatted: raw.xlmFormatted != null ? String(raw.xlmFormatted) : undefined,
+        pnl: 0,
+        pnlPct: null,
+        winRate: 0,
+        totalTrades: 0,
+        pnlToday: 0,
+        pnlTodayPct: null,
+        totalValue: null,
+        balanceStatus: (String(raw.balanceStatus ?? "unavailable") as WalletBalance["balanceStatus"]),
+        balanceMessage: raw.balanceMessage != null ? String(raw.balanceMessage) : null,
+        liveBalanceAvailable: Boolean(raw.liveBalanceAvailable),
+        fundingStatus: normalizeFundingStatus(raw.fundingStatus),
+        fundingMessage: raw.fundingMessage != null ? String(raw.fundingMessage) : null,
+        trustlineEstablished: Boolean(raw.trustlineEstablished),
+        stellarReady: Boolean(raw.stellarReady),
+        stellarStatus: raw.stellarStatus != null ? String(raw.stellarStatus) : null,
+        network: raw.network != null ? String(raw.network) : null,
+        walletNetwork: raw.walletNetwork != null ? String(raw.walletNetwork) : null,
+      };
+    } catch {
+      return null;
+    }
+  },
+
   getPositions: async (signal?: AbortSignal): Promise<Position[]> => {
     const res = await apiFetch<Position[]>("/api/wallet/positions", { signal });
     const positions = Array.isArray(res) ? res : [];
@@ -1118,6 +1252,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify(req),
     }),
+
+  executeStellarTrade: (req: StellarTradeRequest) =>
+    apiFetch<{ ok: boolean; status: string; txHash?: string | null; executionId?: number | null; protocol?: string; action?: string; paper?: boolean }>(
+      "/api/stellar/execute",
+      {
+        method: "POST",
+        body: JSON.stringify(req),
+      }
+    ),
 
   cancelAll: () =>
     apiFetch<{ cancelled: number }>("/api/trade/cancel-all", { method: "POST" }),
@@ -1736,6 +1879,11 @@ export const api = {
     wallet_address?: string;
     private_key?: string;
     seed_phrase?: string;
+    // Dual wallet fields
+    evm_address?: string;
+    evm_private_key?: string;
+    stellar_address?: string;
+    stellar_private_key?: string;
     personality: string;
     decisionStyle: string;
     tradingInstinct: string;
@@ -2167,7 +2315,7 @@ export const api = {
     return apiFetch(`/api/v1/agents/byo/onboarding/${sessionId}`);
   },
 
-  downloadByoOnboardingWallet: async (sessionId: string): Promise<GeneratedWalletCredentials> => {
+  downloadByoOnboardingWallet: async (sessionId: string): Promise<LegacyWalletCredentials> => {
     return apiFetch(`/api/v1/agents/byo/onboarding/${sessionId}/wallet-download`, {
       method: "POST",
     });
@@ -2335,6 +2483,7 @@ export function normalizeAgentData(agent: string, raw: Record<string, unknown>):
       confidence: typeof raw.confidence === "number"
         ? raw.confidence > 1 ? raw.confidence : raw.confidence * 100
         : 0,
+      executionPlan: raw.executionPlan,
     };
     case "flux": return {
       ...raw,
@@ -2496,6 +2645,44 @@ export function runPipeline(
 export async function getReleases(): Promise<import("./releases").ReleaseEntry[]> {
   return apiFetch("/api/versions");
 }
+
+// ─── Bridge API ──────────────────────────────────────────────────────────────
+
+export const bridgeApi = {
+  getQuote: async (amount: number): Promise<BridgeQuote> => {
+    const res = await apiFetch<{ data: BridgeQuote }>("/api/bridge/quote", {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    });
+    return res.data;
+  },
+
+  buildTx: async (agentId: string, amount: number): Promise<{ xdr: string; transferId: string }> => {
+    const res = await apiFetch<{ data: { xdr: string; transferId: string } }>("/api/bridge/build-tx", {
+      method: "POST",
+      body: JSON.stringify({ agentId, amount }),
+    });
+    return res.data;
+  },
+
+  submit: async (agentId: string, transferId: string, signedXdr: string): Promise<BridgeTransfer> => {
+    const res = await apiFetch<{ data: BridgeTransfer }>("/api/bridge/submit", {
+      method: "POST",
+      body: JSON.stringify({ agentId, transferId, signedXdr }),
+    });
+    return res.data;
+  },
+
+  getStatus: async (transferId: string): Promise<BridgeTransfer> => {
+    const res = await apiFetch<{ data: BridgeTransfer }>(`/api/bridge/status/${transferId}`);
+    return res.data;
+  },
+
+  getHistory: async (): Promise<BridgeTransfer[]> => {
+    const res = await apiFetch<{ data: BridgeTransfer[] }>("/api/bridge/history");
+    return res.data;
+  },
+};
 
 // ─── Formatters (re-exported from lib/formatters.ts) ─────────────────────────
 
