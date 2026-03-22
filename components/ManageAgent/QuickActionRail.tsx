@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type Market } from "@/lib/api";
+import { api, type Market, type AgentTokenStatus } from "@/lib/api";
 import { useRouter } from "@/i18n/navigation";
 import { useNotificationsStore } from "@/store/useNotificationsStore";
+import { Zap } from "lucide-react";
+import { TokenizeModal } from "@/components/TokenizeModal/TokenizeModal";
 
 const railStyle: React.CSSProperties = {
   position: "sticky",
@@ -193,16 +195,30 @@ function MarketPickerModal({
 
 export function QuickActionRail({
   agentId,
+  agentName,
+  agentCode,
   autopilotEnabled,
   onAutopilotChanged,
 }: {
   agentId: string;
+  agentName?: string;
+  agentCode?: string | null;
   autopilotEnabled: boolean;
   onAutopilotChanged: (enabled: boolean, updatedAt: number) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [tokenizeModalOpen, setTokenizeModalOpen] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState<AgentTokenStatus | null>(null);
   const setNotificationsOpen = useNotificationsStore((state) => state.setOpen);
+
+  // Fetch token status on mount to show the correct badge
+  useEffect(() => {
+    if (!agentId) return;
+    api.getAgentTokenStatus(agentId)
+      .then((status) => setTokenStatus(status))
+      .catch(() => setTokenStatus(null));
+  }, [agentId]);
 
   async function handleAutopilotToggle() {
     setBusy(true);
@@ -213,6 +229,11 @@ export function QuickActionRail({
       setBusy(false);
     }
   }
+
+  const tokenBadgeColor = tokenStatus?.token?.status === "migrated" ? "#30D158" : "#FF9F0A";
+  const tokenBadgeLabel = tokenStatus?.token
+    ? (tokenStatus.token.status === "migrated" ? "Live on DAMM" : "Bonding")
+    : null;
 
   return (
     <>
@@ -242,8 +263,50 @@ export function QuickActionRail({
           accent="var(--ios-purple)"
           onClick={() => setNotificationsOpen(true)}
         />
+        {/* Tokenize Agent card (per D-01, TKN-01) */}
+        <button
+          onClick={() => setTokenizeModalOpen(true)}
+          aria-label={`Tokenize ${agentName ?? "agent"} to create trading tokens`}
+          style={{
+            textAlign: "left", padding: 16, borderRadius: 18,
+            border: `1px solid ${tokenStatus?.token ? `${tokenBadgeColor}35` : "#007AFF35"}`,
+            background: `linear-gradient(135deg, ${tokenStatus?.token
+              ? (tokenStatus.token.status === "migrated" ? "rgba(48,209,88,0.08)" : "rgba(255,159,10,0.08)")
+              : "rgba(0,122,255,0.08)"
+            }, var(--glass-surface))`,
+            color: "var(--text-primary)", cursor: "pointer",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <Zap size={16} style={{ color: tokenStatus?.token?.status === "migrated" ? "#30D158" : "#007AFF" }} />
+            {tokenBadgeLabel && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
+                background: tokenStatus?.token?.status === "migrated"
+                  ? "rgba(48,209,88,0.18)" : "rgba(255,159,10,0.18)",
+                color: tokenBadgeColor,
+                border: `1px solid ${tokenBadgeColor}50`,
+              }}>
+                {tokenBadgeLabel}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Tokenize Agent</div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            {tokenStatus?.tokenized ? "View token trading" : "Create trading tokens"}
+          </div>
+        </button>
       </div>
       <MarketPickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} />
+      {agentName && (
+        <TokenizeModal
+          open={tokenizeModalOpen}
+          onClose={() => setTokenizeModalOpen(false)}
+          agentId={agentId}
+          agentName={agentName}
+          agentCode={agentCode ?? null}
+        />
+      )}
     </>
   );
 }
