@@ -1040,6 +1040,34 @@ export interface StellarTradeRequest {
   minAmountOut?: number;
 }
 
+// ── Solana Token Types (Phase 2) ─────────────────────────────────────────────
+
+export interface AgentTokenStatus {
+  tokenized: boolean;
+  token: {
+    token_mint: string;
+    dbc_pool_address: string;
+    dbc_config_address: string;
+    damm_pool_address: string | null;
+    status: "bonding" | "migrated";
+    token_name: string;
+    token_symbol: string;
+    metadata_uri: string;
+    created_at: number;
+    migrated_at: number | null;
+  } | null;
+}
+
+export interface SwapQuote {
+  amountIn: string;
+  amountOut: string;
+  minimumAmountOut: string;
+  priceBeforeSwap: string;
+  priceAfterSwap: string;
+  feeTrading: string;
+  side: "buy" | "sell";
+}
+
 // ── Monitoring types (L5) ───────────────────────────────────────────────────
 
 export interface BrierEntry {
@@ -2432,6 +2460,39 @@ export const api = {
 
   getLiquidationReport: async (id: string): Promise<LiquidationReport> => {
     return apiFetch(`/api/v1/liquidation-reports/${id}`);
+  },
+
+  // ── Token API (Phase 2) ───────────────────────────────────────────────────
+
+  // Initiates token creation. Backend returns 202 and emits Socket.IO progress.
+  tokenizeAgent: async (agentId: string): Promise<{ status: string; message: string }> => {
+    return apiFetch(`/api/solana/tokens/${agentId}/tokenize`, { method: "POST", body: JSON.stringify({}) });
+  },
+
+  // Returns tokenization status for an agent (null token = not tokenized).
+  getAgentTokenStatus: async (agentId: string): Promise<AgentTokenStatus> => {
+    return apiFetch(`/api/solana/tokens/${agentId}/status`);
+  },
+
+  // Returns swap quote for buy or sell. amount: USDC for buy, token amount for sell.
+  getSwapQuote: async (poolAddress: string, amount: number, side: "buy" | "sell"): Promise<SwapQuote> => {
+    return apiFetch(`/api/solana/tokens/${encodeURIComponent(poolAddress)}/quote?amount=${amount}&side=${side}`);
+  },
+
+  // Returns base64-serialized swap transaction for user wallet to sign.
+  buildSwapTx: async (params: {
+    poolAddress: string;
+    configAddress: string;
+    tokenMint: string;
+    amountIn: string;
+    minimumAmountOut: string;
+    side: "buy" | "sell";
+    ownerPublicKey: string;
+  }): Promise<{ transaction: string }> => {
+    return apiFetch(`/api/solana/tokens/${encodeURIComponent(params.poolAddress)}/swap-tx`, {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
   },
 };
 

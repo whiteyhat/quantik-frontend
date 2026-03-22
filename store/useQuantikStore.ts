@@ -89,6 +89,20 @@ export interface SolanaWalletState {
   linkedAt: number;      // timestamp when linked
 }
 
+// ─── Agent Token State (Phase 2) ─────────────────────────────────────────────
+export interface AgentTokenState {
+  tokenMint: string;
+  dbcPoolAddress: string;
+  dbcConfigAddress: string;
+  dammPoolAddress: string | null;
+  status: "bonding" | "migrated";
+  tokenName: string;
+  tokenSymbol: string;
+  metadataUri: string;
+  createdAt: number;
+  migratedAt: number | null;
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface QuantikStore {
@@ -111,6 +125,12 @@ interface QuantikStore {
   solanaWalletLoading: boolean;
   setSolanaWallet: (w: SolanaWalletState | null) => void;
   setSolanaWalletLoading: (l: boolean) => void;
+
+  // Agent Token (Phase 2)
+  agentToken: AgentTokenState | null;
+  agentTokenLoading: boolean;
+  setAgentToken: (t: AgentTokenState | null) => void;
+  setAgentTokenLoading: (l: boolean) => void;
 
   // Positions
   positions: Position[];
@@ -286,6 +306,11 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
   solanaWalletLoading: false,
   setSolanaWallet: (solanaWallet) => set({ solanaWallet }),
   setSolanaWalletLoading: (solanaWalletLoading) => set({ solanaWalletLoading }),
+
+  agentToken: null,
+  agentTokenLoading: false,
+  setAgentToken: (agentToken) => set({ agentToken }),
+  setAgentTokenLoading: (agentTokenLoading) => set({ agentTokenLoading }),
 
   positions: [],
   setPositions: (positions) => set({ positions }),
