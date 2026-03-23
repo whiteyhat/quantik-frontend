@@ -2758,3 +2758,56 @@ export function gradeColor(grade: string): string {
     default:  return "#606080";
   }
 }
+
+// ── Distribution Types (Phase 3) ──────────────────────────────────────────
+
+export interface DistributionRecord {
+  id: string;
+  week_start: number;
+  week_end: number;
+  weekly_pnl: number;
+  buyback_amount_usdc: number;
+  tokens_bought: number | null;
+  holder_tokens: number | null;
+  quantik_wallet_tokens: number | null;
+  buyback_tx_signature: string | null;
+  holder_distribution_tx_signature: string | null;
+  status: "pending" | "auditing" | "audit_failed" | "buying" | "distributing" | "complete" | "buyback_failed" | "skipped";
+  audit_status: "pending" | "verified" | "failed";
+  failure_reason: string | null;
+  created_at: number;
+  completed_at: number | null;
+}
+
+export interface DistributionListResponse {
+  distributions: DistributionRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface DistributionStatusResponse {
+  current_distribution: DistributionRecord | null;
+  next_distribution_at: number;
+  last_distribution_at: number;
+}
+
+// Fetch paginated distribution history for a token.
+export async function fetchDistributions(
+  mint: string,
+  limit: number = 10,
+  offset: number = 0
+): Promise<DistributionListResponse> {
+  const res = await fetch(
+    `${BASE_URL}/api/solana/tokens/${mint}/distributions?limit=${limit}&offset=${offset}`
+  );
+  if (!res.ok) throw new Error(`Failed to fetch distributions: ${res.statusText}`);
+  return res.json() as Promise<DistributionListResponse>;
+}
+
+// Fetch current week distribution status + next distribution countdown.
+export async function fetchDistributionStatus(mint: string): Promise<DistributionStatusResponse> {
+  const res = await fetch(`${BASE_URL}/api/solana/tokens/${mint}/distributions/status`);
+  if (!res.ok) throw new Error(`Failed to fetch distribution status: ${res.statusText}`);
+  return res.json() as Promise<DistributionStatusResponse>;
+}
