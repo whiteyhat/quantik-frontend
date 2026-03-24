@@ -1,13 +1,36 @@
 "use client";
 
-import type { AgentTokenStatus } from "@/lib/api";
+import { useState, useEffect } from "react";
+import type { AgentTokenStatus, DistributionStatusResponse } from "@/lib/api";
 
 interface TokenInfoCardProps {
   token: NonNullable<AgentTokenStatus["token"]>;
   agentEmoji?: string;
+  distributionStatus?: DistributionStatusResponse | null;
 }
 
-export function TokenInfoCard({ token, agentEmoji = "🤖" }: TokenInfoCardProps) {
+function formatCountdown(targetMs: number, currentMs: number): string {
+  const diff = targetMs - currentMs;
+  if (diff <= 0) return "Soon";
+  const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+export function TokenInfoCard({ token, agentEmoji = "🤖", distributionStatus }: TokenInfoCardProps) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const treasuryUsdc = distributionStatus?.current_distribution?.buyback_amount_usdc ?? null;
+  const nextDistAt = distributionStatus?.next_distribution_at ?? null;
+
   const statusColor = token.status === "migrated" ? "#30D158" : "#FF9F0A";
   const statusLabel = token.status === "migrated" ? "Live on DAMM" : "Bonding";
 
@@ -76,6 +99,50 @@ export function TokenInfoCard({ token, agentEmoji = "🤖" }: TokenInfoCardProps
           {token.token_mint}
         </a>
       </div>
+
+      {/* Treasury + Distribution stats (Phase 5 — DASH-02) */}
+      {(treasuryUsdc !== null || nextDistAt !== null) && (
+        <div
+          style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
+          }}
+        >
+          {/* Est. Treasury */}
+          <div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.40)", marginBottom: 2 }}>
+              Est. Treasury
+              <span
+                title="USDC available for buyback"
+                style={{ marginLeft: 4, cursor: "help", color: "rgba(255,255,255,0.25)" }}
+              >
+                &#x24D8;
+              </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.80)" }}>
+              {treasuryUsdc !== null
+                ? `${treasuryUsdc.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`
+                : "\u2014"}
+            </div>
+          </div>
+
+          {/* Next Distribution */}
+          <div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.40)", marginBottom: 2 }}>
+              Next Distribution
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.80)" }}>
+              {nextDistAt !== null
+                ? formatCountdown(nextDistAt, now)
+                : "No distributions yet"}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
