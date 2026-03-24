@@ -119,3 +119,12 @@ export function fmtDateTime(ts: number, locale = DEFAULT_LOCALE): string {
     minute: "2-digit",
   }).format(ts);
 }
+
+// ─── Wallet address truncation ────────────────────────────────────────────────
+// Per D-02: first 4 + last 4 chars, e.g., "7xK2...9fD4"
+// Used in HolderLeaderboard and any other wallet address display.
+export function truncateWallet(address: string, leadChars = 4, tailChars = 4): string {
+  if (!address) return "";
+  if (address.length <= leadChars + tailChars) return address;
+  return `${address.slice(0, leadChars)}...${address.slice(-tailChars)}`;
+}

@@ -1058,6 +1058,22 @@ export interface AgentTokenStatus {
   } | null;
 }
 
+// ── Holder Leaderboard Types (Phase 4) ─────────────────────────────────────
+
+export interface HolderEntry {
+  wallet: string;
+  balance: number;
+  percentage: number;  // 0-100 range (NOT 0-1)
+  rank: number;
+  last_sync_time: number;
+}
+
+export interface HoldersResponse {
+  holders: HolderEntry[];
+  mint: string;
+  lastSyncTime: number | null;
+}
+
 export interface SwapQuote {
   amountIn: string;
   amountOut: string;
@@ -2810,4 +2826,12 @@ export async function fetchDistributionStatus(mint: string): Promise<Distributio
   const res = await fetch(`${BASE_URL}/api/solana/tokens/${mint}/distributions/status`);
   if (!res.ok) throw new Error(`Failed to fetch distribution status: ${res.statusText}`);
   return res.json() as Promise<DistributionStatusResponse>;
+}
+
+// Fetch top 10 token holders from the cached leaderboard table.
+// Reads from DB cache (updated hourly by solana:sync-holders cron job) — per D-06.
+export async function fetchHolders(mint: string): Promise<HoldersResponse> {
+  const res = await fetch(`${BASE_URL}/api/solana/tokens/${mint}/holders`);
+  if (!res.ok) throw new Error(`Failed to fetch holders: ${res.statusText}`);
+  return res.json() as Promise<HoldersResponse>;
 }
