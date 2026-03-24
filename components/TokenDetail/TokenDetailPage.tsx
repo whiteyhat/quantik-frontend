@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import type { AgentTokenStatus, DistributionRecord, DistributionStatusResponse } from "@/lib/api";
 import { fetchDistributions, fetchDistributionStatus } from "@/lib/api";
 import { TokenInfoCard } from "./TokenInfoCard";
+import { TokenPriceChart } from "./TokenPriceChart";
 import { TradingPanel } from "./TradingPanel";
 import { HolderLeaderboard } from "./HolderLeaderboard";
 import { DistributionCountdown } from "@/components/DistributionCountdown";
@@ -232,19 +233,8 @@ export function TokenDetailPage({ tokenStatus, agentEmoji }: TokenDetailPageProp
         {/* Token info card */}
         <TokenInfoCard token={token} agentEmoji={agentEmoji} />
 
-        {/* Price chart placeholder (Phase 5) */}
-        <div style={{
-          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 12, padding: 16, height: 200,
-          display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-        }}>
-          <div style={{ fontSize: 17, fontWeight: 600, color: "rgba(255,255,255,0.40)", marginBottom: 8 }}>
-            Price History
-          </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.30)", textAlign: "center" }}>
-            Price chart coming in Phase 5 — Showing buy/sell data after first trades
-          </div>
-        </div>
+        {/* Token price chart (Phase 5) */}
+        <TokenPriceChart mint={token.token_mint} />
 
         {/* Distribution Section (Phase 3) */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
