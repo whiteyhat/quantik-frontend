@@ -1074,6 +1074,20 @@ export interface HoldersResponse {
   lastSyncTime: number | null;
 }
 
+// ── Token Price History Types (Phase 5) ──────────────────────────────────────
+
+export interface TokenPricePoint {
+  timestamp: number;
+  price_usdc: number;
+  source: "dbc" | "damm_v2";
+}
+
+export interface TokenPricesResponse {
+  mint: string;
+  prices: TokenPricePoint[];
+  migrationTimestamp: number | null;
+}
+
 export interface SwapQuote {
   amountIn: string;
   amountOut: string;
@@ -2509,6 +2523,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(params),
     });
+  },
+
+  // ── Token Price History (Phase 5) ─────────────────────────────────────────
+
+  // Returns historical price points for a token mint at the given interval.
+  fetchTokenPrices: async (
+    mint: string,
+    interval: "1h" | "1d" | "7d" | "30d"
+  ): Promise<TokenPricesResponse> => {
+    return apiFetch(`/api/solana-tokens/${mint}/prices?interval=${interval}`);
   },
 };
 
