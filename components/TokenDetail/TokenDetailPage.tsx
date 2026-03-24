@@ -7,9 +7,11 @@ import type { AgentTokenStatus, DistributionRecord, DistributionStatusResponse }
 import { fetchDistributions, fetchDistributionStatus } from "@/lib/api";
 import { TokenInfoCard } from "./TokenInfoCard";
 import { TradingPanel } from "./TradingPanel";
+import { HolderLeaderboard } from "./HolderLeaderboard";
 import { DistributionCountdown } from "@/components/DistributionCountdown";
 import { DistributionHistoryTable } from "@/components/DistributionHistoryTable";
 import { useSocketEvent } from "@/context/SocketContext";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 // ── Inline toast types ────────────────────────────────────────────────────────
 
@@ -28,6 +30,10 @@ interface TokenDetailPageProps {
 
 export function TokenDetailPage({ tokenStatus, agentEmoji }: TokenDetailPageProps) {
   const router = useRouter();
+
+  // ── Connected Solana wallet (for HolderLeaderboard "You" badge) ────────────
+  const solanaWallet = useQuantikStore((s) => s.solanaWallet);
+  const connectedWallet = solanaWallet?.address ?? null;
 
   // ── Distribution state ─────────────────────────────────────────────────────
   const [distributionStatus, setDistributionStatus] = useState<DistributionStatusResponse | null>(null);
@@ -265,21 +271,16 @@ export function TokenDetailPage({ tokenStatus, agentEmoji }: TokenDetailPageProp
           />
         </div>
 
+        {/* Top Holders Leaderboard — per D-04: below distribution section, above trading panel */}
+        {tokenMint && (
+          <HolderLeaderboard
+            mint={tokenMint}
+            connectedWallet={connectedWallet}
+          />
+        )}
+
         {/* Trading panel */}
         <TradingPanel token={token} />
-
-        {/* Top holders placeholder (Phase 4) */}
-        <div style={{
-          background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 12, padding: 16,
-        }}>
-          <div style={{ fontSize: 17, fontWeight: 600, color: "rgba(255,255,255,0.92)", marginBottom: 8 }}>
-            Top Holders
-          </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.40)" }}>
-            Holder leaderboard coming in Phase 4
-          </div>
-        </div>
       </div>
     </div>
   );
