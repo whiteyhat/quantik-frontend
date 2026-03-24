@@ -198,7 +198,7 @@ export default function MarketPage({ params }: PageProps) {
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
             </svg>
-            <span>{t("runPipeline")}</span>
+            <span>{market?.chainMode === "stellar_testnet" ? "Run 7-Agent Swap Analysis" : t("runPipeline")}</span>
           </button>
         ) : (
           <button
@@ -260,6 +260,11 @@ export default function MarketPage({ params }: PageProps) {
                 question: market.question,
                 yesPrice: market.yesPrice,
                 noPrice: market.noPrice,
+                chainMode: market.chainMode,
+                protocol: market.protocol,
+                assetPair: market.assetPair,
+                currentApy: market.currentApy,
+                executionPlan: market.executionPlan,
               }
             : undefined
         }

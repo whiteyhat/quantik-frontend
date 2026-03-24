@@ -1,8 +1,34 @@
-import type { ByoOnboardingSession, GeneratedWalletCredentials } from "./api";
+import type { ByoOnboardingSession, GeneratedWalletCredentials, LegacyWalletCredentials } from "./api";
 
 export function buildWalletDownloadContent(
   agentName: string,
   wallet: GeneratedWalletCredentials,
+  generatedAtIso: string = new Date().toISOString()
+): string {
+  return [
+    "# Quantik Agent Wallet — KEEP THIS FILE SECURE",
+    `# Agent: ${agentName}`,
+    `# Generated: ${generatedAtIso}`,
+    "# WARNING: This is your only copy. Quantik does NOT store your private keys.",
+    "",
+    "═══════════════════════════════════════",
+    "  EVM / Polygon Wallet",
+    "═══════════════════════════════════════",
+    `Address:     ${wallet.evm.address}`,
+    `Private Key: ${wallet.evm.privateKey}`,
+    "",
+    "═══════════════════════════════════════",
+    "  Stellar Wallet",
+    "═══════════════════════════════════════",
+    `Address:     ${wallet.stellar.address}`,
+    `Private Key: ${wallet.stellar.privateKey}`,
+  ].join("\n");
+}
+
+/** Legacy download format for BYO onboarding (single wallet, includes seed phrase) */
+export function buildLegacyWalletDownloadContent(
+  agentName: string,
+  wallet: LegacyWalletCredentials,
   generatedAtIso: string = new Date().toISOString()
 ): string {
   return [

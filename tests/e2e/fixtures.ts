@@ -76,9 +76,14 @@ export const DEFAULT_AUTOPILOT_POLICY = {
 };
 
 export const DEFAULT_WALLET = {
-  address: '0x1111111111111111111111111111111111111111',
-  privateKey: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-  seedPhrase: 'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu',
+  evm: {
+    address: '0x1111111111111111111111111111111111111111',
+    privateKey: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+  },
+  stellar: {
+    address: 'GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUV',
+    privateKey: 'SABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUV',
+  },
 };
 
 // ─── Fixture loader ─────────────────────────────────────────────────────────

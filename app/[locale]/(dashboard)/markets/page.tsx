@@ -33,6 +33,7 @@ function MarketCard({
 }) {
   const t = useTranslations("markets");
   const locale = useLocale();
+  const stellarMode = market.chainMode === "stellar_testnet";
   const yes = livePrice?.yes ?? market.yesPrice ?? 0;
   const no = livePrice?.no ?? market.noPrice ?? Math.max(0, 1 - yes);
   const yesPct = Math.round(yes * 100);
@@ -52,8 +53,13 @@ function MarketCard({
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, color: "var(--text-secondary)", padding: "4px 8px", borderRadius: 999, border: "1px solid var(--glass-border)" }}>
-            {market.category ?? "All"}
+            {stellarMode ? (market.protocol ?? "soroswap").toUpperCase() : (market.category ?? "All")}
           </span>
+          {stellarMode && market.assetPair ? (
+            <span style={{ fontSize: 11, color: "var(--ios-blue)", padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(10,132,255,0.35)" }}>
+              {market.assetPair}
+            </span>
+          ) : null}
           {alert?.enabled ? (
             <span style={{ fontSize: 11, color: "var(--ios-orange)", padding: "4px 8px", borderRadius: 999, border: "1px solid rgba(255,159,10,0.35)" }}>
               ALERT {alert.direction.toUpperCase()} {Math.round(alert.threshold * 100)}¢
@@ -105,14 +111,31 @@ function MarketCard({
           {market.question}
         </h3>
 
-        <div style={{ display: "flex", gap: 2, borderRadius: 10, overflow: "hidden", height: 28 }}>
-          <div style={{ width: `${yesPct}%`, minWidth: 46, background: "rgba(48,209,88,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-green)", fontSize: 11, fontWeight: 700 }}>
-            YES {yesPct}¢
+        {stellarMode ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+            <div style={{ borderRadius: 10, padding: "8px 10px", background: "rgba(10,132,255,0.10)", border: "1px solid rgba(10,132,255,0.18)" }}>
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 2 }}>APY</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ios-blue)" }}>{(market.currentApy ?? 0).toFixed(1)}%</div>
+            </div>
+            <div style={{ borderRadius: 10, padding: "8px 10px", background: "rgba(48,209,88,0.08)", border: "1px solid rgba(48,209,88,0.16)" }}>
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 2 }}>TVL</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{fmtUSDC(market.liquidity)}</div>
+            </div>
+            <div style={{ borderRadius: 10, padding: "8px 10px", background: "rgba(255,159,10,0.08)", border: "1px solid rgba(255,159,10,0.16)" }}>
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", marginBottom: 2 }}>Risk</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ios-orange)" }}>{(market.riskScore ?? 0).toFixed(2)}</div>
+            </div>
           </div>
-          <div style={{ width: `${Math.max(noPct, 100 - yesPct)}%`, minWidth: 46, background: "rgba(255,69,58,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-red)", fontSize: 11, fontWeight: 700 }}>
-            NO {noPct}¢
+        ) : (
+          <div style={{ display: "flex", gap: 2, borderRadius: 10, overflow: "hidden", height: 28 }}>
+            <div style={{ width: `${yesPct}%`, minWidth: 46, background: "rgba(48,209,88,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-green)", fontSize: 11, fontWeight: 700 }}>
+              YES {yesPct}¢
+            </div>
+            <div style={{ width: `${Math.max(noPct, 100 - yesPct)}%`, minWidth: 46, background: "rgba(255,69,58,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ios-red)", fontSize: 11, fontWeight: 700 }}>
+              NO {noPct}¢
+            </div>
           </div>
-        </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--text-secondary)", fontSize: 12 }}>
           <span>{t("vol")} {fmtUSDC(market.volume)}</span>

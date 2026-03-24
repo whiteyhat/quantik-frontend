@@ -12,6 +12,7 @@ export interface DashboardSummarySnapshot {
   totalValue: number | null;
   cashBalance: number | null;
   pol: number;
+  xlm: number;
   positionsValue: number | null;
   pnlToday: number;
   pnlTodayPct: number | null;
@@ -28,6 +29,10 @@ export interface DashboardSummarySnapshot {
   liveBalanceAvailable: boolean;
   fundingStatus: WalletBalance["fundingStatus"];
   fundingMessage: string | null;
+  trustlineEstablished: boolean;
+  stellarReady: boolean;
+  stellarStatus: string | null;
+  walletNetwork: string | null;
   metrics: PerformanceSummary["metrics"];
   alphaDecay: PerformanceSummary["alphaDecay"];
 }
@@ -124,6 +129,7 @@ export function normalizeDashboardSummary(raw: Record<string, unknown> | null | 
     totalValue,
     cashBalance,
     pol: coerceNumber(raw?.pol),
+    xlm: coerceNumber(raw?.xlm ?? raw?.pol),
     positionsValue,
     pnlToday: coerceNumber(raw?.pnlToday ?? raw?.dailyPnl),
     pnlTodayPct: coerceNullableNumber(raw?.pnlTodayPct ?? raw?.dailyPnlPct),
@@ -140,6 +146,10 @@ export function normalizeDashboardSummary(raw: Record<string, unknown> | null | 
     liveBalanceAvailable: Boolean(raw?.liveBalanceAvailable ?? raw?.live_balance_available),
     fundingStatus: (coerceString(raw?.fundingStatus ?? raw?.funding_status) as WalletBalance["fundingStatus"]) ?? "unavailable",
     fundingMessage: coerceString(raw?.fundingMessage ?? raw?.funding_message),
+    trustlineEstablished: Boolean(raw?.trustlineEstablished),
+    stellarReady: Boolean(raw?.stellarReady),
+    stellarStatus: coerceString(raw?.stellarStatus),
+    walletNetwork: coerceString(raw?.walletNetwork),
     metrics: {
       currentStreak: coerceNumber(metricsSource.currentStreak),
       bestTrade: String(metricsSource.bestTrade ?? ""),
@@ -163,6 +173,7 @@ export function toWalletBalance(summary: DashboardSummarySnapshot): WalletBalanc
     usdc: summary.cashBalance,
     onChainUsdc: summary.cashBalance,
     pol: summary.pol,
+    xlm: summary.xlm,
     pnl: summary.totalPnl,
     pnlPct: summary.totalPnlPct,
     winRate: summary.winRate,
@@ -179,6 +190,11 @@ export function toWalletBalance(summary: DashboardSummarySnapshot): WalletBalanc
     liveBalanceAvailable: summary.liveBalanceAvailable,
     fundingStatus: summary.fundingStatus,
     fundingMessage: summary.fundingMessage,
+    trustlineEstablished: summary.trustlineEstablished,
+    stellarReady: summary.stellarReady,
+    stellarStatus: summary.stellarStatus,
+    walletNetwork: summary.walletNetwork,
+    network: summary.walletNetwork,
   };
 }
 
