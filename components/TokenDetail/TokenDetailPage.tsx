@@ -231,7 +231,7 @@ export function TokenDetailPage({ tokenStatus, agentEmoji }: TokenDetailPageProp
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Token info card */}
-        <TokenInfoCard token={token} agentEmoji={agentEmoji} />
+        <TokenInfoCard token={token} agentEmoji={agentEmoji} distributionStatus={distributionStatus} />
 
         {/* Token price chart (Phase 5) */}
         <TokenPriceChart mint={token.token_mint} />
