@@ -53,6 +53,7 @@ import { BridgeStatusCard } from "@/components/ManageAgent/BridgeStatusCard";
 
 import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
 import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
+import { TokenStatusBadge } from "@/components/TokenDetail/TokenStatusBadge";
 
 type TabId = "dashboard" | "architecture" | "world";
 
@@ -228,18 +229,21 @@ export default function ManageAgentPage() {
       {/* Page header + Tab bar */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.92)",
-              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-              letterSpacing: "0.04em",
-            }}
-          >
-            {t("title")}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 20,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.92)",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                letterSpacing: "0.04em",
+              }}
+            >
+              {t("title")}
+            </h1>
+            <TokenStatusBadge agentId={storeAgent.id} />
+          </div>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.30)" }}>
             {t("subtitle")}
           </p>
