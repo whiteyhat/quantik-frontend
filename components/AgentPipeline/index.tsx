@@ -995,6 +995,11 @@ interface AgentPipelineProps {
     question: string;
     yesPrice: number;
     noPrice: number;
+    chainMode?: "stellar_testnet" | "polymarket";
+    protocol?: string;
+    assetPair?: string;
+    currentApy?: number;
+    executionPlan?: SigmaResult["executionPlan"];
   };
 }
 

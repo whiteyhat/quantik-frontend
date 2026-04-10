@@ -1,8 +1,9 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useInView } from "react-intersection-observer";
+import { useQueryClient } from "@tanstack/react-query";
 import { agentStatusTone, healthSeverityTone, serviceStatusTone, toWalletBalance } from "@/lib/dashboard";
 import { EquityCurveChart } from "@/components/ManageAgent/EquityCurveChart";
 import {
@@ -20,12 +21,14 @@ import {
 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { fmtPrice, fmtUSDC, fmtDate, fmtTimeShort, fmtNumber, streamPrices, type Position, type Signal } from "@/lib/api";
+import { getChainMode } from "@/lib/chain";
 import {
   formatRelativeTime,
   type DashboardAgentRow,
   type DashboardHealthSnapshot,
   type DashboardSummarySnapshot,
 } from "@/lib/dashboard";
+import { getWalletDisplayName, getWalletLinks } from "@/lib/walletPresentation";
 import { useDebouncedValue } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,7 @@ import {
   useTriggerOrchestratorScan,
 } from "@/components/dashboard/dashboardQueries";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useSocketEvent } from "@/context/SocketContext";
 
 function numberTone(value: number, warnAt: number, badAt: number): "good" | "warn" | "bad" {
   if (value >= badAt) return "bad";
@@ -117,6 +121,8 @@ function PolymarketGlyph() {
 
 function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
   const [copied, setCopied] = useState(false);
+  const walletLinks = getWalletLinks(getChainMode(), walletAddress);
+  const walletLabel = getWalletDisplayName(getChainMode());
 
   const handleCopy = async () => {
     try {
@@ -135,7 +141,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
       </div>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <div className="mission-wallet-kicker">WDK Wallet</div>
+          <div className="mission-wallet-kicker">{walletLabel}</div>
           <div className="mission-wallet-address-row">
             <div className="mission-wallet-address">
               {trimWalletAddress(walletAddress)}
@@ -150,30 +156,36 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
               {copied ? <CopyCheck className="size-4 text-[#34d399]" /> : <Copy className="size-4" />}
             </button>
           </div>
-          <div className="mission-wallet-caption">Direct wallet controls for explorer, profile, and secure copy.</div>
+          <div className="mission-wallet-caption">
+            {walletLinks.secondary
+              ? "Direct wallet controls for explorer, profile, and secure copy."
+              : "Direct wallet controls for explorer access and secure copy."}
+          </div>
         </div>
 
         <div className="mission-wallet-actions">
           <a
-            href={`https://polygonscan.com/address/${walletAddress}`}
+            href={walletLinks.primary.href}
             target="_blank"
             rel="noopener noreferrer"
             className="mission-wallet-action"
-            data-tooltip="Polygonscan"
-            aria-label="Open wallet on Polygonscan"
+            data-tooltip={walletLinks.primary.label}
+            aria-label={`Open wallet on ${walletLinks.primary.label}`}
           >
             <ExternalLink className="size-4 transition-transform duration-200 group-hover:rotate-6" />
           </a>
-          <a
-            href={`https://polymarket.com/profile/${walletAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mission-wallet-action"
-            data-tooltip="Polymarket"
-            aria-label="Open wallet on Polymarket"
-          >
-            <PolymarketGlyph />
-          </a>
+          {walletLinks.secondary ? (
+            <a
+              href={walletLinks.secondary.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mission-wallet-action"
+              data-tooltip={walletLinks.secondary.label}
+              aria-label={`Open wallet on ${walletLinks.secondary.label}`}
+            >
+              <PolymarketGlyph />
+            </a>
+          ) : null}
         </div>
       </div>
     </div>
@@ -1344,6 +1356,7 @@ function RecentTradesCard() {
 
 export function DashboardPageClient() {
   const now = useNow(5_000);
+  const queryClient = useQueryClient();
   const myAgent = useQuantikStore((state) => state.myAgent);
   const myAgentLoading = useQuantikStore((state) => state.myAgentLoading);
   const setWallet = useQuantikStore((state) => state.setWallet);
@@ -1360,6 +1373,16 @@ export function DashboardPageClient() {
   const healthQuery = useDashboardHealthQuery();
   const agentsQuery = useDashboardSystemAgentsQuery();
   const scanMutation = useTriggerOrchestratorScan();
+
+  const handleTradeExecuted = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "summary"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "positions"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "trades"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "performance"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "wallet"] });
+  }, [queryClient]);
+
+  useSocketEvent("trade:executed", handleTradeExecuted);
 
   const lastUpdatedAt = Math.max(
     summaryQuery.dataUpdatedAt,

@@ -22,6 +22,11 @@ interface SigmaDecisionProps {
     question: string;
     yesPrice: number;
     noPrice: number;
+    chainMode?: "stellar_testnet" | "polymarket";
+    protocol?: string;
+    assetPair?: string;
+    currentApy?: number;
+    executionPlan?: SigmaResult["executionPlan"];
   };
 }
 
@@ -30,12 +35,13 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
   const wallet = useQuantikStore((s) => s.wallet);
   const { paperMode } = usePaperMode();
+  const stellarMode = market.chainMode === "stellar_testnet";
 
   // Wallet funding checks (skip in paper mode)
   const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
-  const polBalance = wallet?.pol ?? 0;
-  const hasUsdc = paperMode || usdcBalance > 0;
-  const hasGas = paperMode || polBalance > 0.01;
+  const gasBalance = stellarMode ? (wallet?.xlm ?? wallet?.pol ?? 0) : (wallet?.pol ?? 0);
+  const hasUsdc = paperMode || stellarMode || usdcBalance > 0;
+  const hasGas = paperMode || gasBalance > (stellarMode ? 0.5 : 0.01);
   const walletFunded = hasUsdc && hasGas;
 
   const effectiveDecision =
@@ -52,16 +58,22 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const decisionLabel = isSkip
     ? "SKIP"
     : isExecute
-    ? `BET ${decisionSide}`
-    : "HOLD";
+    ? stellarMode ? "SWAP" : `BET ${decisionSide}`
+    : stellarMode ? "WATCH" : "HOLD";
 
-  const decisionColor = isExecute
-    ? decisionSide === "YES"
-      ? "var(--ios-green)"
-      : "var(--ios-red)"
-    : isSkip
-    ? "var(--ios-red)"
-    : "var(--ios-orange)";
+  const decisionColor = stellarMode
+    ? isExecute
+      ? "var(--ios-blue)"
+      : isSkip
+        ? "var(--ios-red)"
+        : "var(--ios-orange)"
+    : isExecute
+      ? decisionSide === "YES"
+        ? "var(--ios-green)"
+        : "var(--ios-red)"
+      : isSkip
+        ? "var(--ios-red)"
+        : "var(--ios-orange)";
 
   const confidence = num(sigma.confidence);
   const [animatedConfidence, setAnimatedConfidence] = useState(0);
@@ -71,17 +83,21 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   }, [confidence]);
   const sizeUsd = num(sigma.size_usd);
   const ev = num(edge?.net_ev);
-  const entryPrice = isExecute
+  const entryPrice = stellarMode
+    ? (sigma.entry_price ?? market.yesPrice)
+    : isExecute
     ? decisionSide === "YES"
       ? market.yesPrice
       : market.noPrice
     : market.yesPrice;
-  const estReturn = sizeUsd * (ev / 100);
+  const estReturn = stellarMode
+    ? sizeUsd * (ev / 100)
+    : sizeUsd * (ev / 100);
 
   const highConviction = Boolean(
     edge && (edge.ev_grade === "A" || edge.ev_grade === "B")
   );
-  const signalReady = Boolean(edge && isExecute);
+  const signalReady = Boolean(edge && (stellarMode ? effectiveDecision === "TRADE" : isExecute));
   const canExecute = signalReady && walletFunded;
 
   return (
@@ -251,11 +267,13 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
         >
           <span style={{ fontSize: 14, flexShrink: 0 }}>{"⚠"}</span>
           <span style={{ fontSize: 12, color: "var(--ios-orange)", lineHeight: 1.4 }}>
-            {!hasUsdc && !hasGas
-              ? t("sigma.fundWalletFull")
-              : !hasUsdc
-                ? t("sigma.noUsdc")
-                : t("sigma.noPol")}
+            {stellarMode
+              ? "Fund the wallet with XLM on Stellar testnet before running a live swap."
+              : !hasUsdc && !hasGas
+                ? t("sigma.fundWalletFull")
+                : !hasUsdc
+                  ? t("sigma.noUsdc")
+                  : t("sigma.noPol")}
           </span>
         </div>
       )}
@@ -277,6 +295,11 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
               question: market.question,
               yesPrice: market.yesPrice,
               noPrice: market.noPrice,
+              chainMode: market.chainMode,
+              protocol: market.protocol,
+              assetPair: market.assetPair,
+              currentApy: market.currentApy,
+              executionPlan: market.executionPlan ?? sigma.executionPlan,
             },
           });
         }}
@@ -305,7 +328,11 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
           letterSpacing: "0.02em",
         }}
       >
-        <span>{paperMode ? t("sigma.simulateTrade") : t("sigma.executeTrade")}</span>
+        <span>
+          {stellarMode
+            ? paperMode ? "Simulate Swap" : "Execute Swap"
+            : paperMode ? t("sigma.simulateTrade") : t("sigma.executeTrade")}
+        </span>
         <span>{"\u2192"}</span>
       </button>
     </div>

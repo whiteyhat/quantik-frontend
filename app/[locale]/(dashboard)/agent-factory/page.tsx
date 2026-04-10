@@ -12,6 +12,8 @@ import { WalletFoundryLoader } from "@/components/agent-factory/WalletFoundryLoa
 import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
 import { buildWalletDownloadContent } from "@/lib/agentFactory";
+import { getChainMode } from "@/lib/chain";
+import { getWalletFoundryCopy } from "@/lib/walletPresentation";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 import { useTranslations } from "next-intl";
 import {
@@ -863,6 +865,7 @@ function StepLaunch({
   isDeploying,
   privateKeySecured,
   walletAddress,
+  stellarAddress,
   isGeneratingWallet,
   walletError,
   onSecureKey,
@@ -872,12 +875,28 @@ function StepLaunch({
   isDeploying: boolean;
   privateKeySecured: boolean;
   walletAddress: string | null;
+  stellarAddress: string | null;
   isGeneratingWallet: boolean;
   walletError: string | null;
   onSecureKey: () => void;
   onDeploy: () => void;
 }) {
   const t = useTranslations("agentFactory");
+  const walletFoundryCopy = getWalletFoundryCopy(getChainMode());
+  const [walletSuccessShow, setWalletSuccessShow] = useState(false);
+  const wasGeneratingRef = useRef(false);
+
+  useEffect(() => {
+    if (isGeneratingWallet) {
+      wasGeneratingRef.current = true;
+    } else if (wasGeneratingRef.current && walletAddress) {
+      wasGeneratingRef.current = false;
+      setWalletSuccessShow(true);
+      const timer = setTimeout(() => setWalletSuccessShow(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [isGeneratingWallet, walletAddress]);
+
   const agentId = useMemo(() => {
     const num = Math.floor(Math.random() * 900 + 100);
     return `Q-AGENT-X${num}`;
@@ -1050,7 +1069,7 @@ function StepLaunch({
         </p>
       </div>
 
-      {/* Assigned WDK Wallet */}
+      {/* Assigned wallet */}
       <div style={{ width: "100%" }}>
         <div
           style={{
@@ -1066,7 +1085,7 @@ function StepLaunch({
               color: "rgba(255,255,255,0.50)",
             }}
           >
-            {t("launch.walletLabel")}
+            {walletFoundryCopy.label}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div
@@ -1088,88 +1107,485 @@ function StepLaunch({
             </span>
           </div>
         </div>
-        {isGeneratingWallet ? (
-          <WalletFoundryLoader
-            badge={t("launch.foundry.badge")}
-            title={t("launch.foundry.title")}
-            subtitle={t("launch.foundry.subtitle", { name: displayName })}
-            statusLabel={t("launch.walletGenerating")}
-            accentEmoji={config.avatar}
-            tone="emerald"
-            orbitLabels={["WDK", "Vault", "Launch"]}
-            phases={[
-              t("launch.foundry.phases.provision"),
-              t("launch.foundry.phases.mint"),
-              t("launch.foundry.phases.encrypt"),
-              t("launch.foundry.phases.stage"),
-            ]}
-            highlights={walletLoaderHighlights}
-            distractions={[
-              t("launch.foundry.distractions.signals", { name: displayName }),
-              t("launch.foundry.distractions.backup"),
-              t("launch.foundry.distractions.approvals"),
-            ]}
-            distractionLabel={t("launch.foundry.distractionLabel")}
-            note={t("launch.keyBackupNote")}
-            sceneHeight={332}
-          />
-        ) : (
-          <div
-            className={PANEL_CLASS}
-            style={{
-              padding: "14px 18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div
+        <AnimatePresence mode="wait">
+          {isGeneratingWallet ? (
+            <motion.div
+              key="wallet-generating"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.3 }}
+            >
+              <WalletFoundryLoader
+                badge={t("launch.foundry.badge")}
+                title={walletFoundryCopy.title}
+                subtitle={t("launch.foundry.subtitle", { name: displayName })}
+                statusLabel={t("launch.walletGenerating")}
+                accentEmoji={config.avatar}
+                tone="emerald"
+                orbitLabels={walletFoundryCopy.orbitLabels}
+                phases={[
+                  t("launch.foundry.phases.provision"),
+                  t("launch.foundry.phases.mint"),
+                  t("launch.foundry.phases.encrypt"),
+                  t("launch.foundry.phases.stage"),
+                ]}
+                highlights={walletLoaderHighlights}
+                distractions={[
+                  t("launch.foundry.distractions.signals", { name: displayName }),
+                  t("launch.foundry.distractions.backup"),
+                  t("launch.foundry.distractions.approvals"),
+                ]}
+                distractionLabel={t("launch.foundry.distractionLabel")}
+                note={t("launch.keyBackupNote")}
+                sceneHeight={332}
+              />
+            </motion.div>
+          ) : walletSuccessShow && walletAddress ? (
+            <motion.div
+              key="wallet-success"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96, y: -8 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                borderRadius: 24,
+                padding: "36px 24px",
+                border: "1px solid rgba(48,209,88,0.30)",
+                background: [
+                  "radial-gradient(circle at top left, rgba(48,209,88,0.18), transparent 40%)",
+                  "radial-gradient(circle at 80% 20%, rgba(48,209,88,0.10), transparent 32%)",
+                  "linear-gradient(155deg, rgba(18,28,44,0.95), rgba(8,12,22,0.96))",
+                ].join(", "),
+                boxShadow: "0 28px 84px rgba(4,17,28,0.48), 0 0 60px rgba(48,209,88,0.08)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 20,
+                textAlign: "center",
+              }}
+            >
+              {/* Success shimmer overlay */}
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: "200%" }}
+                transition={{ duration: 1.2, delay: 0.3, ease: "easeInOut" }}
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(90deg, transparent, rgba(48,209,88,0.08), rgba(255,255,255,0.06), transparent)",
+                  pointerEvents: "none",
+                }}
+              />
+
+              {/* Animated checkmark ring */}
+              <motion.div
+                initial={{ scale: 0, rotate: -90 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.6, delay: 0.1, type: "spring", stiffness: 200, damping: 15 }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  background: "rgba(48,209,88,0.12)",
+                  border: "2px solid rgba(48,209,88,0.40)",
+                  display: "grid",
+                  placeItems: "center",
+                  position: "relative",
+                }}
+              >
+                {/* Pulse ring */}
+                <motion.div
+                  initial={{ scale: 1, opacity: 0.6 }}
+                  animate={{ scale: 1.6, opacity: 0 }}
+                  transition={{ duration: 1.5, repeat: 2, ease: "easeOut" }}
+                  style={{
+                    position: "absolute",
+                    inset: -4,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(48,209,88,0.30)",
+                  }}
+                />
+                {/* SVG checkmark */}
+                <motion.svg
+                  width="36"
+                  height="36"
+                  viewBox="0 0 36 36"
+                  fill="none"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.4 }}
+                >
+                  <motion.path
+                    d="M10 18L16 24L26 12"
+                    stroke="#30d158"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+                  />
+                </motion.svg>
+              </motion.div>
+
+              {/* Success status pill */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: 999,
+                  background: "rgba(48,209,88,0.14)",
+                  border: "1px solid rgba(48,209,88,0.30)",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#30d158",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                  }}
+                >
+                  WALLET CREATED SUCCESSFULLY
+                </span>
+              </motion.div>
+
+              {/* Title */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.7 }}
+              >
+                <div
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: "rgba(255,255,255,0.95)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {displayName}'s Vault is Ready
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "rgba(255,255,255,0.50)",
+                    marginTop: 6,
+                  }}
+                >
+                  EVM + Stellar wallets provisioned and encrypted
+                </div>
+              </motion.div>
+
+              {/* Dual wallet address cards */}
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.9 }}
+                style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}
+              >
+                {/* EVM / Polygon */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        background: "rgba(130,71,229,0.14)",
+                        border: "1px solid rgba(130,71,229,0.28)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        flexShrink: 0,
+                        fontWeight: 700,
+                        color: "rgba(130,71,229,0.90)",
+                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      }}
+                    >
+                      EVM
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                        color: "rgba(255,255,255,0.65)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {`${walletAddress.slice(0, 10)}...${walletAddress.slice(-4)}`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(walletAddress)}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      borderRadius: 7,
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                      color: "rgba(255,255,255,0.45)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      outline: "none",
+                      flexShrink: 0,
+                    }}
+                    title="Copy EVM address"
+                  >
+                    Copy
+                  </button>
+                </div>
+                {/* Stellar */}
+                {stellarAddress && (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: 14,
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          background: "rgba(10,132,255,0.14)",
+                          border: "1px solid rgba(10,132,255,0.28)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          flexShrink: 0,
+                          fontWeight: 700,
+                          color: "rgba(10,132,255,0.90)",
+                          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                        }}
+                      >
+                        XLM
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                          color: "rgba(255,255,255,0.65)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {`${stellarAddress.slice(0, 10)}...${stellarAddress.slice(-4)}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard?.writeText(stellarAddress)}
+                      style={{
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        borderRadius: 7,
+                        cursor: "pointer",
+                        padding: "4px 8px",
+                        color: "rgba(255,255,255,0.45)",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        outline: "none",
+                        flexShrink: 0,
+                      }}
+                      title="Copy Stellar address"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Floating particles */}
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={`particle-${i}`}
+                  initial={{
+                    opacity: 0,
+                    scale: 0,
+                    x: 0,
+                    y: 0,
+                  }}
+                  animate={{
+                    opacity: [0, 1, 0],
+                    scale: [0, 1, 0.5],
+                    x: (i % 2 === 0 ? 1 : -1) * (30 + i * 18),
+                    y: -(40 + i * 12),
+                  }}
+                  transition={{
+                    duration: 1.2,
+                    delay: 0.3 + i * 0.1,
+                    ease: "easeOut",
+                  }}
+                  style={{
+                    position: "absolute",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: i % 3 === 0 ? "#30d158" : i % 3 === 1 ? "#8fcbff" : "#ffc07a",
+                    top: "40%",
+                    left: "50%",
+                    pointerEvents: "none",
+                  }}
+                />
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="wallet-final"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              style={{ display: "flex", flexDirection: "column", gap: 6 }}
+            >
+              {/* EVM row */}
+              <div
+                className={PANEL_CLASS}
+                style={{
+                  padding: "12px 16px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
+                  justifyContent: "space-between",
                 }}
               >
-                🔐
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      background: walletAddress ? "rgba(130,71,229,0.12)" : "rgba(255,255,255,0.06)",
+                      border: walletAddress ? "1px solid rgba(130,71,229,0.24)" : "1px solid rgba(255,255,255,0.08)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "rgba(130,71,229,0.85)",
+                      fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                    }}
+                  >
+                    {walletAddress ? "EVM" : "🔐"}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      color: "rgba(255,255,255,0.60)",
+                    }}
+                  >
+                    {walletAddress
+                      ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-4)}`
+                      : walletError ?? t("launch.walletFailed")}
+                  </span>
+                </div>
+                {walletAddress && (
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(walletAddress)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4,
+                      color: "rgba(255,255,255,0.30)",
+                      fontSize: 14,
+                      outline: "none",
+                    }}
+                    title="Copy EVM address"
+                  >
+                    📋
+                  </button>
+                )}
               </div>
-              <span
-                style={{
-                  fontSize: BODY_SIZE,
-                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                  color: "rgba(255,255,255,0.65)",
-                }}
-              >
-                {walletAddress
-                  ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-4)}`
-                  : walletError ?? t("launch.walletFailed")}
-              </span>
-            </div>
-            {walletAddress && (
-              <button
-                onClick={() => navigator.clipboard?.writeText(walletAddress)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 4,
-                  color: "rgba(255,255,255,0.30)",
-                  fontSize: 16,
-                  outline: "none",
-                }}
-                title={t("launch.copyAddress")}
-              >
-                📋
-              </button>
-            )}
-          </div>
-        )}
+              {/* Stellar row */}
+              {stellarAddress && (
+                <div
+                  className={PANEL_CLASS}
+                  style={{
+                    padding: "12px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        background: "rgba(10,132,255,0.12)",
+                        border: "1px solid rgba(10,132,255,0.24)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "rgba(10,132,255,0.85)",
+                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                      }}
+                    >
+                      XLM
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                        color: "rgba(255,255,255,0.60)",
+                      }}
+                    >
+                      {`${stellarAddress.slice(0, 10)}...${stellarAddress.slice(-4)}`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(stellarAddress)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 4,
+                      color: "rgba(255,255,255,0.30)",
+                      fontSize: 14,
+                      outline: "none",
+                    }}
+                    title="Copy Stellar address"
+                  >
+                    📋
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Divider */}
@@ -1295,10 +1711,12 @@ export default function AgentFactoryPage() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  // WDK wallet state — generated server-side, private key shown once for user backup
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletPrivateKey, setWalletPrivateKey] = useState<string | null>(null);
-  const [walletSeedPhrase, setWalletSeedPhrase] = useState<string | null>(null);
+  // Dual wallet state — EVM (Polygon) + Stellar, generated server-side
+  const [walletCredentials, setWalletCredentials] = useState<{
+    evm: { address: string; privateKey: string };
+    stellar: { address: string; privateKey: string };
+  } | null>(null);
+  const walletAddress = walletCredentials?.evm.address ?? null;
   const [isGeneratingWallet, setIsGeneratingWallet] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1385,18 +1803,16 @@ export default function AgentFactoryPage() {
     setStep(5);
   }, []);
 
-  // Generate WDK wallet when entering Step 5
+  // Generate dual wallet (EVM + Stellar) when entering Step 5
   useEffect(() => {
-    if (step !== 5 || walletAddress) return;
+    if (step !== 5 || walletCredentials) return;
     let cancelled = false;
     setIsGeneratingWallet(true);
     setWalletError(null);
     api.generateWallet()
       .then((data) => {
         if (cancelled) return;
-        setWalletAddress(data.address);
-        setWalletPrivateKey(data.privateKey);
-        setWalletSeedPhrase(data.seedPhrase);
+        setWalletCredentials(data);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -1406,24 +1822,20 @@ export default function AgentFactoryPage() {
         if (!cancelled) setIsGeneratingWallet(false);
       });
     return () => { cancelled = true; };
-  }, [step, walletAddress]);
+  }, [step, walletCredentials]);
 
   const handleSecureKey = useCallback(() => {
-    if (!walletAddress || !walletPrivateKey) return;
-    const content = buildWalletDownloadContent(config.name, {
-      address: walletAddress,
-      privateKey: walletPrivateKey,
-      seedPhrase: walletSeedPhrase ?? "",
-    });
+    if (!walletCredentials) return;
+    const content = buildWalletDownloadContent(config.name, walletCredentials);
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `quantik-agent-${config.name.toLowerCase().replace(/\s+/g, "-") || "unnamed"}-key.txt`;
+    a.download = `quantik-agent-${config.name.toLowerCase().replace(/\s+/g, "-") || "unnamed"}-keys.txt`;
     a.click();
     URL.revokeObjectURL(url);
     setPrivateKeySecured(true);
-  }, [config.name, walletAddress, walletPrivateKey, walletSeedPhrase]);
+  }, [config.name, walletCredentials]);
 
   const handleGenerate = useCallback(async () => {
     const animal = EMOJI_TO_ANIMAL[config.avatar] || "fox";
@@ -1450,7 +1862,7 @@ export default function AgentFactoryPage() {
   }, [config.avatar]);
 
   const handleDeploy = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!walletAddress || !walletCredentials) return;
     jsConfettiRef.current?.addConfetti({ emojis: [config.avatar], emojiSize: 60, confettiNumber: 40 });
     setIsDeploying(true);
     setDeployError(null);
@@ -1460,10 +1872,12 @@ export default function AgentFactoryPage() {
         avatar: config.avatar,
         animalType: EMOJI_TO_ANIMAL[config.avatar] || "fox",
         generatedImage,
-        wallet_address: walletAddress,
-        // Send keys to backend for encrypted storage (enables server-side Polymarket approvals)
-        private_key: walletPrivateKey ?? undefined,
-        seed_phrase: walletSeedPhrase ?? undefined,
+        wallet_address: walletCredentials.evm.address,
+        // Send dual wallet keys for encrypted storage
+        evm_address: walletCredentials.evm.address,
+        evm_private_key: walletCredentials.evm.privateKey,
+        stellar_address: walletCredentials.stellar.address,
+        stellar_private_key: walletCredentials.stellar.privateKey,
         personality: config.personality,
         decisionStyle: config.decisionStyle,
         tradingInstinct: config.tradingInstinct,
@@ -1475,8 +1889,7 @@ export default function AgentFactoryPage() {
         assetLove: config.assetLove,
       });
       // Clear sensitive data from memory
-      setWalletPrivateKey(null);
-      setWalletSeedPhrase(null);
+      setWalletCredentials(null);
       setMyAgent(agentData as unknown as MyAgent);
       requestProductTourResume();
       router.push("/manage-agent");
@@ -1490,7 +1903,7 @@ export default function AgentFactoryPage() {
     } finally {
       setIsDeploying(false);
     }
-  }, [config, walletAddress, walletPrivateKey, walletSeedPhrase, generatedImage, router, setMyAgent]);
+  }, [config, walletAddress, walletCredentials, generatedImage, router, setMyAgent]);
 
   const isLaunchStep = step === 5;
   const isLocked = !!myAgent && !myAgentLoading;
@@ -2072,6 +2485,7 @@ export default function AgentFactoryPage() {
                   isDeploying={isDeploying}
                   privateKeySecured={privateKeySecured}
                   walletAddress={walletAddress}
+                  stellarAddress={walletCredentials?.stellar.address ?? null}
                   isGeneratingWallet={isGeneratingWallet}
                   walletError={walletError}
                   onSecureKey={handleSecureKey}

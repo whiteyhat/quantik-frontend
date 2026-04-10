@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { fmtUSDC, type WalletBalance } from "@/lib/api";
+import { getChainMode } from "@/lib/chain";
+import { getWalletInlinePrefix, getWalletLinks } from "@/lib/walletPresentation";
 import { Badge } from "@/components/ui/badge";
 import { DeleteAgentModal } from "./DeleteAgentModal";
 
@@ -169,6 +171,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const tCommon = useTranslations("common");
   const td = useTranslations("deleteAgent");
   const router = useRouter();
+  const chainMode = getChainMode();
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const [copied, setCopied] = useState(false);
@@ -196,6 +199,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const periods: ("7D" | "30D" | "All")[] = ["7D", "30D", "All"];
   const displayBalance = wallet?.totalValue;
   const balanceMessage = wallet?.balanceMessage ?? null;
+  const walletLinks = myAgent.wallet_address ? getWalletLinks(chainMode, myAgent.wallet_address) : null;
 
   return (
     <div id="tour-agent-identity" className="glass-card glass-panel-compact">
@@ -281,7 +285,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             {/* Wallet address */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
-                {t("wdkWallet")}{truncAddr(myAgent.wallet_address || "")}
+                {getWalletInlinePrefix(chainMode)}{truncAddr(myAgent.wallet_address || "")}
               </span>
               <WalletActionButton
                 onClick={copyAddress}
@@ -289,20 +293,22 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
               >
                 {copied ? <CopyCheck size={12} color="#30d158" /> : <Copy size={12} />}
               </WalletActionButton>
-              {myAgent.wallet_address && (
+              {walletLinks && (
                 <>
                   <WalletActionButton
-                    href={`https://polygonscan.com/address/${myAgent.wallet_address}`}
-                    label={t("viewOnPolygonscan")}
+                    href={walletLinks.primary.href}
+                    label={walletLinks.primary.label}
                   >
                     <ExternalLink size={12} />
                   </WalletActionButton>
-                  <WalletActionButton
-                    href={`https://polymarket.com/profile/${myAgent.wallet_address}`}
-                    label={t("viewOnPolymarket")}
-                  >
-                    <PolymarketGlyph />
-                  </WalletActionButton>
+                  {walletLinks.secondary ? (
+                    <WalletActionButton
+                      href={walletLinks.secondary.href}
+                      label={walletLinks.secondary.label}
+                    >
+                      <PolymarketGlyph />
+                    </WalletActionButton>
+                  ) : null}
                 </>
               )}
               {myAgent.agent_code && (

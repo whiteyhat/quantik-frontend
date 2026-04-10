@@ -52,8 +52,145 @@ export function MarketHeader({ slug }: { slug: string }) {
   const noPct = 100 - yesPct;
   const volume = market.volume ?? 0;
   const liquidity = market.liquidity ?? 0;
+  const stellarMode = market.chainMode === "stellar_testnet";
 
   const slugDisplay = market.slug?.toUpperCase().replace(/-/g, "-") ?? slug.toUpperCase();
+
+  if (stellarMode) {
+    return (
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+              <span
+                className="font-mono-data"
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 6,
+                  padding: "3px 10px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {t("id")}{slugDisplay}
+              </span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--ios-blue)",
+                  background: "rgba(10,132,255,0.12)",
+                  border: "1px solid rgba(10,132,255,0.25)",
+                  borderRadius: 6,
+                  padding: "3px 10px",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                {(market.protocol ?? "soroswap").toUpperCase()}
+              </span>
+              {market.assetPair ? (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 6,
+                    padding: "3px 10px",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {market.assetPair}
+                </span>
+              ) : null}
+              <button
+                onClick={async () => {
+                  if (watchlisted) {
+                    await api.removeWatchlistItem(slug);
+                    setWatchlisted(false);
+                  } else {
+                    await api.addWatchlistItem(slug, market.question);
+                    setWatchlisted(true);
+                  }
+                }}
+                style={{
+                  height: 30,
+                  borderRadius: 8,
+                  border: "1px solid var(--glass-border)",
+                  background: watchlisted ? "rgba(255,159,10,0.16)" : "rgba(255,255,255,0.04)",
+                  color: watchlisted ? "var(--ios-orange)" : "var(--text-secondary)",
+                  padding: "0 12px",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                {watchlisted ? "WATCHLISTED" : "WATCHLIST"}
+              </button>
+              <button
+                onClick={() => setAlertOpen(true)}
+                style={{
+                  height: 30,
+                  borderRadius: 8,
+                  border: "1px solid var(--glass-border)",
+                  background: alert?.enabled ? "rgba(10,132,255,0.16)" : "rgba(255,255,255,0.04)",
+                  color: alert?.enabled ? "var(--ios-blue)" : "var(--text-secondary)",
+                  padding: "0 12px",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                {alert?.enabled ? "EDIT ALERT" : "ADD ALERT"}
+              </button>
+            </div>
+
+            <h1
+              style={{
+                fontSize: 30,
+                fontWeight: 800,
+                color: "var(--text-primary)",
+                margin: "0 0 16px 0",
+                lineHeight: 1.2,
+                letterSpacing: "-0.5px",
+              }}
+            >
+              {market.question}
+            </h1>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <StatPill icon="bar" label="Vol" value={fmtCompact(volume)} />
+              <Dot />
+              <StatPill icon="drop" label="TVL" value={fmtCompact(liquidity)} />
+              <Dot />
+              <StatPill icon="clock" label="Risk" value={(market.riskScore ?? 0).toFixed(2)} />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0, minWidth: 220 }}>
+            <PriceBox side={market.assetPair ?? "PAIR"} value={(market.currentApy ?? 0).toFixed(1)} color="var(--ios-blue)" bg="rgba(10,132,255,0.08)" border="rgba(10,132,255,0.25)" betLabel="APY" valueSuffix="%" />
+            <PriceBox side="SCORE" value={(market.riskScore ?? 0).toFixed(2)} color="var(--ios-orange)" bg="rgba(255,159,10,0.08)" border="rgba(255,159,10,0.25)" betLabel="RISK" valueSuffix="" />
+            <ResolutionCountdown iso={market.resolutionDate} />
+          </div>
+        </div>
+
+        <MarketAlertEditor
+          open={alertOpen}
+          slug={market.slug}
+          question={market.question}
+          initialPrice={market.yesPrice}
+          existingAlert={alert}
+          onClose={() => setAlertOpen(false)}
+          onSaved={async () => {
+            const alerts = await api.getMarketAlerts().catch(() => []);
+            setAlert(alerts.find((item) => item.slug === market.slug) ?? null);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -168,8 +305,8 @@ export function MarketHeader({ slug }: { slug: string }) {
 
         {/* RIGHT: YES / NO price boxes + countdown */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0, minWidth: 200 }}>
-          <PriceBox side="YES" cents={yesPct} color="var(--ios-green)" bg="rgba(48,209,88,0.08)" border="rgba(48,209,88,0.25)" betLabel={t("bet")} />
-          <PriceBox side="NO" cents={noPct} color="var(--ios-red)" bg="rgba(255,69,58,0.08)" border="rgba(255,69,58,0.25)" betLabel={t("bet")} />
+          <PriceBox side="YES" value={yesPct} color="var(--ios-green)" bg="rgba(48,209,88,0.08)" border="rgba(48,209,88,0.25)" betLabel={t("bet")} />
+          <PriceBox side="NO" value={noPct} color="var(--ios-red)" bg="rgba(255,69,58,0.08)" border="rgba(255,69,58,0.25)" betLabel={t("bet")} />
           <ResolutionCountdown iso={market.resolutionDate} />
         </div>
       </div>
@@ -216,18 +353,20 @@ function StatPill({ icon, label, value }: { icon: string; label: string; value: 
 
 function PriceBox({
   side,
-  cents,
+  value,
   color,
   bg,
   border,
   betLabel,
+  valueSuffix = "¢",
 }: {
-  side: "YES" | "NO";
-  cents: number;
+  side: string;
+  value: string | number;
   color: string;
   bg: string;
   border: string;
   betLabel: string;
+  valueSuffix?: string;
 }) {
   return (
     <div
@@ -262,7 +401,7 @@ function PriceBox({
           marginBottom: 6,
         }}
       >
-        {cents}¢
+        {value}{valueSuffix}
       </div>
     </div>
   );

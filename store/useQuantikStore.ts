@@ -53,6 +53,12 @@ export interface MyAgent {
   // Polymarket wallet preparation
   polymarket_ready?: boolean;
   polymarket_status?: "pending_funding" | "funding_detected" | "approving" | "approval_failed" | "ready";
+  wallet_network?: string | null;
+  stellar_ready?: boolean;
+  stellar_status?: string | null;
+  trustline_established?: boolean;
+  // Bridge mode
+  stellar_address?: string | null;
 }
 
 // ─── Pipeline State ───────────────────────────────────────────────────────────
@@ -77,6 +83,26 @@ export interface PipelineState {
   version: number;
 }
 
+// ─── Solana Wallet State ──────────────────────────────────────────────────────
+export interface SolanaWalletState {
+  address: string;       // base58 wallet address
+  linkedAt: number;      // timestamp when linked
+}
+
+// ─── Agent Token State (Phase 2) ─────────────────────────────────────────────
+export interface AgentTokenState {
+  tokenMint: string;
+  dbcPoolAddress: string;
+  dbcConfigAddress: string;
+  dammPoolAddress: string | null;
+  status: "bonding" | "migrated";
+  tokenName: string;
+  tokenSymbol: string;
+  metadataUri: string;
+  createdAt: number;
+  migratedAt: number | null;
+}
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface QuantikStore {
@@ -93,6 +119,18 @@ interface QuantikStore {
   // Wallet
   wallet: WalletBalance | null;
   setWallet: (w: WalletBalance) => void;
+
+  // Solana Wallet
+  solanaWallet: SolanaWalletState | null;
+  solanaWalletLoading: boolean;
+  setSolanaWallet: (w: SolanaWalletState | null) => void;
+  setSolanaWalletLoading: (l: boolean) => void;
+
+  // Agent Token (Phase 2)
+  agentToken: AgentTokenState | null;
+  agentTokenLoading: boolean;
+  setAgentToken: (t: AgentTokenState | null) => void;
+  setAgentTokenLoading: (l: boolean) => void;
 
   // Positions
   positions: Position[];
@@ -123,7 +161,16 @@ interface QuantikStore {
     noTokenId?: string;
     sigma: SigmaResult;
     edge: EdgeResult;
-    market: { question: string; yesPrice: number; noPrice: number };
+    market: {
+      question: string;
+      yesPrice: number;
+      noPrice: number;
+      chainMode?: "stellar_testnet" | "polymarket";
+      protocol?: string;
+      assetPair?: string;
+      currentApy?: number;
+      executionPlan?: SigmaResult["executionPlan"];
+    };
   } | null;
   openTradeModal: (data: NonNullable<QuantikStore["pendingTrade"]>) => void;
   closeTradeModal: () => void;
@@ -254,6 +301,16 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
 
   wallet: null,
   setWallet: (wallet) => set({ wallet }),
+
+  solanaWallet: null,
+  solanaWalletLoading: false,
+  setSolanaWallet: (solanaWallet) => set({ solanaWallet }),
+  setSolanaWalletLoading: (solanaWalletLoading) => set({ solanaWalletLoading }),
+
+  agentToken: null,
+  agentTokenLoading: false,
+  setAgentToken: (agentToken) => set({ agentToken }),
+  setAgentTokenLoading: (agentTokenLoading) => set({ agentTokenLoading }),
 
   positions: [],
   setPositions: (positions) => set({ positions }),

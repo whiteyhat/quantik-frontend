@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { setupAuth, mockAgent, mockNoAgent, loadFixture } from './fixtures';
 
+const isPolymarketMode = process.env.NEXT_PUBLIC_CHAIN_MODE === 'polymarket';
+const walletLabel = isPolymarketMode ? 'Assigned WDK Wallet' : 'Assigned Stellar Wallet';
+const walletFoundryTitle = isPolymarketMode ? 'Forging your WDK vault' : 'Preparing your Stellar wallet';
+
 test.describe('Agent Factory — Create Agent', () => {
   test.beforeEach(async ({ page }) => {
     await setupAuth(page);
@@ -57,7 +61,7 @@ test.describe('Agent Factory — Create Agent', () => {
 
     // Step 5
     await expect(page.getByText('Agent Deployment Reveal')).toBeVisible();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
+    await expect(page.getByText(walletLabel)).toBeVisible();
   });
 
   test('validates name is required before allowing next step', async ({ page }) => {
@@ -135,9 +139,8 @@ test.describe('Agent Factory — Create Agent', () => {
 
   test('generates wallet on step 5 entry and displays address', async ({ page }) => {
     const wallet = {
-      address: '0xABCD1234ABCD1234ABCD1234ABCD1234ABCD1234',
-      privateKey: '0xprivkey123',
-      seedPhrase: 'word1 word2 word3 word4',
+      evm: { address: '0xABCD1234ABCD1234ABCD1234ABCD1234ABCD1234', privateKey: '0xprivkey123' },
+      stellar: { address: 'GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFG', privateKey: 'SABCDEF' },
     };
     await page.route('**/api/wallet/generate', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(wallet) })
@@ -147,15 +150,14 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByText('Create from Scratch').click();
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Wallet Test');
     await page.getByText('Skip (Randomize)').click();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
-    await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
+    await expect(page.getByText(walletLabel)).toBeVisible();
+    await expect(page.getByText(wallet.evm.address.slice(0, 10))).toBeVisible();
   });
 
-  test('shows the wallet foundry experience while the WDK wallet is still generating', async ({ page }) => {
+  test('shows the wallet foundry experience while the wallet is still generating', async ({ page }) => {
     const wallet = {
-      address: '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333',
-      privateKey: '0xslowwallet',
-      seedPhrase: 'alpha beta gamma delta epsilon',
+      evm: { address: '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333', privateKey: '0xslowwallet' },
+      stellar: { address: 'GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFG', privateKey: 'SABCDEF' },
     };
 
     await page.route('**/api/wallet/generate', async (route) => {
@@ -168,9 +170,9 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Slow Forge');
     await page.getByText('Skip (Randomize)').click();
 
-    await expect(page.getByText('Forging your WDK vault')).toBeVisible();
+    await expect(page.getByText(walletFoundryTitle)).toBeVisible();
     await expect(page.getByText('While you wait')).toBeVisible();
-    await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
+    await expect(page.getByText(wallet.evm.address.slice(0, 10))).toBeVisible();
   });
 
   test('downloads private key file and shows secured state', async ({ page }) => {
@@ -190,9 +192,8 @@ test.describe('Agent Factory — Create Agent', () => {
 
   test('deploys agent with correct payload and navigates to manage-agent', async ({ page }) => {
     const wallet = {
-      address: '0x1111111111111111111111111111111111111111',
-      privateKey: '0xabcdef',
-      seedPhrase: 'alpha beta gamma delta',
+      evm: { address: '0x1111111111111111111111111111111111111111', privateKey: '0xabcdef' },
+      stellar: { address: 'GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFG', privateKey: 'SABCDEF' },
     };
     const createdAgentFixture = await loadFixture('created-agent.json');
 
@@ -202,7 +203,7 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.route('**/api/v1/agents', (route) => {
       if (route.request().method() === 'POST') {
         const body = route.request().postDataJSON();
-        expect(body.wallet_address).toBe(wallet.address);
+        expect(body.wallet_address).toBe(wallet.evm.address);
         expect(body.name).toBeTruthy();
         route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(createdAgentFixture) });
       } else {
@@ -232,7 +233,7 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Skip Test');
     await page.getByText('Skip (Randomize)').click();
     await expect(page.getByText('Agent Deployment Reveal')).toBeVisible();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
+    await expect(page.getByText(walletLabel)).toBeVisible();
   });
 
   test('back button navigates to previous step', async ({ page }) => {

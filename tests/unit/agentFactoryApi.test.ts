@@ -12,18 +12,18 @@ describe("agent factory api", () => {
     vi.unstubAllGlobals();
   });
 
-  it("generates wallets through the authenticated backend route", async () => {
+  it("generates dual wallets through the authenticated backend route", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify({
-        address: "0x1111111111111111111111111111111111111111",
-        privateKey: "0xabc",
-        seedPhrase: "alpha beta gamma",
+        evm: { address: "0x1111111111111111111111111111111111111111", privateKey: "0xabc" },
+        stellar: { address: "GABCDEF", privateKey: "SABCDEF" },
       }), { status: 200 })
     );
 
     const wallet = await api.generateWallet();
 
-    expect(wallet.address).toBe("0x1111111111111111111111111111111111111111");
+    expect(wallet.evm.address).toBe("0x1111111111111111111111111111111111111111");
+    expect(wallet.stellar.address).toBe("GABCDEF");
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/wallet/generate"),
       expect.objectContaining({

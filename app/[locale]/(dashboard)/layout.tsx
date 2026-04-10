@@ -16,6 +16,7 @@ import { CURRENT_VERSION } from "@/lib/releases";
 import { useHydrated } from "@/hooks/useHydrated";
 import { setLocalStorageFlag, useLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SolanaWalletButton } from "@/components/SolanaWalletButton";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
@@ -322,6 +323,11 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           );
         })}
       </nav>
+
+      {/* ─── Solana Wallet ───────────────────────────────────────────────── */}
+      <div style={{ padding: "4px 10px 4px" }}>
+        <SolanaWalletButton />
+      </div>
 
       {/* ─── User Profile Section ─────────────────────────────────────── */}
       <div

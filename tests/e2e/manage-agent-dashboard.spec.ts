@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { setupAuth, mockAgent, mockManageAgentApis, loadFixture } from './fixtures';
 
+const walletLabelPattern = process.env.NEXT_PUBLIC_CHAIN_MODE === 'polymarket'
+  ? /WDK Wallet/
+  : /Stellar Wallet/;
+
 test.describe('Manage Agent — Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await setupAuth(page);
@@ -17,7 +21,7 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('displays wallet address (truncated) with copy button', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText(/WDK Wallet/)).toBeVisible();
+    await expect(page.getByText(walletLabelPattern)).toBeVisible();
     await expect(page.getByText(/0x1111/)).toBeVisible();
     await expect(page.getByRole('button', { name: /copy/i })).toBeVisible();
   });

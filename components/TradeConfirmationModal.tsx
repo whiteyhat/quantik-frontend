@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
 import { usePaperMode } from "@/context/PaperModeContext";
+import {
+  formatStellarExecutionSuccessMessage,
+  getStellarExecutionRefreshKeys,
+} from "@/lib/stellarSubmission";
 
 const DEFAULT_TRADE_SIZE = 10;
 const PRESETS = [5, 10, 25, 50, 100];
@@ -86,14 +91,19 @@ export function TradeConfirmationModal() {
   const pending = useQuantikStore((s) => s.pendingTrade);
   const close = useQuantikStore((s) => s.closeTradeModal);
   const wallet = useQuantikStore((s) => s.wallet);
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [tradeAmount, setTradeAmount] = useState(DEFAULT_TRADE_SIZE);
   const { paperMode } = usePaperMode();
+  const executionPlan = pending?.market.executionPlan ?? pending?.sigma.executionPlan;
+  const stellarMode =
+    pending?.market.chainMode === "stellar_testnet" ||
+    executionPlan?.action === "SWAP";
 
   const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
-  const polBalance = wallet?.pol ?? 0;
-  const walletFunded = paperMode || (usdcBalance > 0 && polBalance > 0.01);
+  const gasBalance = stellarMode ? (wallet?.xlm ?? wallet?.pol ?? 0) : (wallet?.pol ?? 0);
+  const walletFunded = paperMode || (stellarMode ? gasBalance > 0.5 : (usdcBalance > 0 && gasBalance > 0.01));
 
   function showToast(msg: string) {
     setToast(msg);
@@ -108,8 +118,13 @@ export function TradeConfirmationModal() {
   const noTokenId = pending?.noTokenId;
   const tokenId = pending?.tokenId;
   const market = pending?.market;
-  const direction = sigma?.decision === "BET_YES" ? "YES" : "NO";
-  const dirColor = direction === "YES" ? "var(--ios-green)" : "var(--ios-red)";
+  const binaryDirection: "YES" | "NO" = sigma?.decision === "BET_YES" ? "YES" : "NO";
+  const direction = stellarMode ? "SWAP" : binaryDirection;
+  const dirColor = stellarMode
+    ? "var(--ios-blue)"
+    : direction === "YES"
+      ? "var(--ios-green)"
+      : "var(--ios-red)";
   const confidence = sigma?.confidence ?? 0;
 
   // Reset trade amount when modal opens with new pending trade
@@ -124,11 +139,12 @@ export function TradeConfirmationModal() {
   const entryPrice = sigma?.entry_price ?? 0;
   const ev = edge?.net_ev ?? 0;
   const estPayout = useMemo(() => {
+    if (stellarMode) return tradeAmount * (ev / 100);
     if (!entryPrice || entryPrice <= 0) return 0;
     // shares = amount / price, payout = shares * 1 (if win)
     const shares = tradeAmount / entryPrice;
     return shares - tradeAmount;
-  }, [tradeAmount, entryPrice]);
+  }, [tradeAmount, entryPrice, ev, stellarMode]);
 
   async function handleConfirm() {
     if (!slug || !sigma) return;
@@ -136,17 +152,34 @@ export function TradeConfirmationModal() {
     try {
       const size = tradeAmount > 0 ? tradeAmount : DEFAULT_TRADE_SIZE;
 
-      if (paperMode) {
-        await api.placeOrder(slug, direction, size);
+      if (stellarMode) {
+        const result = await api.executeStellarTrade({
+          opportunityId: slug,
+          action: "SWAP",
+          assetIn: executionPlan?.assetIn ?? "XLM",
+          assetOut: executionPlan?.assetOut ?? "USDC",
+          amountUsdc: size,
+          minAmountOut: executionPlan?.minAmountOut ?? Math.max(0, size * 0.98),
+        });
+        await Promise.all(
+          getStellarExecutionRefreshKeys(slug).map((queryKey) =>
+            queryClient.invalidateQueries({ queryKey: [...queryKey] })
+          )
+        );
+        showToast(formatStellarExecutionSuccessMessage(result));
+        close();
+        return;
+      } else if (paperMode) {
+        await api.placeOrder(slug, binaryDirection, size);
       } else {
         // Polymarket CLOB: always "buy" the correct outcome token
         // YES bet → buy YES token, NO bet → buy NO token
-        const resolvedToken = direction === "YES"
+        const resolvedToken = binaryDirection === "YES"
           ? (yesTokenId ?? tokenId ?? slug)
           : (noTokenId ?? tokenId ?? slug);
-        const price = direction === "YES" ? market?.yesPrice ?? 0.5 : market?.noPrice ?? 0.5;
+        const price = binaryDirection === "YES" ? market?.yesPrice ?? 0.5 : market?.noPrice ?? 0.5;
         await api.executeTrade({
-          direction,
+          direction: binaryDirection,
           tokenId: resolvedToken,
           price,
           size,
@@ -245,7 +278,9 @@ export function TradeConfirmationModal() {
                 height: 3,
                 background: direction === "YES"
                   ? "linear-gradient(90deg, #30D158, #00C6FF)"
-                  : "linear-gradient(90deg, #FF453A, #FF6B6B)",
+                  : stellarMode
+                    ? "linear-gradient(90deg, #007AFF, #00C6FF)"
+                    : "linear-gradient(90deg, #FF453A, #FF6B6B)",
               }}
             />
 
@@ -287,7 +322,9 @@ export function TradeConfirmationModal() {
                         background: paperMode ? "var(--ios-orange)" : "var(--ios-blue)",
                       }}
                     />
-                    {paperMode ? "Paper Mode" : "Live Trading"}
+                    {paperMode
+                      ? stellarMode ? "Paper Swap" : "Paper Mode"
+                      : stellarMode ? "Live Swap" : "Live Trading"}
                   </div>
 
                   <h2
@@ -356,7 +393,9 @@ export function TradeConfirmationModal() {
                     letterSpacing: "0.04em",
                   }}
                 >
-                  {direction === "YES" ? "\u2191" : "\u2193"} {t("buy", { direction })}
+                  {stellarMode
+                    ? `${executionPlan?.assetIn ?? "XLM"} → ${executionPlan?.assetOut ?? "USDC"} SWAP`
+                    : `${direction === "YES" ? "\u2191" : "\u2193"} ${t("buy", { direction })}`}
                 </span>
                 <span
                   style={{
@@ -366,7 +405,9 @@ export function TradeConfirmationModal() {
                     fontWeight: 500,
                   }}
                 >
-                  @ {Math.round(entryPrice * 100)}¢
+                  {stellarMode
+                    ? `APY ${(market?.currentApy ?? 0).toFixed(1)}%`
+                    : `@ ${Math.round(entryPrice * 100)}¢`}
                 </span>
               </div>
 
@@ -431,7 +472,7 @@ export function TradeConfirmationModal() {
                       marginBottom: 4,
                     }}
                   >
-                    Est. Profit
+                    {stellarMode ? "Est. Return" : "Est. Profit"}
                   </div>
                   <div
                     className="font-mono-data"
@@ -564,7 +605,7 @@ export function TradeConfirmationModal() {
               </div>
 
               {/* ── Insufficient balance for trade size ── */}
-              {walletFunded && !paperMode && usdcBalance > 0 && tradeAmount > usdcBalance && (
+              {!stellarMode && walletFunded && !paperMode && usdcBalance > 0 && tradeAmount > usdcBalance && (
                 <div
                   style={{
                     display: "flex",
@@ -613,11 +654,13 @@ export function TradeConfirmationModal() {
                     <div
                       style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}
                     >
-                      {usdcBalance <= 0 && polBalance <= 0.01
-                        ? t("walletNotFundedDesc")
-                        : usdcBalance <= 0
-                          ? t("noUsdc")
-                          : t("noPol")}
+                      {stellarMode
+                        ? "Add XLM on Stellar testnet to cover the swap and account reserves."
+                        : usdcBalance <= 0 && gasBalance <= 0.01
+                          ? t("walletNotFundedDesc")
+                          : usdcBalance <= 0
+                            ? t("noUsdc")
+                            : t("noPol")}
                     </div>
                   </div>
                 </div>
@@ -681,11 +724,11 @@ export function TradeConfirmationModal() {
                     ? t("walletNotFundedTitle")
                     : loading
                       ? paperMode
-                        ? t("simulating")
-                        : t("confirming")
+                        ? stellarMode ? "Simulating swap..." : t("simulating")
+                        : stellarMode ? "Confirming swap..." : t("confirming")
                       : paperMode
-                        ? `${t("simulateTrade")} \u2192`
-                        : `${t("confirmTrade")} \u2192`}
+                        ? `${stellarMode ? "Simulate Swap" : t("simulateTrade")} \u2192`
+                        : `${stellarMode ? "Confirm Swap" : t("confirmTrade")} \u2192`}
                 </button>
               </div>
 

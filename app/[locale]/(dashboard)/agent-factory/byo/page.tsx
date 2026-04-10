@@ -10,7 +10,7 @@ import { useLocale } from "next-intl";
 import { api, fmtDateTime, type ByoOnboardingSession } from "@/lib/api";
 
 const PANEL_CLASS = "glass-card glass-panel";
-import { buildWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
+import { buildLegacyWalletDownloadContent, createPendingByoSession } from "@/lib/agentFactory";
 import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } from "@/lib/byoImport";
 import { AVAILABLE_WEBHOOK_EVENTS, validateOptionalPublicHttpsUrl } from "@/lib/webhookEvents";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
@@ -1164,7 +1164,7 @@ export default function ByoAgentPage() {
 
     try {
       const wallet = await api.downloadByoOnboardingWallet(sessionId);
-      const content = buildWalletDownloadContent(session.identity.name, wallet);
+      const content = buildLegacyWalletDownloadContent(session.identity.name, wallet);
       const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

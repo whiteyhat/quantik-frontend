@@ -10,6 +10,7 @@ import {
   api,
   type Position,
 } from "@/lib/api";
+import { isStellarMode, isBridgeMode } from "@/lib/chain";
 import {
   dashboardKeys,
   useDashboardPositionsQuery,
@@ -47,15 +48,20 @@ import { WebhookConfigPanel } from "@/components/ManageAgent/WebhookConfigPanel"
 import { RiskConfigPanelByo } from "@/components/ManageAgent/RiskConfigPanelByo";
 import { AutopilotControlCard } from "@/components/ManageAgent/AutopilotControlCard";
 import { PolymarketStatusCard } from "@/components/ManageAgent/PolymarketStatusCard";
+import { StellarStatusCard } from "@/components/ManageAgent/StellarStatusCard";
+import { BridgeStatusCard } from "@/components/ManageAgent/BridgeStatusCard";
 
 import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
 import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
+import { TokenStatusBadge } from "@/components/TokenDetail/TokenStatusBadge";
 
 type TabId = "dashboard" | "architecture" | "world";
 
 export default function ManageAgentPage() {
   const t = useTranslations("manageAgent");
   const router = useRouter();
+  const stellarMode = isStellarMode();
+  const bridgeMode = isBridgeMode();
   const storeAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
@@ -136,6 +142,10 @@ export default function ManageAgentPage() {
   const handleTradeExecuted = useCallback(() => {
     if (!storeAgent) return;
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.positions });
+    void queryClient.invalidateQueries({ queryKey: dashboardKeys.summary });
+    void queryClient.invalidateQueries({ queryKey: dashboardKeys.trades });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "performance"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard", "wallet"] });
     void walletQuery.refetch().then((result) => {
       if (result.data) storeSetWallet(result.data);
     });
@@ -219,18 +229,21 @@ export default function ManageAgentPage() {
       {/* Page header + Tab bar */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.92)",
-              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-              letterSpacing: "0.04em",
-            }}
-          >
-            {t("title")}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 20,
+                fontWeight: 700,
+                color: "rgba(255,255,255,0.92)",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                letterSpacing: "0.04em",
+              }}
+            >
+              {t("title")}
+            </h1>
+            <TokenStatusBadge agentId={storeAgent.id} />
+          </div>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.30)" }}>
             {t("subtitle")}
           </p>
@@ -289,13 +302,26 @@ export default function ManageAgentPage() {
 
           {/* RIGHT COLUMN */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-            <PolymarketStatusCard
-              agentId={storeAgent?.id ?? ""}
-              walletAddress={storeAgent?.wallet_address ?? null}
-              polymarketReady={storeAgent?.polymarket_ready}
-              polymarketStatus={storeAgent?.polymarket_status}
-            />
-            {storeAgent?.polymarket_ready && (
+            {bridgeMode ? (
+              <BridgeStatusCard
+                agentId={storeAgent?.id ?? ""}
+                walletAddress={storeAgent?.wallet_address ?? null}
+                stellarAddress={storeAgent?.stellar_address ?? null}
+              />
+            ) : stellarMode ? (
+              <StellarStatusCard
+                walletAddress={storeAgent?.wallet_address ?? null}
+                wallet={storeWallet}
+              />
+            ) : (
+              <PolymarketStatusCard
+                agentId={storeAgent?.id ?? ""}
+                walletAddress={storeAgent?.wallet_address ?? null}
+                polymarketReady={storeAgent?.polymarket_ready}
+                polymarketStatus={storeAgent?.polymarket_status}
+              />
+            )}
+            {!stellarMode && storeAgent?.polymarket_ready && (
               <AutopilotControlCard
                 wallet={storeWallet}
                 onWalletRefresh={refreshWallet}
