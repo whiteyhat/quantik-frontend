@@ -47,6 +47,7 @@ import { WebhookConfigPanel } from "@/components/ManageAgent/WebhookConfigPanel"
 import { RiskConfigPanelByo } from "@/components/ManageAgent/RiskConfigPanelByo";
 import { AutopilotControlCard } from "@/components/ManageAgent/AutopilotControlCard";
 import { PolymarketStatusCard } from "@/components/ManageAgent/PolymarketStatusCard";
+import { ERC8004StatusCard } from "@/components/ManageAgent/ERC8004StatusCard";
 
 import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
 import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
@@ -294,6 +295,13 @@ export default function ManageAgentPage() {
               walletAddress={storeAgent?.wallet_address ?? null}
               polymarketReady={storeAgent?.polymarket_ready}
               polymarketStatus={storeAgent?.polymarket_status}
+            />
+            <ERC8004StatusCard
+              agentId={storeAgent?.id ?? ""}
+              tokenId={storeAgent?.erc8004_token_id ?? null}
+              registeredAt={storeAgent?.erc8004_registered_at ?? null}
+              reputationScore={storeAgent?.erc8004_reputation_score ?? null}
+              validationCount={storeAgent?.erc8004_validation_count ?? 0}
             />
             {storeAgent?.polymarket_ready && (
               <AutopilotControlCard

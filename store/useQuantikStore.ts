@@ -53,6 +53,11 @@ export interface MyAgent {
   // Polymarket wallet preparation
   polymarket_ready?: boolean;
   polymarket_status?: "pending_funding" | "funding_detected" | "approving" | "approval_failed" | "ready";
+  // ERC-8004 on-chain identity
+  erc8004_token_id?: string | null;
+  erc8004_registered_at?: number | null;
+  erc8004_reputation_score?: number | null;
+  erc8004_validation_count?: number;
 }
 
 // ─── Pipeline State ───────────────────────────────────────────────────────────
