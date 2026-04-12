@@ -302,6 +302,15 @@ export default function ManageAgentPage() {
               registeredAt={storeAgent?.erc8004_registered_at ?? null}
               reputationScore={storeAgent?.erc8004_reputation_score ?? null}
               validationCount={storeAgent?.erc8004_validation_count ?? 0}
+              onRegistered={(newTokenId) => {
+                if (storeAgent) {
+                  setMyAgent({
+                    ...storeAgent,
+                    erc8004_token_id: newTokenId,
+                    erc8004_registered_at: Date.now(),
+                  });
+                }
+              }}
             />
             {storeAgent?.polymarket_ready && (
               <AutopilotControlCard
