@@ -394,7 +394,7 @@ function SummaryRow({ legs }: { legs: KrakenLeg[] }) {
 export function DualMarketPanel() {
   const [legs, setLegs] = useState<KrakenLeg[]>([]);
   const [slug, setSlug] = useState("");
-  const [hasReceived, setHasReceived] = useState(false);
+  const hasReceived = legs.length > 0;
 
   useEffect(() => {
     ensureKeyframes();
@@ -404,7 +404,6 @@ export function DualMarketPanel() {
     (data: { legs: KrakenLeg[]; slug: string }) => {
       setLegs(data.legs);
       setSlug(data.slug);
-      setHasReceived(true);
     },
     []
   );
@@ -450,7 +449,7 @@ export function DualMarketPanel() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: hasReceived ? 0 : 0,
+          marginBottom: 0,
         }}
       >
         <span
