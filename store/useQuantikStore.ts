@@ -11,6 +11,7 @@ import {
   Position,
   Trade,
   normalizeAgentData,
+  type KrakenLegEvent,
 } from "@/lib/api";
 import { AGENT_NAMES, AGENT_OUTPUT_KEYS, isAgentName, type AgentName } from "@/lib/agents";
 
@@ -80,7 +81,7 @@ export interface PipelineState {
   runId: string | null;
   frames: PipelineReplayFrame[];
   version: number;
-  krakenLegs: import("@/lib/api").KrakenLegEvent[];
+  krakenLegs: KrakenLegEvent[];
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────

@@ -3,21 +3,10 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { HelpTooltip } from "@/components/ui/HelpTooltip";
+import type { KrakenLegEvent } from "@/lib/api";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface KrakenLeg {
-  status: "executed" | "failed";
-  pair: string;
-  direction: "BUY" | "SELL";
-  amount: number;
-  asset: string;
-  polarity: "bullish" | "bearish";
-  confidence: number;
-  assetClass: "crypto" | "forex" | "futures";
-  paper: boolean;
-  engine: "kraken";
-}
+type KrakenLeg = KrakenLegEvent;
 
 // ── Fonts ────────────────────────────────────────────────────────────────────
 
@@ -392,17 +381,17 @@ function SummaryRow({ legs }: { legs: KrakenLeg[] }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function DualMarketPanel() {
-  const legs = useQuantikStore((s) => s.pipeline.krakenLegs) as KrakenLeg[];
-  const pipelineSource = useQuantikStore((s) => s.pipeline.source);
-  const pipelineVersion = useQuantikStore((s) => s.pipeline.version);
+  const { krakenLegs: legs, source: pipelineSource, version: pipelineVersion, running } = useQuantikStore(
+    (s) => ({ krakenLegs: s.pipeline.krakenLegs, source: s.pipeline.source, version: s.pipeline.version, running: s.pipeline.running })
+  );
   const hasReceived = legs.length > 0;
 
   useEffect(() => {
     ensureKeyframes();
   }, []);
 
-  // Hide entirely when no pipeline has been run (source is still "idle")
-  if (pipelineSource === "idle" && !hasReceived) return null;
+  // Only show after pipeline has completed (not idle, not still running)
+  if (running || (pipelineSource === "idle" && !hasReceived)) return null;
 
   return (
     <div
@@ -443,19 +432,42 @@ export function DualMarketPanel() {
           marginBottom: 0,
         }}
       >
-        <span
-          style={{
-            fontSize: 15,
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.92)",
-            fontFamily: mono,
-            letterSpacing: "0.04em",
-          }}
-        >
-          Dual-Market Execution
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+          <span
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.92)",
+              fontFamily: mono,
+              letterSpacing: "0.04em",
+            }}
+          >
+            Dual-Market Execution
+          </span>
+          <HelpTooltip
+            text="When Quantik's pipeline detects a correlated opportunity, it automatically executes hedged positions across multiple asset classes — crypto, forex, and futures — to maximize edge and reduce directional risk."
+            width={280}
+          />
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              borderRadius: 20,
+              padding: "3px 10px",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.45)",
+              fontFamily: mono,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Powered by Kraken CLI
+          </span>
+
           {hasReceived && (
             <div
               style={{

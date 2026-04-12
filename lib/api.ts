@@ -2490,8 +2490,8 @@ export function runPipeline(
                 return;
               } else if (currentEvent === "pipeline:start") {
                 onEvent({ type: "pipeline:start" });
-              } else if (currentEvent === "trade:kraken-leg") {
-                onEvent({ type: "trade:kraken-leg", legs: payload.legs, slug: payload.slug });
+              } else if (currentEvent === "trade:kraken-leg" && Array.isArray(payload.legs)) {
+                onEvent({ type: "trade:kraken-leg", legs: payload.legs, slug: String(payload.slug ?? "") });
               }
               currentEvent = "";
             } catch {}
