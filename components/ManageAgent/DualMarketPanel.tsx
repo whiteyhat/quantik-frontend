@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSocketEvent } from "@/context/SocketContext";
+import { useQuantikStore } from "@/store/useQuantikStore";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -392,26 +392,17 @@ function SummaryRow({ legs }: { legs: KrakenLeg[] }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function DualMarketPanel() {
-  const [legs, setLegs] = useState<KrakenLeg[]>([]);
-  const [slug, setSlug] = useState("");
+  const legs = useQuantikStore((s) => s.pipeline.krakenLegs) as KrakenLeg[];
+  const pipelineSource = useQuantikStore((s) => s.pipeline.source);
+  const pipelineVersion = useQuantikStore((s) => s.pipeline.version);
   const hasReceived = legs.length > 0;
 
   useEffect(() => {
     ensureKeyframes();
   }, []);
 
-  const handleKrakenLeg = useCallback(
-    (data: { legs: KrakenLeg[]; slug: string }) => {
-      setLegs(data.legs);
-      setSlug(data.slug);
-    },
-    []
-  );
-
-  useSocketEvent<{ legs: KrakenLeg[]; slug: string }>(
-    "trade:kraken-leg",
-    handleKrakenLeg
-  );
+  // Hide entirely when no pipeline has been run (source is still "idle")
+  if (pipelineSource === "idle" && !hasReceived) return null;
 
   return (
     <div
@@ -527,30 +518,14 @@ export function DualMarketPanel() {
         </div>
       </div>
 
-      {/* Market question */}
-      {slug && (
-        <div
-          style={{
-            fontSize: 12,
-            color: "rgba(255,255,255,0.45)",
-            marginTop: 12,
-            fontStyle: "italic",
-            fontFamily: mono,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {slug}
-        </div>
-      )}
+      {/* Market question — removed, slug not available from store */}
 
       {/* Legs list */}
       {hasReceived ? (
         <>
           <AnimatePresence mode="wait">
             <motion.div
-              key={slug}
+              key={pipelineVersion}
               variants={staggerContainer}
               initial="hidden"
               animate="show"

@@ -80,6 +80,7 @@ export interface PipelineState {
   runId: string | null;
   frames: PipelineReplayFrame[];
   version: number;
+  krakenLegs: import("@/lib/api").KrakenLegEvent[];
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -245,6 +246,7 @@ function buildReplayState(
     runId: run.id,
     frames,
     version: nextPipelineVersion(),
+    krakenLegs: [],
   };
 }
 
@@ -278,6 +280,7 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
     runId: null,
     frames: [],
     version: nextPipelineVersion(),
+    krakenLegs: [],
   },
 
   pipelineStart: () =>
@@ -290,12 +293,16 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
         runId: null,
         frames: [],
         version: nextPipelineVersion(),
+        krakenLegs: [],
       },
     }),
 
   pipelineAgentEvent: (event) =>
     set((s) => {
       if (event.type === "pipeline:start") return s;
+      if (event.type === "trade:kraken-leg") {
+        return { pipeline: { ...s.pipeline, krakenLegs: event.legs } };
+      }
       const agentKey = "agent" in event ? event.agent : undefined;
       if (!agentKey) return s;
       const now = Date.now();
@@ -342,6 +349,7 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
         runId: null,
         frames: [],
         version: nextPipelineVersion(),
+        krakenLegs: [],
       },
     }),
 

@@ -258,6 +258,8 @@ export interface PublicAgentProfile {
   badges: ArenaLeaderboardEntry["badges"];
   marketBreakdown: ArenaMarketBreakdown[];
   sparkline: ArenaSparklinePoint[];
+  walletAddress: string | null;
+  needsSetup: boolean;
 }
 
 export interface ArenaViewerContext {
@@ -1381,6 +1383,8 @@ export const api = {
               emoji: String(b.emoji ?? ""),
             }))
           : [],
+        walletAddress: typeof raw.walletAddress === "string" ? raw.walletAddress : null,
+        needsSetup: raw.needsSetup === true,
         marketBreakdown: Array.isArray(raw.marketBreakdown)
           ? (raw.marketBreakdown as Record<string, unknown>[]).map((m) => ({
               slug: String(m.slug ?? ""),
@@ -2406,11 +2410,25 @@ export function streamPrices(
   };
 }
 
+export interface KrakenLegEvent {
+  status: "executed" | "failed";
+  pair: string;
+  direction: "BUY" | "SELL";
+  amount: number;
+  asset: string;
+  polarity: "bullish" | "bearish";
+  confidence: number;
+  assetClass: "crypto" | "forex" | "futures";
+  paper: boolean;
+  engine: "kraken";
+}
+
 export type PipelineEvent =
   | { type: "pipeline:start" }
   | { type: "agent:start"; agent: string }
   | { type: "agent:complete"; agent: string; data: unknown }
-  | { type: "agent:error"; agent: string; error: unknown };
+  | { type: "agent:error"; agent: string; error: unknown }
+  | { type: "trade:kraken-leg"; legs: KrakenLegEvent[]; slug: string };
 
 export function runPipeline(
   slug: string,
@@ -2472,6 +2490,8 @@ export function runPipeline(
                 return;
               } else if (currentEvent === "pipeline:start") {
                 onEvent({ type: "pipeline:start" });
+              } else if (currentEvent === "trade:kraken-leg") {
+                onEvent({ type: "trade:kraken-leg", legs: payload.legs, slug: payload.slug });
               }
               currentEvent = "";
             } catch {}
