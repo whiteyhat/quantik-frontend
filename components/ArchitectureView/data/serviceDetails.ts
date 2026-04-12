@@ -90,66 +90,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
       { time: "12:03:00", level: "warn", message: "Rate limit: 450/500 requests used this window" },
     ],
   },
-  "edge-ingestion": {
-    description: "Multi-source data ingestion pipeline with schema validation, deduplication, and normalization.",
-    protocol: "Apache Kafka",
-    endpoint: "kafka.edge.internal:9092",
-    sources: ["Polymarket CLOB", "Binance WebSocket", "Coinbase Pro", "Uniswap Subgraph"],
-    feed: [
-      { time: "12:05:30", message: "Ingested 4,231 events from 8 sources in last minute" },
-      { time: "12:04:15", message: "Schema validation: 99.97% pass rate" },
-      { time: "12:03:00", message: "Dedup engine caught 23 duplicate orderbook events" },
-    ],
-    logs: [
-      { time: "12:05:30", level: "info", message: "Kafka consumer lag: 12 messages (healthy)" },
-      { time: "12:04:00", level: "info", message: "Partition rebalance complete — 6 partitions active" },
-    ],
-  },
-  "edge-onchain": {
-    description: "On-chain indexer tracking smart contract events, token transfers, and DeFi protocol state across EVM chains.",
-    protocol: "GraphQL / Subgraph",
-    endpoint: "indexer.edge.internal:8000",
-    sources: ["Ethereum Mainnet", "Polygon", "The Graph Protocol", "Alchemy"],
-    feed: [
-      { time: "12:05:10", message: "Block #19,234,567 indexed — 142 relevant events" },
-      { time: "12:04:22", message: "Large transfer detected: 500k USDC to Polymarket" },
-      { time: "12:03:05", message: "Contract event: new market created on Polymarket CTF" },
-    ],
-    logs: [
-      { time: "12:05:10", level: "info", message: "Block sync: head - 2 blocks (4s behind)" },
-      { time: "12:02:00", level: "info", message: "Indexed 1,247 events across 3 chains" },
-    ],
-  },
-  "edge-websockets": {
-    description: "Persistent WebSocket connections to exchanges and prediction markets for real-time orderbook and trade data.",
-    protocol: "WebSocket (wss://)",
-    endpoint: "ws-pool.edge.internal:443",
-    sources: ["Polymarket WS", "Binance WS", "Coinbase WS", "dYdX WS"],
-    feed: [
-      { time: "12:05:45", message: "Orderbook update: BTC-150K-JUN26 spread tightened to 2c" },
-      { time: "12:05:12", message: "Trade: 5,000 YES @ 0.58 on fed-rate-cut-q2" },
-      { time: "12:04:33", message: "Connection pool: 24/24 active, 0 reconnecting" },
-    ],
-    logs: [
-      { time: "12:05:45", level: "info", message: "Messages/sec: 1,247 across 24 connections" },
-      { time: "12:04:00", level: "info", message: "Heartbeat OK — all connections healthy" },
-    ],
-  },
-  "edge-rpc": {
-    description: "Load-balanced RPC node pool for blockchain state queries, gas estimation, and transaction submission.",
-    protocol: "JSON-RPC 2.0",
-    endpoint: "rpc-lb.edge.internal:8545",
-    sources: ["Alchemy RPC", "Infura", "QuickNode", "Self-hosted Geth"],
-    feed: [
-      { time: "12:05:55", message: "Gas price: 12 gwei — optimal for transactions" },
-      { time: "12:04:40", message: "RPC latency: p50=45ms, p99=120ms" },
-      { time: "12:03:22", message: "Node rotation: switched primary to Alchemy" },
-    ],
-    logs: [
-      { time: "12:05:55", level: "info", message: "RPC pool health: 4/4 nodes responding" },
-      { time: "12:03:22", level: "warn", message: "QuickNode latency spike — rotating to backup" },
-    ],
-  },
   "oracle-ensemble": {
     description: "Ensemble ML engine combining multiple probability models with Bayesian weighting and confidence calibration.",
     protocol: "Internal gRPC",
@@ -219,176 +159,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     logs: [
       { time: "12:05:00", level: "info", message: "Write batch: 4,231 data points in 45ms" },
       { time: "12:00:00", level: "info", message: "Retention policy: 90-day data — 12.4GB stored" },
-    ],
-  },
-  "lucifer-veto": {
-    description: "Risk veto protocol that can block trades failing stress tests, correlation checks, and drawdown limits.",
-    protocol: "Internal RPC",
-    endpoint: "veto.lucifer.internal:50052",
-    sources: ["Risk Engine", "Correlation Matrix", "Drawdown Monitor"],
-    feed: [
-      { time: "12:05:40", message: "Trade approved: BTC-150K — passes all 7 risk checks" },
-      { time: "12:04:25", message: "VETO: eth-flip-sol — correlation too high with existing positions" },
-      { time: "12:03:10", message: "Stress test passed: portfolio VaR within limits" },
-    ],
-    logs: [
-      { time: "12:05:40", level: "info", message: "Risk check: 7/7 passed in 23ms" },
-      { time: "12:04:25", level: "warn", message: "Trade vetoed — reason: correlation_exceeded (0.87)" },
-    ],
-  },
-  "lucifer-slippage": {
-    description: "Real-time slippage monitor tracking execution quality, market impact, and orderbook depth.",
-    protocol: "WebSocket",
-    endpoint: "slippage.lucifer.internal:8081",
-    sources: ["Orderbook Depth Monitor", "Execution Quality Tracker", "Market Impact Model"],
-    feed: [
-      { time: "12:05:35", message: "Estimated slippage: 0.3% for $500 order on BTC-150K" },
-      { time: "12:04:18", message: "Market depth alert: thin liquidity on fed-rate-cut NO side" },
-    ],
-    logs: [
-      { time: "12:05:35", level: "info", message: "Slippage model updated — 847 orderbook snapshots" },
-      { time: "12:04:18", level: "warn", message: "Low depth alert: <$2k within 2% of mid" },
-    ],
-  },
-  "lucifer-wallet": {
-    description: "Agent wallet management for secure key storage, transaction signing, and balance monitoring.",
-    protocol: "Agent SDK",
-    endpoint: "wallet.lucifer.internal:443",
-    sources: ["Hardware Security Module", "Multi-sig Controller", "Balance Tracker"],
-    feed: [
-      { time: "12:05:25", message: "Balance: 42,580.12 USDC | 125.5 POL" },
-      { time: "12:04:10", message: "Transaction signed: approve USDC spend for Polymarket" },
-    ],
-    logs: [
-      { time: "12:05:25", level: "info", message: "Balance sync complete — matches on-chain" },
-      { time: "12:04:10", level: "info", message: "TX signed: 0x7a3f...2b1c (gas: 21,000)" },
-    ],
-  },
-  "lucifer-bankroll": {
-    description: "Bankroll management system enforcing Kelly criterion sizing, max exposure, and capital allocation rules.",
-    protocol: "Internal API",
-    endpoint: "bankroll.lucifer.internal:8082",
-    sources: ["Kelly Calculator", "Exposure Monitor", "Capital Allocator"],
-    feed: [
-      { time: "12:05:18", message: "Kelly utilization: 42% — room for 2 more positions" },
-      { time: "12:04:05", message: "Max position check: $500 within 20% capital limit" },
-    ],
-    logs: [
-      { time: "12:05:18", level: "info", message: "Portfolio rebalance: optimal Kelly = 0.25x" },
-      { time: "12:04:05", level: "info", message: "Capital allocation: 58% free, 42% deployed" },
-    ],
-  },
-  "lucifer-exposure": {
-    description: "Exposure limit engine tracking correlated positions, sector concentration, and tail risk scenarios.",
-    protocol: "Internal API",
-    endpoint: "exposure.lucifer.internal:8083",
-    sources: ["Correlation Engine", "Sector Classifier", "Tail Risk Monitor"],
-    feed: [
-      { time: "12:05:12", message: "Total exposure: $3,240 across 3 positions (7.6% of capital)" },
-      { time: "12:04:00", message: "Sector concentration: crypto 65%, macro 35%" },
-    ],
-    logs: [
-      { time: "12:05:12", level: "info", message: "Exposure matrix updated — 3 active positions" },
-      { time: "12:04:00", level: "info", message: "Tail risk VaR (99%): -$1,247 — within limits" },
-    ],
-  },
-  "flux-router": {
-    description: "Intelligent liquidity router finding optimal execution paths across DEXs and CEXs for minimal slippage.",
-    protocol: "REST API",
-    endpoint: "router.flux.internal:8084",
-    sources: ["Uniswap V3", "Curve Finance", "1inch Aggregator", "0x Protocol"],
-    feed: [
-      { time: "12:05:50", message: "Optimal route: Polymarket CLOB direct — 0.1% slippage" },
-      { time: "12:04:35", message: "Route comparison: 3 paths analyzed, best saves 0.4%" },
-    ],
-    logs: [
-      { time: "12:05:50", level: "info", message: "Route optimization: 3 paths in 45ms" },
-      { time: "12:04:35", level: "info", message: "Gas comparison: L1=$2.40, L2=$0.08" },
-    ],
-  },
-  "flux-uniswap": {
-    description: "Uniswap V3 integration for concentrated liquidity positions and token swaps on Ethereum and Polygon.",
-    protocol: "Ethers.js / Contract ABI",
-    endpoint: "uniswap.flux.internal:8085",
-    sources: ["Uniswap V3 Router", "Uniswap Subgraph", "Pool Analytics"],
-    feed: [
-      { time: "12:05:42", message: "USDC/POL pool: TVL $12.4M, fee tier 0.3%" },
-      { time: "12:04:28", message: "Price impact estimate: 0.02% for $500 swap" },
-    ],
-    logs: [
-      { time: "12:05:42", level: "info", message: "Pool state synced — 247 active positions" },
-      { time: "12:04:28", level: "info", message: "Quote: 500 USDC -> 1,247.5 POL" },
-    ],
-  },
-  "flux-curve": {
-    description: "Curve Finance integration for stablecoin swaps with minimal slippage via specialized AMM curves.",
-    protocol: "Web3.js / Vyper ABI",
-    endpoint: "curve.flux.internal:8086",
-    sources: ["Curve 3pool", "Curve stETH", "Curve Factory Pools"],
-    feed: [
-      { time: "12:05:38", message: "3pool balance: USDC 33.2%, USDT 33.5%, DAI 33.3%" },
-      { time: "12:04:20", message: "Stablecoin swap: 0.01% slippage for $10k trade" },
-    ],
-    logs: [
-      { time: "12:05:38", level: "info", message: "Pool imbalance check: within 1% — healthy" },
-      { time: "12:04:20", level: "info", message: "Gauge rewards: 2.4% APY on 3pool" },
-    ],
-  },
-  "flux-1inch": {
-    description: "1inch Aggregator for cross-DEX routing, finding the best swap rates across 200+ liquidity sources.",
-    protocol: "REST API v5",
-    endpoint: "1inch.flux.internal:8087",
-    sources: ["1inch Fusion", "1inch Limit Orders", "1inch Aggregation Protocol"],
-    feed: [
-      { time: "12:05:32", message: "Best rate: USDC->MATIC via Uniswap+SushiSwap split" },
-      { time: "12:04:15", message: "Gas savings: fusion mode saves 40% vs direct swap" },
-    ],
-    logs: [
-      { time: "12:05:32", level: "info", message: "Route query: 247 sources checked in 120ms" },
-      { time: "12:04:15", level: "info", message: "Fusion order submitted — waiting for resolver" },
-    ],
-  },
-  "clause-contracts": {
-    description: "Smart contract interaction layer for Polymarket CTF contracts, approvals, and position management.",
-    protocol: "Ethers.js v6",
-    endpoint: "contracts.clause.internal:8088",
-    sources: ["Polymarket CTF Exchange", "ERC-1155 Tokens", "Conditional Tokens Framework"],
-    feed: [
-      { time: "12:05:48", message: "Contract call: buyOutcomeTokens — 500 USDC for YES tokens" },
-      { time: "12:04:30", message: "Approval check: USDC allowance sufficient (unlimited)" },
-      { time: "12:03:15", message: "Position query: 3 active conditional token positions" },
-    ],
-    logs: [
-      { time: "12:05:48", level: "info", message: "TX submitted: 0x8b2f...4a1d — gas 142,000" },
-      { time: "12:04:30", level: "info", message: "Allowance verified — no approval needed" },
-    ],
-  },
-  "clause-solidity": {
-    description: "Solidity contract verification ensuring interaction targets are verified, audited, and non-malicious.",
-    protocol: "Etherscan API",
-    endpoint: "verify.clause.internal:8089",
-    sources: ["Etherscan Verified Contracts", "OpenZeppelin Audit DB", "DeFi Safety Scores"],
-    feed: [
-      { time: "12:05:44", message: "Contract verified: Polymarket CTF Exchange — audit score 95/100" },
-      { time: "12:04:22", message: "Bytecode match: on-chain matches published source" },
-    ],
-    logs: [
-      { time: "12:05:44", level: "info", message: "Verification cache hit — contract known safe" },
-      { time: "12:04:22", level: "info", message: "ABI decoded: 12 public functions, 3 events" },
-    ],
-  },
-  "clause-gas": {
-    description: "Gas optimization engine for transaction batching, timing, and EIP-1559 fee estimation.",
-    protocol: "Internal API",
-    endpoint: "gas.clause.internal:8090",
-    sources: ["Gas Oracle", "Flashbots Protect", "EIP-1559 Estimator"],
-    feed: [
-      { time: "12:05:52", message: "Current gas: base 12 gwei, priority 1.5 gwei — LOW" },
-      { time: "12:04:38", message: "Optimal window: next 10 min (gas trending down)" },
-    ],
-    logs: [
-      { time: "12:05:52", level: "info", message: "Gas forecast: 15% drop expected in next 30min" },
-      { time: "12:04:38", level: "info", message: "Flashbots bundle: saves estimated 20% on gas" },
     ],
   },
   "sigma-statarb": {
@@ -605,36 +375,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
       { time: "12:04:12", level: "warn", message: "Position cap triggered — approaching max exposure" },
     ],
   },
-  "lucifer-circuit": {
-    description: "Three-state circuit breaker (ARMED → WARNING → TRIGGERED) that halts all trading when portfolio drawdown exceeds thresholds. Auto-rearms after cooldown.",
-    protocol: "Internal + DB",
-    endpoint: "circuit.lucifer.internal",
-    sources: ["Drawdown Monitor", "P&L Tracker", "Portfolio State"],
-    feed: [
-      { time: "12:05:45", message: "Circuit breaker: ARMED — drawdown 2.1% (threshold: 10%)" },
-      { time: "12:04:20", message: "Health check: all 3 breakers green (daily, weekly, total)" },
-      { time: "12:02:00", message: "Historical: last trigger was 14 days ago (5min cooldown)" },
-    ],
-    logs: [
-      { time: "12:05:45", level: "info", message: "Circuit state: ARMED | drawdown: 2.1% | threshold: 10%" },
-      { time: "12:04:20", level: "info", message: "Breaker health: daily=OK, weekly=OK, total=OK" },
-    ],
-  },
-  "lucifer-correlation": {
-    description: "Real-time portfolio correlation engine tracking pairwise position correlations to prevent concentration risk and correlated drawdowns.",
-    protocol: "Internal Module",
-    endpoint: "correlation.lucifer.internal",
-    sources: ["Price Covariance Matrix", "Position Tracker", "Historical Correlation DB"],
-    feed: [
-      { time: "12:05:42", message: "Portfolio correlation heat: avg 0.34 — healthy diversification" },
-      { time: "12:04:18", message: "Alert: BTC-150K + ETH-10K correlation 0.87 — flagged for review" },
-      { time: "12:02:30", message: "Sector breakdown: crypto 58%, macro 30%, politics 12%" },
-    ],
-    logs: [
-      { time: "12:05:42", level: "info", message: "Correlation matrix: 3x3 positions recomputed in 8ms" },
-      { time: "12:04:18", level: "warn", message: "High correlation pair detected: threshold 0.80 exceeded" },
-    ],
-  },
   "clause-resolution": {
     description: "Polymarket resolution monitor polling the Gamma API for market resolution status, outcome reporting, and settlement triggers.",
     protocol: "REST API",
@@ -665,6 +405,274 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
       { time: "12:04:22", level: "warn", message: "Critical deadline: position sizing reduced by 50%" },
     ],
   },
+
+  // ─── New Edge Services ──────��───────────────────────────────────────────────
+
+  "edge-ev": {
+    description: "Expected value grader scoring trade opportunities by comparing market price to Oracle probability estimates, accounting for vig and fees.",
+    protocol: "Internal Module",
+    endpoint: "ev.edge.internal",
+    sources: ["Oracle Probabilities", "Market Prices", "Fee Schedule"],
+    feed: [
+      { time: "12:05:42", message: "EV grade: BTC-150K → +4.2% edge (prob 0.62, price 0.58)" },
+      { time: "12:04:18", message: "Negative EV: eth-flip → -1.8% after fees — SKIP" },
+      { time: "12:02:55", message: "EV scan: 12/47 markets show positive expected value" },
+    ],
+    logs: [
+      { time: "12:05:42", level: "info", message: "EV grading: 47 markets scored in 18ms" },
+      { time: "12:02:55", level: "warn", message: "Low-EV environment: only 25% of markets positive" },
+    ],
+  },
+  "edge-fees": {
+    description: "Fee modeling engine calculating total cost of trade including maker/taker fees, gas, slippage estimates, and withdrawal costs.",
+    protocol: "Internal Module",
+    endpoint: "fees.edge.internal",
+    sources: ["Exchange Fee Schedules", "Gas Oracle", "Slippage Model"],
+    feed: [
+      { time: "12:05:38", message: "Total cost model: BTC-150K buy → 0.8% all-in (fees + gas + slippage)" },
+      { time: "12:04:12", message: "Fee comparison: Polymarket maker 0% vs taker 0.2%" },
+      { time: "12:02:48", message: "Gas cost: $0.08 on Polygon — negligible impact" },
+    ],
+    logs: [
+      { time: "12:05:38", level: "info", message: "Fee model updated: 3 exchanges, 47 markets" },
+      { time: "12:04:12", level: "info", message: "Fee schedule cached — refresh in 60min" },
+    ],
+  },
+  "edge-corr": {
+    description: "Correlation adjustment engine penalizing position sizes for highly correlated existing holdings to prevent portfolio concentration.",
+    protocol: "Internal Module",
+    endpoint: "corr.edge.internal",
+    sources: ["Position Tracker", "Price Covariance Matrix", "Historical Correlation DB"],
+    feed: [
+      { time: "12:05:35", message: "Correlation penalty: BTC-150K reduced 15% (corr 0.82 with ETH-10K)" },
+      { time: "12:04:08", message: "No penalty: fed-rate-cut uncorrelated to crypto basket (0.12)" },
+      { time: "12:02:42", message: "Portfolio avg correlation: 0.34 �� healthy diversification" },
+    ],
+    logs: [
+      { time: "12:05:35", level: "info", message: "Correlation matrix: 3x3 recomputed in 6ms" },
+      { time: "12:04:08", level: "info", message: "Correlation check: 3 positions evaluated" },
+    ],
+  },
+  "edge-arb": {
+    description: "Arbitrage detection scanner identifying mispricings across prediction market platforms and related instruments.",
+    protocol: "Internal Module",
+    endpoint: "arb.edge.internal",
+    sources: ["Polymarket CLOB", "Cross-platform Prices", "Implied Probability Engine"],
+    feed: [
+      { time: "12:05:32", message: "Arb detected: BTC-150K YES+NO = 1.03 — 3% overpriced" },
+      { time: "12:04:05", message: "Cross-platform: Polymarket vs Kalshi spread 2.1% on fed-rate" },
+      { time: "12:02:38", message: "No arb opportunities: all markets within 0.5% efficiency" },
+    ],
+    logs: [
+      { time: "12:05:32", level: "info", message: "Arb scan: 47 markets, 2 opportunities flagged" },
+      { time: "12:02:38", level: "info", message: "Efficiency check: 95% markets within 1% of fair value" },
+    ],
+  },
+
+  // ─── New Lucifer Services ───────────��───────────────────────────────────────
+
+  "lucifer-anomaly": {
+    description: "Behavioral anomaly detector using statistical models to identify unusual market patterns, order flow irregularities, and suspicious price movements.",
+    protocol: "Internal gRPC",
+    endpoint: "anomaly.lucifer.internal:50052",
+    sources: ["Orderbook Stream", "Trade Tape", "Statistical Models"],
+    feed: [
+      { time: "12:05:40", message: "Anomaly score: 0.12 on BTC-150K — normal behavior" },
+      { time: "12:04:25", message: "ALERT: Unusual volume spike on eth-flip — 4.2x normal, investigating" },
+      { time: "12:03:10", message: "Pattern match: wash trading signature on low-cap market" },
+    ],
+    logs: [
+      { time: "12:05:40", level: "info", message: "Anomaly scan: 47 markets, 1 flagged (threshold: 0.8)" },
+      { time: "12:04:25", level: "warn", message: "Volume anomaly: z-score 3.4 on eth-flip" },
+    ],
+  },
+  "lucifer-whale": {
+    description: "Large-player monitoring system tracking whale wallets, institutional order flow, and smart money movements across prediction markets.",
+    protocol: "WebSocket + REST",
+    endpoint: "whale.lucifer.internal:8081",
+    sources: ["Wallet Tracker", "On-chain Analytics", "Order Flow Monitor"],
+    feed: [
+      { time: "12:05:35", message: "Whale alert: 0x7a3f... bought 50K YES on BTC-150K" },
+      { time: "12:04:18", message: "Smart money flow: net $120K into crypto markets (bullish)" },
+      { time: "12:03:05", message: "Institutional tracker: 3 known wallets active today" },
+    ],
+    logs: [
+      { time: "12:05:35", level: "info", message: "Whale scan: 847 wallets monitored, 3 active" },
+      { time: "12:04:18", level: "info", message: "Flow aggregation: 24h rolling window updated" },
+    ],
+  },
+  "lucifer-momentum": {
+    description: "Momentum reversal detector identifying overextended price moves and mean-reversion opportunities using RSI, Bollinger bands, and volume-weighted metrics.",
+    protocol: "Internal Module",
+    endpoint: "momentum.lucifer.internal",
+    sources: ["Price History", "RSI Calculator", "Bollinger Engine"],
+    feed: [
+      { time: "12:05:32", message: "Reversal signal: BTC-150K overbought (RSI 78) — caution on longs" },
+      { time: "12:04:12", message: "Momentum neutral: fed-rate-cut within normal bands" },
+      { time: "12:02:55", message: "Mean reversion: eth-flip oversold — potential bounce setup" },
+    ],
+    logs: [
+      { time: "12:05:32", level: "warn", message: "Overbought alert: RSI > 75 on 2 markets" },
+      { time: "12:04:12", level: "info", message: "Momentum scan: 47 markets, 5 extreme readings" },
+    ],
+  },
+  "lucifer-volatility": {
+    description: "Volatility regime classifier detecting shifts between low-vol, normal, and crisis regimes to adjust risk parameters dynamically.",
+    protocol: "Internal Module",
+    endpoint: "volatility.lucifer.internal",
+    sources: ["Implied Vol Surface", "Historical Vol", "Regime Model"],
+    feed: [
+      { time: "12:05:28", message: "Regime: NORMAL — 30d realized vol 22% (threshold: <35%)" },
+      { time: "12:04:08", message: "Vol shift detected: crypto markets transitioning to HIGH regime" },
+      { time: "12:02:48", message: "Risk adjustment: position sizes reduced 20% for high-vol regime" },
+    ],
+    logs: [
+      { time: "12:05:28", level: "info", message: "Regime classifier: NORMAL (confidence 0.87)" },
+      { time: "12:04:08", level: "warn", message: "Regime transition: NORMAL → HIGH (probability 0.72)" },
+    ],
+  },
+  "lucifer-contrarian": {
+    description: "Contrarian signal generator producing skeptical counter-theses to majority agent opinions, ensuring the swarm avoids groupthink.",
+    protocol: "Internal gRPC",
+    endpoint: "contrarian.lucifer.internal",
+    sources: ["Agent Consensus Feed", "Sentiment Extremes", "Historical Contrarian DB"],
+    feed: [
+      { time: "12:05:25", message: "Contrarian view: 5/6 agents bullish on BTC-150K — flagging crowded trade" },
+      { time: "12:04:05", message: "Dissent score: 0.82 — strong contrarian signal against consensus" },
+      { time: "12:02:40", message: "No contrarian flag: fed-rate-cut consensus is data-driven, not herd" },
+    ],
+    logs: [
+      { time: "12:05:25", level: "warn", message: "Contrarian alert: consensus too one-sided (5/6)" },
+      { time: "12:04:05", level: "info", message: "Dissent analysis: historical accuracy 64% when dissent > 0.7" },
+    ],
+  },
+
+  // ─��─ New Flux Services ─────���────────────────────────────────────────────────
+
+  "flux-orderbook": {
+    description: "Real-time orderbook depth aggregator capturing bid/ask ladders, depth at price levels, and liquidity distribution across markets.",
+    protocol: "WebSocket",
+    endpoint: "orderbook.flux.internal:8084",
+    sources: ["Polymarket CLOB", "Depth Snapshots", "Level 2 Feed"],
+    feed: [
+      { time: "12:05:50", message: "BTC-150K depth: $42k bid / $38k ask — 1.11 buy pressure" },
+      { time: "12:04:35", message: "Depth update: 12,847 orders across 47 active markets" },
+      { time: "12:03:20", message: "Thin book alert: fed-rate-cut NO side <$2k within 2%" },
+    ],
+    logs: [
+      { time: "12:05:50", level: "info", message: "Orderbook snapshot: 47 markets, 2.3s cycle" },
+      { time: "12:04:35", level: "info", message: "Depth cache refreshed — 12,847 orders indexed" },
+    ],
+  },
+  "flux-spread": {
+    description: "Bid-ask spread analyzer tracking spread dynamics, spread percentile rankings, and cost-of-execution estimates per market.",
+    protocol: "Internal Module",
+    endpoint: "spread.flux.internal",
+    sources: ["Orderbook Depth", "Spread History", "Percentile Ranker"],
+    feed: [
+      { time: "12:05:45", message: "BTC-150K spread: 2c (0.034%) — tight, favorable for entry" },
+      { time: "12:04:28", message: "Wide spread alert: low-cap market at 8c (14%) — avoid" },
+      { time: "12:03:12", message: "Spread ranking: 35/47 markets below 3c — healthy liquidity" },
+    ],
+    logs: [
+      { time: "12:05:45", level: "info", message: "Spread scan: 47 markets analyzed in 89ms" },
+      { time: "12:04:28", level: "warn", message: "Wide spread: 12 markets above 5c threshold" },
+    ],
+  },
+  "flux-volume": {
+    description: "Volume tracking engine monitoring 24h volume, volume trends, and volume-weighted average prices for trade timing decisions.",
+    protocol: "REST API",
+    endpoint: "volume.flux.internal",
+    sources: ["Trade Tape", "Volume Aggregator", "VWAP Calculator"],
+    feed: [
+      { time: "12:05:42", message: "BTC-150K 24h volume: $1.2M — high liquidity tier" },
+      { time: "12:04:22", message: "Volume trend: crypto markets up 34% vs 7d average" },
+      { time: "12:03:08", message: "Low volume: 8 markets below $10k/24h — flagged illiquid" },
+    ],
+    logs: [
+      { time: "12:05:42", level: "info", message: "Volume aggregation: 47 markets, 1min window" },
+      { time: "12:03:08", level: "warn", message: "Illiquid markets: 8/47 below volume threshold" },
+    ],
+  },
+  "flux-whale": {
+    description: "Whale order detection in orderbooks — identifies large resting orders, iceberg orders, and sudden depth changes signaling institutional activity.",
+    protocol: "WebSocket",
+    endpoint: "whale-detect.flux.internal",
+    sources: ["Orderbook Stream", "Large Order Detector", "Iceberg Scanner"],
+    feed: [
+      { time: "12:05:38", message: "Whale order: $25k bid wall at 0.55 on BTC-150K" },
+      { time: "12:04:15", message: "Iceberg detected: hidden size ~$50k on fed-rate-cut YES" },
+      { time: "12:02:58", message: "Wall removed: $15k ask wall pulled on eth-flip — bearish signal" },
+    ],
+    logs: [
+      { time: "12:05:38", level: "info", message: "Whale scan: 3 large orders detected across 47 markets" },
+      { time: "12:04:15", level: "warn", message: "Iceberg alert: estimated hidden size 3x visible" },
+    ],
+  },
+  "flux-imbalance": {
+    description: "Order flow imbalance monitor calculating buy/sell pressure ratios to detect directional momentum in prediction market orderbooks.",
+    protocol: "Internal Module",
+    endpoint: "imbalance.flux.internal",
+    sources: ["Orderbook Depth", "Trade Flow", "Imbalance Calculator"],
+    feed: [
+      { time: "12:05:35", message: "BTC-150K imbalance: 1.3x buy pressure — mild bullish bias" },
+      { time: "12:04:10", message: "Extreme imbalance: eth-flip 0.4x ratio — heavy selling" },
+      { time: "12:02:52", message: "Balanced: 28/47 markets within 0.8-1.2 ratio range" },
+    ],
+    logs: [
+      { time: "12:05:35", level: "info", message: "Imbalance calc: 47 markets, 12 with significant bias" },
+      { time: "12:04:10", level: "warn", message: "Extreme imbalance on 3 markets — flagged for review" },
+    ],
+  },
+
+  // ─── New Clause Services ────────────────────────────────────────────────────
+
+  "clause-ambiguity": {
+    description: "Market resolution ambiguity scorer analyzing question wording, edge cases, and historical dispute rates to flag markets at risk of contested outcomes.",
+    protocol: "Internal Module",
+    endpoint: "ambiguity.clause.internal",
+    sources: ["Market Metadata", "Question Parser", "Dispute History DB"],
+    feed: [
+      { time: "12:05:48", message: "Ambiguity score: BTC-150K → 0.08 (LOW) — clear resolution criteria" },
+      { time: "12:04:25", message: "WARNING: eth-flip score 0.74 (HIGH) — vague time boundary" },
+      { time: "12:02:40", message: "Scan: 5/47 markets flagged for ambiguous resolution terms" },
+    ],
+    logs: [
+      { time: "12:05:48", level: "info", message: "Ambiguity scan: 47 markets scored in 340ms" },
+      { time: "12:04:25", level: "warn", message: "High ambiguity: eth-flip — recommend position reduction" },
+    ],
+  },
+  "clause-dispute": {
+    description: "Dispute analysis engine monitoring UMA oracle disputes, resolution challenges, and historical dispute outcomes for risk assessment.",
+    protocol: "REST API",
+    endpoint: "dispute.clause.internal",
+    sources: ["UMA Oracle", "Dispute Registry", "Resolution Appeals"],
+    feed: [
+      { time: "12:05:44", message: "Active disputes: 1 market in UMA challenge period" },
+      { time: "12:04:22", message: "Dispute resolved: us-debt-ceiling — original resolution upheld" },
+      { time: "12:02:35", message: "Historical: 94% of disputes resolve in favor of original outcome" },
+    ],
+    logs: [
+      { time: "12:05:44", level: "info", message: "Dispute monitor: 1 active, 3 resolved this week" },
+      { time: "12:04:22", level: "info", message: "Resolution finalized: payout processing initiated" },
+    ],
+  },
+  "clause-regulatory": {
+    description: "Regulatory risk scanner monitoring jurisdiction-specific compliance issues, restricted markets, and legal status changes affecting tradability.",
+    protocol: "Internal Module",
+    endpoint: "regulatory.clause.internal",
+    sources: ["Regulatory Feed", "Jurisdiction Classifier", "Compliance DB"],
+    feed: [
+      { time: "12:05:40", message: "Regulatory check: all active positions clear — no restrictions" },
+      { time: "12:04:18", message: "Alert: new SEC guidance may affect 2 crypto prediction markets" },
+      { time: "12:02:30", message: "Geo-restriction: 3 markets flagged for US-person limitations" },
+    ],
+    logs: [
+      { time: "12:05:40", level: "info", message: "Compliance scan: 47 markets, 3 flagged" },
+      { time: "12:04:18", level: "warn", message: "Regulatory update: monitoring SEC crypto guidance" },
+    ],
+  },
+
   "sigma-consensus": {
     description: "Multi-agent consensus aggregator that collects all 6 upstream agent recommendations and synthesizes a unified TRADE/HOLD/SKIP decision with confidence scores.",
     protocol: "Internal gRPC",
@@ -695,22 +703,6 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
       { time: "12:04:35", level: "info", message: "Fill confirmed: 200 YES @ 0.58 — P&L tracking started" },
     ],
   },
-  "flux-depth": {
-    description: "Orderbook depth and imbalance analyzer measuring buy/sell pressure ratios, depth at price levels, and spread dynamics for liquidity assessment.",
-    protocol: "Polymarket CLI",
-    endpoint: "depth.flux.internal",
-    sources: ["Polymarket Orderbook", "CLOB Depth Snapshots", "Imbalance Calculator"],
-    feed: [
-      { time: "12:05:52", message: "BTC-150K depth: $42k bid / $38k ask — 1.11 buy pressure ratio" },
-      { time: "12:04:28", message: "Imbalance alert: fed-rate-cut sell-heavy (0.7 ratio) — thin bids" },
-      { time: "12:02:15", message: "Spread analysis: 12 markets below 2c spread — healthy liquidity" },
-    ],
-    logs: [
-      { time: "12:05:52", level: "info", message: "Depth snapshot: 47 markets, 12,847 orders analyzed" },
-      { time: "12:04:28", level: "warn", message: "Low buy-side depth on 3 markets — sizing adjusted" },
-    ],
-  },
-
   // ─── Infrastructure Node Details ────────────────────────────────────────────
 
   "infra-telegram": {
@@ -892,6 +884,69 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     logs: [
       { time: "12:05:25", level: "info", message: "Auth check: JWT valid, user session active" },
       { time: "12:04:00", level: "info", message: "API key: HMAC verified — scope: read,trade" },
+    ],
+  },
+
+  // ─── Blockchain Infrastructure ──────────────────────────────────────────────
+
+  "infra-kraken": {
+    description: "Dual-market execution CLI supporting crypto spot/futures via Kraken API and forex via paper trading mode — handles order placement, fill tracking, and multi-asset portfolio coordination.",
+    protocol: "Kraken REST + WebSocket",
+    endpoint: "kraken.quantik.internal",
+    sources: ["Kraken REST API", "Kraken WS Feed", "Paper Trading Engine"],
+    feed: [
+      { time: "12:05:55", message: "Kraken: BTC-USD spot @ $98,420 — connection healthy" },
+      { time: "12:04:30", message: "Paper trade: EUR/USD short 10k units — simulated fill" },
+      { time: "12:02:15", message: "Futures: BTC perpetual funding rate -0.01% — neutral" },
+    ],
+    logs: [
+      { time: "12:05:55", level: "info", message: "Kraken WS: 12 pairs streaming, latency p50=34ms" },
+      { time: "12:04:30", level: "info", message: "Paper mode: trade logged to performance tracker" },
+    ],
+  },
+  "infra-erc8004": {
+    description: "ERC-8004 on-chain agent identity and reputation protocol on Ethereum Sepolia — manages agent registration, reputation scores, and verifiable credential attestations.",
+    protocol: "Ethers.js v6 / Sepolia",
+    endpoint: "sepolia.infura.io/v3",
+    sources: ["ERC-8004 Contract", "Sepolia Testnet", "Reputation Oracle"],
+    feed: [
+      { time: "12:05:50", message: "Agent identity: 0xFENRIR registered — reputation score 847" },
+      { time: "12:04:25", message: "Attestation: trade accuracy 78.4% published on-chain" },
+      { time: "12:02:10", message: "Reputation update: +12 points from last 5 profitable trades" },
+    ],
+    logs: [
+      { time: "12:05:50", level: "info", message: "ERC-8004: identity contract synced — Sepolia block #12,847" },
+      { time: "12:04:25", level: "info", message: "TX submitted: updateReputation — gas 87,000" },
+    ],
+  },
+  "infra-solana-dbc": {
+    description: "Solana-based agent token lifecycle manager handling token launch, buyback mechanics, holder synchronization, and real-time price polling via Dynamic Bonding Curve.",
+    protocol: "Solana Web3.js",
+    endpoint: "mainnet-beta.solana.com",
+    sources: ["Meteora DBC", "Token Program", "Holder Registry"],
+    feed: [
+      { time: "12:05:45", message: "Token price: $FENRIR @ $0.042 — 24h volume $12.4k" },
+      { time: "12:04:20", message: "Buyback executed: 50k $FENRIR purchased from treasury" },
+      { time: "12:02:05", message: "Holder sync: 847 unique holders — +12 in last 24h" },
+    ],
+    logs: [
+      { time: "12:05:45", level: "info", message: "Price poll: DBC pool — 200 OK, 120ms" },
+      { time: "12:04:20", level: "info", message: "Buyback TX: confirmed in slot #287,432,100" },
+    ],
+  },
+  "infra-arena": {
+    description: "Arena engine powering the competitive leaderboard, agent DNA profiling (strategy fingerprints), achievement system, and performance heat maps.",
+    protocol: "Internal API + DB",
+    endpoint: "arena.quantik.internal",
+    sources: ["Trade History", "Performance Metrics", "Achievement Engine"],
+    feed: [
+      { time: "12:05:40", message: "Leaderboard: FENRIR-01 ranked #3 — ROI 24.7% (30d)" },
+      { time: "12:04:15", message: "DNA profile: 68% momentum, 22% mean-reversion, 10% arb" },
+      { time: "12:02:00", message: "Achievement unlocked: 'Winning Streak' — 5 consecutive profits" },
+    ],
+    logs: [
+      { time: "12:05:40", level: "info", message: "Leaderboard recomputed: 47 agents ranked in 230ms" },
+      { time: "12:04:15", level: "info", message: "DNA profiling: strategy vector updated from 847 trades" },
     ],
   },
 };

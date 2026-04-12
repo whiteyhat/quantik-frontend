@@ -36,7 +36,7 @@ export interface InfraNodeData {
   type: "infra";
   label: string;
   icon: string;
-  category: "compute" | "data" | "messaging" | "auth" | "monitoring";
+  category: "compute" | "data" | "messaging" | "auth" | "monitoring" | "blockchain";
   status: "online" | "offline" | "degraded";
   connectedAgents: string[];
   [key: string]: unknown;
@@ -56,11 +56,11 @@ export const AGENT_META: Record<
   { emoji: string; label: string; role: string; color: string }
 > = {
   aura: { emoji: "🔮", label: "Aura", role: "Sentiment Analysis", color: "#BF5AF2" },
-  edge: { emoji: "⚡", label: "Edge", role: "Data Ingestion", color: "#FF9F0A" },
+  edge: { emoji: "⚡", label: "Edge", role: "Alpha Sizing", color: "#FF9F0A" },
   oracle: { emoji: "🧿", label: "Oracle", role: "Probability Engine", color: "#007AFF" },
-  lucifer: { emoji: "😈", label: "Lucifer", role: "Risk Veto Protocol", color: "#FF453A" },
+  lucifer: { emoji: "😈", label: "Lucifer", role: "Devil's Advocate", color: "#FF453A" },
   flux: { emoji: "🌊", label: "Flux", role: "Liquidity Router", color: "#30D158" },
-  clause: { emoji: "📜", label: "Clause", role: "Smart Contracts", color: "#64D2FF" },
+  clause: { emoji: "📜", label: "Clause", role: "Resolution Risk", color: "#64D2FF" },
   sigma: { emoji: "🎯", label: "Sigma", role: "Final Decision", color: "#FFD60A" },
 };
 
@@ -80,12 +80,12 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
     { id: "aura-nyt", label: "NYT API", icon: "📰" },
   ],
   edge: [
-    { id: "edge-ingestion", label: "Data Ingestion", icon: "📥" },
-    { id: "edge-onchain", label: "On-chain Indexer", icon: "⛓️" },
-    { id: "edge-websockets", label: "WebSockets", icon: "🔌" },
-    { id: "edge-rpc", label: "RPC Nodes", icon: "🖧" },
     { id: "edge-kelly", label: "Kelly Calculator", icon: "🎰" },
     { id: "edge-position", label: "Position Sizer", icon: "📐" },
+    { id: "edge-ev", label: "EV Grader", icon: "📊" },
+    { id: "edge-fees", label: "Fee Modeling", icon: "💸" },
+    { id: "edge-corr", label: "Correlation Adjustment", icon: "🔗" },
+    { id: "edge-arb", label: "Arb Detection", icon: "🔎" },
   ],
   oracle: [
     { id: "oracle-ensemble", label: "Ensemble Engine", icon: "🧠" },
@@ -97,27 +97,25 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
     { id: "oracle-backtester", label: "Signal Backtester", icon: "🧪" },
   ],
   lucifer: [
-    { id: "lucifer-veto", label: "Risk Veto Protocol", icon: "🛡️" },
-    { id: "lucifer-slippage", label: "Slippage Monitor", icon: "📉" },
-    { id: "lucifer-wallet", label: "Agent Wallet", icon: "👛" },
-    { id: "lucifer-bankroll", label: "Bankroll Guardian", icon: "🏦" },
-    { id: "lucifer-exposure", label: "Exposure Limits", icon: "⚠️" },
-    { id: "lucifer-circuit", label: "Circuit Breaker", icon: "🔴" },
-    { id: "lucifer-correlation", label: "Portfolio Correlation", icon: "🔗" },
+    { id: "lucifer-anomaly", label: "Anomaly Detector", icon: "🔮" },
+    { id: "lucifer-whale", label: "Whale Monitor", icon: "🐋" },
+    { id: "lucifer-momentum", label: "Momentum Reversal", icon: "↩️" },
+    { id: "lucifer-volatility", label: "Volatility Regime", icon: "🌪️" },
+    { id: "lucifer-contrarian", label: "Contrarian Signal", icon: "😈" },
   ],
   flux: [
-    { id: "flux-router", label: "Liquidity Router", icon: "🔀" },
-    { id: "flux-uniswap", label: "Uniswap V3", icon: "🦄" },
-    { id: "flux-curve", label: "Curve Pools", icon: "〰️" },
-    { id: "flux-1inch", label: "1inch Agg", icon: "🔗" },
-    { id: "flux-depth", label: "Depth Analyzer", icon: "📊" },
+    { id: "flux-orderbook", label: "Orderbook Depth", icon: "📊" },
+    { id: "flux-spread", label: "Spread Analyzer", icon: "↔️" },
+    { id: "flux-volume", label: "Volume Tracker", icon: "📈" },
+    { id: "flux-whale", label: "Whale Detection", icon: "🐋" },
+    { id: "flux-imbalance", label: "Imbalance Monitor", icon: "⚖️" },
   ],
   clause: [
-    { id: "clause-contracts", label: "Smart Contracts", icon: "📝" },
-    { id: "clause-solidity", label: "Solidity Verifier", icon: "✅" },
-    { id: "clause-gas", label: "Gas Optimizer", icon: "⛽" },
     { id: "clause-resolution", label: "Resolution Monitor", icon: "⏱️" },
+    { id: "clause-ambiguity", label: "Ambiguity Scorer", icon: "❓" },
+    { id: "clause-dispute", label: "Dispute Analyzer", icon: "⚖️" },
     { id: "clause-deadline", label: "Deadline Tracker", icon: "📅" },
+    { id: "clause-regulatory", label: "Regulatory Risk", icon: "🏛️" },
   ],
   sigma: [
     { id: "sigma-statarb", label: "StatArb Core", icon: "📐" },
@@ -137,6 +135,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   messaging: "#FF9F0A",
   auth: "#BF5AF2",
   monitoring: "#FFD60A",
+  blockchain: "#5856D6",
 };
 
 // ─── Infrastructure nodes (outer ring) ──────────────────────────────────────
@@ -261,6 +260,45 @@ export const INFRA_NODES: {
     category: "auth",
     connectedTo: [{ target: "fenrir", intensity: "low" }],
     angle: 270,   // bottom, away from all agents
+  },
+  {
+    id: "infra-kraken",
+    label: "Kraken CLI",
+    icon: "🐙",
+    category: "blockchain",
+    connectedTo: [
+      { target: "fenrir", intensity: "high" },
+      { target: "sigma", intensity: "medium" },
+      { target: "flux", intensity: "medium" },
+    ],
+    angle: 5,
+  },
+  {
+    id: "infra-erc8004",
+    label: "ERC-8004",
+    icon: "🔷",
+    category: "blockchain",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: 23,
+  },
+  {
+    id: "infra-solana-dbc",
+    label: "Solana DBC",
+    icon: "◎",
+    category: "blockchain",
+    connectedTo: [{ target: "fenrir", intensity: "medium" }],
+    angle: 57,
+  },
+  {
+    id: "infra-arena",
+    label: "Arena Engine",
+    icon: "🏟️",
+    category: "compute",
+    connectedTo: [
+      { target: "fenrir", intensity: "high" },
+      { target: "sigma", intensity: "low" },
+    ],
+    angle: 74,
   },
 ];
 

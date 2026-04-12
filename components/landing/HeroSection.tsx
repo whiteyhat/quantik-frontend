@@ -77,7 +77,7 @@ function LiquidGlassWord({
 
 function AnimatedSubtitle({ text }: { text: string }) {
   const reduced = useReducedMotion();
-  const regex = /(polymarket)/i;
+  const regex = /(polymarket \+ kraken cli)/i;
   const parts = text.split(regex);
 
   return (
@@ -310,7 +310,7 @@ export function HeroSection() {
               <CharacterReveal text={t("heading")} />
             </h1>
 
-            {/* Subtitle with animated POLYMARKET */}
+            {/* Subtitle with animated POLYMARKET + KRAKEN CLI */}
             <motion.p
               initial={reduced ? {} : { opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
