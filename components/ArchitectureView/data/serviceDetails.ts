@@ -251,8 +251,8 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     ],
   },
   "lucifer-wallet": {
-    description: "WDK wallet management for secure key storage, transaction signing, and balance monitoring.",
-    protocol: "WDK SDK",
+    description: "Agent wallet management for secure key storage, transaction signing, and balance monitoring.",
+    protocol: "Agent SDK",
     endpoint: "wallet.lucifer.internal:443",
     sources: ["Hardware Security Module", "Multi-sig Controller", "Balance Tracker"],
     feed: [

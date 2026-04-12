@@ -8,6 +8,8 @@ import { useQuantikStore } from "@/store/useQuantikStore";
 import { fmtUSDC, type WalletBalance } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { DeleteAgentModal } from "./DeleteAgentModal";
+import { PolymarketGlyph } from "@/components/PolymarketGlyph";
+import { WalletActionButton } from "@/components/WalletActionButton";
 
 function statusBadge(status: string) {
   switch (status) {
@@ -27,136 +29,6 @@ function truncAddr(addr: string) {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-function PolymarketGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" width="12" height="12">
-      <rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M8 15V9h4.3a2.7 2.7 0 0 1 0 5.4H8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12.2 12.1 16 15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function WalletActionButton({
-  href,
-  label,
-  children,
-  onClick,
-}: {
-  href?: string;
-  label: string;
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
-  const sharedStyle: React.CSSProperties = {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "rgba(255,255,255,0.34)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(255,255,255,0.03)",
-    transition: "all 180ms ease",
-    position: "relative",
-  };
-
-  const tooltip = (
-    <span
-      style={{
-        position: "absolute",
-        left: "50%",
-        bottom: "calc(100% + 6px)",
-        transform: "translateX(-50%)",
-        padding: "3px 7px",
-        borderRadius: 6,
-        background: "rgba(8,10,18,0.94)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        color: "rgba(255,255,255,0.84)",
-        fontSize: 10,
-        lineHeight: 1,
-        fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-        whiteSpace: "nowrap",
-        opacity: 0,
-        pointerEvents: "none",
-        transition: "opacity 160ms ease, transform 160ms ease",
-      }}
-      className="wallet-action-tooltip"
-    >
-      {label}
-    </span>
-  );
-
-  const hoverIn = (target: HTMLElement) => {
-    target.style.color = "rgba(255,255,255,0.82)";
-    target.style.borderColor = "rgba(125,211,252,0.30)";
-    target.style.background = "rgba(125,211,252,0.10)";
-    target.style.transform = "translateY(-1px)";
-    const tooltipNode = target.querySelector<HTMLElement>(".wallet-action-tooltip");
-    if (tooltipNode) {
-      tooltipNode.style.opacity = "1";
-      tooltipNode.style.transform = "translateX(-50%) translateY(-2px)";
-    }
-  };
-
-  const hoverOut = (target: HTMLElement) => {
-    target.style.color = "rgba(255,255,255,0.34)";
-    target.style.borderColor = "rgba(255,255,255,0.08)";
-    target.style.background = "rgba(255,255,255,0.03)";
-    target.style.transform = "translateY(0)";
-    const tooltipNode = target.querySelector<HTMLElement>(".wallet-action-tooltip");
-    if (tooltipNode) {
-      tooltipNode.style.opacity = "0";
-      tooltipNode.style.transform = "translateX(-50%)";
-    }
-  };
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={label}
-        style={sharedStyle}
-        onMouseOver={(e) => hoverIn(e.currentTarget)}
-        onMouseOut={(e) => hoverOut(e.currentTarget)}
-      >
-        {tooltip}
-        {children}
-      </a>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      style={{ ...sharedStyle, cursor: "pointer" }}
-      onMouseOver={(e) => hoverIn(e.currentTarget)}
-      onMouseOut={(e) => hoverOut(e.currentTarget)}
-    >
-      {tooltip}
-      {children}
-    </button>
-  );
-}
 
 interface AgentIdentityHeaderProps {
   wallet: WalletBalance | null;

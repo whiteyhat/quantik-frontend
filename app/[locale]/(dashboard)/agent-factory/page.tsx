@@ -1050,7 +1050,7 @@ function StepLaunch({
         </p>
       </div>
 
-      {/* Assigned WDK Wallet */}
+      {/* Assigned Agent Wallet */}
       <div style={{ width: "100%" }}>
         <div
           style={{
@@ -1096,7 +1096,7 @@ function StepLaunch({
             statusLabel={t("launch.walletGenerating")}
             accentEmoji={config.avatar}
             tone="emerald"
-            orbitLabels={["WDK", "Vault", "Launch"]}
+            orbitLabels={["Agent", "Vault", "Launch"]}
             phases={[
               t("launch.foundry.phases.provision"),
               t("launch.foundry.phases.mint"),
@@ -1295,7 +1295,7 @@ export default function AgentFactoryPage() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  // WDK wallet state — generated server-side, private key shown once for user backup
+  // Agent wallet state — generated server-side, private key shown once for user backup
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [walletPrivateKey, setWalletPrivateKey] = useState<string | null>(null);
   const [walletSeedPhrase, setWalletSeedPhrase] = useState<string | null>(null);
@@ -1385,7 +1385,7 @@ export default function AgentFactoryPage() {
     setStep(5);
   }, []);
 
-  // Generate WDK wallet when entering Step 5
+  // Generate agent wallet when entering Step 5
   useEffect(() => {
     if (step !== 5 || walletAddress) return;
     let cancelled = false;

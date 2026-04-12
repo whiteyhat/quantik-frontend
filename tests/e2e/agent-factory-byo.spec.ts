@@ -350,7 +350,7 @@ test.describe('Agent Factory — BYO Agent', () => {
 
     await page.clock.fastForward(3000);
 
-    await expect(page.getByText('Packaging the WDK backup')).toBeVisible();
+    await expect(page.getByText('Packaging the agent backup')).toBeVisible();
     await expect(page.getByText('Meanwhile')).toBeVisible();
   });
 

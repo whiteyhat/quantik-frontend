@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowRight, ChevronDown, ChevronUp, Crown, Flame, Minus, Radar, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, Crown, Flame, Minus, Radar, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import { type ArenaLeaderboardEntry, type ArenaWindow } from "@/lib/api";
 import { formatSignedCurrency, protocolKeys, streakLabel } from "@/components/arena/arenaHelpers";
 
@@ -38,7 +37,6 @@ export function TelemetryStrip({
       backLabel: t("runnerUpGap"),
       backValue: runnerUpGap != null ? formatSignedCurrency(runnerUpGap) : "—",
       trend: champion?.selectedPnl ?? 0,
-      href: "/reports",
     },
     {
       key: "streak",
@@ -49,7 +47,6 @@ export function TelemetryStrip({
       backLabel: t("direction"),
       backValue: hottestStreak ? ((hottestStreak.currentStreak ?? 0) > 0 ? t("winStreak") : t("lossStreak")) : "—",
       trend: hottestStreak?.currentStreak ?? 0,
-      href: "/reports",
     },
     {
       key: "best-trade",
@@ -60,7 +57,6 @@ export function TelemetryStrip({
       backLabel: t("market"),
       backValue: bestTradeLeader?.bestTradeSlug ?? "—",
       trend: bestTradeLeader?.bestTradePnl ?? 0,
-      href: "/reports",
     },
     {
       key: "protocol",
@@ -71,7 +67,6 @@ export function TelemetryStrip({
       backLabel: t("window"),
       backValue: activeWindow === "day" ? t("window24h") : activeWindow === "week" ? t("window7d") : t("windowAllTime"),
       trend: 0,
-      href: "/manage-agent",
     },
   ];
 
@@ -80,7 +75,7 @@ export function TelemetryStrip({
       {telemetryCards.map((card) => {
         const Icon = card.icon;
         return (
-          <Link key={card.key} href={card.href} className="arena-telemetry-card">
+          <div key={card.key} className="arena-telemetry-card">
             <div className="arena-telemetry-flipper">
               {/* Front face */}
               <div className="arena-telemetry-front">
@@ -93,7 +88,6 @@ export function TelemetryStrip({
                   </strong>
                   <small className="arena-telemetry-value">{card.value}</small>
                 </div>
-                <ArrowRight className="arena-telemetry-arrow size-4" />
               </div>
 
               {/* Back face */}
@@ -105,7 +99,7 @@ export function TelemetryStrip({
                 </div>
               </div>
             </div>
-          </Link>
+          </div>
         );
       })}
     </div>

@@ -17,7 +17,7 @@ test.describe('Manage Agent — Dashboard', () => {
 
   test('displays wallet address (truncated) with copy button', async ({ page }) => {
     await page.goto('/manage-agent');
-    await expect(page.getByText(/WDK Wallet/)).toBeVisible();
+    await expect(page.getByText(/Agent Wallet/)).toBeVisible();
     await expect(page.getByText(/0x1111/)).toBeVisible();
     await expect(page.getByRole('button', { name: /copy/i })).toBeVisible();
   });

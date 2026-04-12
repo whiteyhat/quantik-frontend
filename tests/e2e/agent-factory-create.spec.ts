@@ -57,7 +57,7 @@ test.describe('Agent Factory — Create Agent', () => {
 
     // Step 5
     await expect(page.getByText('Agent Deployment Reveal')).toBeVisible();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
+    await expect(page.getByText('Assigned Agent Wallet')).toBeVisible();
   });
 
   test('validates name is required before allowing next step', async ({ page }) => {
@@ -147,11 +147,11 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByText('Create from Scratch').click();
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Wallet Test');
     await page.getByText('Skip (Randomize)').click();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
+    await expect(page.getByText('Assigned Agent Wallet')).toBeVisible();
     await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
   });
 
-  test('shows the wallet foundry experience while the WDK wallet is still generating', async ({ page }) => {
+  test('shows the wallet foundry experience while the agent wallet is still generating', async ({ page }) => {
     const wallet = {
       address: '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333',
       privateKey: '0xslowwallet',
@@ -168,7 +168,7 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Slow Forge');
     await page.getByText('Skip (Randomize)').click();
 
-    await expect(page.getByText('Forging your WDK vault')).toBeVisible();
+    await expect(page.getByText('Forging your agent vault')).toBeVisible();
     await expect(page.getByText('While you wait')).toBeVisible();
     await expect(page.getByText(wallet.address.slice(0, 10))).toBeVisible();
   });
@@ -232,7 +232,7 @@ test.describe('Agent Factory — Create Agent', () => {
     await page.getByPlaceholder('e.g. Tiger the Fast').fill('Skip Test');
     await page.getByText('Skip (Randomize)').click();
     await expect(page.getByText('Agent Deployment Reveal')).toBeVisible();
-    await expect(page.getByText('Assigned WDK Wallet')).toBeVisible();
+    await expect(page.getByText('Assigned Agent Wallet')).toBeVisible();
   });
 
   test('back button navigates to previous step', async ({ page }) => {

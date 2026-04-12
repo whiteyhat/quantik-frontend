@@ -135,7 +135,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
       </div>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <div className="mission-wallet-kicker">WDK Wallet</div>
+          <div className="mission-wallet-kicker">Agent Wallet</div>
           <div className="mission-wallet-address-row">
             <div className="mission-wallet-address">
               {trimWalletAddress(walletAddress)}

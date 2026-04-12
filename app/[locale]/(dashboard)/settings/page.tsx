@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -202,39 +203,102 @@ function useAutoResetStatus<T extends string | null>(initial: T) {
   return [status, setStatusFor, setStatus] as const;
 }
 
-// ─── Paper Mode Panel ─────────────────────────────────────────────────────────
+// ─── Trading Mode Panel (Polymarket + Kraken) ────────────────────────────────
 
 function PaperModePanel() {
   const t = useTranslations("settings");
+  const tc = useTranslations("common");
+  const queryClient = useQueryClient();
   const { paperMode, refreshPaperMode } = usePaperMode();
   const [enabled, setEnabled] = useState(paperMode);
   const [status, setStatusFor, setStatusDirect] = useAutoResetStatus<"idle" | "saved" | "error">("idle");
 
-  // Sync from context when it updates (skip no-op to avoid extra render)
+  // ── Polymarket paper mode ──
   useEffect(() => {
     setEnabled((prev) => (prev === paperMode ? prev : paperMode));
   }, [paperMode]);
 
   const mutation = useMutation({
     mutationFn: api.setPaperMode,
-    onMutate: (value) => {
-      setEnabled(value);
-      setStatusDirect("idle");
-    },
+    onMutate: (value) => { setEnabled(value); setStatusDirect("idle"); },
+    onSuccess: () => { refreshPaperMode(); setStatusFor("saved", 4000); },
+    onError: () => { setEnabled(!enabled); setStatusFor("error", 4000); },
+  });
+
+  // ── Kraken trading mode ──
+  const [krakenOpen, setKrakenOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [krakenDirty, setKrakenDirty] = useState(false);
+  const [krakenStatus, setKrakenStatusFor, setKrakenStatusDirect] = useAutoResetStatus<"idle" | "saving" | "saved" | "error" | "testing" | "testOk" | "testFail">("idle");
+  const [testError, setTestError] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  const { data: krakenData, isLoading: krakenLoading, isError: krakenError, refetch: krakenRefetch } = useQuery({
+    queryKey: ["krakenSettings"],
+    queryFn: () => api.getKrakenSettings(),
+  });
+
+  useEffect(() => {
+    if (krakenData) { setApiKey(""); setApiSecret(""); setKrakenDirty(false); }
+  }, [krakenData]);
+
+  const krakenSaveMutation = useMutation({
+    mutationFn: api.saveKrakenCredentials,
+    onMutate: () => setKrakenStatusDirect("saving"),
     onSuccess: () => {
-      refreshPaperMode();
-      setStatusFor("saved", 4000);
+      setKrakenDirty(false); setApiKey(""); setApiSecret("");
+      queryClient.invalidateQueries({ queryKey: ["krakenSettings"] });
+      setKrakenStatusFor("saved", 4000);
     },
-    onError: () => {
-      setEnabled(!enabled);
-      setStatusFor("error", 4000);
+    onError: () => setKrakenStatusFor("error", 5000),
+  });
+
+  const krakenDeleteMutation = useMutation({
+    mutationFn: api.deleteKrakenCredentials,
+    onSuccess: () => {
+      setConfirmRemove(false);
+      queryClient.invalidateQueries({ queryKey: ["krakenSettings"] });
+      setKrakenStatusFor("saved", 4000);
     },
   });
+
+  const krakenModeMutation = useMutation({
+    mutationFn: api.setKrakenTradingMode,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["krakenSettings"] });
+      setKrakenStatusFor("saved", 3000);
+    },
+    onError: () => setKrakenStatusFor("error", 5000),
+  });
+
+  const handleKrakenSave = () => {
+    if (!apiKey || !apiSecret) return;
+    krakenSaveMutation.mutate({ apiKey, apiSecret });
+  };
+
+  const handleKrakenTest = async () => {
+    setKrakenStatusDirect("testing"); setTestError("");
+    try {
+      const res = await api.testKrakenConnection();
+      if (res.ok) { setKrakenStatusFor("testOk", 5000); }
+      else { setTestError(res.error || "Unknown error"); setKrakenStatusFor("testFail", 8000); }
+    } catch { setTestError("Request failed"); setKrakenStatusFor("testFail", 8000); }
+  };
+
+  const handleKrakenModeToggle = () => {
+    if (!krakenData?.hasCredentials) return;
+    krakenModeMutation.mutate(krakenData.tradingMode === "live" ? "paper" : "live");
+  };
+
+  const krakenConfigured = krakenData?.hasCredentials ?? false;
+  const krakenLive = krakenData?.tradingMode === "live";
 
   return (
     <div style={panelStyle}>
       <SectionHeader title={t("paperMode")} subtitle={t("paperModeDesc")} />
 
+      {/* ── Polymarket toggle ── */}
       <div
         style={{
           display: "flex",
@@ -252,21 +316,174 @@ function PaperModePanel() {
             {t("paperModeTitle")}
           </div>
           <div style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>
-            {enabled
-              ? t("paperModeActive")
-              : t("paperModeInactive")}
+            {enabled ? t("paperModeActive") : t("paperModeInactive")}
           </div>
         </div>
-
         <ToggleSwitch checked={enabled} onChange={(v) => mutation.mutate(v)} disabled={mutation.isPending} />
       </div>
 
       <AnimatePresence>
-        {status === "saved" && (
-          <StatusBanner key="saved" status="saved" message={`✓ ${enabled ? t("paperModeEnabled") : t("paperModeDisabled")}`} />
-        )}
-        {status === "error" && (
-          <StatusBanner key="error" status="error" message={`✗ ${t("failedToUpdate")}`} />
+        {status === "saved" && <StatusBanner key="saved" status="saved" message={`✓ ${enabled ? t("paperModeEnabled") : t("paperModeDisabled")}`} />}
+        {status === "error" && <StatusBanner key="error" status="error" message={`✗ ${t("failedToUpdate")}`} />}
+      </AnimatePresence>
+
+      {/* ── Divider ── */}
+      <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "16px 0" }} />
+
+      {/* ── Kraken subsection (collapsible) ── */}
+      <button
+        onClick={() => setKrakenOpen((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+          marginBottom: krakenOpen ? 14 : 0,
+          transition: "margin-bottom 220ms ease",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: HEADLINE_SIZE, fontWeight: 700, color: "rgba(255,255,255,0.92)", letterSpacing: "0.04em", textTransform: "uppercase", textAlign: "left" }}>
+              {t("krakenTrading")}
+            </h3>
+            <span style={{ display: "block", marginTop: 2, fontSize: LABEL_SIZE, color: "rgba(255,255,255,0.30)", textAlign: "left" }}>
+              {t("krakenTradingDesc")}
+            </span>
+          </div>
+          {krakenDirty && <UnsavedBadge />}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {!krakenLoading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: krakenLive ? "#ff9f0a" : krakenConfigured ? "#30d158" : "rgba(255,255,255,0.20)", boxShadow: krakenLive ? "0 0 6px rgba(255,159,10,0.5)" : krakenConfigured ? "0 0 6px rgba(48,209,88,0.5)" : "none" }} />
+              <span style={{ fontSize: LABEL_SIZE, color: krakenLive ? "rgba(255,159,10,0.80)" : krakenConfigured ? "rgba(48,209,88,0.80)" : "rgba(255,255,255,0.25)", fontFamily: '"SF Mono", monospace' }}>
+                {krakenLive ? "LIVE" : krakenConfigured ? "PAPER" : t("notConfigured")}
+              </span>
+            </div>
+          )}
+          <span style={{ fontSize: 18, color: "rgba(255,255,255,0.40)", transform: krakenOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 220ms ease", display: "inline-block", userSelect: "none", flexShrink: 0 }}>›</span>
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {krakenOpen && (
+          <motion.div
+            key="kraken-body"
+            initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+            animate={{ height: "auto", opacity: 1, overflow: "visible", transition: { duration: 0.28, ease: gentleEase } }}
+            exit={{ height: 0, opacity: 0, overflow: "hidden", transition: { duration: 0.22, ease: gentleEase } }}
+          >
+            {krakenLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 0" }}>
+                <Skeleton width="100%" height={44} borderRadius={8} />
+                <Skeleton width="100%" height={44} borderRadius={8} />
+              </div>
+            ) : krakenError ? (
+              <ErrorWithRetry message={t("krakenFailedToLoad")} onRetry={() => krakenRefetch()} />
+            ) : (
+              <>
+                <AnimatePresence>
+                  {krakenStatus !== "idle" && (
+                    <StatusBanner
+                      key="kraken-status"
+                      status={krakenStatus === "saved" || krakenStatus === "testOk" ? "saved" : krakenStatus === "saving" || krakenStatus === "testing" ? "saving" : "error"}
+                      message={
+                        krakenStatus === "saving" ? `⏳ ${tc("saving")}`
+                        : krakenStatus === "saved" ? `✓ ${t("krakenCredentialsSaved")}`
+                        : krakenStatus === "testing" ? `⏳ ${t("krakenTesting")}`
+                        : krakenStatus === "testOk" ? `✓ ${t("krakenTestSuccess")}`
+                        : krakenStatus === "testFail" ? `✗ ${t("krakenTestFailed")}: ${testError}`
+                        : `✗ ${t("krakenFailedToSave")}`
+                      }
+                    />
+                  )}
+                </AnimatePresence>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: krakenStatus !== "idle" ? 14 : 0 }}>
+                  {/* Kraken mode toggle */}
+                  {krakenConfigured && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, background: krakenLive ? "rgba(255,159,10,0.07)" : "rgba(48,209,88,0.07)", border: `1px solid ${krakenLive ? "rgba(255,159,10,0.20)" : "rgba(48,209,88,0.20)"}`, transition: "background 220ms, border-color 220ms" }}>
+                      <div>
+                        <div style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 4 }}>
+                          {t("krakenTradingMode")}
+                        </div>
+                        <div style={{ fontSize: META_SIZE, color: krakenLive ? "rgba(255,159,10,0.80)" : "rgba(48,209,88,0.80)", fontFamily: '"SF Mono", monospace' }}>
+                          {krakenLive ? t("krakenLiveMode") : t("krakenPaperMode")}
+                        </div>
+                      </div>
+                      <ToggleSwitch checked={krakenLive} onChange={handleKrakenModeToggle} disabled={krakenModeMutation.isPending} />
+                    </div>
+                  )}
+
+                  {krakenLive && (
+                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,159,10,0.06)", border: "1px solid rgba(255,159,10,0.15)", fontSize: LABEL_SIZE, color: "rgba(255,159,10,0.70)", lineHeight: 1.5 }}>
+                      {t("krakenLiveWarning")}
+                    </div>
+                  )}
+
+                  {krakenConfigured && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div>
+                        <div style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 2 }}>{t("krakenApiKey")}</div>
+                        <div style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.60)", fontFamily: '"SF Mono", monospace' }}>{krakenData?.apiKeyPrefix}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={handleKrakenTest} disabled={krakenStatus === "testing"} style={{ background: "rgba(10,132,255,0.10)", border: "1px solid rgba(10,132,255,0.25)", borderRadius: 6, padding: "5px 12px", cursor: krakenStatus === "testing" ? "wait" : "pointer", fontSize: LABEL_SIZE, fontWeight: 600, color: "#0a84ff", fontFamily: '"SF Mono", monospace', letterSpacing: "0.04em" }}>
+                          {krakenStatus === "testing" ? t("krakenTesting") : t("krakenTestConnection")}
+                        </button>
+                        <button onClick={() => setConfirmRemove(true)} style={{ background: "rgba(255,69,58,0.08)", border: "1px solid rgba(255,69,58,0.20)", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: LABEL_SIZE, fontWeight: 600, color: "#ff453a", fontFamily: '"SF Mono", monospace', letterSpacing: "0.04em" }}>
+                          {t("krakenRemoveCredentials")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <AnimatePresence>
+                    {confirmRemove && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1, transition: { duration: 0.2 } }} exit={{ height: 0, opacity: 0, transition: { duration: 0.15 } }} style={{ padding: "12px 14px", borderRadius: 8, background: "rgba(255,69,58,0.06)", border: "1px solid rgba(255,69,58,0.15)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <span style={{ fontSize: META_SIZE, color: "rgba(255,69,58,0.80)" }}>{t("krakenRemoveConfirm")}</span>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <button onClick={() => krakenDeleteMutation.mutate()} style={{ background: "rgba(255,69,58,0.15)", border: "1px solid rgba(255,69,58,0.30)", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: LABEL_SIZE, fontWeight: 700, color: "#ff453a", fontFamily: '"SF Mono", monospace' }}>{tc("confirm")}</button>
+                          <button onClick={() => setConfirmRemove(false)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", fontFamily: '"SF Mono", monospace' }}>{tc("cancel")}</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                        {krakenConfigured ? `${t("krakenApiKey")} (update)` : t("krakenApiKey")}
+                      </span>
+                      <InfoTooltip>
+                        <div style={{ color: "#0a84ff", fontWeight: 700, marginBottom: 4, fontSize: 10, letterSpacing: "0.08em" }}>HOW TO GET YOUR API KEY</div>
+                        <div>1. Go to <span style={{ color: "#0a84ff" }}>kraken.com/u/security/api</span></div>
+                        <div>2. Click <span style={{ color: "#0a84ff" }}>Create API Key</span></div>
+                        <div>3. Enable <span style={{ color: "#0a84ff" }}>Query Funds</span> and <span style={{ color: "#0a84ff" }}>Create & Modify Orders</span></div>
+                        <div style={{ marginTop: 6, color: "rgba(255,255,255,0.40)", fontSize: 10 }}>Restrict to your IP address for security</div>
+                      </InfoTooltip>
+                    </div>
+                    <input type="text" placeholder={t("krakenApiKeyPlaceholder")} value={apiKey} onChange={(e) => { setApiKey(e.target.value); setKrakenDirty(true); }} style={inputStyle} autoComplete="off" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: LABEL_SIZE, fontWeight: 600, color: "rgba(255,255,255,0.50)", letterSpacing: "0.04em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>{t("krakenApiSecret")}</span>
+                    <input type="password" placeholder={krakenConfigured ? t("krakenApiSecretSet") : t("krakenApiSecretPlaceholder")} value={apiSecret} onChange={(e) => { setApiSecret(e.target.value); setKrakenDirty(true); }} style={inputStyle} autoComplete="off" />
+                  </div>
+
+                  {krakenDirty && apiKey && apiSecret && (
+                    <button onClick={handleKrakenSave} disabled={krakenSaveMutation.isPending} style={{ alignSelf: "flex-end", background: "rgba(10,132,255,0.12)", border: "1px solid rgba(10,132,255,0.30)", borderRadius: 8, padding: "8px 20px", cursor: krakenSaveMutation.isPending ? "wait" : "pointer", fontSize: META_SIZE, fontWeight: 600, color: "#0a84ff", fontFamily: '"SF Mono", monospace', letterSpacing: "0.04em" }}>
+                      {krakenSaveMutation.isPending ? tc("saving") : tc("save")}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -668,9 +885,19 @@ function RiskConfigPanel() {
 
 function InfoTooltip({ children }: { children: React.ReactNode }) {
   const [show, setShow] = useState(false);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState({ left: 0, top: 0 });
+
+  useEffect(() => {
+    if (!show || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({ left: rect.left + rect.width / 2, top: rect.top - 8 });
+  }, [show]);
+
   return (
     <div style={{ position: "relative", display: "inline-flex" }}>
       <span
+        ref={triggerRef}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         style={{
@@ -693,41 +920,60 @@ function InfoTooltip({ children }: { children: React.ReactNode }) {
       >
         ?
       </span>
-      {show && (
-        <div style={{
-          position: "absolute",
-          bottom: "calc(100% + 8px)",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "rgba(14,14,20,0.97)",
-          border: "1px solid rgba(10,132,255,0.30)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          color: "rgba(255,255,255,0.85)",
-          fontSize: 11,
-          fontWeight: 400,
-          fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-          letterSpacing: "0.02em",
-          padding: "10px 14px",
-          borderRadius: 8,
-          whiteSpace: "nowrap",
-          pointerEvents: "none",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-          zIndex: 9999,
-          lineHeight: 1.6,
-        }}>
-          {children}
+      {show && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            left: pos.left,
+            top: pos.top,
+            transform: "translate(-50%, -100%)",
+            zIndex: 99999,
+            pointerEvents: "none",
+          }}
+          ref={(el) => {
+            if (!el) return;
+            requestAnimationFrame(() => {
+              const box = el.getBoundingClientRect();
+              if (box.left < 8) {
+                el.style.left = `${8 + box.width / 2}px`;
+              } else if (box.right > window.innerWidth - 8) {
+                el.style.left = `${window.innerWidth - 8 - box.width / 2}px`;
+              }
+            });
+          }}
+        >
           <div style={{
-            position: "absolute",
-            top: "100%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 0, height: 0,
-            borderLeft: "5px solid transparent",
-            borderRight: "5px solid transparent",
-            borderTop: "5px solid rgba(10,132,255,0.30)",
-          }} />
-        </div>
+            background: "rgba(14,14,20,0.97)",
+            border: "1px solid rgba(10,132,255,0.30)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            color: "rgba(255,255,255,0.85)",
+            fontSize: 11,
+            fontWeight: 400,
+            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            letterSpacing: "0.02em",
+            padding: "10px 14px",
+            borderRadius: 8,
+            whiteSpace: "nowrap",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+            lineHeight: 1.6,
+            maxWidth: "min(360px, 90vw)",
+            position: "relative",
+          }}>
+            {children}
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0, height: 0,
+              borderLeft: "5px solid transparent",
+              borderRight: "5px solid transparent",
+              borderTop: "5px solid rgba(10,132,255,0.30)",
+            }} />
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

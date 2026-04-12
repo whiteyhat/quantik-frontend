@@ -237,6 +237,7 @@ export function ArenaPageClient() {
           />
         </CommandCenterCard>
       ) : (
+        <>
         <div className="arena-grid">
           <div className="arena-main-column">
             <CommandCenterCard accent="orange" className="arena-stage-card" id="tour-arena-stage" role="tabpanel" aria-labelledby={`arena-tab-${activeWindow}`}>
@@ -307,115 +308,6 @@ export function ArenaPageClient() {
                 runnerUpGap={runnerUpGap}
               />
             </CommandCenterCard>
-
-            <CommandCenterCard accent="blue" className="arena-war-card">
-              <div className="arena-war-header">
-                <div>
-                  <div className="arena-section-kicker">{t("tableEyebrow")}</div>
-                  <h2 className="arena-section-title">{t("tableTitle")}</h2>
-                  <p className="arena-section-copy">{t("tableSubtitle")}</p>
-                </div>
-                <div className="arena-war-header__meta">
-                  <div className="arena-war-meta-chip">
-                    <Activity className="size-4" />
-                    <span>{t("warMetaFiltered", { visible: warTableLeaders.length, total: leaders.length })}</span>
-                  </div>
-                  <div className="arena-war-meta-chip">
-                    <Shield className="size-4" />
-                    <span>{t(keys.protocolKey)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="arena-war-controls">
-                <label className="arena-search-shell">
-                  <Search className="size-4" />
-                  <Input
-                    type="search"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                    aria-label={t("searchPlaceholder")}
-                    className="arena-search-input"
-                    data-testid="arena-search-input"
-                  />
-                </label>
-                <button
-                  type="button"
-                  className={cn("arena-filter-chip", viewerFocus && "arena-filter-chip--active")}
-                  onClick={() => setViewerFocus((current) => !current)}
-                  aria-pressed={viewerFocus}
-                  aria-controls="arena-lane-list"
-                  disabled={!viewer?.ranked}
-                >
-                  <Target className="size-4" />
-                  {t("focusViewer")}
-                </button>
-                <button
-                  type="button"
-                  className={cn("arena-filter-chip", followingFocus && "arena-filter-chip--active")}
-                  onClick={() => setFollowingFocus((current) => !current)}
-                  aria-pressed={followingFocus}
-                  aria-controls="arena-lane-list"
-                  disabled={followed.size === 0}
-                >
-                  <Star className="size-4" />
-                  {t("followingFilter")}
-                </button>
-                <button
-                  type="button"
-                  className={cn("arena-filter-chip", compare.mode && "arena-filter-chip--active")}
-                  onClick={() => dispatchCompare({ type: "TOGGLE_MODE" })}
-                  aria-pressed={compare.mode}
-                >
-                  <Swords className="size-4" />
-                  {t("compareMode")}
-                </button>
-                {hasSearchFilters ? (
-                  <button
-                    type="button"
-                    className="arena-filter-chip"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setViewerFocus(false);
-                      setFollowingFocus(false);
-                    }}
-                  >
-                    <RefreshCw className="size-4" />
-                    {t("clearFilters")}
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="arena-lane-list" id="arena-lane-list">
-                {warTableLeaders.length > 0 ? (
-                  <AnimatePresence mode="popLayout">
-                    {warTableLeaders.map((entry, index) => (
-                      <BattleLaneRow
-                        key={entry.agentId}
-                        entry={entry}
-                        now={now}
-                        isViewer={viewer?.agentId === entry.agentId}
-                        isExpanded={expandedAgentId === entry.agentId}
-                        onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
-                        staggerIndex={hasInitiallyRendered.current ? undefined : index}
-                        activeWindow={activeWindow}
-                        compareMode={compare.mode}
-                        isCompareSelected={compare.selection === entry.agentId}
-                        isFollowing={isFollowing(entry.agentId)}
-                        onToggleFollow={toggleFollow}
-                        onSelectForCompare={(agentId) => dispatchCompare({ type: "SELECT_AGENT", agentId })}
-                      />
-                    ))}
-                  </AnimatePresence>
-                ) : (
-                  <PanelEmptyState
-                    title={hasSearchFilters ? t("searchEmptyTitle") : t("emptyTitle")}
-                    detail={hasSearchFilters ? t("searchEmptyDetail") : t("emptyDetail")}
-                  />
-                )}
-              </div>
-            </CommandCenterCard>
           </div>
 
           <div className="arena-rail">
@@ -435,6 +327,116 @@ export function ArenaPageClient() {
             <LiveActivityFeed />
           </div>
         </div>
+
+        <CommandCenterCard accent="blue" className="arena-war-card arena-war-card--full">
+          <div className="arena-war-header">
+            <div>
+              <div className="arena-section-kicker">{t("tableEyebrow")}</div>
+              <h2 className="arena-section-title">{t("tableTitle")}</h2>
+              <p className="arena-section-copy">{t("tableSubtitle")}</p>
+            </div>
+            <div className="arena-war-header__meta">
+              <div className="arena-war-meta-chip">
+                <Activity className="size-4" />
+                <span>{t("warMetaFiltered", { visible: warTableLeaders.length, total: leaders.length })}</span>
+              </div>
+              <div className="arena-war-meta-chip">
+                <Shield className="size-4" />
+                <span>{t(keys.protocolKey)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="arena-war-controls">
+            <label className="arena-search-shell">
+              <Search className="size-4" />
+              <Input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t("searchPlaceholder")}
+                aria-label={t("searchPlaceholder")}
+                className="arena-search-input"
+                data-testid="arena-search-input"
+              />
+            </label>
+            <button
+              type="button"
+              className={cn("arena-filter-chip", viewerFocus && "arena-filter-chip--active")}
+              onClick={() => setViewerFocus((current) => !current)}
+              aria-pressed={viewerFocus}
+              aria-controls="arena-lane-list"
+              disabled={!viewer?.ranked}
+            >
+              <Target className="size-4" />
+              {t("focusViewer")}
+            </button>
+            <button
+              type="button"
+              className={cn("arena-filter-chip", followingFocus && "arena-filter-chip--active")}
+              onClick={() => setFollowingFocus((current) => !current)}
+              aria-pressed={followingFocus}
+              aria-controls="arena-lane-list"
+              disabled={followed.size === 0}
+            >
+              <Star className="size-4" />
+              {t("followingFilter")}
+            </button>
+            <button
+              type="button"
+              className={cn("arena-filter-chip", compare.mode && "arena-filter-chip--active")}
+              onClick={() => dispatchCompare({ type: "TOGGLE_MODE" })}
+              aria-pressed={compare.mode}
+            >
+              <Swords className="size-4" />
+              {t("compareMode")}
+            </button>
+            {hasSearchFilters ? (
+              <button
+                type="button"
+                className="arena-filter-chip"
+                onClick={() => {
+                  setSearchTerm("");
+                  setViewerFocus(false);
+                  setFollowingFocus(false);
+                }}
+              >
+                <RefreshCw className="size-4" />
+                {t("clearFilters")}
+              </button>
+            ) : null}
+          </div>
+
+          <div className="arena-lane-list" id="arena-lane-list">
+            {warTableLeaders.length > 0 ? (
+              <AnimatePresence mode="popLayout">
+                {warTableLeaders.map((entry, index) => (
+                  <BattleLaneRow
+                    key={entry.agentId}
+                    entry={entry}
+                    now={now}
+                    isViewer={viewer?.agentId === entry.agentId}
+                    isExpanded={expandedAgentId === entry.agentId}
+                    onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
+                    staggerIndex={hasInitiallyRendered.current ? undefined : index}
+                    activeWindow={activeWindow}
+                    compareMode={compare.mode}
+                    isCompareSelected={compare.selection === entry.agentId}
+                    isFollowing={isFollowing(entry.agentId)}
+                    onToggleFollow={toggleFollow}
+                    onSelectForCompare={(agentId) => dispatchCompare({ type: "SELECT_AGENT", agentId })}
+                  />
+                ))}
+              </AnimatePresence>
+            ) : (
+              <PanelEmptyState
+                title={hasSearchFilters ? t("searchEmptyTitle") : t("emptyTitle")}
+                detail={hasSearchFilters ? t("searchEmptyDetail") : t("emptyDetail")}
+              />
+            )}
+          </div>
+        </CommandCenterCard>
+        </>
       )}
 
       {compare.pair && (

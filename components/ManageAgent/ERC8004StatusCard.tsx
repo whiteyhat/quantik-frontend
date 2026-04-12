@@ -2,9 +2,16 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CheckCircle2, Link2, ExternalLink } from "lucide-react";
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL, getAuthToken } from "@/lib/api";
 
 const mono = '"SF Mono", "JetBrains Mono", monospace';
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const h: Record<string, string> = { ...extra };
+  const token = getAuthToken();
+  if (token) h["Authorization"] = `Bearer ${token}`;
+  return h;
+}
 
 const STYLE_ID = "erc8004-keyframes";
 let _keyframesInjected = false;
@@ -401,7 +408,7 @@ export function ERC8004StatusCard({
     if (!isRegistered || !agentId || fetchedRef.current) return;
     fetchedRef.current = true;
     const controller = new AbortController();
-    fetch(`${BASE_URL}/api/erc8004/identity/${agentId}`, { signal: controller.signal })
+    fetch(`${BASE_URL}/api/erc8004/identity/${agentId}`, { signal: controller.signal, headers: authHeaders() })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.etherscanUrl) setEtherscanUrl(data.etherscanUrl);
@@ -420,7 +427,7 @@ export function ERC8004StatusCard({
 
       const res = await fetch(`${BASE_URL}/api/erc8004/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ agentId }),
       });
 

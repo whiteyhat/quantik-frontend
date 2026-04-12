@@ -163,6 +163,35 @@ export function MarketHeader({ slug }: { slug: string }) {
             <StatPill icon="bar" label="Vol" value={fmtCompact(volume)} />
             <Dot />
             <StatPill icon="drop" label="Liq" value={fmtCompact(liquidity)} />
+            <Dot />
+            <a
+              href={`https://polymarket.com/event/${market.eventSlug || market.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="polymarket-link"
+              style={{
+                height: 28,
+                borderRadius: 8,
+                border: "1px solid var(--glass-border)",
+                background: "rgba(255,255,255,0.04)",
+                color: "var(--text-secondary)",
+                padding: "0 10px",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                textDecoration: "none",
+                transition: "all 150ms ease",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 500 500" fill="currentColor">
+                <path d="M250 0C111.93 0 0 111.93 0 250s111.93 250 250 250 250-111.93 250-250S388.07 0 250 0zm95.03 366.7c-15.16 26.27-43.71 42.3-74.53 42.3h-91.74c-30.82 0-59.37-16.03-74.53-42.3-15.16-26.27-15.16-58.33 0-84.6l45.87-79.47c15.16-26.27 43.71-42.3 74.53-42.3s59.37 16.03 74.53 42.3l45.87 79.47c15.16 26.27 15.16 58.33 0 84.6z"/>
+              </svg>
+              Polymarket
+              <style>{`.polymarket-link:hover { background: rgba(255,255,255,0.08) !important; color: var(--text-primary) !important; }`}</style>
+            </a>
           </div>
         </div>
 

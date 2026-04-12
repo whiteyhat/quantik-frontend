@@ -721,21 +721,21 @@ function StepReview({
       </div>
 
       <div className={PANEL_CLASS}>
-        <SectionHeader title="Secure Wallet Backup" icon="🔐" tooltip="Quantik only exposes the WDK wallet bundle here once. Download it before activation." />
+        <SectionHeader title="Secure Wallet Backup" icon="🔐" tooltip="Quantik only exposes the agent wallet bundle here once. Download it before activation." />
         <p style={{ margin: "0 0 12px", fontSize: BODY_SIZE, color: "rgba(255,255,255,0.60)", lineHeight: 1.7 }}>
-          OpenClaw already received the runtime wallet credentials during claim. This dashboard gives the owner one secure download so the WDK private key and seed phrase are backed up outside Quantik.
+          OpenClaw already received the runtime wallet credentials during claim. This dashboard gives the owner one secure download so the agent private key and seed phrase are backed up outside Quantik.
         </p>
         {(walletDownloadPending || isDownloadingWallet) ? (
           <WalletFoundryLoader
             badge={isDownloadingWallet ? "Secure Export" : "OpenClaw Handoff"}
-            title={isDownloadingWallet ? "Exporting secure wallet backup" : "Packaging the WDK backup"}
+            title={isDownloadingWallet ? "Exporting secure wallet backup" : "Packaging the agent backup"}
             subtitle={isDownloadingWallet
               ? "We are streaming the wallet bundle into your one-time download. Keep this tab open for a moment while the export is sealed."
-              : "The claim is complete. Quantik is assembling the one-time WDK wallet backup so you can export the private key and seed phrase securely."}
+              : "The claim is complete. Quantik is assembling the one-time agent wallet backup so you can export the private key and seed phrase securely."}
             statusLabel={isDownloadingWallet ? "Preparing Download" : "Generating Backup"}
             accentEmoji={session.identity.avatar}
             tone="azure"
-            orbitLabels={isDownloadingWallet ? ["Export", "WDK", "Backup"] : ["OpenClaw", "WDK", "Vault"]}
+            orbitLabels={isDownloadingWallet ? ["Export", "Agent", "Backup"] : ["OpenClaw", "Agent", "Vault"]}
             phases={isDownloadingWallet
               ? [
                   "Fetching encrypted wallet material",
@@ -1195,10 +1195,14 @@ export default function ByoAgentPage() {
     setDeployError(null);
 
     try {
-      await api.deployAgent(session.agent_id);
-      const freshAgent = await api.getMyAgent();
-      if (freshAgent) {
-        setMyAgent(freshAgent as unknown as MyAgent);
+      // Deploy returns the full agent data — no separate getMyAgent() round-trip needed
+      const deployedAgent = await api.deployAgent(session.agent_id);
+      if (deployedAgent && (deployedAgent as Record<string, unknown>).id) {
+        setMyAgent(deployedAgent as unknown as MyAgent);
+      } else {
+        // Fallback: fetch if deploy response didn't include full agent
+        const freshAgent = await api.getMyAgent();
+        if (freshAgent) setMyAgent(freshAgent as unknown as MyAgent);
       }
       jsConfettiRef.current?.addConfetti({
         emojis: [session.identity?.avatar ?? "🤖"],

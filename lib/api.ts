@@ -20,6 +20,7 @@ export function getAuthToken(): string | null {
 
 export interface Market {
   slug: string;
+  eventSlug?: string;
   tokenId: string;
   yesTokenId?: string;
   noTokenId?: string;
@@ -2081,6 +2082,33 @@ export const api = {
 
   testTelegramConnection: async (): Promise<{ ok: boolean; sent: boolean }> => {
     return apiFetch("/api/alerts/test", { method: "POST" });
+  },
+
+  // Kraken credentials
+  getKrakenSettings: async (): Promise<{ hasCredentials: boolean; apiKeyPrefix: string; tradingMode: "paper" | "live" }> => {
+    return apiFetch("/api/v1/settings/kraken");
+  },
+
+  saveKrakenCredentials: async (creds: { apiKey: string; apiSecret: string }): Promise<{ success: boolean; apiKeyPrefix: string; encrypted: boolean }> => {
+    return apiFetch("/api/v1/settings/kraken", {
+      method: "POST",
+      body: JSON.stringify(creds),
+    });
+  },
+
+  deleteKrakenCredentials: async (): Promise<{ success: boolean }> => {
+    return apiFetch("/api/v1/settings/kraken", { method: "DELETE" });
+  },
+
+  testKrakenConnection: async (): Promise<{ ok: boolean; error?: string; result?: unknown }> => {
+    return apiFetch("/api/v1/settings/kraken/test", { method: "POST" });
+  },
+
+  setKrakenTradingMode: async (mode: "paper" | "live"): Promise<{ tradingMode: string }> => {
+    return apiFetch("/api/v1/settings/kraken/mode", {
+      method: "PUT",
+      body: JSON.stringify({ mode }),
+    });
   },
 
   getNotifications: async (): Promise<{ notifications: NotificationItem[]; unread: number }> => {

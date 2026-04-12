@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
+import JSConfetti from "js-confetti";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
 import { usePaperMode } from "@/context/PaperModeContext";
@@ -87,7 +88,7 @@ export function TradeConfirmationModal() {
   const close = useQuantikStore((s) => s.closeTradeModal);
   const wallet = useQuantikStore((s) => s.wallet);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [tradeAmount, setTradeAmount] = useState(DEFAULT_TRADE_SIZE);
   const { paperMode } = usePaperMode();
 
@@ -95,8 +96,14 @@ export function TradeConfirmationModal() {
   const polBalance = wallet?.pol ?? 0;
   const walletFunded = paperMode || (usdcBalance > 0 && polBalance > 0.01);
 
-  function showToast(msg: string) {
-    setToast(msg);
+  const jsConfettiRef = useRef<JSConfetti | null>(null);
+  function getConfetti() {
+    if (!jsConfettiRef.current) jsConfettiRef.current = new JSConfetti();
+    return jsConfettiRef.current;
+  }
+
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
   }
 
@@ -156,15 +163,26 @@ export function TradeConfirmationModal() {
         });
       }
 
-      showToast(paperMode ? t("orderPlacedPaper") : t("orderPlaced"));
       close();
+      showToast(paperMode ? t("orderPlacedPaper") : t("orderPlaced"));
+      getConfetti().addConfetti({
+        confettiColors: ["#30d158", "#0a84ff", "#ffd60a"],
+        confettiRadius: 4,
+        confettiNumber: 40,
+      });
     } catch (err: unknown) {
       // Surface the actual error from the backend/Polymarket
-      const msg = err instanceof Error ? err.message : String(err);
+      const raw = err instanceof Error ? err.message : String(err);
+      // Strip "API error NNN:" prefix and try to parse JSON body for a clean message
+      let msg = raw.replace(/^API error \d+:\s*/, "");
+      try {
+        const parsed = JSON.parse(msg);
+        if (typeof parsed.error === "string") msg = parsed.error;
+      } catch { /* not JSON, use as-is */ }
       if (msg.includes("balance") || msg.includes("allowance")) {
-        showToast("Insufficient USDC balance or allowance");
+        showToast("Insufficient USDC balance or allowance", false);
       } else {
-        showToast(msg.includes("API error") ? msg.replace(/^API error \d+:\s*/, "") : t("orderFailed"));
+        showToast(msg || t("orderFailed"), false);
       }
     } finally {
       setLoading(false);
@@ -185,11 +203,9 @@ export function TradeConfirmationModal() {
             zIndex: 300,
             padding: "10px 24px",
             borderRadius: 100,
-            background: toast.includes("failed") ? "var(--ios-red-glow)" : "var(--ios-green-glow)",
-            border: toast.includes("failed")
-              ? "1px solid var(--ios-red)"
-              : "1px solid var(--ios-green)",
-            color: toast.includes("failed") ? "var(--ios-red)" : "var(--ios-green)",
+            background: toast.ok ? "var(--ios-green-glow)" : "var(--ios-red-glow)",
+            border: `1px solid ${toast.ok ? "var(--ios-green)" : "var(--ios-red)"}`,
+            color: toast.ok ? "var(--ios-green)" : "var(--ios-red)",
             fontSize: "var(--text-subhead)",
             fontWeight: 500,
             backdropFilter: "blur(24px) saturate(180%)",
@@ -200,7 +216,7 @@ export function TradeConfirmationModal() {
             animation: "toast-in 300ms ease-out",
           }}
         >
-          {toast}
+          {toast.msg}
         </div>
       )}
 
@@ -464,17 +480,40 @@ export function TradeConfirmationModal() {
                     marginBottom: 12,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "var(--text-tertiary)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    {t("sizeUsdc")}
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "var(--text-tertiary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {t("sizeUsdc")}
+                    </span>
+                    {!paperMode && usdcBalance > 0 && (
+                      <button
+                        onClick={() => setTradeAmount(Math.floor(usdcBalance * 100) / 100)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                          fontSize: 11,
+                          fontFamily: "var(--font-mono, 'SF Mono', monospace)",
+                          color: "var(--text-tertiary)",
+                          textAlign: "left",
+                          transition: "color 150ms ease",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ios-blue)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-tertiary)"; }}
+                        title="Click to use max balance"
+                      >
+                        Max: ${usdcBalance.toFixed(2)}
+                      </button>
+                    )}
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span
                       className="font-mono-data"

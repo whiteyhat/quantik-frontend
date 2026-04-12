@@ -99,7 +99,7 @@ export const SERVICES: Record<string, { id: string; label: string; icon: string 
   lucifer: [
     { id: "lucifer-veto", label: "Risk Veto Protocol", icon: "🛡️" },
     { id: "lucifer-slippage", label: "Slippage Monitor", icon: "📉" },
-    { id: "lucifer-wallet", label: "WDK Wallet", icon: "👛" },
+    { id: "lucifer-wallet", label: "Agent Wallet", icon: "👛" },
     { id: "lucifer-bankroll", label: "Bankroll Guardian", icon: "🏦" },
     { id: "lucifer-exposure", label: "Exposure Limits", icon: "⚠️" },
     { id: "lucifer-circuit", label: "Circuit Breaker", icon: "🔴" },

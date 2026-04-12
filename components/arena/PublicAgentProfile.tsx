@@ -1,22 +1,31 @@
 "use client";
 
 import "../arena/arena.css";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import { Copy, CopyCheck, ExternalLink } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { fmtNumber, type PublicAgentProfile as PublicAgentProfileData } from "@/lib/api";
 import { formatSignedCurrency, formatSignedCompact, streakLabel, battleTone } from "@/components/arena/arenaHelpers";
 import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
 import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
-import { PnlSparkline } from "@/components/arena/PnlSparkline";
+import { EquityCurveChart } from "@/components/arena/EquityCurveChart";
 import { WinRateRing } from "@/components/arena/WinRateRing";
 import { StrategyDNAChart } from "@/components/arena/StrategyDNAChart";
 import { ShareButtons } from "@/components/arena/ShareButtons";
 import { AnimatedCounter } from "@/components/arena/AnimatedCounter";
+import { PolymarketGlyph } from "@/components/PolymarketGlyph";
+import { WalletActionButton } from "@/components/WalletActionButton";
 import { cn } from "@/lib/utils";
 
 const sectionEase = [0.16, 1, 0.3, 1] as const;
 const viewportOnce = { once: true, margin: "-40px" as const };
+
+function truncAddr(addr: string) {
+  if (!addr || addr.length < 12) return addr;
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
 
 function RankBadge({ rank, unrankedLabel }: { rank: number | null; unrankedLabel: string }) {
   if (rank == null) return <span className="arena-public-rank arena-public-rank--unranked">{unrankedLabel}</span>;
@@ -32,8 +41,18 @@ export function PublicAgentProfileView({
   shareUrl: string;
 }) {
   const t = useTranslations("arena");
+  const tCommon = useTranslations("common");
+  const tManage = useTranslations("manageAgent");
   const locale = useLocale();
   const pnlTone = battleTone(profile.allTimePnl);
+
+  const [copied, setCopied] = useState(false);
+  const copyAddress = useCallback(() => {
+    if (!profile.walletAddress) return;
+    navigator.clipboard.writeText(profile.walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [profile.walletAddress]);
 
   const heroContent = (
     <motion.div
@@ -61,7 +80,37 @@ export function PublicAgentProfileView({
               <RankBadge rank={profile.rank} unrankedLabel={t("unranked")} />
             </motion.span>
           </div>
-          <div className="arena-public-hero__code">{profile.agentCode}</div>
+          <div className="arena-public-hero__code">
+            {profile.agentCode}
+          </div>
+
+          {/* Wallet actions — reuses shared WalletActionButton */}
+          {profile.walletAddress && (
+            <div className="arena-public-hero__wallet">
+              <span className="arena-public-hero__wallet-addr">
+                {truncAddr(profile.walletAddress)}
+              </span>
+              <WalletActionButton
+                onClick={copyAddress}
+                label={copied ? tCommon("copied") : tCommon("copy")}
+              >
+                {copied ? <CopyCheck size={12} color="#30d158" /> : <Copy size={12} />}
+              </WalletActionButton>
+              <WalletActionButton
+                href={`https://polygonscan.com/address/${profile.walletAddress}`}
+                label={tManage("viewOnPolygonscan")}
+              >
+                <ExternalLink size={12} />
+              </WalletActionButton>
+              <WalletActionButton
+                href={`https://polymarket.com/profile/${profile.walletAddress}`}
+                label={tManage("viewOnPolymarket")}
+              >
+                <PolymarketGlyph />
+              </WalletActionButton>
+            </div>
+          )}
+
           <AchievementBadgeRow badges={profile.badges} maxVisible={7} />
         </div>
       </div>
@@ -89,6 +138,25 @@ export function PublicAgentProfileView({
         <AgentHeatGlow heat={profile.heat}>{heroContent}</AgentHeatGlow>
       ) : (
         heroContent
+      )}
+
+      {/* Setup banner for unfunded/inactive agents */}
+      {profile.needsSetup && (
+        <motion.div
+          className="arena-public-setup-banner"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: sectionEase }}
+        >
+          <div className="arena-public-setup-banner__icon">⚡</div>
+          <div className="arena-public-setup-banner__text">
+            <strong>{t("setupBannerTitle")}</strong>
+            <p>{t("setupBannerDetail")}</p>
+          </div>
+          <Link href="/manage-agent" className="arena-public-setup-banner__cta">
+            {t("setupBannerCta")}
+          </Link>
+        </motion.div>
       )}
 
       {/* Stats Grid */}
@@ -119,62 +187,60 @@ export function PublicAgentProfileView({
         >
           <div className="arena-section-kicker">{t("publicEquityCurve")}</div>
           <div className="arena-public-chart">
-            <PnlSparkline
-              data={profile.sparkline.map((p) => ({ slug: "", question: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
+            <EquityCurveChart
+              data={profile.sparkline}
               width={600}
               height={120}
-              animated
             />
           </div>
         </motion.div>
       )}
 
-      {/* Strategy DNA + Market Breakdown side by side */}
-      <div className="arena-public-duo">
+      {/* Strategy DNA — standalone card */}
+      <motion.div
+        className="arena-public-card"
+        initial={{ opacity: 0, x: -24 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={viewportOnce}
+        transition={{ duration: 0.5, ease: sectionEase }}
+      >
+        <div className="arena-section-kicker">{t("strategyDNA")}</div>
+        <div className="arena-public-dna">
+          <StrategyDNAChart dna={profile.dna} size={200} />
+        </div>
+      </motion.div>
+
+      {/* Market Breakdown — full width at bottom */}
+      {profile.marketBreakdown.length > 0 && (
         <motion.div
           className="arena-public-card"
-          initial={{ opacity: 0, x: -24 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportOnce}
           transition={{ duration: 0.5, ease: sectionEase }}
         >
-          <div className="arena-section-kicker">{t("strategyDNA")}</div>
-          <div className="arena-public-dna">
-            <StrategyDNAChart dna={profile.dna} size={200} />
+          <div className="arena-section-kicker">{t("publicMarkets")}</div>
+          <div className="arena-public-markets">
+            {profile.marketBreakdown.map((m, i) => (
+              <motion.div
+                key={m.slug}
+                className="arena-public-market-row"
+                initial={{ opacity: 0, x: 12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={viewportOnce}
+                transition={{ delay: i * 0.06, ease: sectionEase }}
+              >
+                <span className="arena-public-market-slug" title={m.slug}>{m.question}</span>
+                <span className={m.pnl >= 0 ? "arena-flyout-pnl--up" : "arena-flyout-pnl--down"}>
+                  {formatSignedCompact(m.pnl)}
+                </span>
+                <span>{m.trades}</span>
+                <span>{m.winRate.toFixed(0)}%</span>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
-
-        {profile.marketBreakdown.length > 0 && (
-          <motion.div
-            className="arena-public-card"
-            initial={{ opacity: 0, x: 24 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={viewportOnce}
-            transition={{ duration: 0.5, ease: sectionEase }}
-          >
-            <div className="arena-section-kicker">{t("publicMarkets")}</div>
-            <div className="arena-public-markets">
-              {profile.marketBreakdown.map((m, i) => (
-                <motion.div
-                  key={m.slug}
-                  className="arena-public-market-row"
-                  initial={{ opacity: 0, x: 12 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={viewportOnce}
-                  transition={{ delay: i * 0.06, ease: sectionEase }}
-                >
-                  <span className="arena-public-market-slug" title={m.slug}>{m.question}</span>
-                  <span className={m.pnl >= 0 ? "arena-flyout-pnl--up" : "arena-flyout-pnl--down"}>
-                    {formatSignedCompact(m.pnl)}
-                  </span>
-                  <span>{m.trades}</span>
-                  <span>{m.winRate.toFixed(0)}%</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </div>
+      )}
 
       {/* Share + CTA */}
       <motion.div

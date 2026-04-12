@@ -86,7 +86,7 @@ export function WalletFoundryLoader({
   note,
   statusLabel,
   accentEmoji = "🔐",
-  orbitLabels = ["WDK", "Vault", "Backup"],
+  orbitLabels = ["Agent", "Vault", "Backup"],
   tone = "emerald",
   sceneHeight = 320,
 }: WalletFoundryLoaderProps) {

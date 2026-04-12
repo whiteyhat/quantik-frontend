@@ -51,7 +51,7 @@ import { ERC8004StatusCard } from "@/components/ManageAgent/ERC8004StatusCard";
 import { DualMarketPanel } from "@/components/ManageAgent/DualMarketPanel";
 
 import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
-import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
+
 
 type TabId = "dashboard" | "architecture" | "world";
 
@@ -354,7 +354,6 @@ export default function ManageAgentPage() {
               <AgentConfigPanel />
             )}
             <SystemLogFeed />
-            <PipelineReplayPanel title="Recent Pipeline Replay" />
           </div>
         </div>
       )}

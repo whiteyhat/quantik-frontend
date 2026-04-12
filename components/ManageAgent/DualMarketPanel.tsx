@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { HelpTooltip } from "@/components/ui/HelpTooltip";
 import type { KrakenLegEvent } from "@/lib/api";
@@ -382,7 +383,7 @@ function SummaryRow({ legs }: { legs: KrakenLeg[] }) {
 
 export function DualMarketPanel() {
   const { krakenLegs: legs, source: pipelineSource, version: pipelineVersion, running } = useQuantikStore(
-    (s) => ({ krakenLegs: s.pipeline.krakenLegs, source: s.pipeline.source, version: s.pipeline.version, running: s.pipeline.running })
+    useShallow((s) => ({ krakenLegs: s.pipeline.krakenLegs, source: s.pipeline.source, version: s.pipeline.version, running: s.pipeline.running }))
   );
   const hasReceived = legs.length > 0;
 
@@ -390,8 +391,8 @@ export function DualMarketPanel() {
     ensureKeyframes();
   }, []);
 
-  // Only show after pipeline has completed (not idle, not still running)
-  if (running || (pipelineSource === "idle" && !hasReceived)) return null;
+  // Only show when dual-market legs were actually received
+  if (!hasReceived) return null;
 
   return (
     <div
