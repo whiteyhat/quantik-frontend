@@ -406,7 +406,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     ],
   },
 
-  // ─── New Edge Services ──────��───────────────────────────────────────────────
+  // ─── Edge Services ─────────────────────────────────────────────────────────
 
   "edge-ev": {
     description: "Expected value grader scoring trade opportunities by comparing market price to Oracle probability estimates, accounting for vig and fees.",
@@ -469,7 +469,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     ],
   },
 
-  // ─── New Lucifer Services ───────────��───────────────────────────────────────
+  // ─── Lucifer Services ──────────────────────────────────────────────────────
 
   "lucifer-anomaly": {
     description: "Behavioral anomaly detector using statistical models to identify unusual market patterns, order flow irregularities, and suspicious price movements.",
@@ -547,7 +547,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     ],
   },
 
-  // ─��─ New Flux Services ─────���────────────────────────────────────────────────
+  // ─── Flux Services ─────────────────────────────────────────────────────────
 
   "flux-orderbook": {
     description: "Real-time orderbook depth aggregator capturing bid/ask ladders, depth at price levels, and liquidity distribution across markets.",
@@ -625,7 +625,7 @@ export const SERVICE_DETAILS: Record<string, ServiceDetailInfo> = {
     ],
   },
 
-  // ─── New Clause Services ────────────────────────────────────────────────────
+  // ─── Clause Services ───────────────────────────────────────────────────────
 
   "clause-ambiguity": {
     description: "Market resolution ambiguity scorer analyzing question wording, edge cases, and historical dispute rates to flag markets at risk of contested outcomes.",

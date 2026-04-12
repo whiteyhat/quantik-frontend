@@ -28,10 +28,10 @@ test.describe('Manage Agent — Architecture', () => {
     const agents = [
       { name: 'Aura', role: 'Sentiment Analysis' },
       { name: 'Flux', role: 'Liquidity Router' },
-      { name: 'Clause', role: 'Smart Contracts' },
+      { name: 'Clause', role: 'Resolution Risk' },
       { name: 'Oracle', role: 'Probability Engine' },
-      { name: 'Edge', role: 'Data Ingestion' },
-      { name: 'Lucifer', role: 'Risk Veto Protocol' },
+      { name: 'Edge', role: 'Alpha Sizing' },
+      { name: 'Lucifer', role: "Devil's Advocate" },
       { name: 'Sigma', role: 'Final Decision' },
     ];
 

@@ -39,6 +39,8 @@ describe("agent factory helpers", () => {
       wallet_download_ready: false,
       wallet_downloaded_at: null,
       last_error: null,
+      policy_setup_completed: false,
+      policy_setup_completed_at: null,
     });
   });
 });
