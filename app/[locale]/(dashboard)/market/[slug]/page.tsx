@@ -16,6 +16,7 @@ import { PipelineTimeline } from "@/components/PipelineTimeline";
 import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
 import { TradeConfirmationModal } from "@/components/TradeConfirmationModal";
 import { RelayChat } from "@/components/RelayChat";
+import { DualMarketPanel } from "@/components/ManageAgent/DualMarketPanel";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -267,6 +268,8 @@ export default function MarketPage({ params }: PageProps) {
 
       {/* Pipeline duration timeline */}
       <PipelineTimeline />
+
+      <DualMarketPanel />
 
       <PipelineReplayPanel slug={slug} title="Replay This Market" />
 
