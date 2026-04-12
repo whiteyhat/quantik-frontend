@@ -48,6 +48,7 @@ import { RiskConfigPanelByo } from "@/components/ManageAgent/RiskConfigPanelByo"
 import { AutopilotControlCard } from "@/components/ManageAgent/AutopilotControlCard";
 import { PolymarketStatusCard } from "@/components/ManageAgent/PolymarketStatusCard";
 import { ERC8004StatusCard } from "@/components/ManageAgent/ERC8004StatusCard";
+import { DualMarketPanel } from "@/components/ManageAgent/DualMarketPanel";
 
 import { PositionDetailSheet } from "@/components/ManageAgent/PositionDetailSheet";
 import { PipelineReplayPanel } from "@/components/pipeline/PipelineReplayPanel";
@@ -75,9 +76,10 @@ export default function ManageAgentPage() {
         if (active && data) setMyAgent(data as unknown as import("@/store/useQuantikStore").MyAgent);
       })
       .catch(() => {})
-      .finally(() => { if (active) setMyAgentLoading(false); });
+      .finally(() => setMyAgentLoading(false));
     return () => { active = false; };
-  }, [authReady, storeAgent, myAgentLoading, setMyAgent, setMyAgentLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, storeAgent, setMyAgent, setMyAgentLoading]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -278,6 +280,7 @@ export default function ManageAgentPage() {
                 performance={performance}
                 loading={loading}
               />
+              <DualMarketPanel />
             {(loading || positions.length > 0) && (
               <LivePositionsTable
                 positions={positions}
@@ -308,6 +311,8 @@ export default function ManageAgentPage() {
                     ...storeAgent,
                     erc8004_token_id: newTokenId,
                     erc8004_registered_at: Date.now(),
+                    erc8004_reputation_score: 0,
+                    erc8004_validation_count: 0,
                   });
                 }
               }}
