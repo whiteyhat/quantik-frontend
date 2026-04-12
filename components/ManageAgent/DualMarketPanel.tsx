@@ -423,7 +423,7 @@ export function DualMarketPanel() {
         borderRadius: 20,
         boxShadow:
           "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
-        padding: 24,
+        padding: "24px 24px 28px",
         position: "relative",
         overflow: "hidden",
         animation: "kraken-pulse 2s ease-in-out infinite",
