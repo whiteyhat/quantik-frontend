@@ -17,6 +17,10 @@ const isPublicRoute = createRouteMatcher([
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+// When CLERK_JWT_KEY is set, verify JWTs locally without a network call to
+// Clerk's JWKS endpoint. Required in production when using a custom Clerk
+// domain (e.g. clerk.quantik.fun) — remote JWKS lookup fails with
+// "Handshake token verification failed due to an invalid signature".
 export default clerkMiddleware(async (auth, request: NextRequest) => {
   // Protect non-public routes
   if (!isPublicRoute(request)) {
@@ -25,7 +29,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
 
   // Run next-intl middleware to handle locale detection & prefix routing
   return intlMiddleware(request);
-});
+}, process.env.CLERK_JWT_KEY ? { jwtKey: process.env.CLERK_JWT_KEY } : undefined);
 
 export const config = {
   matcher: [
