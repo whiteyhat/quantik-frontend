@@ -556,7 +556,9 @@ export default function DashboardLayout({
           onToggleRelay={handleToggleRelay}
         />
 
+        {/* Keyed like <main>: a new viewer never sees the previous one's chat */}
         <RelayChatSidebar
+          key={viewer.mode}
           open={relayOpen}
           onToggle={handleToggleRelay}
           onFirstOpen={handleRelayFirstOpen}

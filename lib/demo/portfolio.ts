@@ -19,6 +19,8 @@ export function demoSummary(): Record<string, unknown> {
     totalValue: 10480,
     cashBalance: 5610,
     positionsValue: 4870,
+    onChainUsdc: 5610,
+    pol: 12.5, // gas: without it, live-mode Execute Trade shows "no POL" instead of asking to sign in
     pnl: 480,
     pnlPct: 0.048, // fractions, like the real API
     pnlToday: 62,

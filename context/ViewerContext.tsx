@@ -77,6 +77,7 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     if (shouldResetOnTransition(prevMode.current, next.mode)) {
       queryClient.clear();
       store.resetUserState();
+      store.pipelineReset();
       useNotificationsStore.getState().reset();
     }
     setDemoMode(demoModeFor(next.mode));
