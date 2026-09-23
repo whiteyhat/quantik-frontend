@@ -3,6 +3,8 @@ import {
   toPerformanceSummary,
   toWalletBalance,
 } from "@/lib/dashboard";
+import { resolveDemoGet } from "@/lib/demo/routes";
+import { demoTradesCsv } from "@/lib/demo/portfolio";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -14,6 +16,36 @@ export function setAuthToken(token: string | null) {
 }
 export function getAuthToken(): string | null {
   return _authToken;
+}
+
+// ─── Demo mode ────────────────────────────────────────────────────────────────
+// Set by ViewerProvider. "guest": personal reads come from lib/demo and every
+// write is refused locally. "no-agent": a signed-in member without an agent sees
+// the demo agent, but their own writes (watchlist, agent creation) go through.
+export type DemoMode = "off" | "guest" | "no-agent";
+let _demoMode: DemoMode = "off";
+export function setDemoMode(mode: DemoMode) {
+  _demoMode = mode;
+}
+export function getDemoMode(): DemoMode {
+  return _demoMode;
+}
+export function isDemoMode(): boolean {
+  return _demoMode !== "off";
+}
+
+export class DemoWriteBlockedError extends Error {
+  constructor() {
+    super("Sign in to do this");
+    this.name = "DemoWriteBlockedError";
+  }
+}
+
+/** Backstop for writes: guests never reach the server; they're asked to sign in. */
+export function assertNotDemoWrite(): void {
+  if (_demoMode !== "guest") return;
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("quantik:sign-in-required"));
+  throw new DemoWriteBlockedError();
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -992,6 +1024,15 @@ export interface CalibrationEntry {
 // ─── API Client ───────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  if (_demoMode !== "off") {
+    const method = (options?.method ?? "GET").toUpperCase();
+    if (method === "GET" || method === "HEAD") {
+      const demo = resolveDemoGet(path, _demoMode);
+      if (demo !== undefined) return demo as T;
+    } else {
+      assertNotDemoWrite();
+    }
+  }
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -1463,6 +1504,9 @@ export const api = {
     if (params?.source && params.source !== "all") searchParams.set("source", params.source);
     if (params?.search?.trim()) searchParams.set("search", params.search.trim());
     const query = searchParams.toString();
+    if (_demoMode === "guest") {
+      return new Blob([demoTradesCsv(new URLSearchParams(query))], { type: "text/csv" });
+    }
     const headers: Record<string, string> = {};
     if (_authToken) {
       headers.Authorization = `Bearer ${_authToken}`;
@@ -1835,6 +1879,7 @@ export const api = {
     autopilot_enabled: boolean;
     autopilot_updated_at: number;
   }> => {
+    assertNotDemoWrite();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -2464,6 +2509,12 @@ export function runPipeline(
   onComplete: (result: PipelineResult) => void,
   onError?: (err: Error) => void
 ): () => void {
+  try {
+    assertNotDemoWrite();
+  } catch (err) {
+    onError?.(err as Error);
+    return () => {};
+  }
   let aborted = false;
   const controller = new AbortController();
 
