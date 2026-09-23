@@ -12,8 +12,8 @@ import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { GlassSlider } from "@/components/ui/GlassSlider";
 import { api, type RiskConfig } from "@/lib/api";
 import { resetOnboardingTourState } from "@/hooks/useOnboardingTourState";
-import { useQuantikStore } from "@/store/useQuantikStore";
 import { useRouter } from "@/i18n/navigation";
+import { useViewer } from "@/context/ViewerContext";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -1382,10 +1382,64 @@ function AppInfoPanel() {
   );
 }
 
+// ─── Trading Mode (read-only) ────────────────────────────────────────────────
+
+function TradingModePanel() {
+  const t = useTranslations("settings");
+  const { paperMode } = usePaperMode();
+  // Paper uses the same amber as the sidebar PAPER badge
+  const accent = paperMode ? "#ff9f0a" : "#30d158";
+  const tint = paperMode ? "rgba(255,159,10," : "rgba(48,209,88,";
+
+  return (
+    <div style={panelStyle}>
+      <SectionHeader title={t("tradingModeTitle")} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "14px 16px",
+          borderRadius: 12,
+          background: `${tint}0.07)`,
+          border: `1px solid ${tint}0.20)`,
+        }}
+      >
+        <div style={{ fontSize: META_SIZE, color: "rgba(255,255,255,0.40)", lineHeight: 1.4 }}>
+          {t("tradingModeHint")}
+        </div>
+        <span
+          style={{
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderRadius: 100,
+            background: `${tint}0.12)`,
+            border: `1px solid ${tint}0.25)`,
+            fontSize: LABEL_SIZE,
+            fontWeight: 700,
+            color: accent,
+            fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+            letterSpacing: "0.04em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: accent }} />
+          {paperMode ? t("tradingModePaper") : t("tradingModeLive")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
+  const viewer = useViewer();
   return (
     <motion.div
       variants={staggerContainer}
@@ -1412,10 +1466,17 @@ export default function SettingsPage() {
         </p>
       </motion.div>
 
-      <motion.div variants={fadeInUp}><PaperModePanel /></motion.div>
+      {/* Platform-wide controls: only the operator can change them */}
+      {viewer.isOperator ? (
+        <>
+          <motion.div variants={fadeInUp}><PaperModePanel /></motion.div>
 
-      <motion.div variants={fadeInUp}><RiskConfigPanel /></motion.div>
-      <motion.div variants={fadeInUp}><TelegramSettingsPanel /></motion.div>
+          <motion.div variants={fadeInUp}><RiskConfigPanel /></motion.div>
+          <motion.div variants={fadeInUp}><TelegramSettingsPanel /></motion.div>
+        </>
+      ) : (
+        <motion.div variants={fadeInUp}><TradingModePanel /></motion.div>
+      )}
       <motion.div variants={fadeInUp}><AppInfoPanel /></motion.div>
       <motion.div variants={fadeInUp}><TutorialRestartPanel /></motion.div>
     </motion.div>
@@ -1426,12 +1487,13 @@ export default function SettingsPage() {
 
 function TutorialRestartPanel() {
   const t = useTranslations("tutorial");
-  const myAgent = useQuantikStore((s) => s.myAgent);
+  // A real agent, never the demo agent shown to guests
+  const { hasAgent } = useViewer();
   const router = useRouter();
   const [restarted, setRestarted] = useState(false);
 
   const handleRestart = () => {
-    resetOnboardingTourState({ resumeProductTourAfterDeploy: Boolean(myAgent) });
+    resetOnboardingTourState({ resumeProductTourAfterDeploy: hasAgent });
     setRestarted(true);
     setTimeout(() => router.push("/agent-factory"), 400);
   };
@@ -1457,12 +1519,12 @@ function TutorialRestartPanel() {
               lineHeight: 1.4,
             }}
           >
-            {myAgent ? t("restartDesc") : t("restartNotAvailable")}
+            {hasAgent ? t("restartDesc") : t("restartNotAvailable")}
           </div>
         </div>
         <button
           onClick={handleRestart}
-          disabled={!myAgent || restarted}
+          disabled={!hasAgent || restarted}
           style={{
             flexShrink: 0,
             background: restarted ? "rgba(48,209,88,0.15)" : "rgba(10,132,255,0.15)",
@@ -1472,8 +1534,8 @@ function TutorialRestartPanel() {
             fontSize: 13,
             fontWeight: 600,
             color: restarted ? "#30d158" : "#0a84ff",
-            cursor: myAgent && !restarted ? "pointer" : "not-allowed",
-            opacity: myAgent ? 1 : 0.4,
+            cursor: hasAgent && !restarted ? "pointer" : "not-allowed",
+            opacity: hasAgent ? 1 : 0.4,
             transition: "all 200ms ease",
             whiteSpace: "nowrap",
           }}

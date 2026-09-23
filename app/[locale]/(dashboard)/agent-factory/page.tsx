@@ -18,6 +18,8 @@ import {
   completeFactoryTour,
   requestProductTourResume,
 } from "@/hooks/useOnboardingTourState";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -56,6 +58,9 @@ const DEFAULT_CONFIG: AgentConfig = {
   marketSense: "fixed_rules",
   assetLove: "crypto",
 };
+
+// Quiz answers survive the sign-in round trip. Only {step, config}: never wallet keys.
+const FACTORY_DRAFT_KEY = "quantik:factory-draft";
 
 const AVATAR_INLINE = ["🦊", "🐱", "🤖", "🐺", "🦁"];
 const AVATAR_ALL = [
@@ -865,6 +870,8 @@ function StepLaunch({
   walletAddress,
   isGeneratingWallet,
   walletError,
+  needsSignIn,
+  onSignIn,
   onSecureKey,
   onDeploy,
 }: {
@@ -874,10 +881,21 @@ function StepLaunch({
   walletAddress: string | null;
   isGeneratingWallet: boolean;
   walletError: string | null;
+  needsSignIn: boolean;
+  onSignIn: () => void;
   onSecureKey: () => void;
   onDeploy: () => void;
 }) {
   const t = useTranslations("agentFactory");
+  const tDemo = useTranslations("demo");
+  // Guests see a neutral "sign in" state instead of the red wallet error
+  const walletStatusColor = walletAddress
+    ? "#30d158"
+    : isGeneratingWallet
+      ? "#ff9f0a"
+      : needsSignIn
+        ? "rgba(255,255,255,0.45)"
+        : "#ff453a";
   const agentId = useMemo(() => {
     const num = Math.floor(Math.random() * 900 + 100);
     return `Q-AGENT-X${num}`;
@@ -1074,17 +1092,23 @@ function StepLaunch({
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: walletAddress ? "#30d158" : isGeneratingWallet ? "#ff9f0a" : "#ff453a",
+                background: walletStatusColor,
               }}
             />
             <span
               style={{
                 fontSize: LABEL_SIZE,
-                color: walletAddress ? "#30d158" : isGeneratingWallet ? "#ff9f0a" : "#ff453a",
+                color: walletStatusColor,
                 fontWeight: 600,
               }}
             >
-              {walletAddress ? t("launch.walletLive") : isGeneratingWallet ? t("launch.walletGenerating") : t("launch.walletError")}
+              {walletAddress
+                ? t("launch.walletLive")
+                : isGeneratingWallet
+                  ? t("launch.walletGenerating")
+                  : needsSignIn
+                    ? tDemo("signIn")
+                    : t("launch.walletError")}
             </span>
           </div>
         </div>
@@ -1113,6 +1137,52 @@ function StepLaunch({
             note={t("launch.keyBackupNote")}
             sceneHeight={332}
           />
+        ) : needsSignIn ? (
+          <div
+            className={PANEL_CLASS}
+            style={{
+              padding: "16px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <motion.button
+              type="button"
+              onClick={onSignIn}
+              whileHover={{ backgroundColor: "rgba(10,132,255,1)" }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+              style={{
+                width: "100%",
+                padding: "12px 20px",
+                borderRadius: 12,
+                backgroundColor: "rgba(10,132,255,0.85)",
+                border: "none",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              🔐 {t("launch.signInToMint")}
+            </motion.button>
+            <p
+              style={{
+                margin: 0,
+                fontSize: META_SIZE,
+                color: "rgba(255,255,255,0.45)",
+                lineHeight: 1.5,
+                textAlign: "center",
+              }}
+            >
+              {t("launch.signInToMintDesc")}
+            </p>
+          </div>
         ) : (
           <div
             className={PANEL_CLASS}
@@ -1287,6 +1357,8 @@ export default function AgentFactoryPage() {
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const myAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  const viewer = useViewer();
+  const gate = useSignInGate();
   const [step, setStep] = useState(0);
   const [config, setConfig] = useState<AgentConfig>(DEFAULT_CONFIG);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -1310,6 +1382,34 @@ export default function AgentFactoryPage() {
     return () => { jsConfettiRef.current = null; };
   }, []);
 
+  // A guest's answers are saved only when they leave to sign in at step 5, then
+  // restored once here and dropped, so a normal reload still starts the quiz fresh.
+  // Restore after mount (not in useState) so the server render and hydration match.
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(FACTORY_DRAFT_KEY);
+      window.sessionStorage.removeItem(FACTORY_DRAFT_KEY);
+      const draft = raw ? (JSON.parse(raw) as { step?: unknown; config?: unknown }) : null;
+      if (draft && Number.isInteger(draft.step) && (draft.step as number) >= 0 && (draft.step as number) <= 5) {
+        setStep(draft.step as number);
+        if (draft.config && typeof draft.config === "object") {
+          setConfig({ ...DEFAULT_CONFIG, ...(draft.config as Partial<AgentConfig>) });
+        }
+      }
+    } catch {
+      /* storage blocked or draft unreadable: start fresh */
+    }
+  }, []);
+
+  const signInKeepingAnswers = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(FACTORY_DRAFT_KEY, JSON.stringify({ step, config }));
+    } catch {
+      /* storage blocked: they redo the quiz after signing in */
+    }
+    gate(() => {}, { needs: "signIn" });
+  }, [step, config, gate]);
+
   const finishFactoryTour = useCallback(() => {
     completeFactoryTour();
     closeNextStep();
@@ -1322,6 +1422,7 @@ export default function AgentFactoryPage() {
       await api.deleteAgent(myAgent.id);
       setMyAgent(null);
       setShowDeleteConfirm(false);
+      window.dispatchEvent(new CustomEvent("quantik:agent-changed"));
     } catch {
       /* ignore */
     } finally {
@@ -1385,9 +1486,16 @@ export default function AgentFactoryPage() {
     setStep(5);
   }, []);
 
+  // Minting needs a signed-in viewer whose mode has resolved: while it is still
+  // "loading" after sign-in the API client is in guest mode and would refuse the call.
+  // Generating a wallet stores nothing server-side, so it may run right after sign-in.
+  const canMintWallet = viewer.isSignedIn && viewer.mode !== "loading";
+  // Just signed in, access still resolving: show the foundry, not the sign-in button
+  const walletPending = viewer.isSignedIn && viewer.mode === "loading" && !walletAddress;
+
   // Generate agent wallet when entering Step 5
   useEffect(() => {
-    if (step !== 5 || walletAddress) return;
+    if (step !== 5 || walletAddress || !canMintWallet) return;
     let cancelled = false;
     setIsGeneratingWallet(true);
     setWalletError(null);
@@ -1406,7 +1514,7 @@ export default function AgentFactoryPage() {
         if (!cancelled) setIsGeneratingWallet(false);
       });
     return () => { cancelled = true; };
-  }, [step, walletAddress]);
+  }, [step, walletAddress, canMintWallet]);
 
   const handleSecureKey = useCallback(() => {
     if (!walletAddress || !walletPrivateKey) return;
@@ -1478,6 +1586,12 @@ export default function AgentFactoryPage() {
       setWalletPrivateKey(null);
       setWalletSeedPhrase(null);
       setMyAgent(agentData as unknown as MyAgent);
+      try {
+        window.sessionStorage.removeItem(FACTORY_DRAFT_KEY);
+      } catch {
+        /* storage blocked */
+      }
+      window.dispatchEvent(new CustomEvent("quantik:agent-changed"));
       requestProductTourResume();
       router.push("/manage-agent");
     } catch (err) {
@@ -1493,7 +1607,8 @@ export default function AgentFactoryPage() {
   }, [config, walletAddress, walletPrivateKey, walletSeedPhrase, generatedImage, router, setMyAgent]);
 
   const isLaunchStep = step === 5;
-  const isLocked = !!myAgent && !myAgentLoading;
+  // store.myAgent is the demo agent for guests; only a real agent locks the factory
+  const isLocked = viewer.hasAgent && !!myAgent && !myAgentLoading;
 
   if (isLocked) {
     return (
@@ -1767,7 +1882,7 @@ export default function AgentFactoryPage() {
                   {t("locked.cancel")}
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={() => gate(handleDelete)}
                   disabled={isDeleting}
                   style={{
                     padding: "10px 24px",
@@ -2072,10 +2187,13 @@ export default function AgentFactoryPage() {
                   isDeploying={isDeploying}
                   privateKeySecured={privateKeySecured}
                   walletAddress={walletAddress}
-                  isGeneratingWallet={isGeneratingWallet}
+                  isGeneratingWallet={isGeneratingWallet || walletPending}
                   walletError={walletError}
+                  needsSignIn={!viewer.isSignedIn}
+                  onSignIn={signInKeepingAnswers}
                   onSecureKey={handleSecureKey}
-                  onDeploy={handleDeploy}
+                  // Sign-in only: "agent" would send a member without an agent back here
+                  onDeploy={() => gate(handleDeploy, { needs: "signIn" })}
                 />
               )}
             </motion.div>

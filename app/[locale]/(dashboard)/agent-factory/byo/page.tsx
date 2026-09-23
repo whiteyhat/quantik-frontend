@@ -15,6 +15,8 @@ import { buildByoOnboardingPrompt, formatByoTimeRemaining, isByoSessionReady } f
 import { AVAILABLE_WEBHOOK_EVENTS, validateOptionalPublicHttpsUrl } from "@/lib/webhookEvents";
 import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
 import { requestProductTourResume } from "@/hooks/useOnboardingTourState";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -902,6 +904,8 @@ function FixedToast({ top, zIndex, variant, children }: { top: number; zIndex: n
 export default function ByoAgentPage() {
   const router = useRouter();
   const setMyAgent = useQuantikStore((state) => state.setMyAgent);
+  const viewer = useViewer();
+  const gate = useSignInGate();
 
   const [step, setStep] = useState(1);
   const [session, setSession] = useState<ByoOnboardingSession | null>(null);
@@ -925,6 +929,9 @@ export default function ByoAgentPage() {
   const [walletDownloadError, setWalletDownloadError] = useState<string | null>(null);
 
   const jsConfettiRef = useRef<JSConfetti | null>(null);
+  // Set once this page activates the agent, so the "already have an agent" check
+  // below doesn't fire when the viewer refreshes on the way to Manage Agent.
+  const activatedRef = useRef(false);
 
   useEffect(() => {
     jsConfettiRef.current = new JSConfetti();
@@ -958,6 +965,8 @@ export default function ByoAgentPage() {
   }, []);
 
   useEffect(() => {
+    // The demo adapter answers getMyAgent with NOVA-7; only a real agent blocks BYO
+    if (!viewer.isSignedIn || !viewer.hasAgent || activatedRef.current) return;
     let cancelled = false;
 
     (async () => {
@@ -970,7 +979,7 @@ export default function ByoAgentPage() {
     })().catch(() => {});
 
     return () => { cancelled = true; };
-  }, [router]);
+  }, [router, viewer.isSignedIn, viewer.hasAgent]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -1197,6 +1206,7 @@ export default function ByoAgentPage() {
     try {
       // Deploy returns the full agent data — no separate getMyAgent() round-trip needed
       const deployedAgent = await api.deployAgent(session.agent_id);
+      activatedRef.current = true;
       if (deployedAgent && (deployedAgent as Record<string, unknown>).id) {
         setMyAgent(deployedAgent as unknown as MyAgent);
       } else {
@@ -1204,6 +1214,7 @@ export default function ByoAgentPage() {
         const freshAgent = await api.getMyAgent();
         if (freshAgent) setMyAgent(freshAgent as unknown as MyAgent);
       }
+      window.dispatchEvent(new CustomEvent("quantik:agent-changed"));
       jsConfettiRef.current?.addConfetti({
         emojis: [session.identity?.avatar ?? "🤖"],
         emojiSize: 60,
@@ -1310,7 +1321,7 @@ export default function ByoAgentPage() {
                     expiresLabel={expiresLabel}
                     isCreating={isCreating}
                     createError={createError}
-                    onGenerate={handleGenerate}
+                    onGenerate={() => gate(handleGenerate, { needs: "signIn" })}
                     onCopyUrl={() => { if (onboardingUrl) copyText(onboardingUrl, "Onboarding URL copied"); }}
                     onContinue={() => setStep(2)}
                   />
@@ -1325,7 +1336,7 @@ export default function ByoAgentPage() {
                     pollError={pollError}
                     onCopyUrl={() => { if (onboardingUrl) copyText(onboardingUrl, "Onboarding URL copied"); }}
                     onCopyPrompt={() => copyText(prompt, "OpenClaw prompt copied")}
-                    onRegenerate={handleGenerate}
+                    onRegenerate={() => gate(handleGenerate, { needs: "signIn" })}
                   />
                 )}
 

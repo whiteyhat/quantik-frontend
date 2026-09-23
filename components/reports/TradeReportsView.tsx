@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, fmtPrice, fmtUSDC, fmtDateShort, fmtDateTime, type Trade, type TradeReportsResponse } from "@/lib/api";
 import { Skeleton, SkeletonTableRows } from "@/components/ui/skeleton";
+import { useSignInGate } from "@/hooks/useSignInGate";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -119,6 +120,7 @@ interface TradeReportsViewProps {
 export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
   const t = useTranslations("tradeHistory");
   const locale = useLocale();
+  const gate = useSignInGate();
   const [period, setPeriod] = useState<Period>("all");
   const [outcome, setOutcome] = useState<OutcomeFilter>("All");
   const [source, setSource] = useState<SourceFilter>("all");
@@ -179,10 +181,10 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
-            onClick={async () => {
+            onClick={() => gate(async () => {
               const blob = await api.downloadTradeReportsCsv({ period, outcome, source, search });
               saveBlob(blob, "quantik-trades.csv");
-            }}
+            }, { needs: "signIn" })}
             style={{
               borderRadius: 12,
               border: "1px solid var(--glass-border)",
