@@ -81,3 +81,33 @@ describe("no-agent demo mode", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("personal reads before the viewer is known", () => {
+  it("wait for the viewer instead of hitting the live API", async () => {
+    vi.resetModules();
+    vi.stubGlobal("window", { dispatchEvent: () => true });
+    const fresh = await import("@/lib/api");
+    let settled = false;
+    const pending = fresh.api.getWatchlist().then((items) => {
+      settled = true;
+      return items;
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(settled).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fresh.setDemoMode("guest");
+    const items = await pending;
+    expect(items.length).toBeGreaterThan(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+    fresh.setDemoMode("off");
+  });
+
+  it("let public reads through immediately", async () => {
+    vi.resetModules();
+    vi.stubGlobal("window", { dispatchEvent: () => true });
+    const fresh = await import("@/lib/api");
+    await fresh.api.getMarkets();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

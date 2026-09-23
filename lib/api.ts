@@ -3,7 +3,7 @@ import {
   toPerformanceSummary,
   toWalletBalance,
 } from "@/lib/dashboard";
-import { resolveDemoGet } from "@/lib/demo/routes";
+import { isPersonalRoute, resolveDemoGet } from "@/lib/demo/routes";
 import { demoTradesCsv } from "@/lib/demo/portfolio";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -24,8 +24,20 @@ export function getAuthToken(): string | null {
 // the demo agent, but their own writes (watchlist, agent creation) go through.
 export type DemoMode = "off" | "guest" | "no-agent";
 let _demoMode: DemoMode = "off";
+
+// Until ViewerProvider knows who is looking, personal reads wait (briefly) so
+// a guest's first page load never hits the live API with the wrong mode.
+let _viewerKnown = false;
+let _markViewerKnown: () => void = () => {};
+const _viewerKnownPromise = new Promise<void>((resolve) => {
+  _markViewerKnown = resolve;
+});
+const VIEWER_WAIT_MS = 5_000;
+
 export function setDemoMode(mode: DemoMode) {
   _demoMode = mode;
+  _viewerKnown = true;
+  _markViewerKnown();
 }
 export function getDemoMode(): DemoMode {
   return _demoMode;
@@ -1024,6 +1036,9 @@ export interface CalibrationEntry {
 // ─── API Client ───────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  if (!_viewerKnown && typeof window !== "undefined" && isPersonalRoute(path)) {
+    await Promise.race([_viewerKnownPromise, new Promise((r) => setTimeout(r, VIEWER_WAIT_MS))]);
+  }
   if (_demoMode !== "off") {
     const method = (options?.method ?? "GET").toUpperCase();
     if (method === "GET" || method === "HEAD") {

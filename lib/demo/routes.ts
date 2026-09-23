@@ -35,6 +35,12 @@ const GUEST_ROUTES: Array<[RegExp, Handler]> = [
   [/^\/api\/v1\/market-alerts$/, () => demoMarketAlerts()],
 ];
 
+/** True for personal reads (the ones demo mode can answer). */
+export function isPersonalRoute(path: string): boolean {
+  const pathname = path.split("?")[0];
+  return [...AGENT_ROUTES, ...GUEST_ROUTES].some(([pattern]) => pattern.test(pathname));
+}
+
 /** Demo payload for a personal GET, or undefined when the live API should answer. */
 export function resolveDemoGet(path: string, mode: "guest" | "no-agent"): unknown | undefined {
   const [pathname, search = ""] = path.split("?");
