@@ -41,7 +41,10 @@ function getCachedNumFmt(
 
 export function fmtUSDC(n: number | null | undefined, locale = DEFAULT_LOCALE): string {
   if (n == null || isNaN(n)) return "$0.00";
-  return `$${getCachedNumFmt(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
+  // Sign before the dollar ("-$6.55", not "$-6.55"); an amount that rounds to zero has no sign
+  const digits = getCachedNumFmt(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(n));
+  const negative = n < 0 && /[1-9]/.test(digits);
+  return `${negative ? "-" : ""}$${digits}`;
 }
 
 export function fmtCompact(n: number | null | undefined): string {
@@ -65,6 +68,15 @@ export function fmtDollar(n: number, locale = DEFAULT_LOCALE): string {
 
 export function fmtNumber(n: number, locale = DEFAULT_LOCALE): string {
   return getCachedNumFmt(locale, {}).format(n);
+}
+
+/**
+ * Whole-number count with the thousands separator always shown, so "1.240"
+ * and "48.500" read alike (Spanish and a few other locales skip it on
+ * four-digit numbers by default).
+ */
+export function fmtCount(n: number, locale = DEFAULT_LOCALE): string {
+  return getCachedNumFmt(locale, { maximumFractionDigits: 0, useGrouping: "always" }).format(n);
 }
 
 // ─── Date/Time formatters ────────────────────────────────────────────────────

@@ -1,20 +1,21 @@
 "use client";
 
 import "./arena.css";
-import { useDeferredValue, useReducer, useRef, useState } from "react";
+import { useDeferredValue, useReducer, useState } from "react";
 import { Activity, RefreshCw, Search, Shield, Star, Swords, Target } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
-import { fmtNumber, type ArenaWindow, type ArenaLeaderboardEntry } from "@/lib/api";
+import { fmtNumber, type ArenaWindow } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
 import { useNow } from "@/hooks/useNow";
 import { useFollowedAgents } from "@/hooks/useFollowedAgents";
 import { useArenaLeaderboardQuery } from "@/components/dashboard/dashboardQueries";
 import {
   battleTone,
+  championLead,
   contenderReasonCopy,
   filterArenaLeaders,
   formatSignedCompact,
@@ -22,7 +23,6 @@ import {
 } from "@/components/arena/arenaHelpers";
 import {
   CommandCenterCard,
-  MetricBlock,
   PanelEmptyState,
   PanelErrorState,
   StatusBadge,
@@ -93,19 +93,20 @@ export function ArenaPageClient() {
   const arenaQuery = useArenaLeaderboardQuery(activeWindow);
   const now = useNow(10_000);
   const keys = protocolKeys(activeWindow);
-  const hasInitiallyRendered = useRef(false);
 
-  const leaders = arenaQuery.data?.leaders ?? [];
-  const viewer = arenaQuery.data?.viewer;
+  // A disabled query (viewer still resolving) is not "loaded and empty": until
+  // the first board arrives the page shows skeletons, never 0 / $0 / "Never"
+  const board = arenaQuery.data;
+  const leaders = board?.leaders ?? [];
+  const viewer = board?.viewer;
   const viewerEntry = viewer?.entry ?? null;
   const podiumLeaders = leaders.slice(0, 3);
   const champion = podiumLeaders[0] ?? null;
-  const battlePool = arenaQuery.data?.meta.totalSelectedPnlPool ?? 0;
-  const unrealizedPool = arenaQuery.data?.meta.totalUnrealizedPnlPool ?? 0;
-  const hottestStreak = leaders.reduce<ArenaLeaderboardEntry | null>((best, entry) => !best || Math.abs(entry.currentStreak) > Math.abs(best.currentStreak) ? entry : best, null);
-  const bestTradeLeader = leaders.reduce<ArenaLeaderboardEntry | null>((best, entry) => !best || entry.bestTradePnl > best.bestTradePnl ? entry : best, null);
+  const battlePool = board?.meta.totalSelectedPnlPool ?? 0;
+  const unrealizedPool = board?.meta.totalUnrealizedPnlPool ?? 0;
   const battlePoolLabel = battlePool > 0 ? t("positivePool") : battlePool < 0 ? t("negativePool") : t("neutralPool");
-  const lastPulseAt = arenaQuery.data?.meta.lastTradeAt;
+  const lastPulseAt = board?.meta.lastTradeAt;
+  const updatedLabel = t("updatedAt", { time: formatRelativeTime(board?.updatedAt, now, tCommon) });
   const filteredLeaders = filterArenaLeaders(leaders, {
     query: deferredSearchTerm,
     viewerFocus,
@@ -121,15 +122,25 @@ export function ArenaPageClient() {
       ? [...defaultLeaders, viewerEntry]
       : defaultLeaders;
 
-  // Runner-up gap for telemetry flip
-  const runnerUpGap = champion && podiumLeaders[1]
-    ? Math.round((champion.selectedPnl - podiumLeaders[1].selectedPnl) * 100) / 100
-    : undefined;
+  // The race for the crown, stated on the champion card itself
+  const lead = championLead(leaders);
 
-  // Mark initial render complete for stagger animation
-  if (!hasInitiallyRendered.current && warTableLeaders.length > 0) {
-    hasInitiallyRendered.current = true;
-  }
+  const metrics = board
+    ? [
+        { key: "ranked", label: t("rankedAgents"), value: fmtNumber(board.meta.rankedAgents, locale), tone: "info" },
+        { key: "active", label: t("activeAgents"), value: fmtNumber(board.meta.activeAgents, locale), tone: "neutral" },
+        { key: "pool", label: t("warChest"), value: formatSignedCompact(battlePool), tone: battleTone(battlePool) },
+        {
+          key: "edge",
+          label: t("liveEdge"),
+          value: formatSignedCompact(unrealizedPool),
+          tone: battleTone(unrealizedPool),
+          title: t("lastPulseAt", { time: formatRelativeTime(lastPulseAt, now, tCommon) }),
+        },
+      ]
+    : null;
+  const metricLabels = [t("rankedAgents"), t("activeAgents"), t("warChest"), t("liveEdge")];
+
 
   return (
     <div className="arena-shell">
@@ -141,78 +152,61 @@ export function ArenaPageClient() {
         </div>
 
         <div className="arena-prelude-panel">
-          <div className="arena-prelude-panel__top">
-            <ArenaTabBar activeWindow={activeWindow} />
-            <div className="arena-prelude-badges">
-              <StatusBadge tone={battleTone(battlePool)} label={battlePoolLabel} />
-              <StatusBadge
-                tone={viewer?.ranked ? "good" : viewer?.reason === "no_agent" ? "neutral" : "warn"}
-                label={contenderReasonCopy(viewer?.reason ?? "no_agent", {
-                  viewerInactive: t("viewerInactive"),
-                  viewerNoActivity: t("viewerNoActivity"),
-                  viewerRanked: t("viewerRanked"),
-                  viewerNoAgent: t("viewerNoAgent"),
-                })}
-              />
-              <StatusBadge tone="info" label={t("updatedAt", { time: formatRelativeTime(arenaQuery.data?.updatedAt, now, tCommon) })} />
-            </div>
+          <ArenaTabBar activeWindow={activeWindow} />
+          <div className="arena-prelude-badges">
+            {board ? (
+              <>
+                <StatusBadge tone={battleTone(battlePool)} label={battlePoolLabel} />
+                <StatusBadge
+                  tone={viewer?.ranked ? "good" : viewer?.reason === "no_agent" ? "neutral" : "warn"}
+                  label={contenderReasonCopy(viewer?.reason ?? "no_agent", {
+                    viewerInactive: t("viewerInactive"),
+                    viewerNoActivity: t("viewerNoActivity"),
+                    viewerRanked: t("viewerRanked"),
+                    viewerNoAgent: t("viewerNoAgent"),
+                  })}
+                />
+              </>
+            ) : (
+              <>
+                <Skeleton width={148} height={30} borderRadius={999} />
+                <Skeleton width={188} height={30} borderRadius={999} />
+              </>
+            )}
           </div>
 
-          <div className="arena-prelude-lockup">
-            <div className="arena-prelude-protocol">
-              <div className="arena-section-kicker">{t("modeLock")}</div>
-              <div className="arena-prelude-protocol__value">{t(keys.protocolKey)}</div>
-              <p>{t(keys.rulesKey)}</p>
+          <div className="arena-prelude-target">
+            <div className="arena-prelude-target__field" aria-hidden="true" />
+            <div className="arena-prelude-target__rings" aria-hidden="true" />
+            <div className="arena-prelude-target__particles" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
-
-            <div className="arena-prelude-target">
-              <div className="arena-prelude-target__field" aria-hidden="true" />
-              <div className="arena-prelude-target__rings" aria-hidden="true" />
-              <div className="arena-prelude-target__particles" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="arena-prelude-target__core" id="tour-arena-position">
-                <span>{viewerEntry ? viewerEntry.avatarEmoji : <Target className="size-9" />}</span>
-                <strong>{viewer?.ranked ? `#${viewer.rank}` : viewerEntry ? t("outsideBoard") : "—"}</strong>
-              </div>
+            <div className="arena-prelude-target__core" id="tour-arena-position">
+              <span>{viewerEntry ? viewerEntry.avatarEmoji : <Target className="size-7" />}</span>
+              {board ? <strong>{viewer?.ranked ? `#${viewer.rank}` : viewerEntry ? t("outsideBoard") : "—"}</strong> : null}
             </div>
           </div>
         </div>
 
-        <div className="arena-prelude-metrics">
-          <MetricBlock
-            label={t("rankedAgents")}
-            value={fmtNumber(arenaQuery.data?.meta.rankedAgents ?? 0, locale)}
-            tone="info"
-            hint={t("metricRankedHint")}
-          />
-          <MetricBlock
-            label={t("activeAgents")}
-            value={fmtNumber(arenaQuery.data?.meta.activeAgents ?? 0, locale)}
-            tone="neutral"
-            hint={t("metricActiveHint")}
-          />
-          <MetricBlock
-            label={t("warChest")}
-            value={formatSignedCompact(battlePool)}
-            tone={battleTone(battlePool)}
-            hint={t("metricWarHint")}
-          />
-          <MetricBlock
-            label={t("liveEdge")}
-            value={formatSignedCompact(unrealizedPool)}
-            tone={battleTone(unrealizedPool)}
-            hint={t("lastPulseAt", { time: formatRelativeTime(lastPulseAt, now, tCommon) })}
-          />
-        </div>
+        <dl className="arena-prelude-metrics">
+          {metricLabels.map((label, index) => {
+            const metric = metrics?.[index];
+            return (
+              <div key={label} className={cn("arena-metric", metric && `arena-metric--${metric.tone}`)} title={metric?.title}>
+                <dt>{label}</dt>
+                <dd>{metric ? metric.value : <Skeleton width={72} height={22} borderRadius={8} />}</dd>
+              </div>
+            );
+          })}
+        </dl>
       </section>
 
-      {arenaQuery.isLoading ? (
+      {!board && !arenaQuery.isError ? (
         <div className="arena-loading-grid">
           <CommandCenterCard accent="orange" className="arena-loading-card">
             <div className="space-y-4">
@@ -228,7 +222,7 @@ export function ArenaPageClient() {
             </div>
           </CommandCenterCard>
         </div>
-      ) : arenaQuery.isError ? (
+      ) : !board ? (
         <CommandCenterCard accent="red">
           <PanelErrorState
             title={t("loadFailedTitle")}
@@ -242,15 +236,8 @@ export function ArenaPageClient() {
           <div className="arena-main-column">
             <CommandCenterCard accent="orange" className="arena-stage-card" id="tour-arena-stage" role="tabpanel" aria-labelledby={`arena-tab-${activeWindow}`}>
               <div className="arena-stage-header">
-                <div>
-                  <div className="arena-section-kicker">{t("stageEyebrow")}</div>
-                  <h2 className="arena-section-title">{t("stageTitle")}</h2>
-                  <p className="arena-section-copy">{t("stageSubtitle")}</p>
-                </div>
-                <div className="arena-stage-header__meta">
-                  <StatusBadge tone="info" label={t(keys.protocolKey)} />
-                  <StatusBadge tone="neutral" label={t("updatedAt", { time: formatRelativeTime(arenaQuery.data?.updatedAt, now, tCommon) })} />
-                </div>
+                <div className="arena-section-kicker">{t("stageEyebrow")}</div>
+                <StatusBadge tone="neutral" label={updatedLabel} />
               </div>
 
               {champion ? (
@@ -272,6 +259,8 @@ export function ArenaPageClient() {
                     entry={champion}
                     now={now}
                     isViewer={viewer?.agentId === champion.agentId}
+                    activeWindow={activeWindow}
+                    lead={lead}
                   />
 
                   <div className="arena-stage-pylon">
@@ -300,21 +289,19 @@ export function ArenaPageClient() {
                 />
               )}
 
-              <TelemetryStrip
-                champion={champion}
-                hottestStreak={hottestStreak}
-                bestTradeLeader={bestTradeLeader}
-                activeWindow={activeWindow}
-                runnerUpGap={runnerUpGap}
-              />
+              {leaders.length > 0 ? <TelemetryStrip leaders={leaders} /> : null}
             </CommandCenterCard>
           </div>
 
           <div className="arena-rail">
+            {/* The most alive element leads the rail (it renders nothing without events) */}
+            <LiveActivityFeed />
+
             <ContenderDock
               viewer={viewer}
               viewerEntry={viewerEntry}
               leaders={leaders}
+              activeWindow={activeWindow}
               onCompare={
                 viewerEntry && champion && viewerEntry.agentId !== champion.agentId
                   ? () => dispatchCompare({ type: "SET_PAIR", pair: [viewerEntry.agentId, champion.agentId] })
@@ -323,8 +310,6 @@ export function ArenaPageClient() {
             />
 
             <BattleControlsPanel viewer={viewer} />
-
-            <LiveActivityFeed />
           </div>
         </div>
 
@@ -418,7 +403,7 @@ export function ArenaPageClient() {
                     isViewer={viewer?.agentId === entry.agentId}
                     isExpanded={expandedAgentId === entry.agentId}
                     onToggleExpand={() => setExpandedAgentId((prev) => prev === entry.agentId ? null : entry.agentId)}
-                    staggerIndex={hasInitiallyRendered.current ? undefined : index}
+                    staggerIndex={index}
                     activeWindow={activeWindow}
                     compareMode={compare.mode}
                     isCompareSelected={compare.selection === entry.agentId}

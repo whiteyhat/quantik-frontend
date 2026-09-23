@@ -9,14 +9,15 @@ import {
 } from "@/context/SocketContext";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { positionShares, positionValue } from "@/lib/positions";
 
 const COLLAPSED_COUNT = 3;
 const PAGE_SIZE = 10;
 
-function fmtCountdown(iso: string | null | undefined): string {
+function fmtCountdown(iso: string | null | undefined, endedLabel: string): string {
   if (!iso) return "—";
   const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return "Ended";
+  if (ms <= 0) return endedLabel;
   const days = Math.floor(ms / 86_400_000);
   const hours = Math.floor((ms % 86_400_000) / 3_600_000);
   if (days > 0) return `${days}d ${hours}h`;
@@ -33,7 +34,6 @@ interface LivePositionsTableProps {
 
 export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpenPosition }: LivePositionsTableProps) {
   const t = useTranslations("manageAgent");
-  const tc = useTranslations("common");
   const myAgent = useQuantikStore((s) => s.myAgent);
   const agentEmoji = myAgent?.avatar_emoji ?? "\u{1F916}";
   const agentName = myAgent?.name ?? "Agent";
@@ -66,7 +66,8 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
   const activeCount = positions.length;
 
   return (
-    <div className="glass-card glass-panel-compact">
+    // @container: switch between the card list and the table on the CARD's width, not the viewport's
+    <div className="glass-card glass-panel-compact @container">
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <h2
@@ -91,7 +92,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
             fontFamily: '"SF Mono", monospace',
           }}
         >
-          {activeCount} {tc("active")}
+          {t("positionsActive", { count: activeCount })}
         </span>
       </div>
 
@@ -115,11 +116,12 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
         </div>
       ) : (
         <>
-          {/* Mobile card view */}
-          <div className="flex flex-col gap-2 md:hidden">
+          {/* Compact card view (narrow card) */}
+          <div className="flex flex-col gap-2 @min-[44rem]:hidden">
             {visiblePositions.map((pos) => {
               const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
               const isAutopilot = pos.source === "autopilot";
+              const currentValue = positionValue(pos);
               return (
                 <div
                   key={pos.id}
@@ -134,7 +136,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                     <span style={{ fontSize: 14 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
-                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.80)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span title={pos.market} style={{ fontSize: 13, color: "rgba(255,255,255,0.80)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {pos.market}
                     </span>
                     <span
@@ -151,14 +153,15 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                       {pos.direction}
                     </span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", gap: 12, fontFamily: '"SF Mono", monospace', fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
-                      <span>{pos.size.toFixed(1)} sh</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "4px 12px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 12px", fontFamily: '"SF Mono", monospace', fontSize: 11, color: "rgba(255,255,255,0.50)" }}>
+                      <span>{t("sharesCount", { count: positionShares(pos).toFixed(1) })}</span>
                       <span>@ {fmtPrice(pos.currentPrice)}</span>
-                      <span>{fmtCountdown(pos.resolutionDate)}</span>
+                      <span title={t("currentValue")}>{t("valueShort", { value: fmtUSDC(currentValue) })}</span>
+                      <span>{fmtCountdown(pos.resolutionDate, t("ended"))}</span>
                     </div>
-                    <span style={{ fontFamily: '"SF Mono", monospace', fontSize: 12, fontWeight: 600, color: pnlColor }}>
-                      {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)}
+                    <span style={{ fontFamily: '"SF Mono", monospace', fontSize: 12, fontWeight: 600, color: pnlColor, whiteSpace: "nowrap" }}>
+                      {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)} ({pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%)
                     </span>
                   </div>
                 </div>
@@ -166,8 +169,8 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
             })}
           </div>
 
-          {/* Desktop table */}
-          <div className="hidden md:block md:overflow-x-auto">
+          {/* Table view (card wide enough for all nine columns; scrolls sideways inside the card if needed) */}
+          <div className="hidden @min-[44rem]:block" style={{ overflowX: "auto" }}>
             <style>{`
               @keyframes bounceRight {
                 0%, 100% { transform: translateX(0); }
@@ -178,7 +181,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
               <thead>
                 <tr>
                   {[
-                    t("source") ?? "Source",
+                    t("source"),
                     t("marketTitle"),
                     t("outcome"),
                     t("shares"),
@@ -192,14 +195,15 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                       key={`${h}-${i}`}
                       style={{
                         textAlign: "left",
-                        padding: "8px 10px",
+                        verticalAlign: "bottom",
+                        padding: "8px 6px",
                         fontSize: 10,
                         fontWeight: 700,
+                        lineHeight: 1.3,
                         color: "rgba(255,255,255,0.30)",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         borderBottom: "1px solid rgba(255,255,255,0.06)",
-                        whiteSpace: "nowrap",
                       }}
                     >
                       {h}
@@ -210,7 +214,7 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
               <tbody>
                 {visiblePositions.map((pos) => {
                   const pnlColor = pos.pnl >= 0 ? "#30d158" : "#ff453a";
-                  const currentValue = pos.size * pos.currentPrice;
+                  const currentValue = positionValue(pos);
                   const isHovered = hoveredRow === pos.id;
                   const isAutopilot = pos.source === "autopilot";
                   return (
@@ -228,17 +232,17 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                     >
                       {/* Source: agent emoji for autopilot, human for manual */}
                       <td
-                        style={{ padding: "10px", whiteSpace: "nowrap" }}
-                        title={isAutopilot ? agentName : "Manual"}
+                        style={{ padding: "10px 6px", whiteSpace: "nowrap" }}
+                        title={isAutopilot ? agentName : t("manualTrade")}
                       >
                         <span style={{ fontSize: 16 }}>{isAutopilot ? agentEmoji : "\u{1F9D1}"}</span>
                       </td>
                       {/* Market */}
-                      <td style={{ padding: "10px", fontSize: 13, color: "rgba(255,255,255,0.80)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {pos.market}
+                      <td title={pos.market} style={{ padding: "10px 6px", fontSize: 13, lineHeight: 1.35, color: "rgba(255,255,255,0.80)", minWidth: 150 }}>
+                        <span className="line-clamp-2">{pos.market}</span>
                       </td>
                       {/* Outcome */}
-                      <td style={{ padding: "10px" }}>
+                      <td style={{ padding: "10px 6px" }}>
                         <span
                           style={{
                             padding: "2px 8px",
@@ -253,27 +257,28 @@ export function LivePositionsTable({ positions, loading, onPositionUpdate, onOpe
                         </span>
                       </td>
                       {/* Shares */}
-                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-                        {pos.size.toFixed(1)}
+                      <td style={{ padding: "10px 6px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)", whiteSpace: "nowrap" }}>
+                        {positionShares(pos).toFixed(1)}
                       </td>
                       {/* Current Price */}
-                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                      <td style={{ padding: "10px 6px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)", whiteSpace: "nowrap" }}>
                         {fmtPrice(pos.currentPrice)}
                       </td>
                       {/* Current Value */}
-                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
+                      <td style={{ padding: "10px 6px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.70)", whiteSpace: "nowrap" }}>
                         {fmtUSDC(currentValue)}
                       </td>
                       {/* PnL */}
-                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: pnlColor, fontWeight: 600 }}>
-                        {pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)} / {pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%
+                      <td style={{ padding: "10px 6px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: pnlColor, fontWeight: 600, whiteSpace: "nowrap" }}>
+                        <div>{pos.pnl >= 0 ? "+" : ""}{fmtUSDC(pos.pnl)}</div>
+                        <div style={{ fontSize: 11, opacity: 0.75 }}>{pos.pnlPct >= 0 ? "+" : ""}{(pos.pnlPct * 100).toFixed(1)}%</div>
                       </td>
                       {/* Resolution Date */}
-                      <td style={{ padding: "10px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
-                        {fmtCountdown(pos.resolutionDate)}
+                      <td style={{ padding: "10px 6px", fontFamily: '"SF Mono", monospace', fontSize: 12, color: "rgba(255,255,255,0.40)", whiteSpace: "nowrap" }}>
+                        {fmtCountdown(pos.resolutionDate, t("ended"))}
                       </td>
                       {/* Hover arrow */}
-                      <td style={{ padding: "10px 8px", width: 28 }}>
+                      <td style={{ padding: "10px 4px", width: 24 }}>
                         <span
                           style={{
                             display: "inline-block",

@@ -266,9 +266,16 @@ export default function ManageAgentPage() {
 
       {/* ─── Dashboard Tab ──────────────────────────────────────────────────── */}
       {activeTab === "dashboard" && (
-        <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-5">
-          {/* LEFT COLUMN */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+        // Two columns only when the right one gets at least 22rem (measured on the page, not the
+        // viewport): narrower, its scanner and execution rows could not show a market name.
+        // Three groups: MAIN and MORE stack in the left column, the RAIL (status and controls,
+        // led by the tall autopilot card) spans both rows on the right, so the columns end
+        // close together. Stacked (narrow), they read MAIN, RAIL, MORE. On very wide pages the rail
+        // stops growing at 26rem, or the wide left column would run far past it.
+        <div className="@container">
+        <div data-agent-grid className="grid grid-cols-1 gap-x-5 gap-y-4 @min-[62rem]:grid-cols-[minmax(0,7fr)_minmax(22rem,3fr)] @min-[100rem]:grid-cols-[minmax(0,1fr)_26rem] @min-[62rem]:grid-rows-[auto_1fr]">
+          {/* MAIN (left column, top) */}
+          <div className="@min-[62rem]:col-start-1 @min-[62rem]:row-start-1" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
               <AgentIdentityHeader
                 wallet={storeWallet}
                 timePeriod={timePeriod}
@@ -295,8 +302,8 @@ export default function ManageAgentPage() {
             )}
           </div>
 
-          {/* RIGHT COLUMN */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          {/* RAIL (right column, both rows) */}
+          <div className="@min-[62rem]:col-start-2 @min-[62rem]:row-start-1 @min-[62rem]:row-span-2" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
             <PolymarketStatusCard
               agentId={storeAgent?.id ?? ""}
               walletAddress={storeAgent?.wallet_address ?? null}
@@ -327,6 +334,10 @@ export default function ManageAgentPage() {
                 onWalletRefresh={refreshWallet}
               />
             )}
+          </div>
+
+          {/* MORE (left column, under MAIN) */}
+          <div className="@min-[62rem]:col-start-1 @min-[62rem]:row-start-2" style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
             <AiInsightCard signals={signals} loading={loading} />
             {storeAgent?.agent_type === "byo" ? (
               <>
@@ -359,6 +370,7 @@ export default function ManageAgentPage() {
             )}
             <SystemLogFeed />
           </div>
+        </div>
         </div>
       )}
 

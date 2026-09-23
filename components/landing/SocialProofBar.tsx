@@ -2,9 +2,9 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useInView } from "react-intersection-observer";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { AnimatedCounter } from "@/components/arena/AnimatedCounter";
-import { fmtNumber } from "@/lib/formatters";
+import { fmtCount } from "@/lib/formatters";
 import { SectionShell } from "./SectionShell";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
 
@@ -36,7 +36,7 @@ function ScrambleStat({
       const randomized = Math.floor(
         value * (0.8 + Math.random() * 0.4)
       );
-      setScrambleValue(fmtNumber(randomized, locale));
+      setScrambleValue(fmtCount(randomized, locale));
       count++;
       if (count >= 6) {
         clearInterval(interval);
@@ -72,7 +72,7 @@ function ScrambleStat({
         {scrambleValue ?? (
           <AnimatedCounter
             value={triggered ? value : 0}
-            format={(v) => fmtNumber(Math.round(v), locale)}
+            format={(v) => fmtCount(v, locale)}
             duration={1200}
           />
         )}
@@ -94,13 +94,10 @@ function ScrambleStat({
 
 export function SocialProofBar() {
   const t = useTranslations("landing");
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
-  const [triggered, setTriggered] = useState(false);
+  // triggerOnce keeps inView true after the first reveal, so it doubles as
+  // the "count up once" trigger.
+  const { ref, inView: triggered } = useInView({ triggerOnce: true, threshold: 0.3 });
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (inView) setTriggered(true);
-  }, [inView]);
 
   const isTouchDevice = useTouchDevice();
 

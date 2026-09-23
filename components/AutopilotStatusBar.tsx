@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { type AutopilotAgentStatus } from "@/lib/api";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 type StatusTone = {
   label: string;
@@ -88,6 +89,7 @@ interface AutopilotStatusBarProps {
 
 export function AutopilotStatusBar({ status }: AutopilotStatusBarProps) {
   const t = useTranslations("autopilot");
+  const statusLabel = useStatusLabel();
   const tone = useMemo(() => deriveTone(status, t), [status, t]);
   const [countdown, setCountdown] = useState<number | null>(null);
 
@@ -114,9 +116,8 @@ export function AutopilotStatusBar({ status }: AutopilotStatusBarProps) {
     return `${mins}:${secs}`;
   };
 
-  const lastReason = status?.activity.lastReasonCode
-    ? String(status.activity.lastReasonCode).replace(/_/g, " ").toUpperCase()
-    : "—";
+  // Reason codes are server enums ("edge_below_threshold"): show them in the viewer's language
+  const lastReason = statusLabel(status?.activity.lastReasonCode ? String(status.activity.lastReasonCode) : null);
 
   return (
     <div

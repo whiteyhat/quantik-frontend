@@ -74,8 +74,8 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   return (
     <div id="tour-agent-identity" className="glass-card glass-panel-compact">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-        {/* Left: Avatar + Identity */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* Left: Avatar + Identity (identity drops under the avatar when the card is narrow) */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, minWidth: 0 }}>
           {/* Avatar */}
           <div
             style={{
@@ -118,9 +118,9 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             )}
           </div>
 
-          <div>
+          <div style={{ flex: "1 1 12rem", minWidth: 0 }}>
             {/* Name + Status badge */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 10px" }}>
               <span
                 style={{
                   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -128,6 +128,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
                   fontWeight: 700,
                   color: "rgba(255,255,255,0.92)",
                   letterSpacing: "0.03em",
+                  overflowWrap: "anywhere",
                 }}
               >
                 {myAgent.name || myAgent.agent_code}
@@ -153,7 +154,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             </div>
 
             {/* Wallet address */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
                 {t("wdkWallet")}{truncAddr(myAgent.wallet_address || "")}
               </span>
@@ -190,7 +191,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
             </div>
 
             {/* Balance */}
-            <div style={{ marginTop: 6, display: "flex", alignItems: "baseline", gap: 8 }}>
+            <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 8 }}>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 {t("balance")}
               </span>
@@ -241,7 +242,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
                   transition: "all 150ms ease",
                 }}
               >
-                {p}
+                {tCommon(`period${p}`)}
               </button>
             ))}
           </div>

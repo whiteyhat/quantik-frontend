@@ -2083,32 +2083,9 @@
 }
 
 @media (max-width: 1100px) {
-  .arena-prelude-lockup,
-  .arena-telemetry-strip,
+  /* The podium adapts to the stage card's width instead (see "Round 2") */
   .arena-dock-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .arena-stage-layout {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .arena-stage-pylon:first-of-type {
-    order: 2;
-  }
-
-  .arena-throne-card {
-    order: 1;
-  }
-
-  .arena-stage-pylon:last-of-type {
-    order: 3;
-  }
-
-  .arena-pylon-card--left,
-  .arena-pylon-card--right {
-    transform: none;
   }
 }
 
@@ -2161,17 +2138,14 @@
     border-radius: 28px;
   }
 
-  .arena-prelude-lockup,
-  .arena-prelude-metrics,
-  .arena-telemetry-strip,
   .arena-throne-strip,
   .arena-dock-metrics,
   .arena-lane-intel {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .arena-war-controls,
-  .arena-dock-rival-metrics {
+  /* The rival's two numbers fit side by side even at 360px */
+  .arena-war-controls {
     flex-direction: column;
   }
 
@@ -2288,16 +2262,13 @@
   opacity: 0.85;
 }
 
-.arena-lane-sparkline {
+/* All-time line + sparkline under the window P&L (the P&L itself sits outside) */
+.arena-lane-trend {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-@media (max-width: 720px) {
-  .arena-lane-sparkline {
-    display: none;
-  }
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
 }
 
 /* ─── Mobile <480px ─────────────────────────────────────────────────────── */
@@ -2313,11 +2284,6 @@
   .arena-prelude-metrics {
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
-  }
-
-  .arena-stage-layout {
-    flex-direction: column;
-    gap: 0.75rem;
   }
 
   .arena-stage-pylon {
@@ -2721,11 +2687,6 @@
    PHASE 4: Live Activity Feed
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@keyframes arena-feed-enter {
-  from { opacity: 0; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
 .arena-feed {
   display: flex;
   flex-direction: column;
@@ -2750,6 +2711,7 @@
   animation-play-state: paused;
 }
 
+/* Entrance is a framer-motion spring (LiveActivityFeed); CSS only styles */
 .arena-feed-item {
   display: flex;
   align-items: center;
@@ -2762,15 +2724,67 @@
   font-size: 12px;
   font-family: "SF Mono", "JetBrains Mono", monospace;
   color: var(--text-secondary);
-  animation: arena-feed-enter 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
 }
 
-.arena-feed-item--climb { border-left-color: #34d399; }
-.arena-feed-item--drop { border-left-color: #f87171; }
+.arena-feed-item--climb,
+.arena-feed-item--win { border-left-color: #34d399; }
+.arena-feed-item--drop,
+.arena-feed-item--loss { border-left-color: #f87171; }
 .arena-feed-item--crown { border-left-color: #ffd966; }
+.arena-feed-item--streak { border-left-color: #ff9f43; }
 
 .arena-feed-emoji { font-size: 16px; flex-shrink: 0; }
-.arena-feed-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arena-feed-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.arena-feed-time {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 1px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.34);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.arena-feed-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ambient layer: a slow breathing dot says "this is live" without shouting */
+.arena-feed-live {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+}
+
+.arena-feed-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: arena-feed-live-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes arena-feed-live-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  70%, 100% { transform: scale(2.6); opacity: 0; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PHASE 4: Head-to-Head Comparison Modal
@@ -3037,6 +3051,7 @@
   .arena-heat-wrap::after,
   .arena-badge--legendary,
   .arena-feed-item,
+  .arena-feed-live::after,
   .arena-badge {
     animation: none !important;
   }
@@ -3349,6 +3364,11 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* The page column already provides the gutter */
+.arena-public-profile .arena-public-demo-banner {
+  margin: 0;
 }
 
 .arena-public-hero {
@@ -4061,5 +4081,804 @@
     animation: none !important;
     stroke-dashoffset: 0 !important;
     opacity: 1 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fit fixes: long names, 4-digit P&L and static copy must stay inside cards
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The champion card sizes its numbers to its own width, not the viewport */
+.arena-throne-card {
+  container-type: inline-size;
+}
+
+.arena-throne-pnl {
+  font-size: clamp(1.6rem, 10.5cqi, 4.2rem);
+  white-space: nowrap;
+}
+
+.arena-throne-agent {
+  flex: 1;
+  min-width: 0;
+}
+
+@container (max-width: 380px) {
+  .arena-throne-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 2.3rem;
+  }
+
+  .arena-throne-name-row {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+  }
+
+  .arena-throne-name {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .arena-throne-name-row .arena-badge-row {
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
+  .arena-throne-pnl-stack {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .arena-throne-pnl-copy {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* Telemetry cards hold one flipper: give it the whole row so titles ellipsize */
+.arena-telemetry-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.arena-telemetry-flipper,
+.arena-telemetry-front .arena-telemetry-copy {
+  min-width: 0;
+}
+
+.arena-telemetry-front .arena-telemetry-copy {
+  flex: 1;
+}
+
+/* Flank metric labels ("Open positions") wrap inside their tiles */
+.arena-pylon-metrics > div {
+  min-width: 0;
+  padding: 0.75rem 0.75rem;
+}
+
+.arena-pylon-metrics span {
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+/* Flyout: columns may shrink below their content; one column on phones.
+   (The base two-column rule sits after the old 480px override, which never won.) */
+.arena-flyout-inner {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.arena-flyout-inner > * {
+  min-width: 0;
+}
+
+.arena-flyout-chart svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.arena-flyout-stats {
+  flex-wrap: wrap;
+  row-gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .arena-flyout-inner {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem;
+  }
+
+  .arena-flyout-market-row {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .arena-flyout-market-slug {
+    flex-basis: 100%;
+  }
+}
+
+/* Stacked war controls: a 300px flex-basis would become the search box height */
+@media (max-width: 720px) {
+  .arena-war-controls .arena-search-shell {
+    flex: 0 0 auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Round 2: the champion above the fold, the window stated once, lanes that
+   fit a phone. Rules here win over the older ones above.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Prelude: title on the left; window tabs, status and the viewer's reticle on
+   the right; one compact metric strip underneath */
+.arena-prelude {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+  align-items: center;
+  gap: 0.9rem 1.25rem;
+  padding: 1.05rem clamp(1rem, 2vw, 1.4rem);
+  border-radius: 30px;
+}
+
+.arena-prelude-copy {
+  align-self: center;
+}
+
+.arena-prelude-copy .arena-eyebrow {
+  margin-bottom: 0.45rem;
+}
+
+.arena-title {
+  margin-top: 0;
+  font-size: clamp(2.2rem, 4.4vw, 4.2rem);
+}
+
+.arena-subtitle {
+  margin-top: 0.55rem;
+  max-width: 40rem;
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.arena-prelude-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tabs orb"
+    "badges orb";
+  align-items: center;
+  gap: 0.7rem 0.85rem;
+  padding: 0.75rem;
+  border-radius: 26px;
+}
+
+.arena-prelude-panel > .arena-tabs {
+  grid-area: tabs;
+}
+
+.arena-prelude-panel > .arena-prelude-badges {
+  grid-area: badges;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.arena-prelude-panel > .arena-prelude-target {
+  grid-area: orb;
+}
+
+.arena-prelude-target {
+  width: 120px;
+  border-radius: 22px;
+  justify-self: end;
+}
+
+.arena-prelude-target__field {
+  inset: 6px;
+}
+
+.arena-prelude-target__rings {
+  inset: 8px;
+}
+
+.arena-prelude-target__rings::before {
+  inset: 10px;
+}
+
+.arena-prelude-target__rings::after {
+  inset: 19px;
+}
+
+.arena-prelude-target__core {
+  width: 66px;
+  height: 66px;
+  gap: 0.12rem;
+  padding: 0.3rem;
+  text-align: center;
+  box-shadow:
+    0 0 0 8px rgba(87, 216, 255, 0.05),
+    0 16px 36px rgba(0, 0, 0, 0.34);
+}
+
+.arena-prelude-target__core span {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.arena-prelude-target__core strong {
+  font-size: 0.68rem;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+
+/* Window tabs: each tab takes what its label needs, labels shrink with the
+   bar, never get cut ("HISTÓRICO", "HISTORIQUE" at 360px) */
+.arena-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  container-type: inline-size;
+}
+
+.arena-tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.55rem clamp(0.4rem, 3cqi, 0.9rem);
+}
+
+.arena-tab:not(.arena-tab--active) {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.arena-tab::before {
+  inset: -120% -40%;
+  opacity: 0.32;
+}
+
+.arena-tab__label {
+  font-size: clamp(0.64rem, 3.6cqi, 0.8rem);
+  letter-spacing: clamp(0.03em, 0.6cqi, 0.12em);
+  white-space: nowrap;
+}
+
+/* Metric strip: four numbers in one glass bar, no hint lines */
+.arena-prelude-metrics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0.3rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(8, 10, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.arena-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.5rem 0.95rem;
+}
+
+.arena-metric + .arena-metric {
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.arena-metric dt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+
+.arena-metric dd {
+  margin: 0;
+  font-family: var(--font-arena-display);
+  font-size: clamp(1.2rem, 1.9vw, 1.55rem);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.arena-metric--info dd { color: #9be7ff; }
+.arena-metric--good dd { color: #c2ffda; }
+.arena-metric--bad dd { color: #ffc3bc; }
+
+@media (max-width: 1100px) {
+  .arena-prelude {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .arena-prelude-panel {
+    grid-template-areas:
+      "tabs tabs"
+      "badges orb";
+  }
+
+  .arena-prelude-target {
+    width: 96px;
+  }
+
+  .arena-prelude-target__rings::after {
+    inset: 14px;
+  }
+
+  .arena-prelude-target__core {
+    width: 56px;
+    height: 56px;
+  }
+
+  .arena-prelude-target__core span {
+    font-size: 1.25rem;
+  }
+
+  .arena-prelude-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arena-metric:nth-child(3) {
+    border-left: 0;
+  }
+
+  .arena-metric:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .arena-metric {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Phones: the champion matters more than the tagline */
+@media (max-width: 560px) {
+  .arena-subtitle {
+    display: none;
+  }
+}
+
+/* Stage header: one label and one freshness chip */
+.arena-stage-card .arena-stage-header {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.arena-stage-layout {
+  margin-top: 0;
+}
+
+.arena-telemetry-strip {
+  margin-top: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* The podium follows the stage card's width (every command-center card is a
+   "cc-card" size container): three columns only when there is room for three */
+@container cc-card (max-width: 999px) {
+  .arena-stage-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  /* Champion (2nd child: the card or its heat glow) takes the whole first row */
+  .arena-stage-layout > :nth-child(2) {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+
+  .arena-pylon-card--left,
+  .arena-pylon-card--right {
+    transform: none;
+  }
+
+  .arena-pylon-card,
+  .arena-throne-card {
+    min-height: 0;
+  }
+
+  .arena-telemetry-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arena-throne-strip {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+@container cc-card (min-width: 620px) and (max-width: 999px) {
+  /* Wide champion: portrait and P&L side by side keep the card short */
+  .arena-throne-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: center;
+    gap: 1rem 1.25rem;
+  }
+
+  .arena-throne-topline,
+  .arena-throne-strip,
+  .arena-throne-foot {
+    grid-column: 1 / -1;
+  }
+}
+
+@container cc-card (max-width: 559px) {
+  .arena-stage-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* Stacked podium on a phone: flanks keep rank, name, P&L and two numbers */
+  .arena-pylon-card {
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 24px;
+  }
+
+  .arena-pylon-foot {
+    display: none;
+  }
+
+  .arena-throne-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .arena-throne-stat {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .arena-throne-stat span {
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+    overflow-wrap: normal;
+    hyphens: auto;
+  }
+}
+
+@container cc-card (max-width: 440px) {
+  /* Two narrow telemetry cards per row: the icon gives its room to the text */
+  .arena-telemetry-card svg:not(.arena-telemetry-trend) {
+    display: none;
+  }
+
+  .arena-telemetry-card {
+    padding: 0.75rem 0.8rem;
+  }
+}
+
+/* Champion card: the P&L is the biggest number, "#1" steps back, and the
+   title line states the race instead of repeating the kicker */
+.arena-throne-topline {
+  align-items: flex-start;
+  padding-right: 3.3rem; /* the crown sits in the corner */
+}
+
+.arena-throne-title-stack {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.arena-throne-rank-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.arena-throne-rank {
+  font-size: 2.6rem;
+}
+
+.arena-throne-title-stack .arena-section-kicker {
+  letter-spacing: 0.12em;
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+
+.arena-throne-title-stack .arena-rank-delta {
+  align-self: flex-start;
+  width: auto;
+}
+
+/* The champion's name never breaks at its hyphen ("VEX-/9"): one line, the
+   badges wrap underneath when the portrait is narrow */
+.arena-throne-name-row {
+  flex-wrap: wrap;
+  row-gap: 0.35rem;
+}
+
+.arena-throne-name {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.arena-throne-lead {
+  margin-top: 0.3rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* The runner-up's name never splits at its hyphen */
+.arena-throne-lead__name {
+  color: var(--text-primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.arena-throne-pnl-shell {
+  container-type: inline-size;
+}
+
+.arena-throne-pnl-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.55rem;
+}
+
+.arena-throne-pnl {
+  /* Sized from the shell's width: "+$12,146.80" still fits on one line */
+  font-size: clamp(1.6rem, 14.5cqi, 3.6rem);
+}
+
+.arena-throne-pnl-copy {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.55rem;
+  text-align: left;
+}
+
+/* Flank cards: two tiles side by side while each has room for its label */
+.arena-pylon-card {
+  container: arena-pylon / inline-size;
+}
+
+.arena-pylon-metrics span {
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+
+@container arena-pylon (max-width: 17rem) {
+  /* Narrow tiles: tighter labels keep "TREFFERQUOTE" whole */
+  .arena-pylon-metrics span {
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+@container arena-pylon (max-width: 15rem) {
+  .arena-pylon-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Telemetry back face: the market question gets two lines, and the card's own
+   padding (the face sits inside it) */
+.arena-telemetry-back {
+  padding: 0;
+}
+
+.arena-telemetry-title--wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  font-size: 0.84rem;
+  line-height: 1.25;
+}
+
+/* Lanes on phones: one compact row (rank, agent, window P&L); the details live
+   one tap away in the lane's panel */
+@media (max-width: 720px) {
+  .arena-lane {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: 0.6rem;
+    min-height: 0;
+    padding: 0.6rem 0.8rem 0.6rem 0.6rem;
+    border-radius: 22px;
+  }
+
+  .arena-lane-rankblade {
+    width: 46px;
+    height: 46px;
+    align-self: center;
+    flex-direction: column;
+    gap: 2px;
+    border-radius: 15px;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+  }
+
+  .arena-lane-rankblade .arena-rank-delta {
+    padding: 0 3px;
+    font-size: 0.58rem;
+  }
+
+  .arena-lane-agent {
+    gap: 0.6rem;
+  }
+
+  .arena-lane-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+
+  .arena-lane-agent {
+    gap: 0.5rem;
+  }
+
+  .arena-lane .arena-board-name {
+    font-size: 0.92rem;
+  }
+
+  /* The code stays on one line ("Q-DEMO-" / "VEX9" read as two things) */
+  .arena-lane-meta > span:first-child {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .arena-lane .arena-badge-row,
+  .arena-lane-meta > span:not(:first-child),
+  .arena-lane-trend,
+  .arena-lane-intel,
+  .arena-lane-trail {
+    display: none;
+  }
+
+  .arena-lane-meta {
+    margin-top: 0.1rem;
+  }
+
+  .arena-lane-pnl {
+    grid-column: auto;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .arena-lane-pnl strong {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .arena-lane .arena-viewer-tag {
+    min-height: 20px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  .arena-lane--viewer::after {
+    inset: 6px;
+  }
+}
+
+/* Contender numbers: two per row whenever the dock is phone-wide or wider */
+@container cc-card (min-width: 300px) {
+  .arena-dock-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The back face exists only while its card is flipped: until then it sat
+   under the front for screen readers and text-fit checks */
+.arena-telemetry-back {
+  visibility: hidden;
+  transition: visibility 0s 0.25s;
+}
+
+.arena-telemetry-card:hover .arena-telemetry-back,
+.arena-telemetry-card:focus-visible .arena-telemetry-back {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-telemetry-flipper {
+    transition: none;
+  }
+}
+
+/* Opening a lane scrolls its panel into view: keep clear of the phone tab bar */
+.arena-lane {
+  scroll-margin-top: 16px;
+}
+
+.arena-flyout {
+  scroll-margin-bottom: 16px;
+}
+
+@media (max-width: 1023px) {
+  .arena-flyout {
+    scroll-margin-bottom: 96px;
+  }
+}
+
+/* Lanes between phone and wide desktop: name and P&L on top, the four numbers
+   in one row, status and last trade in a slim line (was ~455px per lane) */
+@media (min-width: 721px) and (max-width: 1420px) {
+  .arena-lane {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "rank agent pnl"
+      "rank intel intel"
+      "rank trail trail";
+    gap: 0.65rem 0.85rem;
+  }
+
+  .arena-lane-rankblade {
+    grid-area: rank;
+  }
+
+  .arena-lane-agent {
+    grid-area: agent;
+  }
+
+  .arena-lane-pnl {
+    grid-area: pnl;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .arena-lane-trend {
+    justify-content: flex-end;
+  }
+
+  .arena-lane-intel {
+    grid-area: intel;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .arena-lane-intel-chip {
+    padding: 0.55rem 0.75rem;
+    border-radius: 14px;
+  }
+
+  .arena-lane-trail {
+    grid-area: trail;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .arena-lane-last {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.45rem;
+  }
+
+  .arena-lane-trail .arena-follow-star {
+    margin-left: auto;
   }
 }

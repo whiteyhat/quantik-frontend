@@ -127,3 +127,33 @@ describe("viewerIdentityChanged", () => {
     expect(viewerIdentityChanged({ mode: "member", userId: "u1" }, { mode: "member", userId: "u1" })).toBe(false);
   });
 });
+
+import { viewerNeedsReset } from "@/lib/viewer";
+
+describe("viewerNeedsReset", () => {
+  const loading = { mode: "loading" as const, userId: null };
+  const guest = { mode: "guest" as const, userId: null };
+  it("resets on a real identity change", () => {
+    expect(viewerNeedsReset(guest, { mode: "member", userId: "u1" }, false)).toBe(true);
+  });
+  it("leaves a normal first resolution alone", () => {
+    expect(viewerNeedsReset(loading, guest, false)).toBe(false);
+  });
+  it("resets (refetches everything) when a read gave up waiting for a slow sign-in check", () => {
+    expect(viewerNeedsReset(loading, guest, true)).toBe(true);
+    expect(viewerNeedsReset(loading, { mode: "member", userId: "u1" }, true)).toBe(true);
+  });
+  it("never resets while still loading", () => {
+    expect(viewerNeedsReset(loading, loading, true)).toBe(false);
+  });
+});
+
+describe("resolveViewerMode when Clerk fails to load", () => {
+  it("treats the visitor as a guest: nobody can be signed in without Clerk", () => {
+    const v = resolveViewerMode({ clerkLoaded: false, clerkFailed: true, signedIn: false, access: null });
+    expect(v).toMatchObject({ mode: "guest", isDemo: true, canAct: false, isSignedIn: false });
+  });
+  it("keeps waiting while Clerk is merely slow", () => {
+    expect(resolveViewerMode({ clerkLoaded: false, clerkFailed: false, signedIn: false, access: null }).mode).toBe("loading");
+  });
+});

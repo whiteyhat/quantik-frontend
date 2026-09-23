@@ -1,10 +1,12 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { motion, useScroll, useReducedMotion } from "framer-motion";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
+import { activeSectionIndex, sectionScrollTop, type SectionBox } from "@/lib/landingSections";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProofBar } from "@/components/landing/SocialProofBar";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -72,83 +74,130 @@ function ScrollProgressBar() {
   );
 }
 
-const SECTION_IDS = [
-  "hero",
-  "social-proof",
-  "how-it-works",
-  "inside",
-  "faq",
-  "cta",
-];
+// Page order. `label` is the key under landing.sectionNav.
+const SECTIONS = [
+  { id: "hero", label: "hero" },
+  { id: "how-it-works", label: "howItWorks" },
+  { id: "inside", label: "inside" },
+  { id: "social-proof", label: "socialProof" },
+  { id: "faq", label: "faq" },
+  { id: "cta", label: "cta" },
+] as const;
+
+// Springy grow for the active dot, smooth settle for colour and opacity.
+const DOT_TRANSITION = [
+  "transform 260ms cubic-bezier(0.34, 1.2, 0.64, 1)",
+  "opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+  "background-color 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+].join(", ");
+
+function measureSection(id: string): SectionBox {
+  const el = document.getElementById(id);
+  if (!el) return { top: Number.POSITIVE_INFINITY, height: 0 };
+  const rect = el.getBoundingClientRect();
+  return { top: rect.top + window.scrollY, height: rect.height };
+}
 
 function SectionDotNav() {
+  const t = useTranslations("landing.sectionNav");
   const reduced = useReducedMotion();
   const isTouch = useTouchDevice();
-  const { scrollYProgress } = useScroll();
-  const dotContainerRef = useRef<HTMLDivElement>(null);
+  const enabled = !reduced && !isTouch;
+  const [active, setActive] = useState(0);
+  const [hovered, setHovered] = useState<number | null>(null);
 
+  // Scroll-spy: the dot follows the section under the middle of the screen,
+  // measured from the real section positions (they differ a lot in height).
   useEffect(() => {
-    if (reduced || isTouch) return;
-
-    const unsubscribe = scrollYProgress.on("change", (v) => {
-      if (!dotContainerRef.current) return;
-      const dots = dotContainerRef.current.children;
-      const activeIndex = Math.min(
-        Math.floor(v * SECTION_IDS.length),
-        SECTION_IDS.length - 1
+    if (!enabled) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setActive(
+        activeSectionIndex(
+          SECTIONS.map(({ id }) => measureSection(id)),
+          window.scrollY,
+          window.innerHeight,
+          document.documentElement.scrollHeight,
+        ),
       );
-      for (let i = 0; i < dots.length; i++) {
-        const dot = dots[i] as HTMLElement;
-        const isActive = i === activeIndex;
-        dot.style.opacity = isActive ? "1" : "0.2";
-        dot.style.width = isActive ? "8px" : "6px";
-        dot.style.height = isActive ? "8px" : "6px";
-        dot.style.background = isActive
-          ? "#007AFF"
-          : "rgba(255,255,255,0.8)";
-      }
-    });
-    return unsubscribe;
-  }, [scrollYProgress, reduced, isTouch]);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    // FAQ answers opening and lazy sections settling change section heights.
+    const resizes = new ResizeObserver(schedule);
+    resizes.observe(document.body);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      resizes.disconnect();
+    };
+  }, [enabled]);
 
-  if (reduced || isTouch) return null;
+  if (!enabled) return null;
+
+  const goTo = (id: string) => {
+    window.scrollTo({
+      top: sectionScrollTop(
+        measureSection(id),
+        window.innerHeight,
+        document.documentElement.scrollHeight,
+      ),
+      behavior: "smooth",
+    });
+  };
 
   return (
-    <div
-      ref={dotContainerRef}
+    <nav
+      aria-label={t("label")}
       style={{
         position: "fixed",
-        right: 20,
+        right: 14,
         top: "50%",
         transform: "translateY(-50%)",
         flexDirection: "column",
-        gap: 12,
         zIndex: 55,
         alignItems: "center",
       }}
       className="hidden md:flex"
+      onMouseLeave={() => setHovered(null)}
     >
-      {SECTION_IDS.map((id) => (
-        <div
-          key={id}
-          role="button"
-          aria-label={id}
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.8)",
-            opacity: 0.2,
-            transition: "all 300ms ease",
-            cursor: "pointer",
-          }}
-          onClick={() => {
-            const el = document.getElementById(id);
-            el?.scrollIntoView({ behavior: "smooth" });
-          }}
-        />
-      ))}
-    </div>
+      {SECTIONS.map(({ id, label }, index) => {
+        const isActive = index === active;
+        const name = t(label);
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-label={name}
+            title={name}
+            aria-current={isActive ? "location" : undefined}
+            onClick={() => goTo(id)}
+            onMouseEnter={() => setHovered(index)}
+            className="grid size-5 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[#007AFF]/70"
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: "block",
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: isActive ? "#007AFF" : "rgba(255,255,255,0.8)",
+                opacity: isActive ? 1 : hovered === index ? 0.6 : 0.2,
+                transform: isActive ? "scale(1.34)" : "scale(1)",
+                transition: DOT_TRANSITION,
+              }}
+            />
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -194,14 +243,14 @@ export default function LandingPage() {
             "linear-gradient(180deg, transparent 0%, rgba(5,5,8,0.95) 120px, #050508 240px)",
         }}
       >
-        <div id="social-proof">
-          <SocialProofBar />
-        </div>
         <div id="how-it-works">
           <HowItWorks />
         </div>
         <div id="inside">
           <BentoShowcase />
+        </div>
+        <div id="social-proof">
+          <SocialProofBar />
         </div>
         <div id="faq">
           <FAQSection />

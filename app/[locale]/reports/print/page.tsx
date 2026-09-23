@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 import { api, fmtUSDC, fmtDateTime, type TradeReportsResponse } from "@/lib/api";
 
 export default function ReportsPrintPage() {
   const searchParams = useSearchParams();
   const locale = useLocale();
+  const t = useTranslations("reports");
+  const statusLabel = useStatusLabel();
   const [data, setData] = useState<TradeReportsResponse | null>(null);
+  const [generatedAt] = useState(() => Date.now());
 
   useEffect(() => {
     api.getTradeReports({
@@ -31,9 +35,9 @@ export default function ReportsPrintPage() {
       <div style={{ maxWidth: 980, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 28 }}>Quantik Reports</h1>
+            <h1 style={{ margin: 0, fontSize: 28 }}>{t("printTitle")}</h1>
             <p style={{ margin: "8px 0 0", color: "#475569" }}>
-              Printable trade report generated {fmtDateTime(Date.now(), locale)}
+              {t("printGenerated", { date: fmtDateTime(generatedAt, locale) })}
             </p>
           </div>
           <button
@@ -47,16 +51,16 @@ export default function ReportsPrintPage() {
               cursor: "pointer",
             }}
           >
-            Print now
+            {t("printNow")}
           </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
           {[
-            { label: "Trades", value: data?.summary.totalTrades ?? 0 },
-            { label: "Wins", value: data?.summary.wins ?? 0 },
-            { label: "Losses", value: data?.summary.losses ?? 0 },
-            { label: "Total P&L", value: fmtUSDC(data?.summary.totalPnl ?? 0) },
+            { label: t("metricTrades"), value: data?.summary.totalTrades ?? 0 },
+            { label: t("outcomeWin"), value: data?.summary.wins ?? 0 },
+            { label: t("outcomeLoss"), value: data?.summary.losses ?? 0 },
+            { label: t("metricTotalPnl"), value: fmtUSDC(data?.summary.totalPnl ?? 0) },
           ].map((metric) => (
             <div key={metric.label} style={{ border: "1px solid #e2e8f0", borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", marginBottom: 8 }}>
@@ -72,7 +76,7 @@ export default function ReportsPrintPage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["Market", "Source", "Direction", "Price", "Size", "P&L", "Outcome", "When"].map((header) => (
+              {(["market", "source", "direction", "price", "size", "pnl", "outcome", "when"] as const).map((column) => t(`col_${column}`)).map((header) => (
                 <th
                   key={header}
                   style={{
@@ -92,12 +96,12 @@ export default function ReportsPrintPage() {
             {(data?.trades ?? []).map((trade) => (
               <tr key={`${trade.id}-${trade.timestamp}`}>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{trade.market}</td>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{trade.source}</td>
+                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{statusLabel(trade.source ?? "manual")}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{trade.direction}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{Math.round(trade.price * 100)}¢</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtUSDC(trade.size)}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtUSDC(trade.pnl ?? 0)}</td>
-                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{trade.outcome}</td>
+                <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{statusLabel(trade.outcome)}</td>
                 <td style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0" }}>{fmtDateTime(new Date(trade.timestamp).getTime(), locale)}</td>
               </tr>
             ))}

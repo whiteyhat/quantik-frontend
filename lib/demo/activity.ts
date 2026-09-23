@@ -34,7 +34,7 @@ export function demoAutopilotStatus(): AutopilotAgentStatus {
       paperMode: true,
     },
     activity: {
-      tradesToday: 2,
+      tradesToday: 1, // the BTC buy 3h ago
       lastExecutedAt: ago(3 * HOUR),
       lastDecisionAt: ago(4 * MINUTE),
       lastDecision: {
@@ -93,6 +93,7 @@ export function demoAgentExecutions(query: URLSearchParams): { executions: Agent
     .map((t) => ({
       id: t.id,
       slug: t.slug,
+      question: t.market,
       side: "buy",
       direction: t.direction,
       amount: t.size,
@@ -143,7 +144,7 @@ export function demoNotifications(): { notifications: NotificationItem[]; unread
       id: "demo-note-4",
       level: "info",
       title: "Weekly report is ready",
-      message: "7 closed trades, 71% win rate, +$194 paper P&L.",
+      message: "15 closed trades, 67% win rate, +$331 paper P&L.",
       category: "report",
       timestamp: ago(4 * DAY),
       readAt: ago(4 * DAY - HOUR),

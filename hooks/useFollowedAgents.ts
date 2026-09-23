@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useViewer } from "@/context/ViewerContext";
+import { DEMO_FOLLOW_PREFIX, followIdsForViewer } from "@/components/arena/arenaHelpers";
 
 const STORAGE_KEY = "quantik_followed_agents";
 
@@ -75,12 +77,25 @@ function persist(ids: Set<string>) {
 
 export function useFollowedAgents() {
   const serialized = useSyncExternalStore(subscribe, getStoreSnapshot, getServerStoreSnapshot);
-  const followed: Set<string> = typeof window === "undefined" ? getServerSnapshot() : cachedSnapshot;
+  const mode = useViewer().mode;
+  const stored: Set<string> = typeof window === "undefined" ? getServerSnapshot() : cachedSnapshot;
+  // Sample-arena agents only exist for guests: members never see those follows
+  const followed = useMemo(
+    () => followIdsForViewer(stored, mode),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [serialized, mode],
+  );
+
+  // A guest who signs in leaves their sample follows behind for good
+  useEffect(() => {
+    if (mode !== "member" && mode !== "member-no-agent") return;
+    const current = getSnapshot();
+    if ([...current].some((id) => id.startsWith(DEMO_FOLLOW_PREFIX))) persist(followIdsForViewer(current, mode));
+  }, [mode, serialized]);
 
   const isFollowing = useCallback(
     (agentId: string) => followed.has(agentId),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [serialized],
+    [followed],
   );
 
   const toggle = useCallback((agentId: string) => {

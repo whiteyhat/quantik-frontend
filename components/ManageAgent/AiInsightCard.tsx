@@ -204,7 +204,7 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                       color: latestSignal.edge > 0 ? "#30d158" : "#ff453a",
                     }}
                   >
-                    {latestSignal.edge > 0 ? "+" : ""}{latestSignal.edge.toFixed(1)}% {t("edge")}
+                    {latestSignal.edge > 0 ? "+" : ""}{(latestSignal.edge * 100).toFixed(1)}% {t("edge")}
                   </span>
                 )}
                 <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,255,255,0.20)", fontFamily: '"SF Mono", monospace' }}>
@@ -332,8 +332,10 @@ export function AiInsightCard({ signals, loading }: AiInsightCardProps) {
                       {dec.textKey ? t(dec.textKey) : dec.fallback}
                     </span>
                     <span
+                      title={s.question}
                       style={{
                         flex: 1,
+                        minWidth: 0,
                         fontSize: 11,
                         color: "rgba(255,255,255,0.55)",
                         overflow: "hidden",

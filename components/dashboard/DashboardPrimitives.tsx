@@ -1,10 +1,11 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { metricValueChars } from "@/components/dashboard/dashboardFit";
 
 export function CommandCenterCard({
   children,
@@ -36,8 +37,8 @@ export function CommandCenterHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <div className="min-w-0 flex-[1_1_12rem]">
         {eyebrow ? <div className="command-center-eyebrow">{eyebrow}</div> : null}
         <h2 className="command-center-title">{title}</h2>
         {subtitle ? <p className="command-center-subtitle">{subtitle}</p> : null}
@@ -88,7 +89,10 @@ export function MetricBlock({
   tone?: "neutral" | "good" | "warn" | "bad" | "info";
 }) {
   return (
-    <div className={cn("command-center-metric", `command-center-metric--${tone}`)}>
+    <div
+      className={cn("command-center-metric", `command-center-metric--${tone}`)}
+      style={{ "--metric-chars": metricValueChars(value) } as CSSProperties}
+    >
       <div className="command-center-metric-label">{label}</div>
       <div className="command-center-metric-value">{value}</div>
       {hint ? <div className="command-center-metric-hint">{hint}</div> : null}

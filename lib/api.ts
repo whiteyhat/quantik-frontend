@@ -3,7 +3,7 @@ import {
   toPerformanceSummary,
   toWalletBalance,
 } from "@/lib/dashboard";
-import { isPersonalRoute, resolveDemoGet } from "@/lib/demo/routes";
+import { demoLatencyMs, isPersonalRoute, resolveDemoGet } from "@/lib/demo/routes";
 import { demoTradesCsv } from "@/lib/demo/portfolio";
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -25,14 +25,45 @@ export function getAuthToken(): string | null {
 export type DemoMode = "off" | "guest" | "no-agent";
 let _demoMode: DemoMode = "off";
 
-// Until ViewerProvider knows who is looking, personal reads wait (briefly) so
-// a guest's first page load never hits the live API with the wrong mode.
+// Until ViewerProvider knows who is looking, personal reads wait: a read sent
+// too early would show a guest production's real (empty) state, or a member
+// someone else's demo. There is no fall-through to the live API. After the cap
+// the read fails with ViewerUnknownError, and ViewerProvider refetches
+// everything once the viewer is finally known (takeViewerWaitTimeout).
 let _viewerKnown = false;
 let _markViewerKnown: () => void = () => {};
 const _viewerKnownPromise = new Promise<void>((resolve) => {
   _markViewerKnown = resolve;
 });
-const VIEWER_WAIT_MS = 5_000;
+export const VIEWER_WAIT_CAP_MS = 20_000;
+let _viewerWaitTimedOut = false;
+
+export class ViewerUnknownError extends Error {
+  constructor() {
+    super("Still checking who is signed in");
+    this.name = "ViewerUnknownError";
+  }
+}
+
+async function waitForViewer(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cap = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), VIEWER_WAIT_CAP_MS);
+  });
+  const outcome = await Promise.race([_viewerKnownPromise.then(() => "known" as const), cap]);
+  clearTimeout(timer);
+  if (outcome === "timeout" && !_viewerKnown) {
+    _viewerWaitTimedOut = true;
+    throw new ViewerUnknownError();
+  }
+}
+
+/** True once after a read gave up waiting for the viewer; ViewerProvider then refetches everything. */
+export function takeViewerWaitTimeout(): boolean {
+  const timedOut = _viewerWaitTimedOut;
+  _viewerWaitTimedOut = false;
+  return timedOut;
+}
 
 export function setDemoMode(mode: DemoMode) {
   _demoMode = mode;
@@ -655,7 +686,9 @@ export interface Signal {
   slug: string;
   question: string;
   decision: string;
+  /** Percent, 0-100 (getSignals scales the backend's 0-1). */
   confidence: number;
+  /** Fraction (0.064 = 6.4 points of edge). */
   edge: number;
   timestamp: number;
   status: "TRADE" | "WATCH" | "SKIP";
@@ -776,6 +809,8 @@ export interface AutopilotAgentStatus {
 export interface AgentExecutionLogItem {
   id: string;
   slug: string;
+  /** Market question, when the source has it (demo fixtures do). */
+  question?: string;
   side: string;
   direction: "YES" | "NO" | null;
   amount: number;
@@ -1013,6 +1048,8 @@ export interface BrierEntry {
   slug: string;
   score: number;
   timestamp: number;
+  /** Market question, when the source has it (demo fixtures do). */
+  question?: string;
 }
 
 export interface AttributionEntry {
@@ -1033,17 +1070,72 @@ export interface CalibrationEntry {
   confidence: number;
 }
 
+// The backend wraps these lists ({scores}, {attribution}, {weights}) and sends
+// drift as {detected: boolean}; older builds sent bare arrays and strings.
+function listFrom(raw: unknown, key: string): Record<string, unknown>[] {
+  const list = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? (raw as Record<string, unknown>)[key] : null;
+  return Array.isArray(list) ? list.filter((item): item is Record<string, unknown> => !!item && typeof item === "object") : [];
+}
+
+export function normalizeBrierScores(raw: unknown): BrierEntry[] {
+  return listFrom(raw, "scores").map((item) => ({
+    slug: String(item.slug ?? item.market_slug ?? ""),
+    score: Number(item.score ?? item.brier_score ?? 0),
+    timestamp: Number(item.timestamp ?? item.resolved_at ?? 0),
+    ...(typeof item.question === "string" ? { question: item.question } : {}),
+  }));
+}
+
+export function normalizeAttribution(raw: unknown): AttributionEntry[] {
+  return listFrom(raw, "attribution").map((item) => ({
+    signalType: String(item.signalType ?? item.signal_type ?? ""),
+    hitRate: Number(item.hitRate ?? 0),
+    count: Number(item.count ?? Number(item.wins ?? 0) + Number(item.losses ?? 0)),
+  }));
+}
+
+export function normalizeCalibration(raw: unknown): CalibrationEntry[] {
+  return listFrom(raw, "weights").map((item) => ({
+    agent: String(item.agent ?? ""),
+    weight: Number(item.weight ?? 0),
+    confidence: Number(item.confidence ?? 0),
+  }));
+}
+
+function driftState(value: unknown): DriftStatus["concept"] {
+  if (value === "clear" || value === "detected") return value;
+  if (value && typeof value === "object" && "detected" in value) {
+    return (value as { detected?: unknown }).detected ? "detected" : "clear";
+  }
+  return "detected"; // unknown shape: don't claim all-clear
+}
+
+export function normalizeDriftStatus(raw: unknown): DriftStatus | null {
+  if (!raw || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  return {
+    microstructure: driftState(item.microstructure),
+    concept: driftState(item.concept),
+    lastChecked: Number(item.lastChecked ?? 0),
+  };
+}
+
 // ─── API Client ───────────────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!_viewerKnown && typeof window !== "undefined" && isPersonalRoute(path)) {
-    await Promise.race([_viewerKnownPromise, new Promise((r) => setTimeout(r, VIEWER_WAIT_MS))]);
+    await waitForViewer();
   }
   if (_demoMode !== "off") {
     const method = (options?.method ?? "GET").toUpperCase();
     if (method === "GET" || method === "HEAD") {
       const demo = resolveDemoGet(path, _demoMode);
-      if (demo !== undefined) return demo as T;
+      if (demo !== undefined) {
+        // Health checks time the round trip; an instant answer would read "0ms"
+        const latency = demoLatencyMs(path);
+        if (latency > 0) await new Promise((r) => setTimeout(r, latency));
+        return demo as T;
+      }
     } else {
       assertNotDemoWrite();
     }
@@ -1206,7 +1298,7 @@ export const api = {
     }),
 
   // Execution log (for system log feed)
-  getExecutionLog: async (): Promise<{ slug: string; side: string; amount: number; executed_at: number; status: string; pnl: number | null }[]> => {
+  getExecutionLog: async (): Promise<{ slug: string; question?: string; side: string; amount: number; executed_at: number; status: string; pnl: number | null }[]> => {
     try {
       const raw = await apiFetch<{ log: unknown[] }>("/api/execution/log");
       const log = Array.isArray(raw?.log) ? raw.log : [];
@@ -1214,6 +1306,7 @@ export const api = {
         const item = r as Record<string, unknown>;
         return {
           slug: String(item?.slug ?? ""),
+          ...(typeof item?.question === "string" ? { question: item.question } : {}),
           side: String(item?.side ?? "buy"),
           amount: Number(item?.amount ?? 0),
           executed_at: Number(item?.executed_at ?? 0),
@@ -1240,7 +1333,7 @@ export const api = {
   },
 
   getScannerResults: async (limit = 30): Promise<{
-    slug: string; scannedAt: number; sigmaConfidence: number;
+    slug: string; question?: string; scannedAt: number; sigmaConfidence: number;
     kellyFraction: number; recommendation: string; probability: number;
   }[]> => {
     try {
@@ -1250,6 +1343,7 @@ export const api = {
         const item = r as Record<string, unknown>;
         return {
           slug: String(item?.slug ?? ""),
+          ...(typeof item?.question === "string" ? { question: item.question } : {}),
           scannedAt: Number(item?.scannedAt ?? item?.scanned_at ?? 0),
           sigmaConfidence: Number(item?.sigmaConfidence ?? item?.sigma_confidence ?? 0),
           kellyFraction: Number(item?.kellyFraction ?? item?.kelly_fraction ?? 0),
@@ -1750,8 +1844,7 @@ export const api = {
 
   getBrierScores: async (): Promise<BrierEntry[]> => {
     try {
-      const res = await apiFetch<BrierEntry[]>("/api/monitoring/brier");
-      return Array.isArray(res) ? res : [];
+      return normalizeBrierScores(await apiFetch<unknown>("/api/monitoring/brier"));
     } catch {
       return [];
     }
@@ -1759,8 +1852,7 @@ export const api = {
 
   getAttribution: async (): Promise<AttributionEntry[]> => {
     try {
-      const res = await apiFetch<AttributionEntry[]>("/api/monitoring/attribution");
-      return Array.isArray(res) ? res : [];
+      return normalizeAttribution(await apiFetch<unknown>("/api/monitoring/attribution"));
     } catch {
       return [];
     }
@@ -1768,7 +1860,7 @@ export const api = {
 
   getDriftStatus: async (): Promise<DriftStatus | null> => {
     try {
-      return await apiFetch<DriftStatus>("/api/monitoring/drift");
+      return normalizeDriftStatus(await apiFetch<unknown>("/api/monitoring/drift"));
     } catch {
       return null;
     }
@@ -1776,8 +1868,7 @@ export const api = {
 
   getCalibration: async (): Promise<CalibrationEntry[]> => {
     try {
-      const res = await apiFetch<CalibrationEntry[]>("/api/monitoring/calibration");
-      return Array.isArray(res) ? res : [];
+      return normalizeCalibration(await apiFetch<unknown>("/api/monitoring/calibration"));
     } catch {
       return [];
     }
@@ -2070,6 +2161,7 @@ export const api = {
       return {
         id: String(item.id ?? ""),
         slug: String(item.slug ?? ""),
+        ...(typeof item.question === "string" ? { question: item.question } : {}),
         side: String(item.side ?? ""),
         direction: item.direction == null
           ? null

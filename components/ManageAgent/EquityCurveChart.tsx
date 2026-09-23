@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useId, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AreaChart,
   Area,
@@ -14,7 +14,9 @@ import {
 import { fmtUSDC, type Trade, type WalletBalance } from "@/lib/api";
 import {
   buildEquityCurve,
+  equityYAxis,
   formatEquityAxisLabel,
+  formatEquityTick,
   formatEquityTooltipLabel,
 } from "@/lib/equityCurve";
 
@@ -28,10 +30,12 @@ function GlassTooltip({
   active,
   payload,
   label,
+  locale,
 }: {
   active?: boolean;
   payload?: { value: number }[];
   label?: number | string;
+  locale: string;
 }) {
   if (!active || !payload?.length) return null;
   const timestamp = typeof label === "number" ? label : Number(label);
@@ -46,7 +50,7 @@ function GlassTooltip({
       }}
     >
       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.40)", marginBottom: 4 }}>
-        {Number.isFinite(timestamp) ? formatEquityTooltipLabel(timestamp) : label}
+        {Number.isFinite(timestamp) ? formatEquityTooltipLabel(timestamp, locale) : label}
       </div>
       <div style={{ fontFamily: '"SF Mono", monospace', fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>
         {fmtUSDC(payload[0].value)}
@@ -57,10 +61,15 @@ function GlassTooltip({
 
 export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChartProps) {
   const t = useTranslations("equityCurve");
+  const tc = useTranslations("common");
+  const locale = useLocale();
+  const gradientId = `equityGradient-${useId().replace(/:/g, "")}`;
   const currentBalance = wallet?.totalValue ?? null;
   const chartData = useMemo(() => {
-    return buildEquityCurve(currentBalance, trades, timePeriod);
-  }, [currentBalance, trades, timePeriod]);
+    return buildEquityCurve(currentBalance, trades, timePeriod, { locale });
+  }, [currentBalance, trades, timePeriod, locale]);
+  // Padded around the data (not from $0), so a +2% week reads as a climb, not a flat line
+  const yAxis = useMemo(() => equityYAxis(chartData.map((point) => point.value)), [chartData]);
 
   const periodPnl = useMemo(() => {
     if (chartData.length < 2) return 0;
@@ -72,8 +81,8 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
   return (
     <div className="glass-card glass-panel-compact">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
-        <div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: "8px 16px", marginBottom: 16 }}>
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.40)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
             {t("title")}
           </div>
@@ -88,9 +97,9 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
             {currentBalance != null ? fmtUSDC(currentBalance) : "--"}
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
+        <div style={{ minWidth: 0, marginLeft: "auto", textAlign: "right" }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-            {timePeriod} P&L
+            {tc("periodPnl", { period: tc(`period${timePeriod}`) })}
           </div>
           <div
             style={{
@@ -125,10 +134,10 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
           {wallet?.balanceMessage ?? t("noDataYet")}
         </div>
       ) : (
-      <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <ResponsiveContainer width="100%" height={240} initialDimension={{ width: 480, height: 240 }}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -4, bottom: 0 }}>
           <defs>
-            <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={isPositive ? "#30d158" : "#ff453a"} stopOpacity={0.3} />
               <stop offset="100%" stopColor={isPositive ? "#30d158" : "#ff453a"} stopOpacity={0.02} />
             </linearGradient>
@@ -145,26 +154,25 @@ export function EquityCurveChart({ wallet, trades, timePeriod }: EquityCurveChar
             minTickGap={24}
             tickFormatter={(value: number) => {
               const isCurrentPoint = value === chartData[chartData.length - 1]?.timestamp;
-              return isCurrentPoint ? t("now") : formatEquityAxisLabel(value, timePeriod);
+              return isCurrentPoint ? t("now") : formatEquityAxisLabel(value, timePeriod, locale);
             }}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
+            width={48}
             tick={{ fill: "rgba(255,255,255,0.25)", fontSize: 10 }}
-            tickFormatter={(v: number) =>
-              v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` :
-              v >= 1_000 ? `$${(v / 1_000).toFixed(0)}k` :
-              `$${v.toFixed(0)}`
-            }
+            domain={yAxis?.domain ?? ["auto", "auto"]}
+            ticks={yAxis?.ticks}
+            tickFormatter={(v: number) => formatEquityTick(v)}
           />
-          <Tooltip content={<GlassTooltip />} />
+          <Tooltip content={<GlassTooltip locale={locale} />} />
           <Area
             type="monotoneX"
             dataKey="value"
             stroke={isPositive ? "#30d158" : "#ff453a"}
             strokeWidth={2}
-            fill="url(#equityGradient)"
+            fill={`url(#${gradientId})`}
           />
         </AreaChart>
       </ResponsiveContainer>

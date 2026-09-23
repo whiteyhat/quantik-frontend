@@ -13,6 +13,8 @@ import {
 } from "@/lib/api";
 import { HelpTooltip } from "./ui/HelpTooltip";
 import { Skeleton } from "./ui/skeleton";
+import { marketLabel } from "@/components/dashboard/dashboardFit";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 
@@ -39,14 +41,20 @@ function driftBadge(status: "clear" | "detected") {
     color: isOk ? "#30d158" : "#ff453a",
     bg: isOk ? "rgba(48,209,88,0.15)" : "rgba(255,69,58,0.15)",
     border: isOk ? "rgba(48,209,88,0.25)" : "rgba(255,69,58,0.25)",
-    label: isOk ? "CLEAR" : "DETECTED",
+    labelKey: isOk ? ("driftClear" as const) : ("driftDetected" as const),
   };
 }
+
+const DRIFT_KINDS = [
+  { key: "microstructure", labelKey: "driftMicrostructure" },
+  { key: "concept", labelKey: "driftConcept" },
+] as const;
 
 // ─── PerformancePanel ────────────────────────────────────────────────────────
 
 export function PerformancePanel() {
   const t = useTranslations("performance");
+  const statusLabel = useStatusLabel();
   const [brier, setBrier] = useState<BrierEntry[]>([]);
   const [attribution, setAttribution] = useState<AttributionEntry[]>([]);
   const [drift, setDrift] = useState<DriftStatus | null>(null);
@@ -140,36 +148,40 @@ export function PerformancePanel() {
               {t("noScoresYet")}
             </span>
           ) : (
-            brier.slice(0, 5).map((entry, i) => (
+            brier.slice(0, 5).map((entry, i) => {
+              const market = marketLabel(entry.question, entry.slug);
+              return (
               <div
                 key={`${entry.slug}-${i}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
+                  gap: 10,
                   padding: "5px 8px",
                   borderRadius: 6,
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.05)",
                 }}
               >
+                {/* The market question, up to two lines, the full text on hover */}
                 <span
+                  className="line-clamp-2"
+                  title={market}
                   style={{
+                    flex: 1,
+                    minWidth: 0,
                     fontSize: META_SIZE,
+                    lineHeight: 1.35,
                     color: "rgba(255,255,255,0.60)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: "60%",
-                    fontFamily: "monospace",
+                    overflowWrap: "anywhere",
                   }}
                 >
-                  {entry.slug.length > 24
-                    ? entry.slug.slice(0, 24) + "…"
-                    : entry.slug}
+                  {market}
                 </span>
                 <span
                   style={{
+                    flexShrink: 0,
                     fontSize: META_SIZE,
                     fontWeight: 700,
                     fontFamily: '"SF Mono", monospace',
@@ -182,7 +194,8 @@ export function PerformancePanel() {
                   {entry.score.toFixed(3)}
                 </span>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -224,7 +237,7 @@ export function PerformancePanel() {
             </div>
           ) : attribution.length === 0 ? (
             <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
-              No data
+              {t("noData")}
             </span>
           ) : (
             attribution.slice(0, 3).map((entry) => {
@@ -235,17 +248,19 @@ export function PerformancePanel() {
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
+                      gap: 8,
                       marginBottom: 3,
                     }}
                   >
                     <span
                       style={{
+                        minWidth: 0,
                         fontSize: META_SIZE,
                         color: "rgba(255,255,255,0.65)",
-                        textTransform: "capitalize",
+                        overflowWrap: "anywhere",
                       }}
                     >
-                      {entry.signalType.replace(/_/g, " ")}
+                      {statusLabel(entry.signalType)}
                     </span>
                     <span
                       style={{
@@ -298,24 +313,33 @@ export function PerformancePanel() {
           </span>
           <HelpTooltip text={t("driftDesc")} />
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        {/* Two badges side by side; they stack when the card is too narrow for both labels */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {drift === null ? (
-            <div style={{ display: "flex", gap: 8 }}>
-              <Skeleton width="50%" height={32} borderRadius={8} />
-              <Skeleton width="50%" height={32} borderRadius={8} />
-            </div>
+            loaded ? (
+              <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>
+                {t("noData")}
+              </span>
+            ) : (
+              <div style={{ display: "flex", gap: 8, flex: 1 }}>
+                <Skeleton width="50%" height={32} borderRadius={8} />
+                <Skeleton width="50%" height={32} borderRadius={8} />
+              </div>
+            )
           ) : (
             <>
-              {(["microstructure", "concept"] as const).map((key) => {
+              {DRIFT_KINDS.map(({ key, labelKey }) => {
                 const b = driftBadge(drift[key]);
                 return (
                   <div
                     key={key}
                     style={{
-                      flex: 1,
+                      flex: "1 1 10rem",
+                      minWidth: 0,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      gap: 8,
                       padding: "6px 10px",
                       borderRadius: 8,
                       background: b.bg,
@@ -324,23 +348,26 @@ export function PerformancePanel() {
                   >
                     <span
                       style={{
+                        minWidth: 0,
                         fontSize: META_SIZE,
                         color: "rgba(255,255,255,0.65)",
-                        textTransform: "capitalize",
+                        overflowWrap: "anywhere",
                       }}
                     >
-                      {key}
+                      {t(labelKey)}
                     </span>
                     <span
                       style={{
+                        flexShrink: 0,
                         fontSize: LABEL_SIZE,
                         fontWeight: 700,
                         fontFamily: "monospace",
                         color: b.color,
                         letterSpacing: "0.06em",
+                        textTransform: "uppercase",
                       }}
                     >
-                      {b.label}
+                      {t(b.labelKey)}
                     </span>
                   </div>
                 );
@@ -389,9 +416,11 @@ export function PerformancePanel() {
                 border: "1px solid rgba(191,90,242,0.25)",
               }}
             >
-              w={topAgent.weight.toFixed(2)}
+              {t("weightValue", { value: topAgent.weight.toFixed(2) })}
             </span>
           </div>
+        ) : loaded ? (
+          <span style={{ fontSize: BODY_SIZE, color: "rgba(255,255,255,0.25)" }}>{t("noData")}</span>
         ) : (
           <Skeleton width={80} height={14} borderRadius={4} />
         )}

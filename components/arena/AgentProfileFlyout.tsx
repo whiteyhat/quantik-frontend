@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { type ArenaLeaderboardEntry, type ArenaWindow } from "@/lib/api";
 import { useArenaAgentHistoryQuery } from "@/components/dashboard/dashboardQueries";
@@ -27,6 +27,25 @@ export function AgentProfileFlyout({
   const historyQuery = useArenaAgentHistoryQuery(entry.agentId, activeWindow);
   const { isFollowing, toggle: toggleFollow } = useFollowedAgents();
   const following = isFollowing(entry.agentId);
+  const reducedMotion = useReducedMotion();
+  const revealed = useRef(false);
+
+  // On a phone the panel opens below the fold: once it has grown, bring it
+  // into view together with the lane it belongs to (or lead with the lane
+  // when both can't fit, so it stays clear which agent is open)
+  const reveal = () => {
+    const panel = panelRef.current;
+    if (!panel || revealed.current) return;
+    revealed.current = true;
+    const lane = panel.previousElementSibling as HTMLElement | null;
+    const top = (lane ?? panel).getBoundingClientRect().top;
+    const bottom = panel.getBoundingClientRect().bottom;
+    const viewport = window.innerHeight;
+    if (top >= 0 && bottom <= viewport) return;
+    const behavior = reducedMotion ? "auto" : "smooth";
+    if (bottom - top <= viewport * 0.9) panel.scrollIntoView({ block: "end", behavior });
+    else (lane ?? panel).scrollIntoView({ block: "start", behavior });
+  };
 
   // Close on ESC
   useEffect(() => {
@@ -58,10 +77,11 @@ export function AgentProfileFlyout({
     <motion.div
       ref={panelRef}
       className="arena-flyout"
-      initial={{ height: 0, opacity: 0 }}
+      initial={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      exit={reducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+      transition={reducedMotion ? { duration: 0 } : { duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      onAnimationComplete={reveal}
     >
       <div className="arena-flyout-inner">
         {/* Follow Button */}
@@ -91,7 +111,7 @@ export function AgentProfileFlyout({
           <div className="arena-flyout-chart">
             {historyData.length >= 2 ? (
               <PnlSparkline
-                data={historyData.map((p) => ({ slug: "", question: "", pnl: p.pnl, trades: 0, winRate: 0, openPositions: 0 }))}
+                values={historyData.map((p) => p.pnl)}
                 width={280}
                 height={80}
               />

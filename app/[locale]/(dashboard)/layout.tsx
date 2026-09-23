@@ -22,6 +22,7 @@ import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
 import { DemoBanner } from "@/components/demo/DemoBanner";
 import { useViewer, useViewerGeneration } from "@/context/ViewerContext";
 import { useSignInGate } from "@/hooks/useSignInGate";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 // ─── Wallet Sync ─────────────────────────────────────────────────────────────
 // Keeps the global wallet store fresh on every dashboard page (market, pipeline, etc.)
@@ -59,6 +60,10 @@ const NAV_ITEMS: { labelKey: "dashboard" | "arena" | "myAgent" | "tradeHistory" 
 // localStorage key for relay first-open tracking
 const RELAY_LS_KEY = "relay_hasBeenOpened";
 
+/** The "talk to me" bubble pops in shortly after load, then gets out of the way. */
+const BUBBLE_DELAY_MS = 600;
+const BUBBLE_VISIBLE_MS = 4_000;
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -79,6 +84,19 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const hydrated = useHydrated();
   const [profileHovered, setProfileHovered] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+  const [bubblePhase, setBubblePhase] = useState<"waiting" | "shown" | "done">("waiting");
+  const wantsBubble = relayPulsing && Boolean(myAgent);
+
+  useEffect(() => {
+    if (!wantsBubble) return;
+    const show = window.setTimeout(() => setBubblePhase((phase) => (phase === "waiting" ? "shown" : phase)), BUBBLE_DELAY_MS);
+    const hide = window.setTimeout(() => setBubblePhase("done"), BUBBLE_DELAY_MS + BUBBLE_VISIBLE_MS);
+    return () => {
+      window.clearTimeout(show);
+      window.clearTimeout(hide);
+    };
+  }, [wantsBubble]);
   // The factory badge counts the visitor's real agent, never the demo one
   const hasAgent = viewer.hasAgent;
 
@@ -263,8 +281,9 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           background: profileHovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
           border: `1px solid ${profileHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"}`,
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
-          gap: 10,
+          gap: "6px 10px",
           transition: "all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
           cursor: "pointer",
         }}
@@ -333,22 +352,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
                 ? tSidebar("guest")
                 : (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User")}
           </div>
-          {!viewer.isSignedIn ? (
-            <div
-              style={{
-                marginTop: 2,
-                fontSize: 10,
-                color: "#5ac8fa",
-                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                letterSpacing: "0.02em",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {tSidebar("signIn")}
-            </div>
-          ) : (
+          {!viewer.isSignedIn ? null : (
           <div
             style={{
               display: "flex",
@@ -386,6 +390,24 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
         <div style={{ flexShrink: 0, marginLeft: "auto" }}>
           <LanguageSwitcher variant="compact" />
         </div>
+
+        {/* Guest hint: its own full-width line under the name, wrapping instead of cut off */}
+        {!viewer.isSignedIn && (
+          <div
+            style={{
+              flexBasis: "100%",
+              minWidth: 0,
+              fontSize: 10,
+              lineHeight: 1.4,
+              color: "#5ac8fa",
+              fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+              letterSpacing: "0.02em",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {tSidebar("signIn")}
+          </div>
+        )}
       </div>
 
       {/* ─── Footer — version + agent chat trigger ────────────────────── */}
@@ -410,53 +432,66 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
 
         {/* Agent chat trigger */}
         <div className="relative group" style={{ position: "relative" }}>
-          {/* Comic speech bubble — visible until first chat open */}
-          {relayPulsing && myAgent && (
-            <div
-              className="speech-bubble-enter"
-              style={{
-                position: "absolute",
-                bottom: "calc(100% + 14px)",
-                left: "50%",
-                transform: "translateX(-50%)",
-                background: "rgba(10,132,255,0.15)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                border: "1px solid rgba(10,132,255,0.35)",
-                borderRadius: 12,
-                padding: "8px 12px",
-                whiteSpace: "nowrap",
-                pointerEvents: "none",
-                zIndex: 10,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,0.88)",
-                  fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {tSidebar("hey")} 💬
-              </span>
-              {/* Speech bubble tail */}
+          {/* Speech bubble: sits to the LEFT of the button (over the version label, never over the
+              language pill above) and hides itself after a few seconds */}
+          <AnimatePresence>
+            {wantsBubble && bubblePhase === "shown" && (
               <div
+                key="relay-bubble"
                 style={{
                   position: "absolute",
-                  bottom: -6,
-                  left: "50%",
-                  transform: "translateX(-50%) rotate(45deg)",
-                  width: 10,
-                  height: 10,
-                  background: "rgba(10,132,255,0.15)",
-                  borderRight: "1px solid rgba(10,132,255,0.35)",
-                  borderBottom: "1px solid rgba(10,132,255,0.35)",
+                  top: 0,
+                  bottom: 0,
+                  right: "calc(100% + 12px)",
+                  display: "flex",
+                  alignItems: "center",
+                  pointerEvents: "none",
+                  zIndex: 10,
                 }}
-              />
-            </div>
-          )}
+              >
+                <motion.div
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 10, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1, transition: { duration: 0.42, ease: [0.34, 1.2, 0.64, 1] } }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 6, scale: 0.96, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
+                  style={{
+                    position: "relative",
+                    transformOrigin: "right center",
+                    width: "max-content",
+                    maxWidth: 136,
+                    // Opaque enough that the version label underneath does not show through
+                    background: "linear-gradient(rgba(10,132,255,0.2), rgba(10,132,255,0.2)), rgba(8,14,28,0.94)",
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    border: "1px solid rgba(10,132,255,0.35)",
+                    borderRadius: 12,
+                    padding: "6px 10px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                    color: "rgba(255,255,255,0.88)",
+                    fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {tSidebar("hey")} 💬
+                  {/* Tail pointing at the button */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: -6,
+                      top: "50%",
+                      transform: "translateY(-50%) rotate(-45deg)",
+                      width: 10,
+                      height: 10,
+                      background: "linear-gradient(rgba(10,132,255,0.2), rgba(10,132,255,0.2)), rgb(8,14,28)",
+                      borderRight: "1px solid rgba(10,132,255,0.35)",
+                      borderBottom: "1px solid rgba(10,132,255,0.35)",
+                    }}
+                  />
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
           {/* Pulse ring */}
           {relayPulsing && (
             <span
@@ -501,8 +536,8 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           >
             {relayOpen ? "✕" : (myAgent?.avatar_emoji ?? "🤝")}
           </button>
-          {/* Styled tooltip — hidden when speech bubble is showing */}
-          {!(relayPulsing && myAgent) && (
+          {/* Styled tooltip — hidden while the speech bubble is showing */}
+          {!(wantsBubble && bubblePhase === "shown") && (
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs font-mono text-white bg-zinc-800 border border-white/10 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
               {myAgent ? tSidebar("chatWith", { name: myAgent.name.toUpperCase() }) : tSidebar("chatDefault")}
             </div>

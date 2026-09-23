@@ -4,13 +4,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { create } from "zustand";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, setAuthToken, setDemoMode } from "@/lib/api";
+import { api, setAuthToken, setDemoMode, takeViewerWaitTimeout } from "@/lib/api";
 import { demoAgent } from "@/lib/demo/agent";
 import {
   demoModeFor,
   resolveAccess,
   resolveViewerMode,
-  viewerIdentityChanged,
+  viewerNeedsReset,
   type ViewerIdentity,
   type ViewerState,
 } from "@/lib/viewer";
@@ -84,17 +84,23 @@ export function ViewerProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isLoaded, isSignedIn, userId, getToken]);
 
-  // Access fetched for a previous user never counts for the current one
+  // Access fetched for a previous user never counts for the current one.
+  // If Clerk gives up loading, nobody can sign in: show the guest showcase
+  // instead of waiting forever.
+  const clerkFailed = clerk.status === "error";
   const viewer = useMemo(() => {
     const currentAccess = access && access.userId === userId ? access.value : null;
-    return resolveViewerMode({ clerkLoaded: isLoaded, signedIn: !!isSignedIn, access: currentAccess });
-  }, [isLoaded, isSignedIn, userId, access]);
+    return resolveViewerMode({ clerkLoaded: isLoaded, clerkFailed, signedIn: !!isSignedIn, access: currentAccess });
+  }, [isLoaded, clerkFailed, isSignedIn, userId, access]);
 
   // Apply the mode, then publish it. Runs before any page's data effects.
   useLayoutEffect(() => {
     if (viewer.mode === "loading") return; // keep showing the last applied viewer
     const identity: ViewerIdentity = { mode: viewer.mode, userId: userId ?? null };
-    const changed = viewerIdentityChanged(applied.current, identity);
+    // A read that gave up waiting for a slow sign-in check left an error or an
+    // empty panel behind: reset as if the identity changed, so every page
+    // remounts and refetches with the right mode.
+    const changed = viewerNeedsReset(applied.current, identity, takeViewerWaitTimeout());
     const store = useQuantikStore.getState();
 
     if (changed) {

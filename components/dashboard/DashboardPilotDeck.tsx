@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, Bot, MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 import { useDashboardAgentHealthScoreQuery } from "@/components/dashboard/dashboardQueries";
 import {
   CommandCenterCard,
@@ -36,6 +37,7 @@ export function DashboardPilotDeck({
   summary: DashboardSummarySnapshot | null;
 }) {
   const t = useTranslations("dashboard.pilotDeck");
+  const statusLabel = useStatusLabel();
   const isByo = agent?.agent_type === "byo";
   const healthScoreQuery = useDashboardAgentHealthScoreQuery(agent?.id, isByo);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
@@ -166,7 +168,7 @@ export function DashboardPilotDeck({
         label={isByo ? t("connection") : t("funding")}
         value={
           isByo
-            ? (agent.connection_status ?? t("pending"))
+            ? statusLabel(agent.connection_status, t("pending"))
             : summary?.fundingStatus === "ready"
               ? t("ready")
               : summary?.fundingStatus === "funding_required"
@@ -175,7 +177,7 @@ export function DashboardPilotDeck({
         }
         hint={
           isByo
-            ? (agent.description ?? "External runtime linked into Quantik.")
+            ? (agent.description ?? t("externalRuntimeLinked"))
             : (summary?.fundingMessage ?? summary?.balanceMessage ?? t("walletTelemetryPending"))
         }
         tone={isByo ? statusTone(agent.connection_status) : fundingTone}
@@ -196,8 +198,8 @@ export function DashboardPilotDeck({
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <StatusBadge tone={statusTone(agent.connection_status)} label={agent.connection_status ?? t("pending")} />
-              <StatusBadge tone={healthScore?.status === "healthy" ? "good" : healthScore?.status === "degraded" ? "warn" : "bad"} label={healthScore?.status?.replace(/_/g, " ") ?? t("healthPending")} />
+              <StatusBadge tone={statusTone(agent.connection_status)} label={statusLabel(agent.connection_status, t("pending"))} />
+              <StatusBadge tone={healthScore?.status === "healthy" ? "good" : healthScore?.status === "degraded" ? "warn" : "bad"} label={statusLabel(healthScore?.status, t("healthPending"))} />
             </div>
           </>
         ) : (
@@ -207,7 +209,7 @@ export function DashboardPilotDeck({
               {t("createdAgentCopy")}
             </div>
             <div className="flex flex-wrap gap-2">
-              <StatusBadge tone="info" label={agent.status || "active"} />
+              <StatusBadge tone="info" label={statusLabel(agent.status || "active")} />
               <StatusBadge tone="neutral" label={t("architectureLinked")} />
             </div>
           </>
@@ -216,7 +218,7 @@ export function DashboardPilotDeck({
 
       <div className="flex flex-wrap gap-2">
         <StatusBadge tone={autopilotEnabled ? "good" : "neutral"} label={autopilotEnabled ? t("autopilotEngaged") : t("autopilotIdle")} />
-        <StatusBadge tone={fundingTone} label={summary?.fundingStatus?.replace(/_/g, " ") ?? t("fundingPending")} />
+        <StatusBadge tone={fundingTone} label={statusLabel(summary?.fundingStatus, t("fundingPending"))} />
       </div>
 
       <div className="pilot-deck-actions">

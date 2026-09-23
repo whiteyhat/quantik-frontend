@@ -60,6 +60,47 @@ export function formatEquityAxisLabel(
   return getCachedDateFmt(locale, opts).format(timestamp);
 }
 
+/** Y-axis tick: one decimal for thousands and millions ("$10.4k", "$1.3M"). */
+export function formatEquityTick(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+  return `$${value.toFixed(0)}`;
+}
+
+function niceStep(raw: number): number {
+  if (!(raw > 0)) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const residual = raw / magnitude;
+  const factor = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
+  return factor * magnitude;
+}
+
+/**
+ * Y domain and ticks for the equity curve: padded around the data (not zero-based, so a +2%
+ * week is visible) and on round steps that stay distinct once formatted by formatEquityTick.
+ */
+export function equityYAxis(values: number[]): { domain: [number, number]; ticks: number[] } | null {
+  const finite = values.filter((value) => Number.isFinite(value));
+  if (finite.length === 0) return null;
+  const min = Math.min(...finite);
+  const max = Math.max(...finite);
+  const span = max - min;
+  const pad = span > 0 ? span * 0.15 : Math.max(Math.abs(max) * 0.01, 1);
+  let rawLo = min - pad;
+  const rawHi = max + pad;
+  if (min >= 0) rawLo = Math.max(0, rawLo);
+
+  const peak = Math.max(Math.abs(min), Math.abs(max));
+  const minStep = peak >= 1_000_000 ? 100_000 : peak >= 1_000 ? 100 : 1;
+  const step = Math.max(niceStep((rawHi - rawLo) / 4), minStep);
+  const lo = Math.floor(rawLo / step) * step;
+  const hi = Math.ceil(rawHi / step) * step;
+  const ticks: number[] = [];
+  for (let tick = lo; tick <= hi + step / 2; tick += step) ticks.push(Math.round(tick * 100) / 100);
+  return { domain: [ticks[0], ticks[ticks.length - 1]], ticks };
+}
+
 export function formatEquityTooltipLabel(timestamp: number, locale = "en-US") {
   return getCachedDateFmt(locale, {
     month: "short",

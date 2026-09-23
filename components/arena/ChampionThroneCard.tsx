@@ -3,9 +3,9 @@
 import { type CSSProperties, type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Crown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ArenaLeaderboardEntry } from "@/lib/api";
+import { fmtUSDC, type ArenaLeaderboardEntry, type ArenaWindow } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
-import { battleTone, formatSignedCompact, formatSignedCurrency, isOpenClawAgent } from "@/components/arena/arenaHelpers";
+import { battleTone, formatSignedCurrency, isOpenClawAgent } from "@/components/arena/arenaHelpers";
 import { RankChangeBadge } from "@/components/arena/RankChangeBadge";
 import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
 import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
@@ -89,10 +89,15 @@ export function ChampionThroneCard({
   entry,
   now,
   isViewer,
+  activeWindow,
+  lead,
 }: {
   entry: ArenaLeaderboardEntry;
   now: number;
   isViewer: boolean;
+  activeWindow: ArenaWindow;
+  /** Runner-up and the gap to it: the race for the crown */
+  lead: { name: string; gap: number } | null;
 }) {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
@@ -216,11 +221,22 @@ export function ChampionThroneCard({
 
       <div className="arena-throne-topline">
         <div className="arena-throne-title-stack">
-          <span className="arena-throne-rank">#{entry.rank}</span>
-          <RankChangeBadge rankChange={entry.rankChange} size="md" />
-          <div>
+          <div className="arena-throne-rank-row">
+            <span className="arena-throne-rank">#{entry.rank}</span>
+            {/* A flat "no change" badge under #1 reads as a loading bar */}
+            {entry.rankChange ? <RankChangeBadge rankChange={entry.rankChange} size="md" /> : null}
+          </div>
+          <div className="min-w-0">
             <div className="arena-section-kicker">{t("stageChampionKicker")}</div>
-            <div className="arena-throne-role">{t("topPerformer")}</div>
+            {lead && lead.gap > 0 ? (
+              <div className="arena-throne-lead">
+                {t.rich("championLead", {
+                  name: lead.name,
+                  gap: fmtUSDC(lead.gap),
+                  b: (chunks) => <strong className="arena-throne-lead__name">{chunks}</strong>,
+                })}
+              </div>
+            ) : null}
           </div>
         </div>
         {isViewer ? <span className="arena-viewer-tag">{t("viewerBadge")}</span> : null}
@@ -244,10 +260,13 @@ export function ChampionThroneCard({
           <div className={cn("arena-throne-pnl", entry.selectedPnl >= 0 ? "arena-throne-pnl--up" : "arena-throne-pnl--down")}>
             {formatSignedCurrency(entry.selectedPnl)}
           </div>
-          <div className="arena-throne-pnl-copy">
-            <span>{t("allTimePnl")}</span>
-            <strong>{formatSignedCurrency(entry.allTimePnl)}</strong>
-          </div>
+          {/* On the all-time tab the big number already is the all-time P&L */}
+          {activeWindow !== "all" ? (
+            <div className="arena-throne-pnl-copy">
+              <span>{t("allTimePnl")}</span>
+              <strong>{formatSignedCurrency(entry.allTimePnl)}</strong>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -258,11 +277,11 @@ export function ChampionThroneCard({
         </div>
         <div className="arena-throne-stat">
           <span>{t("realized")}</span>
-          <strong>{formatSignedCompact(entry.selectedRealizedPnl)}</strong>
+          <strong>{formatSignedCurrency(entry.selectedRealizedPnl)}</strong>
         </div>
         <div className="arena-throne-stat">
           <span>{t("liveEdge")}</span>
-          <strong>{formatSignedCompact(entry.selectedUnrealizedPnl)}</strong>
+          <strong>{formatSignedCurrency(entry.selectedUnrealizedPnl)}</strong>
         </div>
         <div className="arena-throne-stat">
           <span>{t("lastTrade")}</span>

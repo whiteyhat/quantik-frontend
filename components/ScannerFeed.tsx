@@ -5,28 +5,15 @@ import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { HelpTooltip } from "./ui/HelpTooltip";
 import { api, type AutopilotDecision } from "@/lib/api";
-
-function timeAgo(ts: number): string {
-  const diffMs = Date.now() - ts;
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  return `${Math.floor(min / 60)}h ago`;
-}
-
-function humanizeSlug(slug: string): string {
-  return slug
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    + "?";
-}
+import { formatRelativeTime } from "@/lib/dashboard";
+import { useNow } from "@/hooks/useNow";
+import { marketLabel } from "@/components/dashboard/dashboardFit";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 function resolveQuestion(decision: AutopilotDecision): string {
   const snapshot = decision.signal_snapshot;
-  const question = snapshot && typeof snapshot.question === "string"
-    ? snapshot.question
-    : humanizeSlug(decision.slug);
-  return question.length > 64 ? `${question.slice(0, 64)}…` : question;
+  const question = snapshot && typeof snapshot.question === "string" ? snapshot.question : null;
+  return marketLabel(question, decision.slug);
 }
 
 function resolveSigma(decision: AutopilotDecision): string {
@@ -43,24 +30,20 @@ function resolveKelly(decision: AutopilotDecision): string {
   return value == null ? "—" : `${(value * 100).toFixed(1)}%`;
 }
 
-function humanizeReason(reasonCode: string): string {
-  return reasonCode.replace(/_/g, " ").toUpperCase();
-}
-
-function decisionBadge(decision: AutopilotDecision): { label: string; color: string; bg: string } {
+function decisionBadge(decision: AutopilotDecision): { status: string; color: string; bg: string } {
   if (decision.decision === "executed") {
-    return { label: "EXECUTED", color: "#30d158", bg: "rgba(48,209,88,0.15)" };
+    return { status: "executed", color: "#30d158", bg: "rgba(48,209,88,0.15)" };
   }
 
   if (decision.decision === "failed") {
-    return { label: "FAILED", color: "#ff453a", bg: "rgba(255,69,58,0.15)" };
+    return { status: "failed", color: "#ff453a", bg: "rgba(255,69,58,0.15)" };
   }
 
   if (decision.reason_code === "funding" || decision.reason_code === "wallet" || decision.reason_code === "polymarket_prep") {
-    return { label: "BLOCKED", color: "#ff9f0a", bg: "rgba(255,159,10,0.15)" };
+    return { status: "blocked", color: "#ff9f0a", bg: "rgba(255,159,10,0.15)" };
   }
 
-  return { label: "SKIPPED", color: "rgba(255,255,255,0.62)", bg: "rgba(255,255,255,0.08)" };
+  return { status: "skipped", color: "rgba(255,255,255,0.62)", bg: "rgba(255,255,255,0.08)" };
 }
 
 interface ScannerFeedProps {
@@ -69,6 +52,9 @@ interface ScannerFeedProps {
 
 export function ScannerFeed({ agentId }: ScannerFeedProps) {
   const t = useTranslations("scannerFeed");
+  const tCommon = useTranslations("common");
+  const statusLabel = useStatusLabel();
+  const now = useNow(30_000);
   const router = useRouter();
   const [decisions, setDecisions] = useState<AutopilotDecision[]>([]);
   const [animatingIds, setAnimatingIds] = useState<Set<string>>(new Set());
@@ -113,8 +99,10 @@ export function ScannerFeed({ agentId }: ScannerFeedProps) {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: "4px 10px",
           marginBottom: 10,
         }}
       >
@@ -153,109 +141,61 @@ export function ScannerFeed({ agentId }: ScannerFeedProps) {
           {t("noDecisions")}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="feed-list">
           {decisions.slice(0, 3).map((decision) => {
             const badge = decisionBadge(decision);
             const question = resolveQuestion(decision);
+            const reason = statusLabel(decision.reason_code);
             const isNew = animatingIds.has(decision.id);
+            const errorText = decision.error ? (() => {
+              const raw = decision.error;
+              try {
+                const parsed = JSON.parse(raw);
+                return parsed.message ?? parsed.error ?? parsed.msg ?? raw;
+              } catch {
+                return raw;
+              }
+            })() : null;
             return (
               <div
                 key={decision.id}
                 data-testid="scanner-row"
                 role="button"
                 tabIndex={0}
+                className={isNew ? "feed-row feed-row--new" : "feed-row"}
                 onClick={() => router.push(`/market/${decision.slug}`)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") router.push(`/market/${decision.slug}`);
                 }}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr auto",
-                  alignItems: "center",
-                  gap: "8px 10px",
-                  padding: "9px 10px",
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  animation: isNew ? "slide-in-top 0.35s ease-out" : "none",
-                  cursor: "pointer",
-                }}
+                style={{ cursor: "pointer" }}
               >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    color: badge.color,
-                    background: badge.bg,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 999,
-                    padding: "4px 8px",
-                    fontFamily: "\"SF Mono\", monospace",
-                  }}
-                >
-                  {badge.label}
-                </span>
-
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "rgba(255,255,255,0.72)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
+                <div className="feed-row-badges">
+                  <span
+                    className="feed-row-pill"
+                    style={{ color: badge.color, background: badge.bg }}
                   >
+                    {statusLabel(badge.status)}
+                  </span>
+                </div>
+
+                <div className="feed-row-body">
+                  <div className="feed-row-title" title={question}>
                     {question}
                   </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      fontSize: 10,
-                      color: "rgba(255,255,255,0.34)",
-                      fontFamily: "\"SF Mono\", monospace",
-                    }}
-                  >
+                  <div className="feed-row-meta">
                     <span>{decision.direction}</span>
-                    <span>{humanizeReason(decision.reason_code)}</span>
+                    <span title={reason}>{reason}</span>
                     <span>{t("conf")} {resolveSigma(decision)}</span>
                     <span>{t("kelly")} {resolveKelly(decision)}</span>
                     {decision.size_usdc != null ? <span>${decision.size_usdc.toFixed(2)}</span> : null}
                   </div>
-                  {decision.error ? (
-                    <div
-                      style={{
-                        marginTop: 4,
-                        fontSize: 10,
-                        color: "rgba(255,159,10,0.82)",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {(() => {
-                        const raw = decision.error;
-                        try {
-                          const parsed = JSON.parse(raw);
-                          return parsed.message ?? parsed.error ?? parsed.msg ?? raw;
-                        } catch {
-                          return raw;
-                        }
-                      })()}
-                    </div>
+                  {errorText ? (
+                    <div className="feed-row-note">{errorText}</div>
                   ) : null}
                 </div>
 
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "rgba(255,255,255,0.25)",
-                    fontFamily: "\"SF Mono\", monospace",
-                  }}
-                >
-                  {timeAgo(decision.scanned_at)}
+                <span className="feed-row-time">
+                  {now > 0 ? formatRelativeTime(decision.scanned_at, now, tCommon) : ""}
                 </span>
               </div>
             );

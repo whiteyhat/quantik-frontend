@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CheckCircle2, Link2, ExternalLink } from "lucide-react";
-import { BASE_URL, assertNotDemoWrite, getAuthToken } from "@/lib/api";
+import { BASE_URL, assertNotDemoWrite, fmtDateShort, getAuthToken } from "@/lib/api";
 import { useSignInGate } from "@/hooks/useSignInGate";
+import { useLocale, useTranslations } from "next-intl";
 
 const mono = '"SF Mono", "JetBrains Mono", monospace';
 
@@ -78,11 +79,11 @@ function ensureKeyframes() {
 
 type RegistrationPhase = "idle" | "submitting" | "confirming" | "indexing" | "done";
 
-const STEP_LABELS: Record<string, string> = {
-  submitting: "Submitting transaction...",
-  confirming: "Confirming on-chain...",
-  indexing: "Indexing identity...",
-};
+const STEP_KEYS = {
+  submitting: "stepSubmitting",
+  confirming: "stepConfirming",
+  indexing: "stepIndexing",
+} as const;
 
 const VISIBLE_STEPS: RegistrationPhase[] = ["submitting", "confirming", "indexing"];
 
@@ -172,6 +173,7 @@ function RegistrationProgress({
   phase: RegistrationPhase;
   txHash: string | null;
 }) {
+  const t = useTranslations("manageAgent.erc8004");
   const currentIdx = VISIBLE_STEPS.indexOf(phase);
 
   return (
@@ -280,7 +282,7 @@ function RegistrationProgress({
                 transition: "all 300ms ease",
                 animation: isActive ? "erc-step-pulse 2s ease-in-out infinite" : "none",
               }}>
-                {STEP_LABELS[step]}
+                {t(STEP_KEYS[step as keyof typeof STEP_KEYS])}
               </span>
             </div>
           );
@@ -385,6 +387,8 @@ export function ERC8004StatusCard({
   const [error, setError] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const gate = useSignInGate();
+  const t = useTranslations("manageAgent.erc8004");
+  const locale = useLocale();
   const isRegistered = !!tokenId;
   const registering = phase !== "idle" && phase !== "done";
 
@@ -451,10 +455,10 @@ export function ERC8004StatusCard({
         onRegistered?.(data.tokenId);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : t("registrationFailed"));
       setPhase("idle");
     }
-  }, [agentId, onRegistered]);
+  }, [agentId, onRegistered, t]);
 
   return (
     <div
@@ -501,7 +505,7 @@ export function ERC8004StatusCard({
               fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.92)",
               fontFamily: mono, letterSpacing: "0.02em", margin: 0, lineHeight: 1,
             }}>
-              On-Chain Identity
+              {t("title")}
             </h3>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: mono, letterSpacing: "0.04em" }}>
               ERC-8004 · Sepolia
@@ -520,7 +524,7 @@ export function ERC8004StatusCard({
               width: 6, height: 6, borderRadius: "50%", background: "#22c55e",
               animation: "erc-glow-dot 2s ease-in-out infinite",
             }} />
-            Verified
+            {t("verified")}
           </div>
         ) : registering ? (
           <div style={{
@@ -530,7 +534,7 @@ export function ERC8004StatusCard({
             color: "#8b5cf6", fontFamily: mono, letterSpacing: "0.06em", textTransform: "uppercase",
           }}>
             <Spinner size={8} color="#8b5cf6" />
-            Registering
+            {t("registering")}
           </div>
         ) : (
           <span style={{
@@ -538,29 +542,29 @@ export function ERC8004StatusCard({
             background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.18)",
             color: "#fbbf24", fontFamily: mono, letterSpacing: "0.06em", textTransform: "uppercase",
           }}>
-            Pending
+            {t("pending")}
           </span>
         )}
       </div>
 
       {isRegistered ? (
         <div style={{ animation: "erc-fade-in 0.4s ease forwards" }}>
-          <StatRow label="Token ID" value={`#${tokenId}`} highlight />
+          <StatRow label={t("tokenId")} value={`#${tokenId}`} highlight />
           <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "2px 0" }} />
-          <StatRow label="Reputation" value={reputationScore != null ? `${reputationScore} pts` : "\u2014"} />
+          <StatRow label={t("reputation")} value={reputationScore != null ? t("points", { count: reputationScore }) : "\u2014"} />
           <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "2px 0" }} />
-          <StatRow label="Validations" value={String(validationCount)} />
+          <StatRow label={t("validations")} value={String(validationCount)} />
           {registeredAt && (
             <>
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "2px 0" }} />
-              <StatRow label="Since" value={new Date(registeredAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} />
+              <StatRow label={t("since")} value={fmtDateShort(registeredAt, locale)} />
             </>
           )}
 
           {txHash ? (
-            <EtherscanButton href={etherscanTxUrl(txHash)} label="View Transaction on Etherscan" />
+            <EtherscanButton href={etherscanTxUrl(txHash)} label={t("viewTransaction")} />
           ) : etherscanUrl ? (
-            <EtherscanButton href={etherscanUrl} label="View Identity on Etherscan" />
+            <EtherscanButton href={etherscanUrl} label={t("viewIdentity")} />
           ) : null}
         </div>
       ) : registering ? (
@@ -571,7 +575,7 @@ export function ERC8004StatusCard({
             fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.5,
             fontFamily: mono, margin: "0 0 14px 0",
           }}>
-            Your agent will be registered on-chain at deploy. Manual registration available below.
+            {t("pendingDesc")}
           </p>
           <button
             onClick={() => gate(() => void handleRegister())}
@@ -595,7 +599,7 @@ export function ERC8004StatusCard({
               letterSpacing: "0.02em",
             }}
           >
-            Register On-Chain
+            {t("register")}
           </button>
           {error && (
             <div style={{

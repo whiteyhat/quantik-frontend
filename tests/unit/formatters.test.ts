@@ -29,3 +29,22 @@ describe('Null/undefined safety — formatters', () => {
     expect((val ?? 0).toFixed(2)).toBe('1234.50');
   });
 });
+
+import { fmtUSDC } from '@/lib/formatters';
+
+describe('fmtUSDC', () => {
+  it('puts the minus sign before the dollar sign', () => {
+    expect(fmtUSDC(-6.55)).toBe('-$6.55');
+    expect(fmtUSDC(-1234.5)).toBe('-$1,234.50');
+  });
+
+  it('never shows a negative zero', () => {
+    expect(fmtUSDC(-0.001)).toBe('$0.00');
+    expect(fmtUSDC(-0)).toBe('$0.00');
+  });
+
+  it('keeps positives, thousands separators and null handling', () => {
+    expect(fmtUSDC(5610)).toBe('$5,610.00');
+    expect(fmtUSDC(null)).toBe('$0.00');
+  });
+});

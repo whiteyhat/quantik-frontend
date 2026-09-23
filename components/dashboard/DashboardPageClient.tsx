@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type CSSProperties } from "react";
 import { useInView } from "react-intersection-observer";
 import { agentStatusTone, healthSeverityTone, serviceStatusTone, toWalletBalance } from "@/lib/dashboard";
 import { EquityCurveChart } from "@/components/ManageAgent/EquityCurveChart";
@@ -59,6 +59,16 @@ import {
 } from "@/components/dashboard/dashboardQueries";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSignInGate } from "@/hooks/useSignInGate";
+import {
+  collapseList,
+  isNearSettled,
+  marketLabel,
+  metricValueChars,
+  yesNoGrow,
+  yesNoSplit,
+} from "@/components/dashboard/dashboardFit";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 function numberTone(value: number, warnAt: number, badAt: number): "good" | "warn" | "bad" {
   if (value >= badAt) return "bad";
@@ -117,6 +127,7 @@ function PolymarketGlyph() {
 }
 
 function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
+  const t = useTranslations("dashboard.hero");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -134,9 +145,9 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
       <div className="mission-wallet-clip">
         <div className="mission-wallet-orb" />
       </div>
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
-          <div className="mission-wallet-kicker">Agent Wallet</div>
+          <div className="mission-wallet-kicker">{t("walletKicker")}</div>
           <div className="mission-wallet-address-row">
             <div className="mission-wallet-address">
               {trimWalletAddress(walletAddress)}
@@ -145,13 +156,13 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
               type="button"
               onClick={() => void handleCopy()}
               className="mission-wallet-action mission-wallet-action--copy"
-              data-tooltip={copied ? "Copied!" : "Copy address"}
-              aria-label={copied ? "Wallet copied" : "Copy wallet"}
+              data-tooltip={copied ? t("walletCopied") : t("walletCopy")}
+              aria-label={copied ? t("walletCopied") : t("walletCopy")}
             >
               {copied ? <CopyCheck className="size-4 text-[#34d399]" /> : <Copy className="size-4" />}
             </button>
           </div>
-          <div className="mission-wallet-caption">Direct wallet controls for explorer, profile, and secure copy.</div>
+          <div className="mission-wallet-caption">{t("walletCaption")}</div>
         </div>
 
         <div className="mission-wallet-actions">
@@ -161,7 +172,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
             rel="noopener noreferrer"
             className="mission-wallet-action"
             data-tooltip="Polygonscan"
-            aria-label="Open wallet on Polygonscan"
+            aria-label={t("walletOpenOn", { site: "Polygonscan" })}
           >
             <ExternalLink className="size-4 transition-transform duration-200 group-hover:rotate-6" />
           </a>
@@ -171,7 +182,7 @@ function MissionWalletBadge({ walletAddress }: { walletAddress: string }) {
             rel="noopener noreferrer"
             className="mission-wallet-action"
             data-tooltip="Polymarket"
-            aria-label="Open wallet on Polymarket"
+            aria-label={t("walletOpenOn", { site: "Polymarket" })}
           >
             <PolymarketGlyph />
           </a>
@@ -200,6 +211,7 @@ function MissionControlHero({
 }) {
   const t = useTranslations("dashboard.hero");
   const tRel = useTranslations("common");
+  const statusLabel = useStatusLabel();
 
   const statusText = summary?.fundingStatus === "ready"
     ? t("capitalArmed")
@@ -242,7 +254,7 @@ function MissionControlHero({
             <div className="flex items-center gap-2">
               <Shield className="size-4 text-[#facc15]" />
               <span>
-                {t("circuit", { status: summary?.circuitBreakerStatus ?? riskStatus?.circuitBreaker ?? "ARMED" })}
+                {t("circuit", { status: statusLabel(summary?.circuitBreakerStatus ?? riskStatus?.circuitBreaker ?? "ARMED") })}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -303,6 +315,7 @@ function SummaryCard({
   onRetry: () => void;
 }) {
   const t = useTranslations("dashboard.portfolio");
+  const statusLabel = useStatusLabel();
 
   if (error) {
     return (
@@ -327,7 +340,7 @@ function SummaryCard({
       {loading || !summary ? (
         <div className="space-y-4">
           <Skeleton width="60%" height={34} borderRadius={10} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="command-center-metric-grid">
             <Skeleton width="100%" height={72} borderRadius={16} />
             <Skeleton width="100%" height={72} borderRadius={16} />
           </div>
@@ -337,7 +350,10 @@ function SummaryCard({
         <div className="space-y-5">
           <div className="space-y-2">
             <div className="command-center-metric-label">{t("netLiquidationValue")}</div>
-            <div className="text-[2rem] font-semibold tracking-[-0.04em] text-white">
+            <div
+              className="command-center-figure"
+              style={{ "--metric-chars": metricValueChars(summary.totalValue != null ? fmtUSDC(summary.totalValue) : "—") } as CSSProperties}
+            >
               {summary.totalValue != null ? fmtUSDC(summary.totalValue) : "—"}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -347,12 +363,12 @@ function SummaryCard({
               />
               <StatusBadge
                 tone={summary.circuitBreakerStatus === "ARMED" ? "good" : summary.circuitBreakerStatus === "WARNING" ? "warn" : "bad"}
-                label={t("circuit", { status: summary.circuitBreakerStatus })}
+                label={t("circuit", { status: statusLabel(summary.circuitBreakerStatus) })}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="command-center-metric-grid">
             <MetricBlock
               label={t("availableCash")}
               value={summary.cashBalance != null ? fmtUSDC(summary.cashBalance) : "—"}
@@ -438,7 +454,7 @@ function PositionsCard({
               >
                 <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-white">{position.market}</div>
+                    <div className="truncate text-sm font-medium text-white" title={position.market}>{position.market}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[rgba(255,255,255,0.45)]">
                       <StatusBadge tone={position.direction === "YES" ? "good" : "bad"} label={position.direction} />
                       <span>{fmtPrice(position.entryPrice)} → {fmtPrice(position.currentPrice)}</span>
@@ -555,6 +571,7 @@ function RiskPostureCard({
   onRetry: () => void;
 }) {
   const t = useTranslations("dashboard.riskPosture");
+  const statusLabel = useStatusLabel();
 
   if (error) {
     return (
@@ -606,7 +623,7 @@ function RiskPostureCard({
             <div className="command-center-stat-strip risk-posture-stats">
               <div>
                 <div className="command-center-stat-label">{t("circuit")}</div>
-                <div className="command-center-stat-value">{riskStatus.circuitBreaker}</div>
+                <div className="command-center-stat-value">{statusLabel(riskStatus.circuitBreaker)}</div>
               </div>
               <div>
                 <div className="command-center-stat-label">{t("maxPosition")}</div>
@@ -636,6 +653,12 @@ function PerformanceCard({
   onRetry: () => void;
 }) {
   const t = useTranslations("dashboard.performance");
+  const tradesQuery = useDashboardTradesQuery();
+  // The summary names the best trade by slug; show its market question instead
+  const bestSlug = summary?.metrics.bestTrade ?? null;
+  const bestTradeLabel = bestSlug
+    ? marketLabel((tradesQuery.data ?? []).find((trade) => trade.slug === bestSlug)?.market, bestSlug)
+    : null;
 
   return (
     <CommandCenterCard accent="green">
@@ -654,14 +677,14 @@ function PerformanceCard({
       ) : loading || !summary ? (
         <div className="space-y-3">
           <Skeleton width="45%" height={28} borderRadius={10} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="command-center-metric-grid">
             <Skeleton width="100%" height={80} borderRadius={16} />
             <Skeleton width="100%" height={80} borderRadius={16} />
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="command-center-metric-grid">
             <MetricBlock
               label={t("winRate")}
               value={`${(summary.winRate * 100).toFixed(1)}%`}
@@ -671,7 +694,7 @@ function PerformanceCard({
             <MetricBlock
               label={t("currentStreak")}
               value={summary.metrics.currentStreak > 0 ? `+${summary.metrics.currentStreak}` : summary.metrics.currentStreak}
-              hint={summary.metrics.bestTrade ? t("bestTrade", { trade: summary.metrics.bestTrade }) : t("noStandoutTrade")}
+              hint={bestTradeLabel ? t("bestTrade", { trade: bestTradeLabel }) : t("noStandoutTrade")}
               tone={summary.metrics.currentStreak >= 0 ? "good" : "bad"}
             />
           </div>
@@ -725,6 +748,7 @@ function OrchestratorCard({
   const t = useTranslations("dashboard.orchestrator");
   const tRel = useTranslations("common");
   const locale = useLocale();
+  const statusLabel = useStatusLabel();
 
   return (
     <CommandCenterCard accent="blue" data-testid="dashboard-orchestrator-card" id="tour-orchestrator">
@@ -794,12 +818,12 @@ function OrchestratorCard({
                       label={candidate.opportunityScore.toFixed(0)}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-white">{candidate.question}</div>
+                      <div className="truncate text-sm font-medium text-white" title={candidate.question}>{candidate.question}</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {candidate.triggers.length > 0 ? (
                           candidate.triggers.slice(0, 2).map((trigger) => (
                             <span key={trigger} className="command-center-tag">
-                              {trigger.replace(/_/g, " ")}
+                              {statusLabel(trigger)}
                             </span>
                           ))
                         ) : (
@@ -842,7 +866,12 @@ function SystemStatusCard({
 }) {
   const t = useTranslations("dashboard.systemStatus");
   const tRel = useTranslations("common");
+  const locale = useLocale();
+  const statusLabel = useStatusLabel();
   const services = health?.services ?? [];
+  // Server-written health text is English: other languages get a translated line per status
+  const serviceDetail = (service: (typeof services)[number]) =>
+    locale === "en" ? service.detail ?? t("noAdditionalDetail") : t(`serviceDetail_${service.status}`);
 
   return (
     <CommandCenterCard accent="neutral" data-testid="dashboard-system-status-card">
@@ -860,7 +889,7 @@ function SystemStatusCard({
         />
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="command-center-metric-grid">
             <MetricBlock
               label={t("apiHealth")}
               value={health ? t(`healthLabel_${health.label}` as any) : healthLoading ? t("checking") : t("unknown")}
@@ -873,8 +902,8 @@ function SystemStatusCard({
             />
             <MetricBlock
               label={t("serviceMap")}
-              value={health && isLiveHealth(health.services) ? <span className="inline-flex items-center gap-1.5"><Tooltip text={t("serviceChecks", { count: health.services.length })}><ShieldCheck className="size-4" /></Tooltip>{health.services.length}</span> : "—"}
-              hint={health?.message ?? t("waitingForServiceTelemetry")}
+              value={health && isLiveHealth(health.services) ? <span className="inline-flex items-center gap-1.5"><Tooltip text={t("serviceChecks", { count: health.services.length })}><ShieldCheck className="size-[0.7em]" /></Tooltip>{health.services.length}</span> : "—"}
+              hint={health ? t(`healthMessage_${health.severity}`) : t("waitingForServiceTelemetry")}
               tone={health && isLiveHealth(health.services) ? "good" : "neutral"}
             />
           </div>
@@ -887,13 +916,13 @@ function SystemStatusCard({
                     <span className={`command-center-status-dot command-center-status-dot--${service.status}`} />
                     <div className="command-center-service-copy">
                       <div className="command-center-service-name">{service.name}</div>
-                      <div className="command-center-service-detail">
-                        {service.detail ?? t("noAdditionalDetail")}
+                      <div className="command-center-service-detail" title={service.detail ?? undefined}>
+                        {serviceDetail(service)}
                       </div>
                     </div>
                   </div>
                   <div className="command-center-service-badge">
-                    <StatusBadge tone={serviceStatusTone(service.status)} label={service.status} />
+                    <StatusBadge tone={serviceStatusTone(service.status)} label={statusLabel(service.status)} />
                   </div>
                 </div>
               ))
@@ -925,29 +954,32 @@ function SystemStatusCard({
                 detail={t("noAgentTrafficDetail")}
               />
             ) : (
-              agents.map((agent) => (
-                <div key={agent.id} className="command-center-list-row">
-                  <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <span className={`command-center-status-dot command-center-status-dot--${agent.status}`} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-white">{agent.name}</div>
-                      <div className="text-xs text-[rgba(255,255,255,0.45)]">
-                        {agent.lastActiveAt
-                          ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now, tRel) })
-                          : t("noRecentTraffic")}
+              agents.map((agent) => {
+                const detail = t(`agentDetail_${agent.detailKey}` as any, agent.detailParams as any);
+                return (
+                  <div key={agent.id} className="command-center-list-row">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <span className={`command-center-status-dot command-center-status-dot--${agent.status}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-white" title={agent.name}>{agent.name}</div>
+                        <div className="text-xs text-[rgba(255,255,255,0.45)]">
+                          {agent.lastActiveAt
+                            ? t("lastActive", { time: formatRelativeTime(agent.lastActiveAt, now, tRel) })
+                            : t("noRecentTraffic")}
+                        </div>
+                        <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]" title={detail}>{detail}</div>
                       </div>
-                      <div className="mt-1 truncate text-xs text-[rgba(255,255,255,0.38)]">{t(`agentDetail_${agent.detailKey}` as any, agent.detailParams as any)}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="font-mono text-xs text-[rgba(255,255,255,0.58)]">{agent.latencyMs}ms</div>
+                      <StatusBadge
+                        tone={agent.status === "idle" ? "neutral" : agentStatusTone(agent.status) as "good" | "warn" | "bad" | "neutral"}
+                        label={statusLabel(agent.status)}
+                      />
                     </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono text-xs text-[rgba(255,255,255,0.58)]">{agent.latencyMs}ms</div>
-                    <StatusBadge
-                      tone={agent.status === "idle" ? "neutral" : agentStatusTone(agent.status) as "good" | "warn" | "bad" | "neutral"}
-                      label={agent.status}
-                    />
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -963,6 +995,7 @@ function RecentSignalsCard({
 }) {
   const t = useTranslations("dashboard.recentSignals");
   const tRel = useTranslations("common");
+  const statusLabel = useStatusLabel();
   const signalsQuery = useDashboardSignalsQuery();
 
   return (
@@ -994,51 +1027,77 @@ function RecentSignalsCard({
             detail={t("emptyDetail")}
           />
         ) : (
-          signalsQuery.data.map((signal) => (
-            <Link
-              key={signal.id}
-              href={signal.slug ? `/market/${signal.slug}` : "#"}
-              className="command-center-list-row no-underline"
-              data-testid="signal-row"
-            >
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <StatusBadge tone={signalTone(signal.status)} label={signal.status} />
-                <div className="min-w-0 flex-1 truncate text-sm text-[rgba(255,255,255,0.74)]">
-                  {signal.question || signal.slug || t("unknownMarket")}
+          signalsQuery.data.map((signal) => {
+            const question = signal.question || marketLabel(null, signal.slug) || t("unknownMarket");
+            return (
+              <Link
+                key={signal.id}
+                href={signal.slug ? `/market/${signal.slug}` : "#"}
+                className="command-center-list-row no-underline"
+                data-testid="signal-row"
+              >
+                {/* Stacked: badge + edge, then the market on its own line, then confidence + time,
+                    so the question stays readable in the narrow right rail */}
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <StatusBadge tone={signalTone(signal.status)} label={statusLabel(signal.status)} />
+                    <span className={signal.edge > 0 ? "font-mono text-sm text-[#34d399]" : "font-mono text-sm text-[rgba(255,255,255,0.45)]"}>
+                      {signal.edge > 0 ? "+" : ""}
+                      {(signal.edge * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="line-clamp-2 text-sm text-[rgba(255,255,255,0.78)]" title={question}>
+                    {question}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs text-[rgba(255,255,255,0.4)]">
+                    <span className="font-mono">{t("confidence", { pct: Math.round(signal.confidence ?? 0) })}</span>
+                    <span>{formatRelativeTime(signal.timestamp ?? 0, now, tRel)}</span>
+                  </div>
                 </div>
-                <div className="hidden font-mono text-xs text-[rgba(255,255,255,0.52)] md:block">
-                  {Math.round((signal.confidence ?? 0) * 100)}%
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className={signal.edge > 0 ? "text-[#34d399]" : "text-[rgba(255,255,255,0.45)]"}>
-                  {signal.edge > 0 ? "+" : ""}
-                  {(signal.edge * 100).toFixed(1)}%
-                </div>
-                <div className="text-xs text-[rgba(255,255,255,0.32)]">
-                  {formatRelativeTime(signal.timestamp ?? 0, now, tRel)}
-                </div>
-              </div>
-            </Link>
-          ))
+              </Link>
+            );
+          })
         )}
       </div>
     </CommandCenterCard>
   );
 }
 
+const SCANNER_CATEGORY_KEYS = {
+  "Trending 🔥": "catTrending",
+  All: "catAll",
+  Crypto: "catCrypto",
+  Politics: "catPolitics",
+  Sports: "catSports",
+  "Pop Culture": "catPopCulture",
+  Science: "catScience",
+  "World Events": "catWorldEvents",
+  Business: "catBusiness",
+} as const satisfies Record<ScannerCategory, string>;
+
+const SPRING_EASE = [0.16, 1, 0.3, 1] as const;
+
 function MarketScannerCard() {
   const t = useTranslations("dashboard.marketScanner");
   const locale = useLocale();
+  const reduceMotion = useReducedMotion();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 250);
   const [activeCategory, setActiveCategory] = useState<ScannerCategory>("Trending 🔥");
+  const [expanded, setExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const scannerQuery = useDashboardScannerQuery(activeCategory, debouncedSearch, 20);
   const { ref, inView } = useInView({ threshold: 0.1, rootMargin: "240px" });
   const [livePrices, setLivePrices] = useState<Record<string, { yes: number; no: number }>>({});
   const { markets: displayedMarkets } = scannerQuery;
-  const subscribedMarkets = useMemo(() => displayedMarkets.slice(0, 12), [displayedMarkets]);
+  // Markets at 2¢/98¢ or beyond are effectively settled: they read as broken in a live scanner.
+  // Judged on the listed price (not the live stream) so the list does not reshuffle while open.
+  const openMarkets = useMemo(
+    () => displayedMarkets.filter((market) => !isNearSettled(yesNoSplit(undefined, market.yesPrice))),
+    [displayedMarkets],
+  );
+  const { visible: visibleMarkets, hiddenCount } = collapseList(openMarkets, expanded);
+  const subscribedMarkets = useMemo(() => openMarkets.slice(0, 12), [openMarkets]);
   const {
     fetchNextPage,
     hasNextPage,
@@ -1051,12 +1110,12 @@ function MarketScannerCard() {
   } = scannerQuery;
 
   useEffect(() => {
-    if (!inView || !hasNextPage || isFetchingNextPage || isTrending) {
+    if (!expanded || !inView || !hasNextPage || isFetchingNextPage || isTrending) {
       return;
     }
 
     void fetchNextPage();
-  }, [fetchNextPage, hasNextPage, inView, isFetchingNextPage, isTrending]);
+  }, [expanded, fetchNextPage, hasNextPage, inView, isFetchingNextPage, isTrending]);
 
   useEffect(() => {
     if (subscribedMarkets.length === 0) return;
@@ -1084,7 +1143,44 @@ function MarketScannerCard() {
   const showTrendingCta =
     isTrending &&
     !isLoading &&
-    displayedMarkets.length === 0;
+    openMarkets.length === 0;
+
+  const renderMarket = (market: (typeof openMarkets)[number]) => {
+    const split = yesNoSplit(livePrices[market.tokenId]?.yes, market.yesPrice);
+    const grow = yesNoGrow(split);
+
+    return (
+      <Link
+        href={`/market/${market.slug}`}
+        className="command-center-market-card h-full no-underline"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="line-clamp-3 text-sm font-medium text-white" title={market.question}>{market.question}</div>
+          </div>
+          <StatusBadge tone="info" label={market.liquidityGrade} />
+        </div>
+
+        <div className="command-center-yesno">
+          <div className="command-center-yesno-yes" style={{ flexGrow: grow.yes }}>
+            YES {split ? `${split.yes}¢` : "—"}
+          </div>
+          <div className="command-center-yesno-no" style={{ flexGrow: grow.no }}>
+            {split ? `${split.no}¢` : "—"} NO
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[rgba(255,255,255,0.46)]">
+          <span>{t("vol", { amount: fmtUSDC(market.volume) })}</span>
+          <span>
+            {Number.isNaN(new Date(market.resolutionDate).getTime())
+              ? t("tbd")
+              : fmtDate(new Date(market.resolutionDate).getTime(), locale)}
+          </span>
+        </div>
+      </Link>
+    );
+  };
 
   return (
     <CommandCenterCard accent="blue">
@@ -1101,6 +1197,7 @@ function MarketScannerCard() {
             value={search}
             onChange={(event) => {
               const nextValue = event.target.value;
+              setExpanded(false);
               startTransition(() => setSearch(nextValue));
             }}
             placeholder={t("searchPlaceholder")}
@@ -1115,10 +1212,11 @@ function MarketScannerCard() {
               type="button"
               className={activeCategory === category ? "command-center-pill command-center-pill--active" : "command-center-pill"}
               onClick={() => {
+                setExpanded(false);
                 startTransition(() => setActiveCategory(category));
               }}
             >
-              {category}
+              {t(SCANNER_CATEGORY_KEYS[category])}
             </button>
           ))}
         </div>
@@ -1130,7 +1228,7 @@ function MarketScannerCard() {
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" data-testid="scanner-loading">
+          <div className="command-center-market-grid" data-testid="scanner-loading">
             {[1, 2, 3, 4].map((item) => (
               <div key={item} className="command-center-market-card">
                 <Skeleton width="75%" height={18} borderRadius={6} />
@@ -1159,56 +1257,53 @@ function MarketScannerCard() {
               </Button>
             }
           />
-        ) : displayedMarkets.length === 0 ? (
+        ) : openMarkets.length === 0 ? (
           <PanelEmptyState
             title={t("noMarketsFound")}
-            detail={debouncedSearch ? t("noResultsMatched", { search: debouncedSearch }) : t("noMarketsInCategory", { category: activeCategory })}
+            detail={debouncedSearch
+              ? t("noResultsMatched", { search: debouncedSearch })
+              : t("noMarketsInCategory", { category: t(SCANNER_CATEGORY_KEYS[activeCategory]) })}
           />
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {displayedMarkets.map((market) => {
-              const livePrice = livePrices[market.tokenId];
-              const yes = livePrice?.yes ?? market.yesPrice ?? 0;
-              const yesPct = Math.round(yes * 100);
-              const noPct = 100 - yesPct;
-
-              return (
-                <Link
-                  key={market.slug}
-                  href={`/market/${market.slug}`}
-                  className="command-center-market-card no-underline"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="line-clamp-3 text-sm font-medium text-white">{market.question}</div>
-                    </div>
-                    <StatusBadge tone="info" label={market.liquidityGrade} />
-                  </div>
-
-                  <div className="command-center-yesno">
-                    <div className="command-center-yesno-yes" style={{ width: `${Math.max(28, yesPct)}%` }}>
-                      YES {yesPct}¢
-                    </div>
-                    <div className="command-center-yesno-no" style={{ width: `${Math.max(28, noPct)}%` }}>
-                      {noPct}¢ NO
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-[rgba(255,255,255,0.46)]">
-                    <span>{t("vol", { amount: fmtUSDC(market.volume) })}</span>
-                    <span>
-                      {Number.isNaN(new Date(market.resolutionDate).getTime())
-                        ? t("tbd")
-                        : fmtDate(new Date(market.resolutionDate).getTime(), locale)}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="command-center-market-grid" data-testid="scanner-markets">
+            <AnimatePresence initial={false}>
+              {visibleMarkets.map((market, index) =>
+                index < 6 ? (
+                  <div key={market.slug} className="min-w-0">{renderMarket(market)}</div>
+                ) : (
+                  // Revealed by "Show more": rise in with a short cascade (instant with reduced motion)
+                  <motion.div
+                    key={market.slug}
+                    className="min-w-0"
+                    initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8, transition: { duration: 0.16, ease: [0.4, 0, 1, 1] } }}
+                    transition={{ duration: 0.42, ease: SPRING_EASE, delay: reduceMotion ? 0 : Math.min(index - 6, 8) * 0.03 }}
+                  >
+                    {renderMarket(market)}
+                  </motion.div>
+                ),
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        {!isTrending && hasNextPage && (
+        {!isError && !isLoading && (hiddenCount > 0 || expanded) ? (
+          <div className="flex justify-center">
+            <motion.button
+              type="button"
+              className="command-center-pill command-center-more"
+              aria-expanded={expanded}
+              whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+              transition={{ duration: 0.18, ease: [0.34, 1.2, 0.64, 1] }}
+              onClick={() => setExpanded((current) => !current)}
+            >
+              {expanded ? t("showFewer") : t("showMore", { count: hiddenCount })}
+            </motion.button>
+          </div>
+        ) : null}
+
+        {expanded && !isTrending && hasNextPage && (
           <div ref={ref} data-testid="load-more-sentinel" className="h-4" />
         )}
       </div>
@@ -1221,6 +1316,7 @@ type TimePeriod = (typeof TIME_PERIODS)[number];
 
 function EquityChartCard() {
   const t = useTranslations("dashboard.equity");
+  const tc = useTranslations("common");
   const [period, setPeriod] = useState<TimePeriod>("7D");
   const wallet = useQuantikStore((state) => state.wallet);
   const tradesQuery = useDashboardTradesQuery();
@@ -1241,7 +1337,7 @@ function EquityChartCard() {
                 className={period === p ? "command-center-pill command-center-pill--active" : "command-center-pill"}
                 style={{ fontSize: 11 }}
               >
-                {p}
+                {tc(`period${p}`)}
               </button>
             ))}
           </div>
@@ -1266,6 +1362,7 @@ function EquityChartCard() {
 function RecentTradesCard() {
   const t = useTranslations("dashboard.recentTrades");
   const locale = useLocale();
+  const statusLabel = useStatusLabel();
   const tradesQuery = useDashboardTradesQuery();
 
   const recentTrades = useMemo(() => {
@@ -1318,10 +1415,10 @@ function RecentTradesCard() {
               >
                 <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-white">{trade.market}</div>
+                    <div className="truncate text-sm font-medium text-white" title={trade.market}>{trade.market}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[rgba(255,255,255,0.45)]">
                       <StatusBadge tone={trade.direction === "YES" ? "good" : "bad"} label={trade.direction} />
-                      <span title={trade.source === "autopilot" ? "Autopilot" : "Manual"}>
+                      <span title={statusLabel(trade.source ?? "manual")}>
                         {trade.source === "autopilot" ? "\u{1F916}" : "\u{1F9D1}"}
                       </span>
                       <span className="font-mono">{dateStr} {timeStr}</span>

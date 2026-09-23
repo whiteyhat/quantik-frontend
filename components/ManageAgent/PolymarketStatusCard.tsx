@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import JSConfetti from "js-confetti";
-import { api } from "@/lib/api";
+import { api, fmtUSDC } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
 import { useViewer } from "@/context/ViewerContext";
@@ -633,7 +633,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
               label={t("usdcCapital")}
               sublabel={t("usdcMin")}
               checked={usdcChecked}
-              value={shownBalances ? `$${shownBalances.usdc.toFixed(2)}` : undefined}
+              value={shownBalances ? fmtUSDC(shownBalances.usdc) : undefined}
             />
           </div>
         )}

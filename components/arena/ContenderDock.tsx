@@ -3,7 +3,7 @@
 import { ExternalLink, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { type ArenaLeaderboardEntry, type ArenaViewerContext } from "@/lib/api";
+import { type ArenaLeaderboardEntry, type ArenaViewerContext, type ArenaWindow } from "@/lib/api";
 import {
   contenderDetailCopy,
   contenderEyebrow,
@@ -20,11 +20,13 @@ export function ContenderDock({
   viewer,
   viewerEntry,
   leaders,
+  activeWindow,
   onCompare,
 }: {
   viewer: ArenaViewerContext | undefined;
   viewerEntry: ArenaLeaderboardEntry | null;
   leaders: ArenaLeaderboardEntry[];
+  activeWindow: ArenaWindow;
   onCompare?: () => void;
 }) {
   const t = useTranslations("arena");
@@ -101,10 +103,18 @@ export function ContenderDock({
             <span>{t("selectedPnl")}</span>
             <strong>{formatSignedCurrency(selectedBaseline)}</strong>
           </div>
-          <div className="arena-dock-metric">
-            <span>{t("allTimePnl")}</span>
-            <strong>{formatSignedCurrency(viewerEntry?.allTimePnl ?? 0)}</strong>
-          </div>
+          {/* On the all-time tab the window P&L already is the all-time P&L */}
+          {activeWindow === "all" ? (
+            <div className="arena-dock-metric">
+              <span>{t("openPositions")}</span>
+              <strong>{viewerEntry?.openPositions ?? 0}</strong>
+            </div>
+          ) : (
+            <div className="arena-dock-metric">
+              <span>{t("allTimePnl")}</span>
+              <strong>{formatSignedCurrency(viewerEntry?.allTimePnl ?? 0)}</strong>
+            </div>
+          )}
           <div className="arena-dock-metric">
             <span>{t("winRate")}</span>
             <strong>{viewerEntry ? `${viewerEntry.winRate.toFixed(1)}%` : "0.0%"}</strong>

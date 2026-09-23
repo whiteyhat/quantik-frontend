@@ -21,13 +21,15 @@ export interface ViewerState {
 
 export function resolveViewerMode(input: {
   clerkLoaded: boolean;
+  /** Clerk gave up loading (very slow or blocked network): nobody can be signed in. */
+  clerkFailed?: boolean;
   signedIn: boolean;
   access: { hasAgent: boolean; isOperator: boolean } | null;
 }): ViewerState {
-  if (!input.clerkLoaded) {
+  if (!input.clerkLoaded && !input.clerkFailed) {
     return { mode: "loading", isSignedIn: false, hasAgent: false, isOperator: false, isDemo: false, canAct: false };
   }
-  if (!input.signedIn) {
+  if (!input.clerkLoaded || !input.signedIn) {
     return { mode: "guest", isSignedIn: false, hasAgent: false, isOperator: false, isDemo: true, canAct: false };
   }
   if (!input.access) {
@@ -58,6 +60,16 @@ export interface ViewerIdentity {
 export function viewerIdentityChanged(prev: ViewerIdentity, next: ViewerIdentity): boolean {
   if (prev.mode === "loading" || next.mode === "loading") return false;
   return prev.mode !== next.mode || prev.userId !== next.userId;
+}
+
+/**
+ * Wipe caches and remount pages when the identity changed, or when some read
+ * gave up waiting for a slow sign-in check (it showed an error or an empty
+ * panel): once the viewer is known, everything refetches with the right mode.
+ */
+export function viewerNeedsReset(prev: ViewerIdentity, next: ViewerIdentity, readGaveUpWaiting: boolean): boolean {
+  if (next.mode === "loading") return false;
+  return viewerIdentityChanged(prev, next) || readGaveUpWaiting;
 }
 
 type AccessAnswer = { signedIn: boolean; hasAgent: boolean; isOperator: boolean } | null;

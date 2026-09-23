@@ -17,6 +17,7 @@ import { ShareButtons } from "@/components/arena/ShareButtons";
 import { AnimatedCounter } from "@/components/arena/AnimatedCounter";
 import { PolymarketGlyph } from "@/components/PolymarketGlyph";
 import { WalletActionButton } from "@/components/WalletActionButton";
+import { DemoArenaProfileBanner } from "@/components/demo/DemoBanner";
 import { cn } from "@/lib/utils";
 
 const sectionEase = [0.16, 1, 0.3, 1] as const;
@@ -36,9 +37,12 @@ function RankBadge({ rank, unrankedLabel }: { rank: number | null; unrankedLabel
 export function PublicAgentProfileView({
   profile,
   shareUrl,
+  demo = false,
 }: {
   profile: PublicAgentProfileData;
   shareUrl: string;
+  /** A sample-arena agent: labeled as such, and not offered for sharing */
+  demo?: boolean;
 }) {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
@@ -134,6 +138,8 @@ export function PublicAgentProfileView({
 
   return (
     <div className="arena-public-profile">
+      {demo && <DemoArenaProfileBanner name={profile.name} className="arena-public-demo-banner" />}
+
       {profile.heat > 0.05 ? (
         <AgentHeatGlow heat={profile.heat}>{heroContent}</AgentHeatGlow>
       ) : (
@@ -250,10 +256,12 @@ export function PublicAgentProfileView({
         viewport={viewportOnce}
         transition={{ delay: 0.2, duration: 0.5 }}
       >
-        <ShareButtons
-          url={shareUrl}
-          text={t("shareText", { emoji: profile.avatarEmoji, name: profile.name, rank: String(profile.rank ?? "—"), pnl: formatSignedCurrency(profile.allTimePnl) })}
-        />
+        {demo ? null : (
+          <ShareButtons
+            url={shareUrl}
+            text={t("shareText", { emoji: profile.avatarEmoji, name: profile.name, rank: String(profile.rank ?? "—"), pnl: formatSignedCurrency(profile.allTimePnl) })}
+          />
+        )}
         <Link href="/agent-factory" className="arena-public-cta">
           {t("publicJoinCta")}
         </Link>

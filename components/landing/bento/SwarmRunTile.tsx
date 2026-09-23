@@ -290,10 +290,14 @@ export default function SwarmRunTile() {
                       </p>
                       <AnimatePresence initial={false}>
                         {done && (
+                          // Grow via a fixed max-height, not height "auto":
+                          // measuring "auto" makes motion reset window scroll,
+                          // which cancelled smooth scrolls (section dots) on
+                          // every step of this looping demo.
                           <motion.p
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
+                            initial={{ opacity: 0, maxHeight: 0 }}
+                            animate={{ opacity: 1, maxHeight: 20 }}
+                            exit={{ opacity: 0, maxHeight: 0 }}
                             transition={{ duration: 0.3, ease }}
                             className="truncate pt-0.5 text-[10px] tabular-nums text-neutral-500"
                           >

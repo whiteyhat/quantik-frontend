@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 import { useQuantikStore } from "@/store/useQuantikStore";
-import { api, type AutopilotAgentStatus, type AutopilotPolicyEnvelope, type WalletBalance } from "@/lib/api";
+import { api, fmtUSDC, type AutopilotAgentStatus, type AutopilotPolicyEnvelope, type WalletBalance } from "@/lib/api";
 import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
 import { useViewer } from "@/context/ViewerContext";
 import { useSignInGate } from "@/hooks/useSignInGate";
@@ -134,7 +135,8 @@ function blockerLabel(blocker: AutopilotAgentStatus["blocker"], t: ReturnType<ty
     case "autopilot_off":
       return t("blockerOffTitle");
     default:
-      return t("readyToArm");
+      // "none": autopilot is on and nothing blocks it
+      return t("armedTitle");
   }
 }
 
@@ -168,12 +170,14 @@ function blockerDescription(
     case "autopilot_off":
       return t("blockerOffDesc");
     default:
-      return t("readyToArmDesc");
+      return t("armedDesc");
   }
 }
 
 export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const t = useTranslations("autopilot");
+  const tm = useTranslations("manageAgent");
+  const statusLabel = useStatusLabel();
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const viewer = useViewer();
@@ -333,7 +337,11 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const blocker = autopilotStatus?.blocker ?? "autopilot_off";
   const policy = myAgent?.autopilot_policy;
   const policySummary = policy
-    ? `${policy.effective.cadenceMinutes}m · ${policy.effective.maxTradesPerDay}/day · $${policy.effective.maxBetUsdc.toFixed(0)} max`
+    ? tm("policySummary", {
+        minutes: policy.effective.cadenceMinutes,
+        trades: policy.effective.maxTradesPerDay,
+        max: policy.effective.maxBetUsdc.toFixed(0),
+      })
     : t("policyLoading");
   if (!myAgent) return null;
 
@@ -576,7 +584,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
             },
             {
               label: "USDC.e",
-              value: `$${formatAmount(statusWallet?.onChainUsdc ?? wallet?.onChainUsdc ?? wallet?.usdc)}`,
+              value: fmtUSDC(statusWallet?.onChainUsdc ?? wallet?.onChainUsdc ?? wallet?.usdc),
               hint: t("usdcTradingCapital"),
             },
             {
@@ -591,7 +599,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
             },
             {
               label: t("polymarketPrep"),
-              value: prepReady ? t("funded") : String(myAgent.polymarket_status ?? "PENDING").toUpperCase(),
+              value: prepReady ? t("funded") : statusLabel(myAgent.polymarket_status ?? "pending"),
               hint: prepReady ? t("prepReadyHint") : t("prepRequiredHint"),
             },
           ].map((item) => (
@@ -659,7 +667,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              {autopilotStatus ? blocker : t("loading")}
+              {autopilotStatus ? tm(`blocker_${blocker}`) : t("loading")}
             </span>
           </div>
 
@@ -772,7 +780,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
                     { label: t("cadenceLabel"), value: `${policy.effective.cadenceMinutes}` },
                     { label: t("cooldownLabel"), value: `${policy.effective.cooldownMinutes}` },
                     { label: t("maxTradesLabel"), value: `${policy.effective.maxTradesPerDay}` },
-                    { label: t("maxBetLabel"), value: `$${policy.effective.maxBetUsdc.toFixed(2)}` },
+                    { label: t("maxBetLabel"), value: fmtUSDC(policy.effective.maxBetUsdc) },
                   ].map((field) => (
                     <div key={field.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <span style={{ ...mono, fontSize: 10, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.05em" }}>

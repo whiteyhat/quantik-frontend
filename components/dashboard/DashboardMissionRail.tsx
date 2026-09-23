@@ -20,6 +20,7 @@ import {
   type DashboardSummarySnapshot,
 } from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 function tileTone(status: "healthy" | "degraded" | "down" | "ready" | "idle") {
   if (status === "healthy" || status === "ready") return "good";
@@ -44,6 +45,7 @@ export function DashboardMissionRail({
 }) {
   const t = useTranslations("dashboard.missionRail");
   const tRel = useTranslations("common");
+  const statusLabel = useStatusLabel();
   const { live: liveAgents, idle: idleAgents, degraded: degradedAgents, down: downAgents, hasTraffic } = countAgentStatuses(agents);
   const fundingTone =
     summary?.fundingStatus === "ready"
@@ -54,112 +56,114 @@ export function DashboardMissionRail({
 
   return (
     <section className="mission-rail" data-testid="dashboard-command-strip" id="tour-mission-rail">
-      <article className="mission-rail-tile mission-rail-tile--neutral">
-        <div className="mission-rail-icon-wrap">
-          <RefreshCw className="size-4" />
-        </div>
-        <div className="mission-rail-copy">
-          <div className="mission-rail-label">{t("refreshCadence")}</div>
-          <div className="mission-rail-value">
-            {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now, tRel) : t("liveSync")}
+      <div className="mission-rail-grid">
+        <article className="mission-rail-tile mission-rail-tile--neutral">
+          <div className="mission-rail-icon-wrap">
+            <RefreshCw className="size-4" />
           </div>
-          <div className="mission-rail-subtle">
-            {health?.checkedAt ? t("healthSnapshot", { time: formatRelativeTime(health.checkedAt, now, tRel) }) : t("queriesShareRefresh")}
+          <div className="mission-rail-copy">
+            <div className="mission-rail-label">{t("refreshCadence")}</div>
+            <div className="mission-rail-value">
+              {updatedAt > 0 && now > 0 ? formatRelativeTime(updatedAt, now, tRel) : t("liveSync")}
+            </div>
+            <div className="mission-rail-subtle">
+              {health?.checkedAt ? t("healthSnapshot", { time: formatRelativeTime(health.checkedAt, now, tRel) }) : t("queriesShareRefresh")}
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article className={cn("mission-rail-tile", `mission-rail-tile--${tileTone(fundingTone)}`)}>
-        <div className="mission-rail-icon-wrap">
-          <Wallet className="size-4" />
-        </div>
-        <div className="mission-rail-copy">
-          <div className="mission-rail-label">{t("capitalPosture")}</div>
-          <div className="mission-rail-value">
-            {summary?.fundingStatus === "ready"
-              ? t("autopilotArmed")
-              : summary?.fundingStatus === "funding_required"
-                ? t("fundingRequired")
-                : t("telemetryOnly")}
+        <article className={cn("mission-rail-tile", `mission-rail-tile--${tileTone(fundingTone)}`)}>
+          <div className="mission-rail-icon-wrap">
+            <Wallet className="size-4" />
           </div>
-          <div className="mission-rail-subtle">
-            {summary?.fundingStatus === "ready" && summary.cashBalance != null
-              ? t("readyToDeploy", { amount: fmtUSDC(summary.cashBalance) })
-              : summary?.fundingMessage ?? summary?.balanceMessage ?? t("waitingForWalletTelemetry")}
+          <div className="mission-rail-copy">
+            <div className="mission-rail-label">{t("capitalPosture")}</div>
+            <div className="mission-rail-value">
+              {summary?.fundingStatus === "ready"
+                ? t("autopilotArmed")
+                : summary?.fundingStatus === "funding_required"
+                  ? t("fundingRequired")
+                  : t("telemetryOnly")}
+            </div>
+            <div className="mission-rail-subtle">
+              {summary?.fundingStatus === "ready" && summary.cashBalance != null
+                ? t("readyToDeploy", { amount: fmtUSDC(summary.cashBalance) })
+                : summary?.fundingMessage ?? summary?.balanceMessage ?? t("waitingForWalletTelemetry")}
+            </div>
           </div>
-        </div>
-        {summary?.fundingStatus === "funding_required" ? (
-          <Link href="/manage-agent" className="mission-rail-link">
-            {t("resolve")}
-            <ArrowRight className="size-3.5" />
-          </Link>
-        ) : null}
-      </article>
+          {summary?.fundingStatus === "funding_required" ? (
+            <Link href="/manage-agent" className="mission-rail-link">
+              {t("resolve")}
+              <ArrowRight className="size-3.5" />
+            </Link>
+          ) : null}
+        </article>
 
-      <article className={cn("mission-rail-tile", `mission-rail-tile--${healthSeverityTone(health)}`)}>
-        <div className="mission-rail-icon-wrap">
-          <Cpu className="size-4" />
-        </div>
-        <div className="mission-rail-copy">
-          <div className="mission-rail-label">{t("runtimeFabric")}</div>
-          <div className="mission-rail-value">
-            {health ? `${health.label} · ${health.latencyMs}ms` : t("heartbeatPending")}
+        <article className={cn("mission-rail-tile", `mission-rail-tile--${healthSeverityTone(health)}`)}>
+          <div className="mission-rail-icon-wrap">
+            <Cpu className="size-4" />
           </div>
-          <div className="mission-rail-chip-row">
-            {(health?.services ?? []).slice(0, 5).map((service) => (
-              <span
-                key={service.name}
-                className={cn("mission-rail-chip", `mission-rail-chip--${service.status}`)}
-              >
-                {service.name}
-              </span>
-            ))}
+          <div className="mission-rail-copy">
+            <div className="mission-rail-label">{t("runtimeFabric")}</div>
+            <div className="mission-rail-value">
+              {health ? `${statusLabel(health.label)} · ${health.latencyMs}ms` : t("heartbeatPending")}
+            </div>
+            <div className="mission-rail-chip-row">
+              {(health?.services ?? []).slice(0, 5).map((service) => (
+                <span
+                  key={service.name}
+                  className={cn("mission-rail-chip", `mission-rail-chip--${service.status}`)}
+                >
+                  {service.name}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article className="mission-rail-tile mission-rail-tile--info">
-        <div className="mission-rail-icon-wrap">
-          <Bot className="size-4" />
-        </div>
-        <div className="mission-rail-copy">
-          <div className="mission-rail-label">{t("agentTraffic")}</div>
-          <div className="mission-rail-value">
-            {agents.length === 0
-              ? t("noTelemetry")
-              : liveAgents > 0
-                ? t("liveAgents", { live: liveAgents, total: agents.length })
-                : t("allAgentsIdle")}
+        <article className="mission-rail-tile mission-rail-tile--info">
+          <div className="mission-rail-icon-wrap">
+            <Bot className="size-4" />
           </div>
-          <div className="mission-rail-dots" aria-hidden="true">
-            {agents.slice(0, 7).map((agent) => (
-              <span
-                key={agent.id}
-                className={cn("mission-rail-dot", `mission-rail-dot--${agent.status}`)}
-              />
-            ))}
+          <div className="mission-rail-copy">
+            <div className="mission-rail-label">{t("agentTraffic")}</div>
+            <div className="mission-rail-value">
+              {agents.length === 0
+                ? t("noTelemetry")
+                : liveAgents > 0
+                  ? t("liveAgents", { live: liveAgents, total: agents.length })
+                  : t("allAgentsIdle")}
+            </div>
+            <div className="mission-rail-dots" aria-hidden="true">
+              {agents.slice(0, 7).map((agent) => (
+                <span
+                  key={agent.id}
+                  className={cn("mission-rail-dot", `mission-rail-dot--${agent.status}`)}
+                />
+              ))}
+            </div>
+            <div className="mission-rail-subtle">
+              {agents.length === 0
+                ? t("pipelineAgentsLightUp")
+                : !hasTraffic
+                  ? t("awaitingFirstLiveRun")
+                  : t("agentSummary", { idle: idleAgents, degraded: degradedAgents, down: downAgents })}
+            </div>
           </div>
-          <div className="mission-rail-subtle">
-            {agents.length === 0
-              ? t("pipelineAgentsLightUp")
-              : !hasTraffic
-                ? t("awaitingFirstLiveRun")
-                : t("agentSummary", { idle: idleAgents, degraded: degradedAgents, down: downAgents })}
-          </div>
-        </div>
-      </article>
+        </article>
 
-      <article className="mission-rail-banner">
-        <div className="mission-rail-banner-copy">
-          <span className="mission-rail-banner-kicker">
-            <Activity className="size-3.5" />
-            {t("missionControlBanner")}
-          </span>
-          <span className="mission-rail-banner-text">
-            {t("bannerText")}
-          </span>
-        </div>
-      </article>
+        <article className="mission-rail-banner">
+          <div className="mission-rail-banner-copy">
+            <span className="mission-rail-banner-kicker">
+              <Activity className="size-3.5" />
+              {t("missionControlBanner")}
+            </span>
+            <span className="mission-rail-banner-text">
+              {t("bannerText")}
+            </span>
+          </div>
+        </article>
+      </div>
     </section>
   );
 }

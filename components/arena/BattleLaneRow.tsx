@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { type ArenaLeaderboardEntry, type ArenaWindow } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/dashboard";
-import { formatSignedCompact, formatSignedCurrency, streakLabel } from "@/components/arena/arenaHelpers";
+import { cumulativePnlSeries, formatSignedCompact, formatSignedCurrency, streakLabel } from "@/components/arena/arenaHelpers";
 import { RankChangeBadge } from "@/components/arena/RankChangeBadge";
 import { PnlSparkline } from "@/components/arena/PnlSparkline";
 import { AchievementBadgeRow } from "@/components/arena/AchievementBadge";
@@ -12,6 +12,7 @@ import { AgentHeatGlow } from "@/components/arena/AgentHeatGlow";
 import { AgentProfileFlyout } from "@/components/arena/AgentProfileFlyout";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 export function BattleLaneRow({
   entry,
@@ -42,21 +43,27 @@ export function BattleLaneRow({
 }) {
   const t = useTranslations("arena");
   const tCommon = useTranslations("common");
-  const connectionLabel = entry.connectionStatus?.replace(/_/g, " ") ?? t("training");
+  const statusLabel = useStatusLabel();
+  const connectionLabel = entry.connectionStatus ? statusLabel(entry.connectionStatus) : t("training");
   const reducedMotion = useReducedMotion();
+  const enterDelay = staggerIndex != null ? Math.min(staggerIndex, 10) * 0.045 : 0;
+  // How the agent's net result was built, market by market (a running total)
+  const trend = cumulativePnlSeries(entry.marketBreakdown);
 
   const content = (
     <>
       <motion.article
         layout={!reducedMotion}
         layoutId={entry.agentId}
+        // Lanes rise in one after another when they mount; the stagger never
+        // delays a reorder (layout) or an exit
         initial={!reducedMotion && staggerIndex != null ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
-        exit={!reducedMotion ? { opacity: 0, scale: 0.97 } : undefined}
+        exit={!reducedMotion ? { opacity: 0, scale: 0.97, transition: { duration: 0.16, ease: [0.4, 0, 1, 1] } } : undefined}
         transition={{
           layout: { type: "spring", stiffness: 400, damping: 30 },
-          opacity: { duration: 0.2 },
-          ...(staggerIndex != null ? { delay: staggerIndex * 0.05 } : {}),
+          opacity: { duration: 0.24, ease: [0.16, 1, 0.3, 1], delay: enterDelay },
+          y: { duration: 0.42, ease: [0.16, 1, 0.3, 1], delay: enterDelay },
         }}
         className={cn(
           "arena-lane",
@@ -109,13 +116,12 @@ export function BattleLaneRow({
         </div>
 
         <div className={cn("arena-lane-pnl", entry.selectedPnl >= 0 ? "arena-lane-pnl--up" : "arena-lane-pnl--down")}>
-          <div className="arena-lane-sparkline">
-            <strong>{formatSignedCurrency(entry.selectedPnl)}</strong>
-            {entry.marketBreakdown.length >= 2 && (
-              <PnlSparkline data={entry.marketBreakdown} />
-            )}
+          <strong>{formatSignedCurrency(entry.selectedPnl)}</strong>
+          <div className="arena-lane-trend">
+            {/* On the all-time tab the number above already is the all-time P&L */}
+            {activeWindow !== "all" ? <span>{t("allTimePnl")} {formatSignedCompact(entry.allTimePnl)}</span> : null}
+            {trend.length >= 3 ? <PnlSparkline values={trend} /> : null}
           </div>
-          <span>{t("allTimePnl")} {formatSignedCompact(entry.allTimePnl)}</span>
         </div>
 
         <div className="arena-lane-intel">

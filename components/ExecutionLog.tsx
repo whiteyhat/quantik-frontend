@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { api, fmtTimeShort, type AgentExecutionLogItem } from "@/lib/api";
 import { Skeleton } from "./ui/skeleton";
+import { useDashboardTradesQuery } from "@/components/dashboard/dashboardQueries";
+import { marketLabel } from "@/components/dashboard/dashboardFit";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 function timeLabel(ts: number, locale?: string): string {
   return fmtTimeShort(ts, locale);
@@ -29,6 +32,9 @@ interface ExecutionLogProps {
 export function ExecutionLog({ agentId }: ExecutionLogProps) {
   const t = useTranslations("executionLog");
   const locale = useLocale();
+  const statusLabel = useStatusLabel();
+  // Executions carry only the slug; the trades list (already loaded on this page) has the question
+  const tradesQuery = useDashboardTradesQuery();
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<AgentExecutionLogItem[]>([]);
 
@@ -59,8 +65,10 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: "4px 10px",
           marginBottom: 10,
         }}
       >
@@ -114,81 +122,29 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
           {t("noTrades")}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="feed-list">
           {entries.slice(0, 1).map((entry) => {
             const status = statusTone(entry);
             const source = sourceTone(entry.source);
+            const trades = tradesQuery.data ?? [];
+            const trade = trades.find((item) => item.id === entry.id) ?? trades.find((item) => item.slug === entry.slug);
+            const title = marketLabel(trade?.market, entry.slug);
             return (
-              <div
-                key={entry.id}
-                data-testid="execution-row"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr auto",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: source.color,
-                      background: source.bg,
-                      borderRadius: 999,
-                      padding: "4px 8px",
-                      fontFamily: "\"SF Mono\", monospace",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    {entry.source}
+              <div key={entry.id} data-testid="execution-row" className="feed-row">
+                <div className="feed-row-badges">
+                  <span className="feed-row-pill" style={{ color: source.color, background: source.bg }}>
+                    {statusLabel(entry.source)}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: status.color,
-                      background: status.bg,
-                      borderRadius: 999,
-                      padding: "4px 8px",
-                      fontFamily: "\"SF Mono\", monospace",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    {entry.status}
+                  <span className="feed-row-pill" style={{ color: status.color, background: status.bg }}>
+                    {statusLabel(entry.status)}
                   </span>
                 </div>
 
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "rgba(255,255,255,0.70)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {entry.slug}
+                <div className="feed-row-body">
+                  <div className="feed-row-title" title={title}>
+                    {title}
                   </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      fontSize: 10,
-                      color: "rgba(255,255,255,0.34)",
-                      fontFamily: "\"SF Mono\", monospace",
-                    }}
-                  >
+                  <div className="feed-row-meta">
                     <span>{entry.direction ?? "—"}</span>
                     <span>${entry.amount.toFixed(2)}</span>
                     {entry.fillPrice != null ? <span>@ {entry.fillPrice.toFixed(3)}</span> : null}
@@ -200,14 +156,7 @@ export function ExecutionLog({ agentId }: ExecutionLogProps) {
                   </div>
                 </div>
 
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "rgba(255,255,255,0.22)",
-                    fontFamily: "\"SF Mono\", monospace",
-                    flexShrink: 0,
-                  }}
-                >
+                <span className="feed-row-time">
                   {timeLabel(entry.executedAt, locale)}
                 </span>
               </div>

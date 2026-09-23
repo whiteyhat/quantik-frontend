@@ -56,7 +56,8 @@ export function ArenaFlankCard({
           <strong>{entry.winRate.toFixed(1)}%</strong>
         </div>
         <div>
-          <span>{t("openPositions")}</span>
+          {/* Short label: the tile is too narrow for "Open positions" in most languages */}
+          <span title={t("openPositions")}>{t("openShort")}</span>
           <strong>{entry.openPositions}</strong>
         </div>
       </div>

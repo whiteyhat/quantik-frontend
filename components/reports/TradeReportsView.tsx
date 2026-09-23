@@ -8,13 +8,17 @@ import { Skeleton, SkeletonTableRows } from "@/components/ui/skeleton";
 import { useSignInGate } from "@/hooks/useSignInGate";
 import {
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
+  Cell,
   CartesianGrid,
+  ReferenceLine,
   XAxis,
   YAxis,
   Tooltip,
 } from "recharts";
+import { getCachedDateFmt } from "@/lib/formatters";
+import { useStatusLabel } from "@/components/dashboard/useStatusLabel";
 
 const PANEL_CLASS = "glass-card glass-panel-compact";
 const PANEL_OVERRIDE: React.CSSProperties = { borderRadius: 18 };
@@ -32,6 +36,7 @@ type OutcomeFilter = Trade["outcome"] | "All";
 type SourceFilter = "all" | "manual" | "autopilot";
 
 function OutcomeBadge({ outcome }: { outcome: Trade["outcome"] }) {
+  const statusLabel = useStatusLabel();
   const colors: Record<Trade["outcome"], { background: string; color: string }> = {
     WIN: { background: "rgba(48,209,88,0.14)", color: "var(--ios-green)" },
     LOSS: { background: "rgba(255,69,58,0.14)", color: "var(--ios-red)" },
@@ -49,11 +54,12 @@ function OutcomeBadge({ outcome }: { outcome: Trade["outcome"] }) {
         fontSize: 11,
         fontWeight: 700,
         letterSpacing: "0.08em",
+        textTransform: "uppercase",
         background: colors[outcome].background,
         color: colors[outcome].color,
       }}
     >
-      {outcome}
+      {statusLabel(outcome)}
     </span>
   );
 }
@@ -78,6 +84,7 @@ function ReportMetric({
 }
 
 function TradeHighlightCard({ label, trade }: { label: string; trade: Trade | null }) {
+  const t = useTranslations("reports");
   return (
     <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
       <div style={{ fontSize: 11, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
@@ -97,7 +104,7 @@ function TradeHighlightCard({ label, trade }: { label: string; trade: Trade | nu
           </div>
         </div>
       ) : (
-        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>No matching trade.</div>
+        <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{t("noMatchingTrade")}</div>
       )}
     </div>
   );
@@ -119,6 +126,8 @@ interface TradeReportsViewProps {
 
 export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
   const t = useTranslations("tradeHistory");
+  const tr = useTranslations("reports");
+  const statusLabel = useStatusLabel();
   const locale = useLocale();
   const gate = useSignInGate();
   const [period, setPeriod] = useState<Period>("all");
@@ -158,6 +167,11 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
 
   const trades = data?.trades ?? [];
   const summary = data?.summary;
+  // Bucket labels come from the server in English; rebuild them in the viewer's language
+  const bucketLabel = (timestamp: number) =>
+    Number.isFinite(timestamp)
+      ? getCachedDateFmt(locale, period === "day" ? { hour: "numeric", minute: "2-digit" } : { month: "short", day: "numeric" }).format(timestamp)
+      : "";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -194,7 +208,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
               cursor: "pointer",
             }}
           >
-            Export CSV
+            {tr("exportCsv")}
           </button>
           <Link
             href={`/reports/print?period=${period}&outcome=${outcome}&source=${source}&search=${encodeURIComponent(search)}`}
@@ -210,7 +224,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
               textDecoration: "none",
             }}
           >
-            Print / PDF
+            {tr("printPdf")}
           </Link>
         </div>
       </div>
@@ -231,7 +245,7 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
                 fontWeight: 600,
               }}
             >
-              {value.toUpperCase()}
+              {tr(`period_${value}`)}
             </button>
           ))}
         </div>
@@ -241,20 +255,20 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
             onChange={(event) => setOutcome(event.target.value as OutcomeFilter)}
             style={filterControlStyle}
           >
-            <option value="All">All outcomes</option>
-            <option value="WIN">Wins</option>
-            <option value="LOSS">Losses</option>
-            <option value="OPEN">Open</option>
-            <option value="PENDING">Pending</option>
+            <option value="All">{tr("outcomeAll")}</option>
+            <option value="WIN">{tr("outcomeWin")}</option>
+            <option value="LOSS">{tr("outcomeLoss")}</option>
+            <option value="OPEN">{tr("outcomeOpen")}</option>
+            <option value="PENDING">{tr("outcomePending")}</option>
           </select>
           <select
             value={source}
             onChange={(event) => setSource(event.target.value as SourceFilter)}
             style={filterControlStyle}
           >
-            <option value="all">All sources</option>
-            <option value="manual">Manual</option>
-            <option value="autopilot">Autopilot</option>
+            <option value="all">{tr("sourceAll")}</option>
+            <option value="manual">{statusLabel("manual")}</option>
+            <option value="autopilot">{statusLabel("autopilot")}</option>
           </select>
           <input
             value={search}
@@ -281,63 +295,80 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
           </div>
         </>
       ) : error ? (
-        <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, color: "var(--ios-red)" }}>Failed to load reports: {error}</div>
+        <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, color: "var(--ios-red)" }}>{tr("loadFailed", { error })}</div>
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-            <ReportMetric label="Trades" value={String(summary?.totalTrades ?? 0)} />
-            <ReportMetric label="Win rate" value={`${Math.round((summary?.winRate ?? 0) * 100)}%`} color="var(--ios-green)" />
+            <ReportMetric label={tr("metricTrades")} value={String(summary?.totalTrades ?? 0)} />
+            <ReportMetric label={tr("metricWinRate")} value={`${Math.round((summary?.winRate ?? 0) * 100)}%`} color="var(--ios-green)" />
             <ReportMetric
-              label="Total P&L"
+              label={tr("metricTotalPnl")}
               value={`${(summary?.totalPnl ?? 0) >= 0 ? "+" : ""}${fmtUSDC(summary?.totalPnl ?? 0)}`}
               color={(summary?.totalPnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)"}
             />
-            <ReportMetric label="Wins / losses" value={`${summary?.wins ?? 0} / ${summary?.losses ?? 0}`} />
+            <ReportMetric label={tr("metricWinsLosses")} value={`${summary?.wins ?? 0} / ${summary?.losses ?? 0}`} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
-            <TradeHighlightCard label="Best trade" trade={data?.bestTrade ?? null} />
-            <TradeHighlightCard label="Worst trade" trade={data?.worstTrade ?? null} />
+            <TradeHighlightCard label={tr("bestTrade")} trade={data?.bestTrade ?? null} />
+            <TradeHighlightCard label={tr("worstTrade")} trade={data?.worstTrade ?? null} />
           </div>
 
           <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-              P&L by {period === "day" ? "hour" : period === "all" ? "trade" : "day"}
+              {tr(period === "day" ? "pnlByHour" : period === "all" ? "pnlByTrade" : "pnlByDay")}
             </div>
             {data?.buckets?.length ? (
               <div style={{ height: 260 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data.buckets}>
-                    <defs>
-                      <linearGradient id="reportsGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0a84ff" stopOpacity={0.32} />
-                        <stop offset="100%" stopColor="#0a84ff" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="label" stroke="rgba(255,255,255,0.15)" tick={{ fill: "var(--text-tertiary)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis stroke="rgba(255,255,255,0.15)" tick={{ fill: "var(--text-tertiary)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value).toFixed(0)}`} />
+                {/* One bar per bucket: separate trades must not be joined by a curve that dips past them */}
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 640, height: 260 }}>
+                  <BarChart data={data.buckets} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <XAxis
+                      dataKey="timestamp"
+                      stroke="rgba(255,255,255,0.15)"
+                      tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      minTickGap={12}
+                      tickFormatter={(value) => bucketLabel(Number(value))}
+                    />
+                    <YAxis
+                      stroke="rgba(255,255,255,0.15)"
+                      tick={{ fill: "var(--text-tertiary)", fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={56}
+                      tickFormatter={(value) => `${Number(value) < 0 ? "-" : ""}$${Math.abs(Number(value)).toFixed(0)}`}
+                    />
+                    <ReferenceLine y={0} stroke="rgba(255,255,255,0.18)" />
                     <Tooltip
+                      cursor={{ fill: "rgba(255,255,255,0.04)" }}
                       contentStyle={{
                         background: "var(--panel-surface)",
                         borderRadius: 12,
                         border: "1px solid var(--glass-border)",
                         color: "var(--text-primary)",
                       }}
-                      formatter={(value) => fmtUSDC(Number(value ?? 0))}
+                      labelFormatter={(value) => bucketLabel(Number(value))}
+                      formatter={(value) => [fmtUSDC(Number(value ?? 0)), tr("metricTotalPnl")]}
                     />
-                    <Area type="monotone" dataKey="pnl" stroke="#0a84ff" strokeWidth={2} fill="url(#reportsGradient)" />
-                  </AreaChart>
+                    <Bar dataKey="pnl" radius={[6, 6, 6, 6]} maxBarSize={36}>
+                      {data.buckets.map((bucket) => (
+                        <Cell key={bucket.timestamp} fill={bucket.pnl >= 0 ? "#30d158" : "#ff453a"} fillOpacity={0.8} />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>No chart for this filter set.</div>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{tr("noChart")}</div>
             )}
           </div>
 
           <div className={PANEL_CLASS} style={PANEL_OVERRIDE}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
-              Agent attribution
+              {tr("agentAttribution")}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
               {(data?.agentAttribution ?? []).map((entry) => (
@@ -353,112 +384,113 @@ export function TradeReportsView({ title, subtitle }: TradeReportsViewProps) {
                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>{entry.agent}</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: "var(--ios-blue)" }}>{Math.round(entry.weight * 100)}%</div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>
-                    Trend {entry.trend}
+                    {tr(`trend_${entry.trend}`)}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Mobile card view */}
-          <div className="md:hidden" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {trades.length === 0 ? (
-              <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
-                No trades match the current filters.
-              </div>
-            ) : (
-              trades.map((trade) => (
-                <div
-                  key={`mobile-${trade.id}-${trade.timestamp}`}
-                  className={PANEL_CLASS}
-                  style={{
-                    ...PANEL_OVERRIDE,
-                    padding: 14,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {trade.market}
-                    </div>
-                    <OutcomeBadge outcome={trade.outcome} />
-                  </div>
-                  <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", flexWrap: "wrap" }}>
-                    <span style={{ color: trade.direction === "YES" ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>{trade.direction}</span>
-                    <span>{fmtPrice(trade.price)}</span>
-                    <span>{fmtUSDC(trade.size)}</span>
-                    <span style={{ marginLeft: "auto", color: "var(--text-tertiary)" }}>
-                      {fmtDateShort(new Date(trade.timestamp).getTime(), locale)}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)" }}>
-                    {(trade.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSDC(trade.pnl ?? 0)}
-                  </div>
+          {/* Trades: card list or table, chosen by the available width (not the viewport) */}
+          <div className="@container">
+            <div className="flex flex-col gap-2 @min-[50rem]:hidden">
+              {trades.length === 0 ? (
+                <div className={PANEL_CLASS} style={{ ...PANEL_OVERRIDE, padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
+                  {tr("noTradesMatch")}
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                trades.map((trade) => (
+                  <div
+                    key={`mobile-${trade.id}-${trade.timestamp}`}
+                    className={PANEL_CLASS}
+                    style={{
+                      ...PANEL_OVERRIDE,
+                      padding: 14,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div title={trade.market} style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {trade.market}
+                      </div>
+                      <OutcomeBadge outcome={trade.outcome} />
+                    </div>
+                    <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                      <span style={{ color: trade.direction === "YES" ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>{trade.direction}</span>
+                      <span>{fmtPrice(trade.price)}</span>
+                      <span>{fmtUSDC(trade.size)}</span>
+                      <span style={{ marginLeft: "auto", color: "var(--text-tertiary)" }}>
+                        {fmtDateShort(new Date(trade.timestamp).getTime(), locale)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)" }}>
+                      {(trade.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSDC(trade.pnl ?? 0)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
 
-          {/* Desktop table view */}
-          <div className={`hidden md:block ${PANEL_CLASS}`} style={PANEL_OVERRIDE}>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-                <thead>
-                  <tr>
-                    {["Market", "Source", "Direction", "Price", "Size", "P&L", "Outcome", "When"].map((header) => (
-                      <th
-                        key={header}
-                        style={{
-                          textAlign: "left",
-                          padding: "10px 12px",
-                          fontSize: 11,
-                          color: "var(--text-tertiary)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.08em",
-                          borderBottom: "1px solid var(--glass-border)",
-                        }}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {trades.length === 0 ? (
+            {/* Table view */}
+            <div className={`hidden @min-[50rem]:block ${PANEL_CLASS}`} style={PANEL_OVERRIDE}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
+                  <thead>
                     <tr>
-                      <td colSpan={8} style={{ padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
-                        No trades match the current filters.
-                      </td>
+                      {(["market", "source", "direction", "price", "size", "pnl", "outcome", "when"] as const).map((column) => tr(`col_${column}`)).map((header) => (
+                        <th
+                          key={header}
+                          style={{
+                            textAlign: "left",
+                            padding: "10px 12px",
+                            fontSize: 11,
+                            color: "var(--text-tertiary)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                            borderBottom: "1px solid var(--glass-border)",
+                          }}
+                        >
+                          {header}
+                        </th>
+                      ))}
                     </tr>
-                  ) : (
-                    trades.map((trade) => (
-                      <tr key={`${trade.id}-${trade.timestamp}`} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                        <td style={{ padding: "12px", color: "var(--text-primary)", minWidth: 220 }}>
-                          <div>{trade.market}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 4 }}>{trade.slug}</div>
-                        </td>
-                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{trade.source}</td>
-                        <td style={{ padding: "12px", color: trade.direction === "YES" ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>{trade.direction}</td>
-                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{fmtPrice(trade.price)}</td>
-                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{fmtUSDC(trade.size)}</td>
-                        <td style={{ padding: "12px", color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>
-                          {(trade.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSDC(trade.pnl ?? 0)}
-                        </td>
-                        <td style={{ padding: "12px" }}>
-                          <OutcomeBadge outcome={trade.outcome} />
-                        </td>
-                        <td style={{ padding: "12px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-                          {fmtDateTime(new Date(trade.timestamp).getTime(), locale)}
+                  </thead>
+                  <tbody>
+                    {trades.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} style={{ padding: 24, color: "var(--text-secondary)", textAlign: "center" }}>
+                          {tr("noTradesMatch")}
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      trades.map((trade) => (
+                        <tr key={`${trade.id}-${trade.timestamp}`} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <td style={{ padding: "12px", color: "var(--text-primary)", minWidth: 220 }}>
+                            {trade.market}
+                          </td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{statusLabel(trade.source ?? "manual")}</td>
+                          <td style={{ padding: "12px", color: trade.direction === "YES" ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>{trade.direction}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{fmtPrice(trade.price)}</td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{fmtUSDC(trade.size)}</td>
+                          <td style={{ padding: "12px", color: (trade.pnl ?? 0) >= 0 ? "var(--ios-green)" : "var(--ios-red)", fontWeight: 700 }}>
+                            {(trade.pnl ?? 0) >= 0 ? "+" : ""}{fmtUSDC(trade.pnl ?? 0)}
+                          </td>
+                          <td style={{ padding: "12px" }}>
+                            <OutcomeBadge outcome={trade.outcome} />
+                          </td>
+                          <td style={{ padding: "12px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                            {fmtDateTime(new Date(trade.timestamp).getTime(), locale)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {loading ? <SkeletonTableRows rows={6} cols={8} /> : null}
             </div>
-            {loading ? <SkeletonTableRows rows={6} cols={8} /> : null}
           </div>
         </>
       )}

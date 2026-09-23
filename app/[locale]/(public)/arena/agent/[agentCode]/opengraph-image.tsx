@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { api } from "@/lib/api";
+import { demoArenaProfile, isDemoArenaCode } from "@/lib/demo/arena";
 
 export const revalidate = 3600; // 1 hour cache
 export const runtime = "edge";
@@ -12,9 +13,10 @@ export default async function OGImage({
   params: Promise<{ agentCode: string }>;
 }) {
   const { agentCode } = await params;
+  const demo = isDemoArenaCode(agentCode);
   let profile;
   try {
-    profile = await api.getPublicAgentProfile(agentCode);
+    profile = demo ? demoArenaProfile(agentCode) : await api.getPublicAgentProfile(agentCode);
   } catch {
     profile = null;
   }
@@ -70,7 +72,7 @@ export default async function OGImage({
             letterSpacing: "0.1em",
           }}
         >
-          ◆ QUANTIK ARENA
+          {demo ? "◆ QUANTIK ARENA · SAMPLE AGENT" : "◆ QUANTIK ARENA"}
         </div>
 
         {/* Main content */}

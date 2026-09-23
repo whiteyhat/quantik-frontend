@@ -374,6 +374,8 @@ body {
 
 .command-center-grid {
   display: grid;
+  /* minmax(0, 1fr): a long word or wide child must never stretch the track past the viewport */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -461,12 +463,26 @@ body {
 }
 
 .mission-rail {
+  container: mission-rail / inline-size;
+  min-width: 0;
+}
+
+.mission-rail-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
 }
 
-@media (min-width: 900px) {
-  .mission-rail {
+/* Columns follow the rail's own width (not the viewport), so tiles never get squeezed
+   below what their labels and values need. */
+@container mission-rail (min-width: 36rem) {
+  .mission-rail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container mission-rail (min-width: 60rem) {
+  .mission-rail-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
@@ -487,9 +503,12 @@ body {
 
 .mission-rail-tile {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.9rem;
   padding: 1rem;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .mission-rail-tile::before,
@@ -530,7 +549,7 @@ body {
 
 .mission-rail-copy {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 8rem;
 }
 
 .mission-rail-label {
@@ -539,6 +558,8 @@ body {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.36);
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .mission-rail-value {
@@ -547,6 +568,8 @@ body {
   font-weight: 650;
   letter-spacing: -0.04em;
   color: rgba(255,255,255,0.95);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .mission-rail-subtle {
@@ -682,13 +705,18 @@ button.mission-rail-link {
 }
 
 .command-center-card {
+  /* Every card is a size container: inner tiles, grids and figures adapt to the CARD's width
+     (a 288px side-rail card at 1440px needs the same layout as a phone), not the viewport. */
+  container: cc-card / inline-size;
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-width: 0;
   padding: 1.25rem;
   border-radius: 24px;
   overflow: hidden;
+  overflow-wrap: break-word;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%),
     rgba(8, 12, 24, 0.78);
@@ -776,27 +804,31 @@ button.mission-rail-link {
 
 .command-center-hero-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
 }
 
 .command-center-kpi-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
   align-content: start;
 }
 
-@media (min-width: 960px) {
-  .command-center-hero-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 0.9fr);
-    align-items: end;
-  }
-
+@container cc-card (min-width: 26rem) {
   .command-center-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mission-wallet-card {
     grid-column: 1 / -1;
+  }
+}
+
+@container cc-card (min-width: 40rem) {
+  .command-center-hero-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(min(22rem, 100%), 0.9fr);
+    align-items: end;
   }
 }
 
@@ -1009,6 +1041,8 @@ button.mission-rail-link {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.42);
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .command-center-title {
@@ -1030,13 +1064,14 @@ button.mission-rail-link {
   margin: 0;
   max-width: 14ch;
   font-size: clamp(2rem, 4vw, 3.25rem);
-  line-height: 0.95;
-  letter-spacing: -0.08em;
+  /* Open enough that descenders clear the next line and the paragraph below */
+  line-height: 1.04;
+  letter-spacing: -0.04em;
   color: rgba(255,255,255,0.97);
 }
 
 .command-center-hero-copy {
-  margin: 0;
+  margin: 0.9rem 0 0;
   max-width: 60ch;
   font-size: 15px;
   line-height: 1.6;
@@ -1055,10 +1090,11 @@ button.mission-rail-link {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1.3;
+  /* Badges carry status words: they may wrap onto a second line, never get cut. */
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .command-center-badge--neutral {
@@ -1090,9 +1126,12 @@ button.mission-rail-link {
 }
 
 .command-center-metric {
+  /* The tile is its own container so the figure can size itself to the tile (cqi units). */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  min-width: 0;
   min-height: 7.25rem;
   padding: 1rem;
   border-radius: 20px;
@@ -1108,23 +1147,54 @@ button.mission-rail-link {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.4);
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
+/* Fluid figure: sized from the tile's own width and the value's length (--metric-chars,
+   set by <MetricBlock>, floored at 10 so sibling tiles share one size). 0.58em is the widest
+   average glyph advance measured for Inter figures/words, so the value fits by construction;
+   overflow-wrap is only a last-resort safety net and never hides anything. */
 .command-center-metric-value {
-  font-size: clamp(0.85rem, 2.4vw, 1.9rem);
+  font-size: clamp(1.1rem, calc(100cqi / (var(--metric-chars, 10) * 0.58)), 1.9rem);
   line-height: 1.15;
   letter-spacing: -0.05em;
   color: rgba(255,255,255,0.96);
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   max-width: 100%;
-  width: fit-content;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
 }
 
 .command-center-metric-hint {
   font-size: 12px;
   line-height: 1.5;
   color: rgba(255,255,255,0.48);
+  overflow-wrap: break-word;
+}
+
+/* Headline figure inside a card (e.g. net liquidation value): same fit-by-length rule, sized
+   from the card (the nearest cc-card container). */
+.command-center-figure {
+  font-size: clamp(1.5rem, calc(100cqi / (var(--metric-chars, 10) * 0.58)), 2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Side-by-side metric tiles only when the CARD has room for two readable figures. */
+.command-center-metric-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@container cc-card (min-width: 21rem) {
+  .command-center-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .command-center-metric--good .command-center-metric-value {
@@ -1188,6 +1258,7 @@ button.mission-rail-link {
 
 .command-center-stat-strip {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 20px;
@@ -1197,25 +1268,56 @@ button.mission-rail-link {
     rgba(255,255,255,0.03);
 }
 
-@media (min-width: 640px) {
+/* Narrow card: each stat becomes a "label ....... value" row. */
+.command-center-stat-strip > * {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.command-center-stat-strip > * > .command-center-stat-value {
+  text-align: right;
+}
+
+/* Wide card: three columns, label above value. */
+@container cc-card (min-width: 26rem) {
   .command-center-stat-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .command-center-stat-strip > * {
+    display: block;
+  }
+
+  .command-center-stat-strip > * > .command-center-stat-value {
+    text-align: left;
+  }
+
+  .command-center-stat-strip .command-center-stat-label {
+    margin-bottom: 0.25rem;
   }
 }
 
 .command-center-stat-label {
-  margin-bottom: 0.25rem;
+  min-width: 0;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.38);
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .command-center-stat-value {
+  min-width: 0;
   font-size: 16px;
   font-weight: 600;
   color: rgba(255,255,255,0.92);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 /* ── Risk Posture: sticky wrapper ── */
@@ -1335,6 +1437,7 @@ button.mission-rail-link {
   font-weight: 600;
   line-height: 1.3;
   color: rgba(255,255,255,0.92);
+  overflow-wrap: anywhere;
 }
 
 .command-center-service-detail {
@@ -1356,6 +1459,7 @@ button.mission-rail-link {
   display: flex;
   align-items: center;
   gap: 0.85rem;
+  min-width: 0;
   padding: 0.9rem 1rem;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.07);
@@ -1478,10 +1582,25 @@ a.command-center-list-row:focus-visible,
   background: rgba(10,132,255,0.12);
 }
 
+/* Market tiles: as many columns as fit at >= 13.5rem each, measured on the card, not the viewport. */
+.command-center-market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13.5rem), 1fr));
+  gap: 0.75rem;
+}
+
+/* One tile per row (card narrower than two 13.5rem tiles): no need to equalise heights. */
+@container cc-card (max-width: 27.7rem) {
+  .command-center-market-grid .command-center-market-card {
+    min-height: 0;
+  }
+}
+
 .command-center-market-card {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
   min-height: 13rem;
   padding: 1rem;
   border-radius: 20px;
@@ -1751,6 +1870,8 @@ a.command-center-list-row:focus-visible,
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.36);
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .dashboard-mini-map-stat-value {
@@ -1802,6 +1923,7 @@ a.command-center-list-row:focus-visible,
   font-size: 1.02rem;
   font-weight: 650;
   color: rgba(255,255,255,0.94);
+  overflow-wrap: anywhere;
 }
 
 .pilot-deck-code {
@@ -1811,6 +1933,7 @@ a.command-center-list-row:focus-visible,
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.34);
+  overflow-wrap: anywhere;
 }
 
 .pilot-deck-panel {
@@ -1949,8 +2072,13 @@ a.command-center-list-row:focus-visible,
 .command-center-yesno-yes,
 .command-center-yesno-no {
   display: flex;
+  /* Share the bar by flex-grow (set inline from the price) instead of widths that can sum past 100%. */
+  flex: 1 1 0;
+  min-width: max-content;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   min-height: 34px;
   padding: 0 0.5rem;
   font-size: 11px;
@@ -3341,4 +3469,128 @@ a.command-center-list-row:focus-visible,
   .wallet-action-tooltip {
     display: none !important;
   }
+}
+
+/* ─── Agent feed rows (scanner feed + execution log on My Agent) ──────────────
+   Measured on the list, not the viewport: in a narrow column the badges and
+   time share the first line and the market gets its own line below; with
+   room, badges | market + details | time sit side by side. */
+.feed-list {
+  container: feed / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.feed-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "badges time"
+    "body body";
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.feed-row--new {
+  animation: slide-in-top 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feed-row-badges {
+  grid-area: badges;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.feed-row-pill {
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.feed-row-body {
+  grid-area: body;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.feed-row-title {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.74);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.feed-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  min-width: 0;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  overflow-wrap: anywhere;
+}
+
+.feed-row-note {
+  font-size: 10px;
+  line-height: 1.4;
+  color: rgba(255, 159, 10, 0.82);
+  overflow-wrap: anywhere;
+}
+
+.feed-row-time {
+  grid-area: time;
+  justify-self: end;
+  white-space: nowrap;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+@container feed (min-width: 30rem) {
+  .feed-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "badges body time";
+    align-items: start;
+  }
+
+  .feed-row-badges {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-row--new { animation: none; }
+}
+
+/* "Show N more" under the market scanner */
+.command-center-more {
+  padding: 0 1.4rem;
+  color: rgba(255,255,255,0.78);
+}
+.command-center-more:hover {
+  color: #fff;
+  border-color: rgba(10,132,255,0.35);
 }

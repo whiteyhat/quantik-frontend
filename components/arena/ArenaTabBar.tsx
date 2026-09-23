@@ -13,7 +13,7 @@ export function ArenaTabBar({ activeWindow }: { activeWindow: ArenaWindow }) {
   const searchParams = useSearchParams();
 
   return (
-    <div className="arena-tabs" role="tablist" aria-label="Arena windows">
+    <div className="arena-tabs" role="tablist" aria-label={t("windowTabsLabel")}>
       {ARENA_WINDOW_OPTIONS.map((windowOption) => (
         <Link
           key={windowOption.value}
@@ -22,7 +22,7 @@ export function ArenaTabBar({ activeWindow }: { activeWindow: ArenaWindow }) {
           id={`arena-tab-${windowOption.value}`}
           role="tab"
           aria-selected={activeWindow === windowOption.value}
-          aria-controls="arena-stage-panel"
+          aria-controls="tour-arena-stage"
           aria-current={activeWindow === windowOption.value ? "page" : undefined}
           tabIndex={activeWindow === windowOption.value ? 0 : -1}
         >

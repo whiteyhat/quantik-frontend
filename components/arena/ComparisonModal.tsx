@@ -100,7 +100,7 @@ function SparklineOverlay({
   );
 }
 
-function AgentColumn({ agent, color, unrankedLabel }: { agent: ArenaComparisonAgent; color: string; unrankedLabel: string }) {
+function AgentColumn({ agent, color, unrankedLabel, profileLabel }: { agent: ArenaComparisonAgent; color: string; unrankedLabel: string; profileLabel: string }) {
   return (
     <div className="arena-compare-agent">
       <div className="arena-compare-agent-head">
@@ -109,7 +109,7 @@ function AgentColumn({ agent, color, unrankedLabel }: { agent: ArenaComparisonAg
           <div className="arena-compare-name">
             {agent.name}
             {agent.agentCode && (
-              <Link href={`/arena/agent/${agent.agentCode}`} className="arena-compare-profile-link" aria-label="View profile">
+              <Link href={`/arena/agent/${agent.agentCode}`} className="arena-compare-profile-link" aria-label={`${profileLabel}: ${agent.name}`}>
                 <ExternalLink className="size-3" />
               </Link>
             )}
@@ -133,6 +133,7 @@ export default function ComparisonModal({
   onClose: () => void;
 }) {
   const t = useTranslations("arena");
+  const tCommon = useTranslations("common");
   const query = useArenaComparisonQuery(agentId1, agentId2, activeWindow);
 
   useEffect(() => {
@@ -175,7 +176,7 @@ export default function ComparisonModal({
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
         >
-          <button type="button" className="arena-compare-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="arena-compare-close" onClick={onClose} aria-label={tCommon("close")}>
             <X className="size-5" />
           </button>
 
@@ -192,11 +193,11 @@ export default function ComparisonModal({
               {/* Agent headers */}
               <div className="arena-compare-agents">
                 <motion.div initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}>
-                  <AgentColumn agent={a1} color="rgba(87,216,255,0.6)" unrankedLabel={t("unranked")} />
+                  <AgentColumn agent={a1} color="rgba(87,216,255,0.6)" unrankedLabel={t("unranked")} profileLabel={t("viewPublicProfile")} />
                 </motion.div>
                 <div className="arena-compare-vs">{t("vs")}</div>
                 <motion.div initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }}>
-                  <AgentColumn agent={a2} color="rgba(255,217,102,0.6)" unrankedLabel={t("unranked")} />
+                  <AgentColumn agent={a2} color="rgba(255,217,102,0.6)" unrankedLabel={t("unranked")} profileLabel={t("viewPublicProfile")} />
                 </motion.div>
               </div>
 

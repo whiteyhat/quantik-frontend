@@ -1,14 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import dynamic from "next/dynamic";
 import { useRouter } from "@/i18n/navigation";
 import { SectionShell } from "./SectionShell";
 import { PillButton } from "./PillButton";
-
-// WebGL digital rain; loaded only in the browser so three.js stays out of the
-// initial bundle.
-const PixelRain = dynamic(() => import("@/components/react-bits/pixel-rain"), { ssr: false });
+import { RainBackdrop } from "./RainBackdrop";
 
 export function FinalCTA() {
   const t = useTranslations("landing");
@@ -27,15 +23,7 @@ export function FinalCTA() {
         }}
       >
         <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
-          <PixelRain
-            color="#0a84ff"
-            hotColor="#bf5af2"
-            backgroundColor="#050508"
-            speed={0.18}
-            trail={7}
-            vignette={0.45}
-            brightness={0.9}
-          />
+          <RainBackdrop />
         </div>
         {/* Scrim keeps the copy readable over the brightest streaks */}
         <div
