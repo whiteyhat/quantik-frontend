@@ -1,8 +1,8 @@
 "use client";
 
-import { SignInButton } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
+import { useRouter } from "@/i18n/navigation";
 import { SectionShell } from "./SectionShell";
 import { PillButton } from "./PillButton";
 
@@ -12,6 +12,7 @@ const PixelRain = dynamic(() => import("@/components/react-bits/pixel-rain"), { 
 
 export function FinalCTA() {
   const t = useTranslations("landing");
+  const router = useRouter();
 
   return (
     <SectionShell className="!pb-32">
@@ -68,9 +69,9 @@ export function FinalCTA() {
           >
             {t("cta.subtitle")}
           </p>
-          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <PillButton variant="light">{t("joinNow")}</PillButton>
-          </SignInButton>
+          <PillButton variant="light" onClick={() => router.push("/dashboard")}>
+            {t("exploreApp")}
+          </PillButton>
         </div>
       </div>
     </SectionShell>

@@ -19,6 +19,9 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
+import { DemoBanner } from "@/components/demo/DemoBanner";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 // ─── Wallet Sync ─────────────────────────────────────────────────────────────
 // Keeps the global wallet store fresh on every dashboard page (market, pipeline, etc.)
@@ -69,18 +72,25 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
   const tNav = useTranslations("nav");
   const tSidebar = useTranslations("sidebar");
   const myAgent = useQuantikStore((s) => s.myAgent);
-  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
   const { user } = useUser();
+  const viewer = useViewer();
+  const gate = useSignInGate();
   const { paperMode } = usePaperMode();
   const hydrated = useHydrated();
   const [profileHovered, setProfileHovered] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  // The factory badge counts the visitor's real agent, never the demo one
+  const hasAgent = viewer.hasAgent;
 
   const handleProfileClick = useCallback(() => {
+    if (!viewer.isSignedIn) {
+      gate(() => {}, { needs: "signIn" });
+      return;
+    }
     // Find and click the Clerk UserButton's internal button to open the popover
     const clerkBtn = profileRef.current?.querySelector<HTMLButtonElement>(".cl-userButtonTrigger, .cl-avatarBox, button");
     clerkBtn?.click();
-  }, []);
+  }, [viewer.isSignedIn, gate]);
 
   return (
     <aside
@@ -179,9 +189,6 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
             item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
-          const isDisabled = !myAgentLoading && !myAgent && !item.isFactory;
-          const isLoading = myAgentLoading && !item.isFactory;
-
           const sharedStyle: React.CSSProperties = {
             display: "flex",
             alignItems: "center",
@@ -202,9 +209,6 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
             fontSize: 14,
             fontWeight: isActive ? 600 : 400,
             transition: "all 180ms ease",
-            opacity: isDisabled ? 0.35 : isLoading ? 0.55 : 1,
-            cursor: isDisabled ? "not-allowed" : undefined,
-            pointerEvents: isDisabled ? "none" as const : undefined,
           };
 
           const content = (
@@ -221,31 +225,23 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
                     fontWeight: 700,
                     fontFamily: '"SF Mono", "JetBrains Mono", monospace',
                     letterSpacing: "0.04em",
-                    background: myAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
-                    border: `1px solid ${myAgent ? "rgba(48,209,88,0.35)" : "rgba(255,159,10,0.35)"}`,
-                    color: myAgent ? "#30d158" : "#FF9F0A",
+                    background: hasAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
+                    border: `1px solid ${hasAgent ? "rgba(48,209,88,0.35)" : "rgba(255,159,10,0.35)"}`,
+                    color: hasAgent ? "#30d158" : "#FF9F0A",
                     transition: "all 300ms ease",
                   }}
                 >
-                  {myAgent ? "1/1" : "0/1"}
+                  {hasAgent ? "1/1" : "0/1"}
                 </span>
               )}
             </>
           );
 
-          if (isDisabled) {
-            return (
-              <div key={item.href} style={sharedStyle} title={tSidebar("createAgentFirst")}>
-                {content}
-              </div>
-            );
-          }
-
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={!myAgent && item.isFactory ? "onboarding-glow" : undefined}
+              className={!hasAgent && item.isFactory ? "onboarding-glow" : undefined}
               style={sharedStyle}
             >
               {content}
@@ -273,8 +269,28 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
           cursor: "pointer",
         }}
       >
-        {/* Avatar with glow ring */}
-        {hydrated && (
+        {/* Avatar with glow ring (guests get a neutral placeholder) */}
+        {hydrated && !viewer.isSignedIn && (
+          <div
+            aria-hidden="true"
+            style={{
+              width: 34,
+              height: 34,
+              flexShrink: 0,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 15,
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              color: "rgba(255,255,255,0.55)",
+            }}
+          >
+            ◇
+          </div>
+        )}
+        {hydrated && viewer.isSignedIn && (
           <div
             style={{
               flexShrink: 0,
@@ -311,8 +327,28 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               lineHeight: 1.3,
             }}
           >
-            {hydrated ? (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User") : "···"}
+            {!hydrated
+              ? "···"
+              : !viewer.isSignedIn
+                ? tSidebar("guest")
+                : (user?.firstName ?? user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ?? "User")}
           </div>
+          {!viewer.isSignedIn ? (
+            <div
+              style={{
+                marginTop: 2,
+                fontSize: 10,
+                color: "#5ac8fa",
+                fontFamily: '"SF Mono", "JetBrains Mono", monospace',
+                letterSpacing: "0.02em",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {tSidebar("signIn")}
+            </div>
+          ) : (
           <div
             style={{
               display: "flex",
@@ -343,6 +379,7 @@ function Sidebar({ relayOpen, relayPulsing, onToggleRelay }: SidebarProps) {
               {tSidebar("online")}
             </span>
           </div>
+          )}
         </div>
 
         {/* Language switcher — compact */}
@@ -483,6 +520,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const viewer = useViewer();
   const [relayOpen, setRelayOpen] = useState(false);
   const relayHasBeenOpened = useLocalStorageFlag(RELAY_LS_KEY, false);
   const relayPulsing = !relayHasBeenOpened;
@@ -530,7 +568,8 @@ export default function DashboardLayout({
         <ToastNotification />
 
         {/* Global panic mode floating action button */}
-        <GlobalPanicButton />
+        {/* Panic mode halts every agent on the platform: operators only */}
+        {viewer.isOperator && <GlobalPanicButton />}
 
         <BottomTabBar
           relayOpen={relayOpen}
@@ -542,8 +581,12 @@ export default function DashboardLayout({
         <div
           className="md:ml-[220px] min-h-[100vh] flex flex-col relative z-10 pb-[68px] md:pb-0"
         >
-          {/* Page content */}
+          <DemoBanner />
+
+          {/* Page content — remounts when the viewer changes (sign-in, sign-out,
+              first agent) so no page keeps demo or previous-user state */}
           <main
+            key={viewer.mode}
             style={{
               flex: 1,
               padding: "20px 20px 40px",

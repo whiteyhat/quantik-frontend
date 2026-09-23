@@ -162,7 +162,9 @@ export default function LandingPage() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  if (!isLoaded || isSignedIn) {
+  // Guests see the landing immediately; signed-in visitors are on their way
+  // to the dashboard (redirect above), so skip painting it for them.
+  if (isLoaded && isSignedIn) {
     return <div style={{ background: "#000", minHeight: "100vh" }} />;
   }
 

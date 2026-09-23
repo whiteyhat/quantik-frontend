@@ -2,9 +2,8 @@
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "@/i18n/navigation";
-import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
 import { useLocalStorageFlag, setLocalStorageFlag } from "@/hooks/useLocalStorageFlag";
 import { PillButton } from "@/components/landing/PillButton";
 const ONBOARDING_KEY = "hasSeenOnboarding";
@@ -16,17 +15,18 @@ const CARDS = [
 ] as const;
 
 export function WelcomeModal() {
-  const { isSignedIn } = useAuth();
-  const myAgent = useQuantikStore((s) => s.myAgent);
-  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  const viewer = useViewer();
   const hasSeenOnboarding = useLocalStorageFlag(ONBOARDING_KEY);
   const reduced = useReducedMotion();
   const router = useRouter();
   const t = useTranslations("welcome");
 
-  const visible = isSignedIn && myAgent === null && !myAgentLoading && !hasSeenOnboarding;
+  // Signed in without a real agent (they're browsing the demo until they build one)
+  const visible = viewer.mode === "member-no-agent" && !hasSeenOnboarding;
 
-  const dismiss = () => {
+  // Skip keeps them on the demo; Get Started takes them to the factory
+  const skip = () => setLocalStorageFlag(ONBOARDING_KEY, true);
+  const getStarted = () => {
     setLocalStorageFlag(ONBOARDING_KEY, true);
     router.push("/agent-factory");
   };
@@ -73,7 +73,7 @@ export function WelcomeModal() {
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
               <button
                 type="button"
-                onClick={dismiss}
+                onClick={skip}
                 style={{
                   background: "none",
                   border: "none",
@@ -133,7 +133,7 @@ export function WelcomeModal() {
 
             {/* CTA */}
             <div className="text-center">
-              <PillButton variant="light" onClick={dismiss}>
+              <PillButton variant="light" onClick={getStarted}>
                 {t("getStarted")}
               </PillButton>
             </div>

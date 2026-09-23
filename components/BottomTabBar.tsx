@@ -4,6 +4,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
 
 interface BottomTabBarProps {
   relayOpen?: boolean;
@@ -14,7 +15,8 @@ interface BottomTabBarProps {
 export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomTabBarProps) {
   const pathname = usePathname();
   const myAgent = useQuantikStore((s) => s.myAgent);
-  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
+  // Every tab is open to everyone; the factory badge counts only a real agent
+  const { hasAgent } = useViewer();
   const tNav = useTranslations("nav");
   const tSidebar = useTranslations("sidebar");
 
@@ -33,7 +35,6 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
       {NAV_ITEMS.map((item) => {
         const isActive =
           item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
-        const isDisabled = !myAgentLoading && !myAgent && !item.isFactory;
 
         const inner = (
           <>
@@ -50,13 +51,13 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
                     fontSize: 9,
                     fontWeight: 700,
                     fontFamily: '"SF Mono", "JetBrains Mono", monospace',
-                    background: myAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
-                    border: `1px solid ${myAgent ? "rgba(48,209,88,0.35)" : "rgba(255,159,10,0.35)"}`,
-                    color: myAgent ? "#30d158" : "#FF9F0A",
+                    background: hasAgent ? "rgba(48,209,88,0.15)" : "rgba(255,159,10,0.15)",
+                    border: `1px solid ${hasAgent ? "rgba(48,209,88,0.35)" : "rgba(255,159,10,0.35)"}`,
+                    color: hasAgent ? "#30d158" : "#FF9F0A",
                     lineHeight: "14px",
                   }}
                 >
-                  {myAgent ? "1/1" : "0/1"}
+                  {hasAgent ? "1/1" : "0/1"}
                 </span>
               )}
             </span>
@@ -76,24 +77,15 @@ export function BottomTabBar({ relayOpen, relayPulsing, onToggleRelay }: BottomT
           minHeight: 44,
           color: isActive ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
           textDecoration: "none",
-          opacity: isDisabled ? 0.35 : 1,
           transition: "opacity 180ms ease",
           paddingInline: 4,
         };
-
-        if (isDisabled) {
-          return (
-            <div key={item.href} style={{ ...sharedStyle, cursor: "not-allowed", pointerEvents: "none" }}>
-              {inner}
-            </div>
-          );
-        }
 
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={!myAgent && item.isFactory ? "onboarding-glow" : undefined}
+            className={!hasAgent && item.isFactory ? "onboarding-glow" : undefined}
             style={sharedStyle}
           >
             {inner}

@@ -11,6 +11,7 @@ import {
 } from "framer-motion";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
+import { useRouter } from "@/i18n/navigation";
 import AsciiRipple from "@/components/react-bits/ascii-ripple";
 
 const FONT = "'General Sans', sans-serif";
@@ -231,6 +232,7 @@ export function HeroSection() {
   const tNav = useTranslations("nav");
   const reduced = useReducedMotion();
   const isTouch = useTouchDevice();
+  const router = useRouter();
 
   const { scrollY } = useScroll();
   const overlayOpacity = useTransform(scrollY, [0, 800], [0.15, 0.85]);
@@ -338,8 +340,8 @@ export function HeroSection() {
             {tNav("wordmark")}
           </span>
         </div>
-        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-          <PillButton variant="dark">{t("joinNow")}</PillButton>
+        <SignInButton mode="modal" forceRedirectUrl="/dashboard" signUpForceRedirectUrl="/dashboard">
+          <PillButton variant="dark">{tNav("signIn")}</PillButton>
         </SignInButton>
       </nav>
 
@@ -444,9 +446,10 @@ export function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <PillButton variant="light">{t("joinNow")}</PillButton>
-              </SignInButton>
+              {/* Straight into the app as a guest: no account needed to look around */}
+              <PillButton variant="light" onClick={() => router.push("/dashboard")}>
+                {t("exploreApp")}
+              </PillButton>
             </motion.div>
           </div>
         </div>
