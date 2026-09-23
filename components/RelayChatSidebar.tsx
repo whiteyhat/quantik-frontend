@@ -804,9 +804,13 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
 
   const handleTradeConfirm = useCallback(async (confirmation: { slug: string; direction: string; size: number }) => {
     try {
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/trade/execute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           direction: confirmation.direction,
           size: confirmation.size,

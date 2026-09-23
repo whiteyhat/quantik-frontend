@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -90,15 +90,26 @@ const SocketContext = createContext<SocketContextValue>({
 // ── Provider ─────────────────────────────────────────────────────
 
 export function SocketProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useUser();
+  const { userId, getToken } = useAuth();
   const socketRef = useRef<Socket | null>(null);
+  const getTokenRef = useRef(getToken);
   const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
 
   useEffect(() => {
     const socket = io(API_URL, {
       transports: ["websocket", "polling"],
       withCredentials: true,
-      auth: { userId: user?.id ?? null },
+      // The server verifies this session token before joining the user's
+      // private room; it's re-read on every reconnect so it never goes stale.
+      auth: (cb) => {
+        getTokenRef.current()
+          .then((token) => cb(token ? { token } : {}))
+          .catch(() => cb({}));
+      },
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 10,
@@ -121,7 +132,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [user?.id]);
+  }, [userId]);
 
   const on = useCallback(<T = unknown,>(event: string, handler: EventHandler<T>) => {
     socketRef.current?.on(event, handler as EventHandler);

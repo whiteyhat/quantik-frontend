@@ -69,18 +69,10 @@ test('GET /api/v1/settings → 200, paperMode field exists', async ({ request })
   expect(body).toHaveProperty('paperMode');
 });
 
-test('POST /api/v1/settings/paper-mode → 200, then reset', async ({ request }) => {
-  // Enable paper mode
-  const enableRes = await request.post(`${BASE}/api/v1/settings/paper-mode`, {
+test('POST /api/v1/settings/paper-mode without auth → 401', async ({ request }) => {
+  // Paper mode is platform-wide and operator-only; never write it from tests.
+  const res = await request.post(`${BASE}/api/v1/settings/paper-mode`, {
     data: { enabled: true },
   });
-  expect(enableRes.status()).toBe(200);
-  const enableBody = await enableRes.json();
-  expect(enableBody).toBeTruthy();
-
-  // Reset (disable paper mode)
-  const resetRes = await request.post(`${BASE}/api/v1/settings/paper-mode`, {
-    data: { enabled: false },
-  });
-  expect(resetRes.status()).toBe(200);
+  expect(res.status()).toBe(401);
 });
