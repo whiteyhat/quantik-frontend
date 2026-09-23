@@ -335,7 +335,8 @@
           }
         }
       }
-    }
+    },
+    "exploreApp": "Explore the app"
   },
   "welcome": {
     "title": "Welcome to Quantik",
@@ -358,7 +359,8 @@
     "wordmark": "QUANTIK",
     "tagline": "ULTIMATE AI TRADING",
     "factory": "Factory",
-    "trades": "Trades"
+    "trades": "Trades",
+    "signIn": "Sign in"
   },
   "arena": {
     "eyebrow": "Colosseum Protocol",
@@ -547,7 +549,10 @@
     "chatWith": "CHAT WITH {name}",
     "chatDefault": "CHAT WITH QUANTIK INTELLIGENCE",
     "hey": "Hey! Talk to me",
-    "chat": "Chat"
+    "chat": "Chat",
+    "guest": "Guest",
+    "signIn": "Sign in to save your agent",
+    "demoAgent": "Demo agent"
   },
   "common": {
     "loading": "Loading...",
@@ -1006,7 +1011,11 @@
     "chipVar": "VaR",
     "chipMaxPos": "Max Pos",
     "chipDrawdown": "Drawdown",
-    "chipKelly": "Kelly"
+    "chipKelly": "Kelly",
+    "tradingModeTitle": "Trading mode",
+    "tradingModePaper": "Paper trading",
+    "tradingModeLive": "Live trading",
+    "tradingModeHint": "Set by the Quantik team for the whole platform."
   },
   "reports": {
     "title": "Reports"
@@ -1870,7 +1879,9 @@
         "fixed_safe": "Fixed & Safe",
         "smart_scaling": "Smart Scaling",
         "aggressive": "Aggressive"
-      }
+      },
+      "signInToMint": "Sign in to mint your agent's wallet",
+      "signInToMintDesc": "Your answers are saved. Sign in and your agent gets its own wallet, ready to deploy."
     },
     "locked": {
       "openclawAgent": "OPENCLAW AGENT",
@@ -2440,5 +2451,14 @@
     "wizardSenseDesc": "Pick whether your agent follows fixed rules or reads market mood, and which asset classes it specializes in.",
     "wizardNextTitle": "Continue when ready",
     "wizardNextDesc": "Fill in each section, then hit the green button to advance. You can always go back to change things later."
+  },
+  "demo": {
+    "badge": "DEMO",
+    "guestTitle": "You're exploring NOVA-7, a demo agent.",
+    "guestBody": "Everything here is sample data. Sign in to build your own agent and trade with it.",
+    "noAgentTitle": "You're looking at NOVA-7, a demo agent.",
+    "noAgentBody": "Build your own agent in a few minutes and this dashboard becomes yours.",
+    "signIn": "Sign in",
+    "createAgent": "Create your agent"
   }
 }

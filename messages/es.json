@@ -335,7 +335,8 @@
           }
         }
       }
-    }
+    },
+    "exploreApp": "Explorar la app"
   },
   "welcome": {
     "title": "Bienvenido a Quantik",
@@ -358,7 +359,8 @@
     "wordmark": "QUANTIK",
     "tagline": "TRADING IA DEFINITIVO",
     "factory": "Fabrica",
-    "trades": "Operaciones"
+    "trades": "Operaciones",
+    "signIn": "Iniciar sesión"
   },
   "arena": {
     "eyebrow": "Protocolo del Coliseo",
@@ -547,7 +549,10 @@
     "chatWith": "CHATEAR CON {name}",
     "chatDefault": "CHATEAR CON QUANTIK INTELLIGENCE",
     "hey": "Oye! Hablame",
-    "chat": "Chat"
+    "chat": "Chat",
+    "guest": "Invitado",
+    "signIn": "Inicia sesión para guardar tu agente",
+    "demoAgent": "Agente demo"
   },
   "common": {
     "loading": "Cargando...",
@@ -1006,7 +1011,11 @@
     "chipVar": "VaR",
     "chipMaxPos": "Max Pos",
     "chipDrawdown": "Drawdown",
-    "chipKelly": "Kelly"
+    "chipKelly": "Kelly",
+    "tradingModeTitle": "Modo de trading",
+    "tradingModePaper": "Trading simulado",
+    "tradingModeLive": "Trading real",
+    "tradingModeHint": "Lo define el equipo de Quantik para toda la plataforma."
   },
   "reports": {
     "title": "Reportes"
@@ -1862,7 +1871,9 @@
         "fixed_safe": "Fijo y Seguro",
         "smart_scaling": "Escalado Inteligente",
         "aggressive": "Agresivo"
-      }
+      },
+      "signInToMint": "Inicia sesión para crear la billetera de tu agente",
+      "signInToMintDesc": "Tus respuestas se guardan. Inicia sesión y tu agente tendrá su propia billetera, lista para desplegar."
     },
     "locked": {
       "openclawAgent": "AGENTE OPENCLAW",
@@ -2440,5 +2451,14 @@
     "wizardSenseDesc": "Elige si tu agente sigue reglas fijas o lee el ánimo del mercado, y en qué clases de activos se especializa.",
     "wizardNextTitle": "Continúa cuando estés listo",
     "wizardNextDesc": "Completa cada sección y pulsa el botón verde para avanzar. Siempre puedes volver atrás para cambiar cosas."
+  },
+  "demo": {
+    "badge": "DEMO",
+    "guestTitle": "Estás explorando NOVA-7, un agente demo.",
+    "guestBody": "Todo lo que ves son datos de ejemplo. Inicia sesión para crear tu propio agente y operar con él.",
+    "noAgentTitle": "Estás viendo NOVA-7, un agente demo.",
+    "noAgentBody": "Crea tu propio agente en unos minutos y este panel será tuyo.",
+    "signIn": "Iniciar sesión",
+    "createAgent": "Crea tu agente"
   }
 }

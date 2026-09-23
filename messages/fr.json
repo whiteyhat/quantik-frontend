@@ -335,7 +335,8 @@
           }
         }
       }
-    }
+    },
+    "exploreApp": "Explorer l'application"
   },
   "welcome": {
     "title": "Bienvenue sur Quantik",
@@ -358,7 +359,8 @@
     "wordmark": "QUANTIK",
     "tagline": "TRADING IA ULTIME",
     "factory": "Usine",
-    "trades": "Trades"
+    "trades": "Trades",
+    "signIn": "Se connecter"
   },
   "arena": {
     "eyebrow": "Protocole du Colisee",
@@ -547,7 +549,10 @@
     "chatWith": "DISCUTER AVEC {name}",
     "chatDefault": "DISCUTER AVEC QUANTIK INTELLIGENCE",
     "hey": "Salut! Parle-moi",
-    "chat": "Chat"
+    "chat": "Chat",
+    "guest": "Invité",
+    "signIn": "Connectez-vous pour enregistrer votre agent",
+    "demoAgent": "Agent de démo"
   },
   "common": {
     "loading": "Chargement...",
@@ -1006,7 +1011,11 @@
     "chipVar": "VaR",
     "chipMaxPos": "Max Pos",
     "chipDrawdown": "Drawdown",
-    "chipKelly": "Kelly"
+    "chipKelly": "Kelly",
+    "tradingModeTitle": "Mode de trading",
+    "tradingModePaper": "Trading simulé",
+    "tradingModeLive": "Trading réel",
+    "tradingModeHint": "Défini par l'équipe Quantik pour toute la plateforme."
   },
   "reports": {
     "title": "Rapports"
@@ -1862,7 +1871,9 @@
         "fixed_safe": "Fixe et Sur",
         "smart_scaling": "Scaling Intelligent",
         "aggressive": "Agressif"
-      }
+      },
+      "signInToMint": "Connectez-vous pour créer le portefeuille de votre agent",
+      "signInToMintDesc": "Vos réponses sont enregistrées. Connectez-vous et votre agent obtient son propre portefeuille, prêt à être déployé."
     },
     "locked": {
       "openclawAgent": "AGENT OPENCLAW",
@@ -2440,5 +2451,14 @@
     "wizardSenseDesc": "Choisissez si votre agent suit des règles fixes ou lit l'humeur du marché, et dans quelles classes d'actifs il se spécialise.",
     "wizardNextTitle": "Continuez quand vous êtes prêt",
     "wizardNextDesc": "Remplissez chaque section, puis appuyez sur le bouton vert pour avancer. Vous pouvez toujours revenir en arrière."
+  },
+  "demo": {
+    "badge": "DÉMO",
+    "guestTitle": "Vous explorez NOVA-7, un agent de démonstration.",
+    "guestBody": "Tout ce que vous voyez est un exemple. Connectez-vous pour créer votre propre agent et trader avec lui.",
+    "noAgentTitle": "Vous regardez NOVA-7, un agent de démonstration.",
+    "noAgentBody": "Créez votre agent en quelques minutes et ce tableau de bord devient le vôtre.",
+    "signIn": "Se connecter",
+    "createAgent": "Créer votre agent"
   }
 }
