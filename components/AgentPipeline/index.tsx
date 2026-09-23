@@ -1102,8 +1102,8 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
 
   return (
     <div style={{ position: "relative" }}>
-      {/* 5-column compact agent card grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 16 }}>
+      {/* Compact agent card grid: 5 columns on desktop, stacking on phones */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" style={{ gap: 12, marginBottom: 16 }}>
         <AuraCard data={auraData} status={agents.aura?.status ?? "idle"} />
         <FluxCard data={fluxData} status={agents.flux?.status ?? "idle"} />
         <OracleCard data={oracleData} status={agents.oracle?.status ?? "idle"} />
@@ -1123,7 +1123,7 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
 
       {/* 3-column: Alpha Signal | Lucifer | Validator */}
       {sigmaData && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 12, marginBottom: 16 }}>
           <AlphaSignalCard sigma={sigmaData} edge={edgeData} />
           <LuciferCriticCard data={luciferData} />
           <SignalValidator

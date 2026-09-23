@@ -3334,3 +3334,11 @@ a.command-center-list-row:focus-visible,
   .demo-banner { animation: none; }
   .demo-banner__cta { transition: none; }
 }
+
+/* Hover-only wallet tooltips: useless on touch screens and, positioned past
+   the edge, they made narrow pages scroll sideways */
+@media (hover: none), (max-width: 640px) {
+  .wallet-action-tooltip {
+    display: none !important;
+  }
+}

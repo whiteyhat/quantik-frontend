@@ -67,6 +67,8 @@ export default function ReportsPrintPage() {
           ))}
         </div>
 
+        {/* Wide table scrolls inside its box on phones instead of the whole page */}
+        <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -101,6 +103,7 @@ export default function ReportsPrintPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </main>
   );
