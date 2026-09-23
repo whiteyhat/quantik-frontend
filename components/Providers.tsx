@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { PaperModeProvider } from "@/context/PaperModeContext";
 import { SocketProvider } from "@/context/SocketContext";
+import { ViewerProvider } from "@/context/ViewerContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { useTradeNotifications } from "@/hooks/useTradeNotifications";
 import { PosthogProvider } from "@/components/PosthogProvider";
@@ -105,14 +106,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <SocketProvider>
-          <NotificationInit />
-          <ThemeProvider>
-            <PaperModeProvider>
-              <PosthogProvider>{children}</PosthogProvider>
-            </PaperModeProvider>
-          </ThemeProvider>
-        </SocketProvider>
+        <ViewerProvider>
+          <SocketProvider>
+            <NotificationInit />
+            <ThemeProvider>
+              <PaperModeProvider>
+                <PosthogProvider>{children}</PosthogProvider>
+              </PaperModeProvider>
+            </ThemeProvider>
+          </SocketProvider>
+        </ViewerProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

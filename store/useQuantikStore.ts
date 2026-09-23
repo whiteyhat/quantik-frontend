@@ -109,6 +109,9 @@ interface QuantikStore {
   recentTrades: Trade[];
   setRecentTrades: (t: Trade[]) => void;
 
+  /** Forget everything personal (sign-in, sign-out, demo ↔ real). */
+  resetUserState: () => void;
+
   // Live prices (tokenId -> { yes, no })
   livePrices: Record<string, { yes: number; no: number }>;
   updatePrices: (prices: Record<string, { yes: number; no: number }>) => void;
@@ -268,6 +271,9 @@ export const useQuantikStore = create<QuantikStore>((set) => ({
 
   recentTrades: [],
   setRecentTrades: (recentTrades) => set({ recentTrades }),
+
+  resetUserState: () =>
+    set({ myAgent: null, myAgentLoading: false, wallet: null, positions: [], recentTrades: [] }),
 
   livePrices: {},
   updatePrices: (prices) =>

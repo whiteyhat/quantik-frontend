@@ -2,12 +2,12 @@
 
 import { GlobalPanicButton } from "@/components/GlobalPanicButton";
 import { usePaperMode } from "@/context/PaperModeContext";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useAuth, useUser, UserButton } from "@clerk/nextjs";
-import { api, setAuthToken } from "@/lib/api";
-import { useQuantikStore, type MyAgent } from "@/store/useQuantikStore";
+import { useUser, UserButton } from "@clerk/nextjs";
+import { api } from "@/lib/api";
+import { useQuantikStore } from "@/store/useQuantikStore";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { RelayChatSidebar } from "@/components/RelayChatSidebar";
 import { ToastNotification } from "@/components/ToastNotification";
@@ -19,75 +19,6 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
-
-// ─── Auth Sync ────────────────────────────────────────────────────────────────
-// Keeps the API client's Bearer token in sync with Clerk's session token
-function AuthSync() {
-  const { getToken, isSignedIn } = useAuth();
-  const setMyAgent = useQuantikStore((s) => s.setMyAgent);
-  const setMyAgentLoading = useQuantikStore((s) => s.setMyAgentLoading);
-  const setStoreAuthReady = useQuantikStore((s) => s.setAuthReady);
-  const myAgent = useQuantikStore((s) => s.myAgent);
-  const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const [authReady, setAuthReady] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const sync = (isInitial = false) => {
-      getToken().then((t) => {
-        if (!active) return;
-        // Only update the token when we got a real value.
-        // During Clerk's mid-rotation refresh window getToken() can return null
-        // for a signed-in user. Nulling out _authToken here would silently drop
-        // the Authorization header on the next API call (→ 401) while myAgent
-        // stays non-null (so the redirect to agent-factory never fires).
-        if (t) {
-          setAuthToken(t);
-        }
-        // Mark ready after the first attempt regardless (covers signed-out state).
-        if (isInitial) {
-          setAuthReady(true);
-          setStoreAuthReady(true);
-        }
-      }).catch(() => {
-        if (active && isInitial) {
-          setAuthReady(true);
-          setStoreAuthReady(true);
-        }
-      });
-    };
-    sync(true);
-    const iv = setInterval(() => sync(false), 50_000); // refresh before 60s JWT expiry
-    return () => { active = false; clearInterval(iv); };
-  }, [getToken, setStoreAuthReady]);
-
-  // Fetch the user's agent once authenticated AND auth token is set
-  useEffect(() => {
-    if (!isSignedIn || !authReady) return;
-    setMyAgentLoading(true);
-    api.getMyAgent()
-      .then((data) => {
-        if (data) setMyAgent(data as unknown as MyAgent);
-      })
-      .catch(() => {})
-      .finally(() => setMyAgentLoading(false));
-  }, [isSignedIn, authReady, setMyAgent, setMyAgentLoading]);
-
-  // Redirect first-time users (no agent) to Agent Factory
-  // Skip redirect if onboarding modal hasn't been seen yet — let the modal show first
-  useEffect(() => {
-    if (!isSignedIn || myAgentLoading || myAgent !== null) return;
-    if (pathname.startsWith("/agent-factory")) return;
-    const hasSeenOnboarding = typeof window !== "undefined" && window.localStorage.getItem("hasSeenOnboarding") === "true";
-    if (!hasSeenOnboarding) return;
-    router.replace("/agent-factory");
-  }, [isSignedIn, myAgentLoading, myAgent, pathname, router]);
-
-  return null;
-}
 
 // ─── Wallet Sync ─────────────────────────────────────────────────────────────
 // Keeps the global wallet store fresh on every dashboard page (market, pipeline, etc.)
@@ -573,7 +504,6 @@ export default function DashboardLayout({
 
   return (
     <>
-      <AuthSync />
       <WalletSync />
       <ProductTourProvider>
         <WelcomeModal />

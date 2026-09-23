@@ -20,9 +20,9 @@ export function demoSummary(): Record<string, unknown> {
     cashBalance: 5610,
     positionsValue: 4870,
     pnl: 480,
-    pnlPct: 4.8,
+    pnlPct: 0.048, // fractions, like the real API
     pnlToday: 62,
-    pnlTodayPct: 0.6,
+    pnlTodayPct: 0.006,
     winRate: 0.64,
     totalTrades: 47,
     kellyUtilization: 0.31,
@@ -39,7 +39,7 @@ export function demoSummary(): Record<string, unknown> {
     alphaDecay: {
       detected: false,
       rollingHitRate: 0.63,
-      recommendation: "Maintain current sizing",
+      recommendation: "no_decay",
     },
   };
 }
@@ -66,7 +66,7 @@ function position(
     entryPrice,
     currentPrice,
     pnl,
-    pnlPct: +((pnl / size) * 100).toFixed(2),
+    pnlPct: +(pnl / size).toFixed(4),
     source,
     resolutionDate: new Date(Date.now() + 45 * DAY).toISOString(),
     executedAt: ago(daysAgo * DAY),

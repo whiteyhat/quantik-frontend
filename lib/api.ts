@@ -1769,6 +1769,19 @@ export const api = {
   },
 
   // My Agent (user's configured trading agent)
+  /** Who is looking. Raw fetch: must never be answered by the demo adapter. */
+  getAccess: async (): Promise<{ signedIn: boolean; hasAgent: boolean; isOperator: boolean }> => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/me/access`, {
+        headers: _authToken ? { Authorization: `Bearer ${_authToken}` } : {},
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      return (await res.json()) as { signedIn: boolean; hasAgent: boolean; isOperator: boolean };
+    } catch {
+      return { signedIn: false, hasAgent: false, isOperator: false };
+    }
+  },
+
   getMyAgent: async (): Promise<Record<string, unknown> | null> => {
     try {
       return await apiFetch<Record<string, unknown>>("/api/v1/agent/me");

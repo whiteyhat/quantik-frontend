@@ -13,6 +13,8 @@ interface NotificationsState {
   addItem: (item: NotificationItem) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
+  /** Drop everything so the next viewer's notifications load fresh. */
+  reset: () => void;
 }
 
 function countUnread(items: NotificationItem[]): number {
@@ -25,6 +27,7 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
   unread: 0,
   hydrated: false,
   setOpen: (open) => set({ open }),
+  reset: () => set({ items: [], unread: 0, hydrated: false }),
   setItems: (items) =>
     set({
       items,
