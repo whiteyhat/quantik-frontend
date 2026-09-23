@@ -109,18 +109,39 @@ export function suppressKnownErrors(page: Page) {
 
 // ─── Mock helpers ───────────────────────────────────────────────────────────
 
+/**
+ * GET /api/v1/me/access decides demo vs real app (guest showcase mode).
+ * Pass { status } to simulate the check failing.
+ */
+export async function mockAccess(
+  page: Page,
+  access: { hasAgent: boolean; isOperator?: boolean } | { status: number },
+) {
+  await page.route('**/api/v1/me/access', (route) =>
+    'status' in access
+      ? route.fulfill({ status: access.status, contentType: 'application/json', body: JSON.stringify({ error: 'unavailable' }) })
+      : route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ signedIn: true, hasAgent: access.hasAgent, isOperator: access.isOperator ?? false }),
+        })
+  );
+}
+
 export async function mockAgent(page: Page, overrides: Record<string, unknown> = {}) {
   const agent = {
     ...STANDARD_AGENT,
     autopilot_policy: DEFAULT_AUTOPILOT_POLICY,
     ...overrides,
   };
+  await mockAccess(page, { hasAgent: true });
   await page.route('**/api/v1/agent/me', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(agent) })
   );
 }
 
 export async function mockNoAgent(page: Page) {
+  await mockAccess(page, { hasAgent: false });
   await page.route('**/api/v1/agent/me', (route) =>
     route.fulfill({
       status: 404,
@@ -217,8 +238,9 @@ export async function mockDashboardApis(page: Page) {
 
 export async function setupAuth(page: Page) {
   await setupClerkTestingToken({ page });
-  // Navigate to root (public) so Clerk can load, then sign in via backend token
-  await page.goto('/');
+  // Open a public page so Clerk can load, then sign in via backend token.
+  // (The locale landing, not "/": the bare root 404s under `next dev`.)
+  await page.goto('/en');
   await clerk.signIn({
     page,
     emailAddress: 'carlosroldan26396@gmail.com',
