@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { type SigmaResult, type EdgeResult, fmtUSDC } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { usePaperMode } from "@/context/PaperModeContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 function num(v: unknown): number {
   const n = Number(v);
@@ -30,6 +31,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
   const openTradeModal = useQuantikStore((s) => s.openTradeModal);
   const wallet = useQuantikStore((s) => s.wallet);
   const { paperMode } = usePaperMode();
+  const gate = useSignInGate();
 
   // Wallet funding checks (skip in paper mode)
   const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
@@ -266,7 +268,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
         disabled={!canExecute}
         onClick={() => {
           if (!canExecute || !edge) return;
-          openTradeModal({
+          gate(() => openTradeModal({
             slug: market.slug,
             tokenId: market.tokenId,
             yesTokenId: market.yesTokenId,
@@ -278,7 +280,7 @@ export function SigmaDecision({ sigma, edge, market }: SigmaDecisionProps) {
               yesPrice: market.yesPrice,
               noPrice: market.noPrice,
             },
-          });
+          }));
         }}
         style={{
           height: 44,

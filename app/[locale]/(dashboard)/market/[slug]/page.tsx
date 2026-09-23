@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { api, runPipeline, type PipelineHistoryRun } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 import { MarketHeader } from "@/components/MarketHeader";
 import { PriceChart } from "@/components/PriceChart";
 import { OrderBook } from "@/components/OrderBook";
@@ -26,6 +28,8 @@ export default function MarketPage({ params }: PageProps) {
   const { slug } = use(params);
   const t = useTranslations("marketDetail");
   const searchParams = useSearchParams();
+  const viewer = useViewer();
+  const gate = useSignInGate();
   const pipelineStart = useQuantikStore((s) => s.pipelineStart);
   const pipelineAgentEvent = useQuantikStore((s) => s.pipelineAgentEvent);
   const pipelineComplete = useQuantikStore((s) => s.pipelineComplete);
@@ -47,9 +51,18 @@ export default function MarketPage({ params }: PageProps) {
   useEffect(() => {
     if (!market || pipeline.running || autorunFired.current) return;
     if (searchParams.get("autorun") !== "1") return;
+    if (viewer.mode === "loading") return;
     autorunFired.current = true;
+    if (!viewer.canAct) {
+      // Skip quietly (no popup) and drop ?autorun=1: the page remounts on
+      // sign-in, and the run must not start by itself then.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("autorun");
+      window.history.replaceState(null, "", url);
+      return;
+    }
     handleRunPipeline();
-  }, [market, pipeline.running, searchParams]);
+  }, [market, pipeline.running, searchParams, viewer.mode, viewer.canAct]);
 
   // Fetch pipeline history for this market
   useEffect(() => {
@@ -291,7 +304,7 @@ export default function MarketPage({ params }: PageProps) {
         {/* Main pipeline button */}
         {!pipeline.running ? (
           <button
-            onClick={handleRunPipeline}
+            onClick={() => gate(handleRunPipeline)}
             data-testid="run-pipeline-btn"
             disabled={!market}
             style={{

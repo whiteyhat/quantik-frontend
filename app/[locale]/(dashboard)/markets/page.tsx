@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { api, fmtUSDC, fmtDateShort, streamPrices, type Market, type MarketAlertItem, type WatchlistItem } from "@/lib/api";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { MarketAlertEditor } from "@/components/markets/MarketAlertEditor";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const panelStyle: React.CSSProperties = {
   background: "var(--glass-surface)",
@@ -126,6 +127,7 @@ function MarketCard({
 
 export default function MarketsPage() {
   const t = useTranslations("markets");
+  const gate = useSignInGate();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -303,15 +305,15 @@ export default function MarketsPage() {
               livePrice={livePrices[market.tokenId]}
               isWatchlisted={watchlistSlugs.has(market.slug)}
               alert={alertMap.get(market.slug) ?? null}
-              onToggleWatchlist={async () => {
+              onToggleWatchlist={() => gate(async () => {
                 if (watchlistSlugs.has(market.slug)) {
                   await api.removeWatchlistItem(market.slug);
                 } else {
                   await api.addWatchlistItem(market.slug, market.question);
                 }
                 await refreshOperatorState();
-              }}
-              onEditAlert={() => setAlertMarket(market)}
+              }, { needs: "signIn" })}
+              onEditAlert={() => gate(() => setAlertMarket(market), { needs: "signIn" })}
             />
           ))}
         </div>

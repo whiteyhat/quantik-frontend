@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, type MarketAlertItem } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 export function MarketAlertEditor({
   open,
@@ -24,6 +25,7 @@ export function MarketAlertEditor({
   const [threshold, setThreshold] = useState("0.60");
   const [enabled, setEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
+  const gate = useSignInGate();
 
   useEffect(() => {
     if (!open) return;
@@ -138,7 +140,7 @@ export function MarketAlertEditor({
           )}
 
           <button
-            onClick={async () => {
+            onClick={() => gate(async () => {
               const numericThreshold = Number(threshold);
               if (!Number.isFinite(numericThreshold) || numericThreshold < 0 || numericThreshold > 1) return;
               setSaving(true);
@@ -162,7 +164,7 @@ export function MarketAlertEditor({
               } finally {
                 setSaving(false);
               }
-            }}
+            }, { needs: "signIn" })}
             disabled={saving}
             style={{
               marginTop: 8,

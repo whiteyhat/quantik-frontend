@@ -19,6 +19,7 @@ import {
 } from "@/lib/api";
 import { AGENT_NAMES, AGENT_META, type AgentName } from "@/lib/agents";
 import { useQuantikStore, type AgentStatus, type AgentCardState } from "@/store/useQuantikStore";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 // ─── Style constants ──────────────────────────────────────────────────────────
 
@@ -564,6 +565,7 @@ function MarketCard({
 
 export default function MarketAnalysisPage() {
   const t = useTranslations("marketAnalysis");
+  const gate = useSignInGate();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [search, setSearch] = useState("");
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
@@ -756,7 +758,7 @@ export default function MarketAnalysisPage() {
                   market={m}
                   isSelected={selectedMarket?.slug === m.slug}
                   isRunning={pipelineRunning && selectedMarket?.slug === m.slug}
-                  onClick={() => selectMarket(m)}
+                  onClick={() => gate(() => selectMarket(m))}
                 />
               ))
             )}

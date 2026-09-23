@@ -6,6 +6,7 @@ import JSConfetti from "js-confetti";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
 import { usePaperMode } from "@/context/PaperModeContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const DEFAULT_TRADE_SIZE = 10;
 const PRESETS = [5, 10, 25, 50, 100];
@@ -91,6 +92,7 @@ export function TradeConfirmationModal() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [tradeAmount, setTradeAmount] = useState(DEFAULT_TRADE_SIZE);
   const { paperMode } = usePaperMode();
+  const gate = useSignInGate();
 
   const usdcBalance = wallet?.onChainUsdc ?? wallet?.usdc ?? 0;
   const polBalance = wallet?.pol ?? 0;
@@ -687,7 +689,7 @@ export function TradeConfirmationModal() {
 
                 {/* Confirm */}
                 <button
-                  onClick={handleConfirm}
+                  onClick={() => gate(() => void handleConfirm())}
                   disabled={loading || !walletFunded}
                   data-testid="modal-confirm-btn"
                   className="trade-modal-confirm-btn"

@@ -6,9 +6,11 @@ import { useTranslations } from "next-intl";
 import { api, fmtCompact } from "@/lib/api";
 import { ResolutionCountdown } from "@/components/ResolutionCountdown";
 import { MarketAlertEditor } from "@/components/markets/MarketAlertEditor";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 export function MarketHeader({ slug }: { slug: string }) {
   const t = useTranslations("marketDetail");
+  const gate = useSignInGate();
   const { data: market } = useQuery({
     queryKey: ["market", slug],
     queryFn: () => api.getMarket(slug),
@@ -105,7 +107,7 @@ export function MarketHeader({ slug }: { slug: string }) {
               LIVE
             </span>
             <button
-              onClick={async () => {
+              onClick={() => gate(async () => {
                 if (watchlisted) {
                   await api.removeWatchlistItem(slug);
                   setWatchlisted(false);
@@ -113,7 +115,7 @@ export function MarketHeader({ slug }: { slug: string }) {
                   await api.addWatchlistItem(slug, market.question);
                   setWatchlisted(true);
                 }
-              }}
+              }, { needs: "signIn" })}
               style={{
                 height: 30,
                 borderRadius: 8,
@@ -128,7 +130,7 @@ export function MarketHeader({ slug }: { slug: string }) {
               {watchlisted ? "WATCHLISTED" : "WATCHLIST"}
             </button>
             <button
-              onClick={() => setAlertOpen(true)}
+              onClick={() => gate(() => setAlertOpen(true), { needs: "signIn" })}
               style={{
                 height: 30,
                 borderRadius: 8,

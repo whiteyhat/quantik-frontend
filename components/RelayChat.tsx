@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 import { agentChipColor, isAgentName, type AgentName } from "@/lib/agents";
 import { getAuthToken } from "@/lib/api";
 import { getRelaySidebarSessionId } from "@/lib/relaySidebar";
@@ -58,6 +60,8 @@ export function RelayChat({ slug }: RelayChatProps) {
   const overviewSent = useRef(false);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const viewer = useViewer();
+  const gate = useSignInGate();
 
   const sendMessage = useCallback(
     async (text?: string, opts?: { silent?: boolean; pipelineData?: unknown }) => {
@@ -229,6 +233,8 @@ export function RelayChat({ slug }: RelayChatProps) {
 
   // Reveal component and send overview only when pipeline completes THIS visit
   useEffect(() => {
+    // Automatic model call: skip quietly for visitors who can't act
+    if (!viewer.canAct) return;
     if (wasRunning.current && !pipelineRunning && pipelineResult && !overviewSent.current) {
       overviewSent.current = true;
       setPipelineDone(true);
@@ -252,12 +258,12 @@ export function RelayChat({ slug }: RelayChatProps) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      gate(() => sendMessage());
     }
   }
 
   function handleSuggestionClick(q: string) {
-    sendMessage(q);
+    gate(() => sendMessage(q));
   }
 
   const hasStreamingRelayMessage = messages.some(
@@ -661,7 +667,7 @@ export function RelayChat({ slug }: RelayChatProps) {
         />
         <button
           data-testid="relay-send"
-          onClick={() => sendMessage()}
+          onClick={() => gate(() => sendMessage())}
           disabled={!input.trim() || sending}
           style={{
             width: 36,

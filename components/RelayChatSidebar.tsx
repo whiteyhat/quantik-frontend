@@ -5,7 +5,8 @@ import ReactMarkdown from "react-markdown";
 import { useTranslations, useLocale } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { isPersonality, type Personality } from "@/lib/agents";
-import { getAuthToken } from "@/lib/api";
+import { assertNotDemoWrite, getAuthToken } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 import { readSSEStream } from "@/lib/sse";
 import {
   extractLatestSignalTimestamp,
@@ -630,6 +631,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   const rawPersonality = myAgent?.personality ?? "balanced";
   const personality: Personality = isPersonality(rawPersonality) ? rawPersonality : "balanced";
   const theme = useMemo(() => getTheme(personality), [personality]);
+  const gate = useSignInGate();
 
   const defaultActions = useMemo(() => [
     { label: t("actionRefreshSignals"), message: t("actionRefreshSignalsMsg") },
@@ -803,6 +805,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
   }, []);
 
   const handleTradeConfirm = useCallback(async (confirmation: { slug: string; direction: string; size: number }) => {
+    assertNotDemoWrite();
     try {
       const token = getAuthToken();
       const response = await fetch(`${API_URL}/api/trade/execute`, {
@@ -962,7 +965,8 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
     }
   }, [applyContextUpdate, applyDoneContexts, fallbackSuggestions, t]);
 
-  const sendMessageWithText = useCallback(async (rawText: string) => {
+  const sendMessageWithTextRaw = useCallback(async (rawText: string) => {
+    assertNotDemoWrite();
     const trimmed = rawText.trim();
     if (!trimmed || sending) return;
 
@@ -1041,6 +1045,12 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
       ]);
     }
   }, [agentName, fallbackSuggestions, handleParsedEvent, locale, resetTurnState, sending, sessionId, t]);
+
+  // Every chat send (Enter, Send, chips, context-card actions) goes through the gate
+  const sendMessageWithText = useCallback((rawText: string) => {
+    if (!rawText.trim()) return;
+    gate(() => void sendMessageWithTextRaw(rawText));
+  }, [gate, sendMessageWithTextRaw]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1289,7 +1299,7 @@ export function RelayChatSidebar({ open, onToggle, onFirstOpen }: RelayChatSideb
               <div key={message.id} style={{ marginLeft: 34 }}>
                 <TradeConfirmationBubble
                   confirmation={message.tradeConfirmation}
-                  onConfirm={() => void handleTradeConfirm(message.tradeConfirmation)}
+                  onConfirm={() => gate(() => void handleTradeConfirm(message.tradeConfirmation))}
                   onCancel={handleTradeCancel}
                   theme={theme}
                 />

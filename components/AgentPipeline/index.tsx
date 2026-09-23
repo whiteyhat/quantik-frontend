@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
 import { SigmaDecision } from "./SigmaDecision";
 import { SignalValidator } from "./SignalValidator";
 import {
@@ -1002,6 +1003,7 @@ interface AgentPipelineProps {
 
 export function AgentPipeline({ market }: AgentPipelineProps) {
   const pipeline = useQuantikStore((s) => s.pipeline);
+  const viewer = useViewer();
   const agents = pipeline.agents;
 
   const sigmaData = agents.sigma?.data as SigmaResult | undefined;
@@ -1034,7 +1036,8 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
   }, [pipeline.version]);
 
   useEffect(() => {
-    if (!sigmaData || insightFiredRef.current || pipeline.source !== "live") return;
+    // Automatic model call: skip quietly for visitors who can't act
+    if (!sigmaData || insightFiredRef.current || pipeline.source !== "live" || !viewer.canAct) return;
     insightFiredRef.current = true;
     const token = getAuthToken();
     const sessionId = `pipeline-${crypto.randomUUID()}`;
@@ -1095,7 +1098,7 @@ export function AgentPipeline({ market }: AgentPipelineProps) {
       .catch(() => {
         setInsightLoading(false);
       });
-  }, [pipeline.source, sigmaData, edgeData, auraData, fluxData]);
+  }, [pipeline.source, sigmaData, edgeData, auraData, fluxData, viewer.canAct]);
 
   return (
     <div style={{ position: "relative" }}>
