@@ -20,7 +20,7 @@ import { NotificationCenterPanel } from "@/components/NotificationCenter";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { ProductTourProvider } from "@/components/tutorial/ProductTourProvider";
 import { DemoBanner } from "@/components/demo/DemoBanner";
-import { useViewer } from "@/context/ViewerContext";
+import { useViewer, useViewerGeneration } from "@/context/ViewerContext";
 import { useSignInGate } from "@/hooks/useSignInGate";
 
 // ─── Wallet Sync ─────────────────────────────────────────────────────────────
@@ -521,6 +521,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const viewer = useViewer();
+  const viewerGeneration = useViewerGeneration();
   const [relayOpen, setRelayOpen] = useState(false);
   const relayHasBeenOpened = useLocalStorageFlag(RELAY_LS_KEY, false);
   const relayPulsing = !relayHasBeenOpened;
@@ -558,7 +559,7 @@ export default function DashboardLayout({
 
         {/* Keyed like <main>: a new viewer never sees the previous one's chat */}
         <RelayChatSidebar
-          key={viewer.mode}
+          key={viewerGeneration}
           open={relayOpen}
           onToggle={handleToggleRelay}
           onFirstOpen={handleRelayFirstOpen}
@@ -585,10 +586,11 @@ export default function DashboardLayout({
         >
           <DemoBanner />
 
-          {/* Page content — remounts when the viewer changes (sign-in, sign-out,
-              first agent) so no page keeps demo or previous-user state */}
+          {/* Page content — remounts when the person looking changes (sign-in,
+              sign-out, first agent, account switch) so no page keeps demo or
+              previous-user state. Never remounts just for the initial load. */}
           <main
-            key={viewer.mode}
+            key={viewerGeneration}
             style={{
               flex: 1,
               padding: "20px 20px 40px",

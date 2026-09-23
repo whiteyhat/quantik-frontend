@@ -1354,6 +1354,7 @@ export default function AgentFactoryPage() {
   const router = useRouter();
   const { closeNextStep } = useNextStep();
   const t = useTranslations("agentFactory");
+  const tCommon = useTranslations("common");
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const myAgent = useQuantikStore((s) => s.myAgent);
   const myAgentLoading = useQuantikStore((s) => s.myAgentLoading);
@@ -1609,6 +1610,19 @@ export default function AgentFactoryPage() {
   const isLaunchStep = step === 5;
   // store.myAgent is the demo agent for guests; only a real agent locks the factory
   const isLocked = viewer.hasAgent && !!myAgent && !myAgentLoading;
+
+  // A real agent that hasn't loaded yet: never show the quiz, because
+  // creating an agent replaces the existing one.
+  if (viewer.hasAgent && !isLocked) {
+    return (
+      <div
+        role="status"
+        style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.5)", fontSize: 14 }}
+      >
+        {tCommon("loading")}
+      </div>
+    );
+  }
 
   if (isLocked) {
     return (

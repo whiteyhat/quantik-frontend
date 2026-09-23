@@ -1784,16 +1784,35 @@ export const api = {
   },
 
   // My Agent (user's configured trading agent)
-  /** Who is looking. Raw fetch: must never be answered by the demo adapter. */
-  getAccess: async (): Promise<{ signedIn: boolean; hasAgent: boolean; isOperator: boolean }> => {
+  /**
+   * Who is looking. Raw fetch (never answered by the demo adapter). null means
+   * "couldn't tell" — a failure must never read as "signed in without an agent".
+   */
+  getAccess: async (): Promise<{ signedIn: boolean; hasAgent: boolean; isOperator: boolean } | null> => {
     try {
       const res = await fetch(`${BASE_URL}/api/v1/me/access`, {
         headers: _authToken ? { Authorization: `Bearer ${_authToken}` } : {},
+        signal: AbortSignal.timeout(8_000),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) return null;
       return (await res.json()) as { signedIn: boolean; hasAgent: boolean; isOperator: boolean };
     } catch {
-      return { signedIn: false, hasAgent: false, isOperator: false };
+      return null;
+    }
+  },
+
+  /** The member's real agent, bypassing demo mode: null = none, undefined = couldn't check. */
+  getMyAgentLive: async (): Promise<Record<string, unknown> | null | undefined> => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/agent/me`, {
+        headers: _authToken ? { Authorization: `Bearer ${_authToken}` } : {},
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (res.status === 404) return null;
+      if (!res.ok) return undefined;
+      return (await res.json()) as Record<string, unknown>;
+    } catch {
+      return undefined;
     }
   },
 

@@ -116,7 +116,8 @@ export function demoNotifications(): { notifications: NotificationItem[]; unread
       category: "trade",
       timestamp: ago(3 * HOUR),
       readAt: null,
-      action: { label: "Open market", href: "/market/will-btc-close-above-150k-in-2026" },
+      // Demo markets are illustrative, so the link goes to the live markets list
+      action: { label: "Browse markets", href: "/markets" },
     },
     {
       id: "demo-note-2",

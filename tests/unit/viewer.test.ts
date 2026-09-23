@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideGate, demoModeFor, resolveViewerMode, shouldResetOnTransition } from "@/lib/viewer";
+import { decideGate, demoModeFor, resolveViewerMode } from "@/lib/viewer";
 
 const member = { hasAgent: true, isOperator: false };
 const noAgent = { hasAgent: false, isOperator: false };
@@ -34,18 +34,6 @@ describe("demoModeFor", () => {
   });
 });
 
-describe("shouldResetOnTransition", () => {
-  it("resets when a guest signs in or a member signs out", () => {
-    expect(shouldResetOnTransition("guest", "member")).toBe(true);
-    expect(shouldResetOnTransition("member", "guest")).toBe(true);
-    expect(shouldResetOnTransition("member-no-agent", "member")).toBe(true);
-  });
-  it("ignores the first resolution and repeats", () => {
-    expect(shouldResetOnTransition("loading", "guest")).toBe(false);
-    expect(shouldResetOnTransition("guest", "guest")).toBe(false);
-  });
-});
-
 describe("decideGate", () => {
   const guest = resolveViewerMode({ clerkLoaded: true, signedIn: false, access: null });
   const noAgentMember = resolveViewerMode({ clerkLoaded: true, signedIn: true, access: noAgent });
@@ -63,5 +51,79 @@ describe("decideGate", () => {
   });
   it("does nothing while loading", () => {
     expect(decideGate(resolveViewerMode({ clerkLoaded: false, signedIn: false, access: null }), "agent")).toBe("wait");
+  });
+});
+
+import { resolveAccess, viewerIdentityChanged } from "@/lib/viewer";
+
+const noSleep = async () => {};
+
+describe("resolveAccess", () => {
+  it("uses the access check when it answers for a signed-in user", async () => {
+    const access = await resolveAccess({
+      getAccess: async () => ({ signedIn: true, hasAgent: true, isOperator: true }),
+      getMyAgentLive: async () => { throw new Error("should not be called"); },
+      refreshToken: async () => {},
+      sleep: noSleep,
+    });
+    expect(access).toEqual({ hasAgent: true, isOperator: true });
+  });
+
+  it("retries when the check fails or can't see the session yet", async () => {
+    const answers = [null, { signedIn: false, hasAgent: false, isOperator: false }, { signedIn: true, hasAgent: false, isOperator: false }];
+    let refreshes = 0;
+    const access = await resolveAccess({
+      getAccess: async () => answers.shift() ?? null,
+      getMyAgentLive: async () => { throw new Error("should not be called"); },
+      refreshToken: async () => { refreshes += 1; },
+      sleep: noSleep,
+    });
+    expect(access).toEqual({ hasAgent: false, isOperator: false });
+    expect(refreshes).toBe(2);
+  });
+
+  it("falls back to the agent lookup when the check keeps failing", async () => {
+    const withAgent = await resolveAccess({
+      getAccess: async () => null,
+      getMyAgentLive: async () => ({ id: "real-agent" }),
+      refreshToken: async () => {},
+      sleep: noSleep,
+    });
+    expect(withAgent).toEqual({ hasAgent: true, isOperator: false });
+
+    const withoutAgent = await resolveAccess({
+      getAccess: async () => null,
+      getMyAgentLive: async () => null,
+      refreshToken: async () => {},
+      sleep: noSleep,
+    });
+    expect(withoutAgent).toEqual({ hasAgent: false, isOperator: false });
+  });
+
+  it("assumes a real agent exists when nothing answers, so Agent Factory stays locked", async () => {
+    const access = await resolveAccess({
+      getAccess: async () => null,
+      getMyAgentLive: async () => undefined,
+      refreshToken: async () => {},
+      sleep: noSleep,
+    });
+    expect(access).toEqual({ hasAgent: true, isOperator: false });
+  });
+});
+
+describe("viewerIdentityChanged", () => {
+  it("ignores the first resolution out of loading", () => {
+    expect(viewerIdentityChanged({ mode: "loading", userId: null }, { mode: "guest", userId: null })).toBe(false);
+  });
+  it("detects sign-in, sign-out and a first agent", () => {
+    expect(viewerIdentityChanged({ mode: "guest", userId: null }, { mode: "member", userId: "u1" })).toBe(true);
+    expect(viewerIdentityChanged({ mode: "member", userId: "u1" }, { mode: "guest", userId: null })).toBe(true);
+    expect(viewerIdentityChanged({ mode: "member-no-agent", userId: "u1" }, { mode: "member", userId: "u1" })).toBe(true);
+  });
+  it("detects switching accounts without leaving member mode", () => {
+    expect(viewerIdentityChanged({ mode: "member", userId: "u1" }, { mode: "member", userId: "u2" })).toBe(true);
+  });
+  it("ignores repeats", () => {
+    expect(viewerIdentityChanged({ mode: "member", userId: "u1" }, { mode: "member", userId: "u1" })).toBe(false);
   });
 });

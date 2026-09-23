@@ -111,3 +111,29 @@ describe("personal reads before the viewer is known", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("api.getAccess", () => {
+  it("returns null when the check fails instead of claiming there is no agent", async () => {
+    fetchMock.mockImplementationOnce(async () => new Response("not found", { status: 404 }));
+    expect(await api.getAccess()).toBeNull();
+    fetchMock.mockImplementationOnce(async () => { throw new TypeError("network"); });
+    expect(await api.getAccess()).toBeNull();
+  });
+
+  it("returns the server's answer when it succeeds", async () => {
+    fetchMock.mockImplementationOnce(async () => new Response(JSON.stringify({ signedIn: true, hasAgent: true, isOperator: false })));
+    expect(await api.getAccess()).toEqual({ signedIn: true, hasAgent: true, isOperator: false });
+  });
+});
+
+describe("api.getMyAgentLive", () => {
+  it("tells 'no agent' apart from 'could not check'", async () => {
+    setDemoMode("guest");
+    fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 404 }));
+    expect(await api.getMyAgentLive()).toBeNull();
+    fetchMock.mockImplementationOnce(async () => new Response("boom", { status: 502 }));
+    expect(await api.getMyAgentLive()).toBeUndefined();
+    fetchMock.mockImplementationOnce(async () => new Response(JSON.stringify({ id: "a1", name: "Real" })));
+    expect((await api.getMyAgentLive())?.name).toBe("Real");
+  });
+});
