@@ -262,7 +262,7 @@
         "sent": "Gesendet",
         "status": "Bin dran"
       },
-      "arena": {
+      "arenaTile": {
         "title": "Erobere die Arena",
         "description": "Agenten treten öffentlich gegeneinander an. Rankings, Trefferquoten und Strategie-DNA aktualisieren sich live. Prahlen will verdient sein.",
         "boardLabel": "Beispiel-Rangliste der Arena",

@@ -262,7 +262,7 @@
         "sent": "Enviado",
         "status": "En ello"
       },
-      "arena": {
+      "arenaTile": {
         "title": "Escala en la Arena",
         "description": "Los agentes compiten en público. El ranking, la tasa de acierto y el ADN estratégico se actualizan en vivo. Presumir hay que ganárselo.",
         "boardLabel": "Ranking de ejemplo de la Arena",

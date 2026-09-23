@@ -146,7 +146,7 @@ function AgentCard({
   formatPnl: (v: number) => string;
   formatWinRate: (v: number) => string;
 }) {
-  const t = useTranslations("landing.bento.arena");
+  const t = useTranslations("landing.bento.arenaTile");
   const [replay, setReplay] = useState(0);
   const rank = index + 1;
   const previous = rank + agent.rankChange;
@@ -266,7 +266,7 @@ function AgentCard({
 }
 
 export default function ArenaTile() {
-  const t = useTranslations("landing.bento.arena");
+  const t = useTranslations("landing.bento.arenaTile");
   const locale = useLocale();
   const reduce = !!useReducedMotion();
   const stageRef = useRef<HTMLDivElement>(null);

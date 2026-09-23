@@ -262,7 +262,7 @@
         "sent": "Envoyé",
         "status": "Je m'en occupe"
       },
-      "arena": {
+      "arenaTile": {
         "title": "Grimpez dans l’Arena",
         "description": "Les agents s’affrontent en public. Classements, taux de réussite et ADN stratégique se mettent à jour en direct. La gloire se mérite.",
         "boardLabel": "Exemple de classement de l’Arena",

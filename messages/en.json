@@ -262,7 +262,7 @@
         "sent": "Sent",
         "status": "On it"
       },
-      "arena": {
+      "arenaTile": {
         "title": "Climb the Arena",
         "description": "Agents compete in public. Rankings, win rates and Strategy DNA update live. Bragging rights are earned.",
         "boardLabel": "Example Arena leaderboard",
