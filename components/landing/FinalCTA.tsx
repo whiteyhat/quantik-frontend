@@ -2,62 +2,13 @@
 
 import { SignInButton } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
-import { useReducedMotion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { SectionShell } from "./SectionShell";
 import { PillButton } from "./PillButton";
-import { useTouchDevice } from "@/hooks/useTouchDevice";
 
-function FloatingParticles() {
-  const reduced = useReducedMotion();
-  const isTouch = useTouchDevice();
-  const count = isTouch ? 10 : 25;
-
-  const particles = useMemo(
-    () =>
-      Array.from({ length: count }, (_, i) => ({
-        id: i,
-        left: `${(i * 17 + 7) % 100}%`,
-        size: 2 + (i % 3),
-        opacity: 0.2 + (i % 4) * 0.1,
-        duration: 8 + (i % 7) * 1.2,
-        delay: (i * 0.7) % 10,
-      })),
-    [count]
-  );
-
-  if (reduced) return null;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        overflow: "hidden",
-        borderRadius: "inherit",
-        pointerEvents: "none",
-      }}
-    >
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            position: "absolute",
-            bottom: -10,
-            left: p.left,
-            width: p.size,
-            height: p.size,
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.6)",
-            ["--p-opacity" as string]: p.opacity,
-            animation: `landing-float-particle ${p.duration}s ease-in-out ${p.delay}s infinite`,
-            willChange: "transform, opacity",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+// WebGL digital rain; loaded only in the browser so three.js stays out of the
+// initial bundle.
+const PixelRain = dynamic(() => import("@/components/react-bits/pixel-rain"), { ssr: false });
 
 export function FinalCTA() {
   const t = useTranslations("landing");
@@ -67,16 +18,33 @@ export function FinalCTA() {
       <div
         className="text-center py-10 sm:py-14"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(191,90,242,0.12) 100%)",
+          background: "#050508",
           border: "1px solid var(--glass-border)",
           borderRadius: 20,
           position: "relative",
           overflow: "hidden",
-          animation: "landing-pulse-glow 4s ease-in-out infinite",
         }}
       >
-        <FloatingParticles />
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+          <PixelRain
+            color="#0a84ff"
+            hotColor="#bf5af2"
+            backgroundColor="#050508"
+            speed={0.18}
+            trail={7}
+            vignette={0.45}
+            brightness={0.9}
+          />
+        </div>
+        {/* Scrim keeps the copy readable over the brightest streaks */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(ellipse at center, rgba(5,5,8,0.78) 0%, rgba(5,5,8,0.35) 70%)",
+          }}
+        />
 
         <div style={{ position: "relative", zIndex: 1 }}>
           <h2

@@ -3,6 +3,10 @@
 @import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
 @import "tailwindcss";
 
+/* `dark:` utilities follow a `.dark` ancestor, not the OS setting. The landing
+   is always dark, so its React Bits tiles sit inside a `.dark` wrapper. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─── Design Tokens (CSS Custom Properties) ────────────────────────────────── */
 :root {
   --bg-void: #050508;
@@ -3179,3 +3183,80 @@ a.command-center-list-row:focus-visible,
   }
 }
 
+
+/* ─── Hero headline ─── */
+
+.hero-headline-line {
+  display: block;
+}
+
+.hero-headline-line--lead {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-headline-line--punch {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Accent word: brand gradient that sweeps once on landing, then drifts */
+.hero-accent-word {
+  display: inline-block;
+  padding-bottom: 0.06em;
+  background-image: linear-gradient(100deg, #5ac8fa 0%, #0a84ff 35%, #bf5af2 65%, #0a84ff 100%);
+  background-size: 250% 100%;
+  background-position: 100% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(10, 132, 255, 0.35));
+  animation:
+    hero-accent-sheen 1.4s cubic-bezier(0.16, 1, 0.3, 1) var(--accent-delay, 1.4s) both,
+    hero-accent-drift 9s ease-in-out calc(var(--accent-delay, 1.4s) + 1.4s) infinite alternate;
+}
+
+@keyframes hero-accent-sheen {
+  from { background-position: 100% 50%; }
+  to { background-position: 0% 50%; }
+}
+
+@keyframes hero-accent-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 60% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-accent-word {
+    animation: none;
+    background-position: 30% 50%;
+  }
+}
+
+/* Hero content floats over the ASCII tape: let the pointer reach the tape
+   everywhere except on real controls. */
+.hero-pass-through {
+  pointer-events: none;
+}
+
+.hero-pass-through a,
+.hero-pass-through button,
+.hero-pass-through .liquid-glass-word {
+  pointer-events: auto;
+}
+
+/* Keep the POLYMARKET + KRAKEN CLI pill on one line on phones */
+@media (max-width: 640px) {
+  .liquid-glass-word {
+    padding: 2px 10px 4px;
+    margin: 0 2px;
+    border-radius: 10px;
+  }
+
+  .liquid-glass-text {
+    font-size: 0.95em;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+}

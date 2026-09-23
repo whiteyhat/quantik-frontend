@@ -8,8 +8,7 @@ import { useTouchDevice } from "@/hooks/useTouchDevice";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SocialProofBar } from "@/components/landing/SocialProofBar";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { AgentSwarmShowcase } from "@/components/landing/AgentSwarmShowcase";
-import { FeatureGrid } from "@/components/landing/FeatureGrid";
+import { BentoShowcase } from "@/components/landing/BentoShowcase";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 
@@ -77,8 +76,7 @@ const SECTION_IDS = [
   "hero",
   "social-proof",
   "how-it-works",
-  "agent-swarm",
-  "features",
+  "inside",
   "faq",
   "cta",
 ];
@@ -123,7 +121,6 @@ function SectionDotNav() {
         right: 20,
         top: "50%",
         transform: "translateY(-50%)",
-        display: "flex",
         flexDirection: "column",
         gap: 12,
         zIndex: 55,
@@ -201,11 +198,8 @@ export default function LandingPage() {
         <div id="how-it-works">
           <HowItWorks />
         </div>
-        <div id="agent-swarm">
-          <AgentSwarmShowcase />
-        </div>
-        <div id="features">
-          <FeatureGrid />
+        <div id="inside">
+          <BentoShowcase />
         </div>
         <div id="faq">
           <FAQSection />

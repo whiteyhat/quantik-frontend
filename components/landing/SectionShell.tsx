@@ -8,10 +8,13 @@ export function SectionShell({
   children,
   className = "",
   id,
+  wide = false,
 }: {
   children: React.ReactNode;
   className?: string;
   id?: string;
+  /** Media-heavy sections (the bento grid) trade side padding for width */
+  wide?: boolean;
 }) {
   const reduced = useReducedMotion();
 
@@ -24,7 +27,7 @@ export function SectionShell({
       transition={{ duration: 0.8, ease: sectionEase }}
       className={`py-20 md:py-28 ${className}`}
     >
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-8 md:px-16 lg:px-[120px]">
+      <div className={`max-w-[1200px] mx-auto px-5 sm:px-8 ${wide ? "lg:px-12" : "md:px-16 lg:px-[120px]"}`}>
         {/* Materializing divider line */}
         <motion.div
           initial={reduced ? { scaleX: 1 } : { scaleX: 0 }}

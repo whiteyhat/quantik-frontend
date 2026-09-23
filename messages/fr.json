@@ -4,10 +4,10 @@
     "description": "Terminal de trading sur marches predictifs propulse par l'IA"
   },
   "landing": {
-    "badge": "Acces anticipe disponible a partir du",
-    "badgeDate": "20 mars 2026",
-    "heading": "Tether Hackathon Galactica",
-    "subtitle": "Creez votre propre agent de trading IA impitoyable avec une personnalite sauvage et un comportement de trading unique en quelques clics. Puis lancez-le sur Polymarket + Kraken CLI pour ecraser les marches et imprimer de l'argent avec un essaim de 7 sous-agents.",
+    "badge": "En direct",
+    "badgeDetail": "Explorez gratuitement, sans inscription",
+    "heading": "Les marchés ont leurs <mood>humeurs</mood>.\nVotre agent a un <accent>plan</accent>.",
+    "subtitle": "Sept IA spécialisées lisent la foule, évaluent les probabilités et débattent de chaque trade, pour que votre agent agisse sur Polymarket + Kraken CLI avant tout le monde.",
     "joinNow": "REJOINDRE",
     "socialProof": {
       "agentsDeployed": "Agents Deployes",
@@ -65,6 +65,276 @@
     "cta": {
       "title": "Commencez a Construire Votre Agent",
       "subtitle": "Creez votre agent de trading IA en quelques minutes. Aucun code requis."
+    },
+    "bento": {
+      "title": "Au cœur de la machine",
+      "subtitle": "Sept IA spécialisées, de vrais marchés et des garde-fous qui ne dorment jamais. Voici ce qui tourne sous le capot.",
+      "swarm": {
+        "market": "Le BTC terminera-t-il 2026 au-dessus de 150 k$ ?",
+        "status": {
+          "label": "Analyse de l'essaim",
+          "queued": "en attente",
+          "working": "en cours",
+          "decided": "décidé"
+        },
+        "header": {
+          "progress": "Étapes terminées",
+          "review": "Voir la décision",
+          "back": "Retour à l'analyse"
+        },
+        "steps": {
+          "scan": {
+            "action": "Lit la foule, le carnet d'ordres et les petites lignes",
+            "result": "Sentiment +0,42 · Liquidité A · Règles claires"
+          },
+          "oracle": {
+            "action": "Calcule les vraies probabilités",
+            "result": "58 % réel contre 45 % coté"
+          },
+          "edge": {
+            "action": "Dimensionne la mise",
+            "result": "Quart de Kelly · 120 $ fictifs"
+          },
+          "lucifer": {
+            "action": "Fait tout pour vous en dissuader",
+            "result": "2 risques soulevés, aucun fatal"
+          }
+        },
+        "decision": {
+          "title": "PARIER OUI à 45¢ · 120 $",
+          "meta": "Mode simulé · garde-fous OK · prête à examiner",
+          "review": "Examiner",
+          "back": "Retour"
+        },
+        "review": {
+          "heading": "Raisonnement",
+          "edge": "+13 pts d'avantage",
+          "comment": "Pourquoi l'essaim dit oui",
+          "lines": {
+            "context": "Foule optimiste, carnet profond, règles nettes.",
+            "market": "Prix du marché : 45 %",
+            "swarm": "Vraie probabilité : 58 %. Une petite mise se justifie.",
+            "risk": "LUCIFER a relevé 2 risques. La mise reste modeste."
+          },
+          "checksTitle": "Contrôles des garde-fous",
+          "checks": {
+            "resolution": "Source de résolution vérifiée",
+            "liquidity": "Liquidité suffisante",
+            "drawdown": "Drawdown sous la limite"
+          },
+          "passed": "Validé",
+          "pending": "En attente"
+        },
+        "title": "Sept agents, une décision",
+        "description": "Chaque trade passe l'épreuve. Sentiment, liquidité, petites lignes, vraies probabilités, taille de mise, un avocat du diable, puis une décision finale."
+      },
+      "debate": {
+        "tradeLabel": "Trade sur la table",
+        "market": "La Fed baissera-t-elle ses taux en décembre ?",
+        "terms": "à 38¢, 120 $ en mode papier",
+        "verdict": {
+          "pending": "Pèse le pour et le contre",
+          "title": "Le trade tient.",
+          "detail": "Taille divisée par deux, stop resserré."
+        },
+        "conviction": "Conviction",
+        "badges": {
+          "pick": "Votre choix",
+          "stronger": "Meilleur argument"
+        },
+        "scorecard": "L'évaluation de SIGMA",
+        "sides": {
+          "oracle": {
+            "role": "pour",
+            "aria": "Choisir ORACLE, les arguments pour le trade",
+            "argument": "L'inflation ralentit et l'embauche marque le pas. J'estime une baisse en décembre à 52 %, le marché dit 38¢. Cet écart, c'est votre avantage.",
+            "points": [
+              {
+                "label": "Preuves",
+                "note": "Inflation en baisse, embauche plus molle."
+              },
+              {
+                "label": "Avantage",
+                "note": "52 % estimés contre un prix de 38¢."
+              },
+              {
+                "label": "Calendrier",
+                "note": "Deux publications clés avant la réunion."
+              }
+            ],
+            "takeaway": "SIGMA retient : l'avantage est réel."
+          },
+          "lucifer": {
+            "role": "contre",
+            "aria": "Choisir LUCIFER, les arguments contre le trade",
+            "argument": "Un chiffre de l'emploi trop solide et ça tombe à 20¢. La Fed déteste surprendre les marchés. Vous misez comme si vous ne pouviez pas vous tromper.",
+            "points": [
+              {
+                "label": "Preuves",
+                "note": "La Fed a déjà attendu face à des données mitigées."
+              },
+              {
+                "label": "Risque",
+                "note": "Un chiffre trop chaud pourrait diviser le prix par deux."
+              },
+              {
+                "label": "Calendrier",
+                "note": "Deux publications peuvent vite inverser la cote."
+              }
+            ],
+            "takeaway": "SIGMA retient : taille réduite, stop resserré."
+          }
+        },
+        "title": "Chaque trade a son avocat du diable",
+        "description": "ORACLE défend le trade. LUCIFER tente de le démolir. Seuls les trades qui survivent au débat sont passés."
+      },
+      "guardrails": {
+        "title": "Garde-fous activés par défaut",
+        "description": "Coupe-circuits, tailles de position raisonnables et un bouton panique qui arrête tout en un geste. Vous démarrez en argent fictif. L'argent réel, uniquement si vous l'activez.",
+        "chips": {
+          "circuitBreaker": "Coupe-circuit",
+          "kelly": "Taille Kelly",
+          "paper": "Mode simulé",
+          "panic": "Bouton panique"
+        }
+      },
+      "markets": {
+        "title": "Branché sur les vrais marchés",
+        "description": "Marchés prédictifs sur Polymarket, spot et futures sur Kraken. Tokens d’agent sur Solana, identité on-chain sur Ethereum, alertes sur Telegram.",
+        "hub": "Votre agent",
+        "status": {
+          "idle": "Connecté à 5 plateformes",
+          "idleDetail": "Mode simulé par défaut"
+        },
+        "sources": {
+          "polymarket": {
+            "aria": "Voir la connexion Polymarket",
+            "status": "Lecture des cotes sur Polymarket",
+            "detail": "Marchés prédictifs"
+          },
+          "kraken": {
+            "aria": "Voir la connexion Kraken",
+            "status": "Trading sur Kraken",
+            "detail": "Spot et futures"
+          },
+          "solana": {
+            "aria": "Voir la connexion Solana",
+            "status": "Votre token d’agent sur Solana",
+            "detail": "Courbe de liaison"
+          },
+          "ethereum": {
+            "aria": "Voir la connexion Ethereum",
+            "status": "Votre identité on-chain sur Ethereum",
+            "detail": "Réputation ERC-8004"
+          },
+          "telegram": {
+            "aria": "Voir la connexion Telegram",
+            "status": "On vous prévient sur Telegram",
+            "detail": "Alertes de trades"
+          }
+        }
+      },
+      "chat": {
+        "title": "Demandez, tout simplement",
+        "description": "Parlez à votre agent avec vos mots. Il explique chaque trade et exécute vos ordres.",
+        "inputLabel": "Demandez ce que vous voulez à votre agent",
+        "agentLabel": "Votre agent :",
+        "suggestions": [
+          "Pourquoi avez-vous acheté YES sur la baisse de la Fed ?",
+          "Quelle est votre position la plus risquée en ce moment ?",
+          "Suspendez le trading réel jusqu'à lundi. Simulation uniquement.",
+          "Trouvez les marchés crypto mal valorisés",
+          "Pourquoi LUCIFER s'opposait-il au trade BTC ?"
+        ],
+        "chips": [
+          "Expliquer mon dernier trade",
+          "Voir mon risque",
+          "Passer en simulé"
+        ],
+        "improve": "Préciser la question",
+        "improveSuffix": "Soyez bref et montrez votre raisonnement.",
+        "attach": {
+          "add": "Joindre un marché d'exemple",
+          "remove": "Retirer le marché d'exemple",
+          "market": "Baisse de la Fed en décembre"
+        },
+        "send": "Envoyer",
+        "sent": "Envoyé",
+        "status": "Je m'en occupe"
+      },
+      "arena": {
+        "title": "Grimpez dans l’Arena",
+        "description": "Les agents s’affrontent en public. Classements, taux de réussite et ADN stratégique se mettent à jour en direct. La gloire se mérite.",
+        "boardLabel": "Exemple de classement de l’Arena",
+        "disclaimer": "Agents fictifs. Pas de résultats réels.",
+        "rank": "Rang",
+        "rankChange": "Évolution du rang",
+        "pnl": "P&L",
+        "winRate": "Taux de réussite",
+        "lastWeek": "Semaine dernière",
+        "dnaLabel": "ADN stratégique",
+        "footnote": "Classé par P&L. En direct.",
+        "dna": {
+          "momentum": "Momentum",
+          "contrarian": "À contre-courant",
+          "newsHound": "Chasseur d’infos",
+          "patient": "Patient",
+          "macro": "Macro",
+          "sniper": "Sniper",
+          "underdog": "Chasseur d’outsiders",
+          "steady": "Main sûre"
+        }
+      },
+      "byo": {
+        "title": "Apportez votre agent",
+        "description": "Vous avez déjà un agent ? Branchez-le avec une simple clé API. Mêmes marchés, mêmes garde-fous.",
+        "tabsLabel": "Appels API",
+        "run": "Exécuter",
+        "replay": "Relancer",
+        "response": "Réponse",
+        "waiting": "en attente…",
+        "webhooks": "Webhooks",
+        "running": "En cours…",
+        "pending": "En attente",
+        "calls": {
+          "trade": {
+            "tab": "Trader",
+            "traceTitle": "Trace d’exécution",
+            "summary": "42 ms au total",
+            "steps": {
+              "request": "Requête reçue",
+              "auth": "Clé API vérifiée",
+              "guardrails": "Garde-fous vérifiés",
+              "fill": "Ordre simulé exécuté",
+              "webhooks": "Webhooks mis en file",
+              "sent": "Réponse envoyée"
+            },
+            "details": {
+              "guardrails": "Tout est conforme"
+            }
+          },
+          "analyze": {
+            "tab": "Analyser",
+            "traceTitle": "Essaim d’agents",
+            "summary": "7 agents",
+            "steps": {
+              "aura": "Sentiment",
+              "flux": "Liquidité",
+              "clause": "Petites lignes",
+              "oracle": "Probabilité réelle",
+              "edge": "Taille de position",
+              "lucifer": "Avocat du diable",
+              "sigma": "Décision finale"
+            },
+            "details": {
+              "aura": "Optimiste",
+              "flux": "Facile à exécuter",
+              "clause": "Règles claires",
+              "lucifer": "Objection pesée"
+            }
+          }
+        }
+      }
     }
   },
   "welcome": {

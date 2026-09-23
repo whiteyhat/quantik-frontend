@@ -4,10 +4,10 @@
     "description": "AI-powered prediction market trading terminal"
   },
   "landing": {
-    "badge": "Early access available from",
-    "badgeDate": "March 20, 2026",
-    "heading": "Tether Hackathon Galactica",
-    "subtitle": "Build your own ruthless AI trading agent with a savage personality and unique trading behaviour in a few clicks. Then unleash it in Polymarket + Kraken CLI to crush markets and print money with a swarm of 7 sub-agents.",
+    "badge": "Live now",
+    "badgeDetail": "Explore free, no sign-up",
+    "heading": "Markets have <mood>moods</mood>.\nYour agent has a <accent>plan</accent>.",
+    "subtitle": "Seven specialist AIs read the crowd, price the odds and argue the trade, so your agent moves on Polymarket + Kraken CLI before everyone else.",
     "joinNow": "JOIN NOW",
     "socialProof": {
       "agentsDeployed": "Agents Deployed",
@@ -65,6 +65,276 @@
     "cta": {
       "title": "Start Building Your Agent",
       "subtitle": "Create your AI trading agent in minutes. No coding required."
+    },
+    "bento": {
+      "title": "Inside the machine",
+      "subtitle": "Seven specialist AIs, real markets and guardrails that never sleep. Here's what runs under the hood.",
+      "swarm": {
+        "market": "Will BTC close above $150k in 2026?",
+        "status": {
+          "label": "Swarm run",
+          "queued": "queued",
+          "working": "working",
+          "decided": "decided"
+        },
+        "header": {
+          "progress": "Steps done",
+          "review": "Review call",
+          "back": "Back to run"
+        },
+        "steps": {
+          "scan": {
+            "action": "Reading the crowd, the order book and the fine print",
+            "result": "Sentiment +0.42 · Liquidity A · Rules clear"
+          },
+          "oracle": {
+            "action": "Pricing the true odds",
+            "result": "58% true vs 45% market"
+          },
+          "edge": {
+            "action": "Sizing the bet",
+            "result": "Quarter Kelly · $120 paper"
+          },
+          "lucifer": {
+            "action": "Trying hard to talk you out of it",
+            "result": "2 risks raised, none fatal"
+          }
+        },
+        "decision": {
+          "title": "BET YES at 45¢ · $120",
+          "meta": "Paper mode · guardrails clear · ready for review",
+          "review": "Review",
+          "back": "Back"
+        },
+        "review": {
+          "heading": "Reasoning",
+          "edge": "+13 pts edge",
+          "comment": "Why the swarm says yes",
+          "lines": {
+            "context": "Crowd is warm, book is deep, rules are clean.",
+            "market": "Market price: 45%",
+            "swarm": "True odds: 58%. Worth a small bet.",
+            "risk": "LUCIFER raised 2 risks. Size stays small."
+          },
+          "checksTitle": "Guardrail checks",
+          "checks": {
+            "resolution": "Resolution source verified",
+            "liquidity": "Liquidity OK",
+            "drawdown": "Drawdown within limit"
+          },
+          "passed": "Passed",
+          "pending": "Pending"
+        },
+        "title": "Seven agents, one decision",
+        "description": "Every trade runs the gauntlet. Sentiment, liquidity, fine print, true odds, sizing, a devil's advocate, then one final call."
+      },
+      "debate": {
+        "tradeLabel": "Trade on the table",
+        "market": "Will the Fed cut rates in December?",
+        "terms": "at 38¢, $120 paper",
+        "verdict": {
+          "pending": "Weighing both sides",
+          "title": "Trade survives.",
+          "detail": "Half size, tighter stop."
+        },
+        "conviction": "Conviction",
+        "badges": {
+          "pick": "Your pick",
+          "stronger": "Stronger case"
+        },
+        "scorecard": "SIGMA's scorecard",
+        "sides": {
+          "oracle": {
+            "role": "for",
+            "aria": "Side with ORACLE, the case for the trade",
+            "argument": "Inflation is cooling and hiring is slowing. I put a December cut at 52%, the market says 38¢. That gap is the edge.",
+            "points": [
+              {
+                "label": "Evidence",
+                "note": "Cooling inflation, softer hiring."
+              },
+              {
+                "label": "Edge",
+                "note": "52% fair odds against a 38¢ price."
+              },
+              {
+                "label": "Timing",
+                "note": "Two data releases before the meeting."
+              }
+            ],
+            "takeaway": "SIGMA keeps: the edge is real."
+          },
+          "lucifer": {
+            "role": "against",
+            "aria": "Side with LUCIFER, the case against the trade",
+            "argument": "One hot jobs report and this drops to 20¢. The Fed hates surprising markets. You're sizing like you can't be wrong.",
+            "points": [
+              {
+                "label": "Evidence",
+                "note": "The Fed has waited on mixed data before."
+              },
+              {
+                "label": "Downside",
+                "note": "One hot print could halve the price."
+              },
+              {
+                "label": "Timing",
+                "note": "Two releases can flip the odds fast."
+              }
+            ],
+            "takeaway": "SIGMA keeps: smaller size, tighter stop."
+          }
+        },
+        "title": "Every trade gets a devil's advocate",
+        "description": "ORACLE makes the case. LUCIFER tries to kill it. Only trades that survive the argument get placed."
+      },
+      "guardrails": {
+        "title": "Guardrails on by default",
+        "description": "Circuit breakers, sensible position sizing and a panic button that stops everything in one tap. You start on paper money. Real funds are opt-in.",
+        "chips": {
+          "circuitBreaker": "Circuit breaker",
+          "kelly": "Kelly sizing",
+          "paper": "Paper mode",
+          "panic": "Panic button"
+        }
+      },
+      "markets": {
+        "title": "Plugged into real markets",
+        "description": "Prediction markets on Polymarket, spot and futures on Kraken. Agent tokens on Solana, an on-chain ID on Ethereum, alerts on Telegram.",
+        "hub": "Your agent",
+        "status": {
+          "idle": "Connected to 5 platforms",
+          "idleDetail": "Paper mode by default"
+        },
+        "sources": {
+          "polymarket": {
+            "aria": "Show the Polymarket connection",
+            "status": "Reading odds on Polymarket",
+            "detail": "Prediction markets"
+          },
+          "kraken": {
+            "aria": "Show the Kraken connection",
+            "status": "Trading on Kraken",
+            "detail": "Spot and futures"
+          },
+          "solana": {
+            "aria": "Show the Solana connection",
+            "status": "Your agent token on Solana",
+            "detail": "Bonding curve"
+          },
+          "ethereum": {
+            "aria": "Show the Ethereum connection",
+            "status": "An on-chain ID on Ethereum",
+            "detail": "ERC-8004 reputation"
+          },
+          "telegram": {
+            "aria": "Show the Telegram connection",
+            "status": "Pinging you on Telegram",
+            "detail": "Trade alerts"
+          }
+        }
+      },
+      "chat": {
+        "title": "Just ask",
+        "description": "Talk to your agent in plain English. It explains every trade and takes orders.",
+        "inputLabel": "Ask your agent anything",
+        "agentLabel": "Your agent:",
+        "suggestions": [
+          "Why did you buy YES on the Fed cut?",
+          "What's your riskiest position right now?",
+          "Pause live trading until Monday. Paper only.",
+          "Find mispriced crypto markets",
+          "What did LUCIFER argue against the BTC trade?"
+        ],
+        "chips": [
+          "Explain my last trade",
+          "Show my risk",
+          "Go paper only"
+        ],
+        "improve": "Sharpen the question",
+        "improveSuffix": "Keep it short and show your reasoning.",
+        "attach": {
+          "add": "Attach a sample market",
+          "remove": "Remove sample market",
+          "market": "Fed rate cut in December"
+        },
+        "send": "Send",
+        "sent": "Sent",
+        "status": "On it"
+      },
+      "arena": {
+        "title": "Climb the Arena",
+        "description": "Agents compete in public. Rankings, win rates and Strategy DNA update live. Bragging rights are earned.",
+        "boardLabel": "Example Arena leaderboard",
+        "disclaimer": "Example agents. Not real results.",
+        "rank": "Rank",
+        "rankChange": "Rank change",
+        "pnl": "P&L",
+        "winRate": "Win rate",
+        "lastWeek": "Last week",
+        "dnaLabel": "Strategy DNA",
+        "footnote": "Ranked by P&L. Updates live.",
+        "dna": {
+          "momentum": "Momentum",
+          "contrarian": "Contrarian",
+          "newsHound": "News hound",
+          "patient": "Patient",
+          "macro": "Macro",
+          "sniper": "Sniper",
+          "underdog": "Underdog hunter",
+          "steady": "Steady hand"
+        }
+      },
+      "byo": {
+        "title": "Bring your own agent",
+        "description": "Already built an agent? Plug it in with one API key. Same markets, same guardrails.",
+        "tabsLabel": "API calls",
+        "run": "Run",
+        "replay": "Run again",
+        "response": "Response",
+        "waiting": "waiting…",
+        "webhooks": "Webhooks",
+        "running": "Running…",
+        "pending": "Pending",
+        "calls": {
+          "trade": {
+            "tab": "Trade",
+            "traceTitle": "Execution trace",
+            "summary": "42ms total",
+            "steps": {
+              "request": "Request received",
+              "auth": "API key verified",
+              "guardrails": "Guardrails checked",
+              "fill": "Paper order filled",
+              "webhooks": "Webhooks queued",
+              "sent": "Response sent"
+            },
+            "details": {
+              "guardrails": "All clear"
+            }
+          },
+          "analyze": {
+            "tab": "Analyze",
+            "traceTitle": "Agent swarm",
+            "summary": "7 agents",
+            "steps": {
+              "aura": "Sentiment",
+              "flux": "Liquidity",
+              "clause": "Fine print",
+              "oracle": "True probability",
+              "edge": "Position size",
+              "lucifer": "Devil’s advocate",
+              "sigma": "Final call"
+            },
+            "details": {
+              "aura": "Upbeat",
+              "flux": "Easy to fill",
+              "clause": "Rules are clear",
+              "lucifer": "Objection weighed"
+            }
+          }
+        }
+      }
     }
   },
   "welcome": {
