@@ -18,6 +18,7 @@ import { api } from "@/lib/api";
 import type { DashboardSummarySnapshot } from "@/lib/dashboard";
 import type { MyAgent } from "@/store/useQuantikStore";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 function statusTone(status: string | null | undefined) {
   if (status === "connected" || status === "active") return "good" as const;
@@ -39,6 +40,7 @@ export function DashboardPilotDeck({
   const healthScoreQuery = useDashboardAgentHealthScoreQuery(agent?.id, isByo);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const [isSaving, setIsSaving] = useState(false);
+  const gate = useSignInGate();
 
   if (agentLoading) {
     return (
@@ -154,7 +156,7 @@ export function DashboardPilotDeck({
         </div>
         <ToggleSwitch
           checked={autopilotEnabled}
-          onChange={handleAutopilotToggle}
+          onChange={(enabled) => gate(() => void handleAutopilotToggle(enabled))}
           disabled={isSaving || agent.status === "terminated"}
           loading={isSaving}
         />

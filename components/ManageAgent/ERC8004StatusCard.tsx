@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CheckCircle2, Link2, ExternalLink } from "lucide-react";
-import { BASE_URL, getAuthToken } from "@/lib/api";
+import { BASE_URL, assertNotDemoWrite, getAuthToken } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const mono = '"SF Mono", "JetBrains Mono", monospace';
 
@@ -383,6 +384,7 @@ export function ERC8004StatusCard({
   const [etherscanUrl, setEtherscanUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const gate = useSignInGate();
   const isRegistered = !!tokenId;
   const registering = phase !== "idle" && phase !== "done";
 
@@ -422,6 +424,7 @@ export function ERC8004StatusCard({
     setError(null);
     setTxHash(null);
     try {
+      assertNotDemoWrite(); // raw fetch below skips the API client's demo guard
       await new Promise((r) => setTimeout(r, SUBMIT_UX_DELAY_MS));
       setPhase("confirming");
 
@@ -571,7 +574,7 @@ export function ERC8004StatusCard({
             Your agent will be registered on-chain at deploy. Manual registration available below.
           </p>
           <button
-            onClick={handleRegister}
+            onClick={() => gate(() => void handleRegister())}
             disabled={registering}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}

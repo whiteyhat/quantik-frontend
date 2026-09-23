@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -17,6 +18,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const gate = useSignInGate();
   const skillUrl = `${BASE_URL}/api/skill.md`;
   const apiBaseUrl = `${BASE_URL}/api/v1/tools`;
 
@@ -79,7 +81,7 @@ export function ApiKeyPanel({ apiKeyPrefix, agentId }: ApiKeyPanelProps) {
             {apiKeyPrefix ?? "qk_live_••••"}••••••••••••••••
           </code>
           <button
-            onClick={handleRotate}
+            onClick={() => gate(() => void handleRotate())}
             disabled={isRotating}
             style={{
               padding: "6px 12px", borderRadius: 8,

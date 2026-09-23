@@ -58,6 +58,7 @@ import {
   useTriggerOrchestratorScan,
 } from "@/components/dashboard/dashboardQueries";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 function numberTone(value: number, warnAt: number, badAt: number): "good" | "warn" | "bad" {
   if (value >= badAt) return "bad";
@@ -267,7 +268,7 @@ function MissionControlHero({
                 ? `${summary.pnlToday >= 0 ? "+" : ""}${fmtUSDC(summary.pnlToday)}`
                 : "—"
             }
-            hint={summary?.pnlTodayPct != null ? t("pnlToday", { pct: summary.pnlTodayPct.toFixed(1) }) : t("noDailyDelta")}
+            hint={summary?.pnlTodayPct != null ? t("pnlToday", { pct: (summary.pnlTodayPct * 100).toFixed(1) }) : t("noDailyDelta")}
             tone={summary ? pnlTone(summary.pnlToday) : "neutral"}
           />
           {walletAddress ? (
@@ -1360,6 +1361,7 @@ export function DashboardPageClient() {
   const healthQuery = useDashboardHealthQuery();
   const agentsQuery = useDashboardSystemAgentsQuery();
   const scanMutation = useTriggerOrchestratorScan();
+  const gate = useSignInGate();
 
   const lastUpdatedAt = Math.max(
     summaryQuery.dataUpdatedAt,
@@ -1422,7 +1424,7 @@ export function DashboardPageClient() {
             loading={orchestratorQuery.isLoading}
             error={orchestratorQuery.isError}
             onRetry={() => void orchestratorQuery.refetch()}
-            onScan={() => void scanMutation.mutateAsync()}
+            onScan={() => gate(() => void scanMutation.mutateAsync())}
             isScanning={scanMutation.isPending}
             now={now}
           />

@@ -6,6 +6,7 @@ import { useSocketEvent } from "@/context/SocketContext";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useQuantikStore } from "@/store/useQuantikStore";
+import { useViewer } from "@/context/ViewerContext";
 import {
   api,
   type Position,
@@ -65,9 +66,12 @@ export default function ManageAgentPage() {
   const storeWallet = useQuantikStore((s) => s.wallet);
   const storeSetWallet = useQuantikStore((s) => s.setWallet);
   const authReady = useQuantikStore((s) => s.authReady);
+  const viewer = useViewer();
 
   // Safety net: if store is empty and not loading, try fetching agent
   useEffect(() => {
+    // Demo viewers already have NOVA-7 placed in the store by ViewerProvider
+    if (viewer.isDemo) return;
     if (!authReady || storeAgent || myAgentLoading) return;
     let active = true;
     setMyAgentLoading(true);
@@ -79,7 +83,7 @@ export default function ManageAgentPage() {
       .finally(() => setMyAgentLoading(false));
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authReady, storeAgent, setMyAgent, setMyAgentLoading]);
+  }, [authReady, storeAgent, setMyAgent, setMyAgentLoading, viewer.isDemo]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -333,7 +337,7 @@ export default function ManageAgentPage() {
                   lastHeartbeat={storeAgent.last_heartbeat}
                   description={storeAgent.description}
                 />
-                <RiskConfigPanelByo agentId={storeAgent.id} />
+                {viewer.isOperator && <RiskConfigPanelByo agentId={storeAgent.id} />}
                 <WebhookConfigPanel
                   agentId={storeAgent.id}
                   endpointUrl={storeAgent.endpoint_url}

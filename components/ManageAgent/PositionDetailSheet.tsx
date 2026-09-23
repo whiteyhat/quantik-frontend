@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
 import { api, fmtPrice, fmtUSDC, fmtDateTime, type Market, type Position } from "@/lib/api";
 import { PriceChart } from "@/components/PriceChart";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 export function PositionDetailSheet({
   position,
@@ -20,6 +21,7 @@ export function PositionDetailSheet({
   const locale = useLocale();
   const [market, setMarket] = useState<Market | null>(null);
   const [closing, setClosing] = useState(false);
+  const gate = useSignInGate();
 
   useEffect(() => {
     if (!open || !position) return;
@@ -40,6 +42,18 @@ export function PositionDetailSheet({
 
   const pnlColor = position.pnl >= 0 ? "var(--ios-green)" : "var(--ios-red)";
   const question = market?.question ?? position.question ?? position.market;
+
+  const handleClosePosition = async () => {
+    if (!position.executionId || closing) return;
+    setClosing(true);
+    try {
+      await api.closePosition(position.executionId);
+      onClosed(position.executionId);
+      onClose();
+    } finally {
+      setClosing(false);
+    }
+  };
 
   return (
     <>
@@ -153,17 +167,7 @@ export function PositionDetailSheet({
               Open full market
             </Link>
             <button
-              onClick={async () => {
-                if (!position.executionId || closing) return;
-                setClosing(true);
-                try {
-                  await api.closePosition(position.executionId);
-                  onClosed(position.executionId);
-                  onClose();
-                } finally {
-                  setClosing(false);
-                }
-              }}
+              onClick={() => gate(() => void handleClosePosition())}
               disabled={!position.executionId || closing}
               style={{
                 minWidth: 150,

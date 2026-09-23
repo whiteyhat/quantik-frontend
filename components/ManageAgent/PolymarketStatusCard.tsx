@@ -6,6 +6,8 @@ import JSConfetti from "js-confetti";
 import { api } from "@/lib/api";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 // ── CSS keyframes injected once ──────────────────────────────────────────────
 
@@ -239,6 +241,8 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
 
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
   const myAgent = useQuantikStore((s) => s.myAgent);
+  const viewer = useViewer();
+  const gate = useSignInGate();
 
   // Step 1: checking balances. Step 2: running approvals (auto-started after step 1 passes).
   const [displayStep, setDisplayStep] = useState<1 | 2>(
@@ -379,6 +383,8 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
   // This ensures the user never gets stuck on step 2 with no progress bar running.
   const hasAutoTriggeredRef = useRef(false);
   useEffect(() => {
+    // Demo viewers never send approvals by themselves (and never see a sign-in popup for it)
+    if (!viewer.canAct) return;
     if (hasAutoTriggeredRef.current) return;
     if (!walletAddress) return;
     if (polymarketStatus === "approving" || polymarketStatus === "funding_detected") {
@@ -386,7 +392,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
       triggerApprovals();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally run once on mount only
+  }, [viewer.canAct]); // once, as soon as the viewer can act (usually on mount)
 
   const handleAssignWallet = useCallback(async () => {
     if (!assignAddress || !/^0x[0-9a-fA-F]{40}$/.test(assignAddress)) {
@@ -755,7 +761,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
           )}
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <button
-              onClick={handleAssignWallet}
+              onClick={() => gate(() => void handleAssignWallet())}
               disabled={assigning}
               style={{
                 flex: 1,
@@ -800,7 +806,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
           <>
             {!walletAddress && !showWalletAssign && (
               <button
-                onClick={() => setShowWalletAssign(true)}
+                onClick={() => gate(() => setShowWalletAssign(true))}
                 style={{
                   width: "100%",
                   marginBottom: 10,
@@ -821,7 +827,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
               </button>
             )}
             <button
-              onClick={handleVerify}
+              onClick={() => gate(() => void handleVerify())}
               disabled={checkingBalance || !walletAddress}
               style={{
                 width: "100%",
@@ -858,7 +864,7 @@ export function PolymarketStatusCard({ agentId, walletAddress, polymarketReady, 
         {displayStep === 2 && !runningApprovals && approvalResult?.error && (
           // Retry button — only shown if approvals failed (step 2 error state)
           <button
-            onClick={triggerApprovals}
+            onClick={() => gate(() => void triggerApprovals())}
             style={{
               width: "100%",
               padding: "12px 24px",

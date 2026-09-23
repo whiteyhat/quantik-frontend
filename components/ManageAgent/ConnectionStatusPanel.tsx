@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 interface ConnectionStatusPanelProps {
   agentId: string;
@@ -16,6 +17,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
   const [status, setStatus] = useState(connectionStatus ?? "pending");
   const [isTesting, setIsTesting] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
+  const gate = useSignInGate();
 
   const statusColor = status === "connected" ? "#30d158" : status === "pending" ? "#ff9f0a" : "#ff453a";
 
@@ -121,7 +123,7 @@ export function ConnectionStatusPanel({ agentId, connectionStatus, lastHeartbeat
 
       {/* Test Button */}
       <button
-        onClick={handleTest}
+        onClick={() => gate(() => void handleTest())}
         disabled={isTesting}
         style={{
           width: "100%",

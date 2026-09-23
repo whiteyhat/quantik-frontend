@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeleteAgentModal } from "./DeleteAgentModal";
 import { PolymarketGlyph } from "@/components/PolymarketGlyph";
 import { WalletActionButton } from "@/components/WalletActionButton";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 function statusBadge(status: string) {
   switch (status) {
@@ -47,6 +48,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteToast, setDeleteToast] = useState<string | null>(null);
   const [deleteBtnHovered, setDeleteBtnHovered] = useState(false);
+  const gate = useSignInGate();
 
   const handleDeleted = useCallback(() => {
     setDeleteModalOpen(false);
@@ -270,7 +272,7 @@ export function AgentIdentityHeader({ wallet, timePeriod, onPeriodChange }: Agen
           {/* Delete agent button */}
           <div style={{ position: "relative", display: "inline-flex" }}>
             <button
-              onClick={() => setDeleteModalOpen(true)}
+              onClick={() => gate(() => setDeleteModalOpen(true))}
               aria-label="Delete Agent"
               title="Delete Agent"
               style={{

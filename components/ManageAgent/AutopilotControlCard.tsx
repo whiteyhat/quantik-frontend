@@ -9,6 +9,8 @@ import { AutopilotStatusBar } from "@/components/AutopilotStatusBar";
 import { ScannerFeed } from "@/components/ScannerFeed";
 import { ExecutionLog } from "@/components/ExecutionLog";
 import { TelegramWebhookEditor } from "@/components/TelegramWebhookEditor";
+import { useViewer } from "@/context/ViewerContext";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const AUTOPILOT_PULSE_KEY = "autopilot_pulse_dismissed";
 const AP_STYLE_ID = "autopilot-particle-keyframes";
@@ -174,6 +176,8 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
   const t = useTranslations("autopilot");
   const myAgent = useQuantikStore((s) => s.myAgent);
   const setMyAgent = useQuantikStore((s) => s.setMyAgent);
+  const viewer = useViewer();
+  const gate = useSignInGate();
   const agentWallet = myAgent?.wallet_address ?? null;
   const defaultFundingStatus = agentWallet ? "funding_required" : "no_wallet";
 
@@ -545,7 +549,7 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
 
           <ToggleSwitch
             checked={autopilotEnabled}
-            onChange={handleToggle}
+            onChange={(enabled) => gate(() => handleToggle(enabled))}
             disabled={isSaving || myAgent.status === "terminated" || toggleBlocked}
             pulse={showPulse && !autopilotEnabled}
             loading={isSaving}
@@ -862,7 +866,8 @@ export function AutopilotControlCard({ wallet }: AutopilotControlCardProps) {
             }}
           >
             <ExecutionLog agentId={myAgent.id} />
-            <TelegramWebhookEditor />
+            {/* Telegram settings are platform-wide, so only the operator edits them */}
+            {viewer.isOperator && <TelegramWebhookEditor />}
           </div>
         </div>
       </div>

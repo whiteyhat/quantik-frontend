@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import type { MyAgent } from "@/store/useQuantikStore";
 import { api } from "@/lib/api";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 interface DeleteAgentModalProps {
   agent: MyAgent;
@@ -20,6 +21,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const gate = useSignInGate();
 
   if (!open) return null;
 
@@ -35,6 +37,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
     setError(null);
     try {
       await api.deleteAgent(agent.id);
+      window.dispatchEvent(new CustomEvent("quantik:agent-changed"));
       onDeleted();
     } catch (err) {
       setError(err instanceof Error ? err.message : td("failedToDelete"));
@@ -240,7 +243,7 @@ export function DeleteAgentModal({ agent, open, onClose, onDeleted }: DeleteAgen
                 {tc("cancel")}
               </button>
               <button
-                onClick={handleDelete}
+                onClick={() => gate(() => void handleDelete())}
                 disabled={confirmText !== "DELETE" || isDeleting}
                 style={{
                   padding: "8px 20px",

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { api, fmtDateTime, NotificationItem } from "@/lib/api";
+import { api, fmtDateTime, getDemoMode, NotificationItem } from "@/lib/api";
 import { useNotificationsStore } from "@/store/useNotificationsStore";
 import { useQuantikStore } from "@/store/useQuantikStore";
 import { useSocketEvent } from "@/context/SocketContext";
@@ -149,7 +149,9 @@ export function NotificationCenterPanel() {
             <button
               onClick={() => {
                 markAllRead();
-                void api.markAllNotificationsRead().catch(() => {});
+                // Guests see demo notifications that only live in the browser, so read-marks
+                // stay local. Members without an agent see their real ones and still sync.
+                if (getDemoMode() !== "guest") void api.markAllNotificationsRead().catch(() => {});
               }}
               style={{
                 border: "1px solid var(--glass-border)",
@@ -203,7 +205,7 @@ export function NotificationCenterPanel() {
                   key={item.id}
                   onClick={() => {
                     markRead(item.id);
-                    void api.markNotificationRead(item.id).catch(() => {});
+                    if (getDemoMode() !== "guest") void api.markNotificationRead(item.id).catch(() => {});
                     if (item.action?.href) {
                       router.push(item.action.href as any);
                     }

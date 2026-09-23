@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { api, fmtTimeShort } from "@/lib/api";
 import { AVAILABLE_WEBHOOK_EVENTS } from "@/lib/webhookEvents";
+import { useSignInGate } from "@/hooks/useSignInGate";
 
 const mono: React.CSSProperties = {
   fontFamily: '"SF Mono", "JetBrains Mono", monospace',
@@ -36,6 +37,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
   const [testResult, setTestResult] = useState<{ ok: boolean; status_code: number | null; latency_ms: number; error?: string } | null>(null);
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [loadingLog, setLoadingLog] = useState(true);
+  const gate = useSignInGate();
 
   const isAllEvents = events.length === 1 && events[0] === "*";
 
@@ -167,7 +169,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
       {/* Save + Test buttons */}
       <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
         <button
-          onClick={handleSave}
+          onClick={() => gate(() => void handleSave())}
           disabled={saving}
           style={{
             flex: 1, padding: "8px 12px", borderRadius: 8,
@@ -179,7 +181,7 @@ export function WebhookConfigPanel({ agentId, endpointUrl, webhookEvents }: Webh
           {saving ? t("saving") : saveMsg ?? t("save")}
         </button>
         <button
-          onClick={handleTest}
+          onClick={() => gate(() => void handleTest())}
           disabled={testing || !url}
           style={{
             flex: 1, padding: "8px 12px", borderRadius: 8,
